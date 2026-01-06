@@ -1,1 +1,1 @@
-This is the 2017 version of MITs Battlecode Scaffold Repo.
+This is the 2017 version of MITs Battlecode Scaffold Repo. You are on a Ubuntu WSL instance. The game uses Java 8
