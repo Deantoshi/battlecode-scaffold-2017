@@ -17,8 +17,7 @@ apply plugin: 'scala'
 apply plugin: 'idea'
 apply plugin: 'eclipse'
 
-// Extra tools from battlecode.
-apply plugin: 'battlecode'
+// Extra tools from battlecode (plugin not available, tasks defined below)
 
 // Tell gradle that we want Java 8.
 sourceCompatibility = 1.8
@@ -40,13 +39,11 @@ sourceSets {
 }
 
 repositories {
-    // Let Gradle know about our own repository for hosting Battlecode.
-    maven {
-        url "http://battlecode-maven.s3-website-us-east-1.amazonaws.com/"
-    }
+    // Use local Maven repository for the battlecode server
+    mavenLocal()
 
-    // Use the JCenter repo to resolve Scala dependencies.
-    jcenter()
+    // Use Maven Central for other dependencies
+    mavenCentral()
 }
 
 // Mark the client as a special dependency, so that we can handle it separately.
@@ -65,8 +62,8 @@ dependencies {
     // The Battlecode engine.
     compile group: 'org.battlecode', name: 'battlecode', version: versions.battlecode
 
-    // The Battlecode client.
-    client group: 'org.battlecode', name: clientName, version: versions.battlecode
+    // The Battlecode client (not available from Maven, use local build)
+    // client group: 'org.battlecode', name: clientName, version: versions.battlecode
 
     compile "org.jetbrains.kotlin:kotlin-stdlib:$versions.kotlin"
 
@@ -123,7 +120,7 @@ task unpackClient(type: Copy, dependsOn: configurations.client) {
 }
 
 build.group = 'battlecode'
-build.dependsOn('unpackClient')
+// build.dependsOn('unpackClient')  // Client not available from Maven
 
 // Another task. This one accepts three optional parameters, or "properties",
 // corresponding to the bots used by the two teams, and the map(s) used in this
@@ -219,20 +216,18 @@ configurations.all {
 // We need to download the battlecode plugin before we can run the build script; this does that.
 buildscript {
     ext.versions = [
-        battlecode: '2017.+',
+        battlecode: '2017.1.0.0',
         kotlin: '1.0.6',
         scala: '2.11.7'
     ]
 
     repositories {
-        maven {
-            url "http://battlecode-maven.s3-website-us-east-1.amazonaws.com/"
-        }
-        jcenter()
+        mavenLocal()
+        mavenCentral()
     }
     dependencies {
         // Load the battlecode plugin onto the classpath.
-        classpath group: 'org.battlecode', name: 'battlecode-gradle-plugin', version: versions.battlecode
+        // Note: We're not using the gradle plugin since it's not available
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$versions.kotlin"
     }
     configurations.all {

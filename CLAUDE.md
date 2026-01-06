@@ -1,0 +1,1 @@
+This is the 2017 version of MITs Battlecode Scaffold Repo.
