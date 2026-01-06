@@ -1,37 +1,49 @@
-// This is the build file we use to compile and run Battlecode players.
-// We're using Gradle: https://gradle.org/
+// Battlecode 2017 - Unified Build
+// This build file compiles the game engine, players, and can run matches
 
-// Gradle's plugins allow it to automatically generate build scripts
-// for different types of code. Here we apply the Java plugin, which provides
-// all the tools needed to build player code!
+buildscript {
+    ext.versions = [
+        kotlin: '1.0.6',
+        scala: '2.11.7'
+    ]
+
+    repositories {
+        mavenLocal()
+        mavenCentral()
+    }
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$versions.kotlin"
+    }
+}
+
 apply plugin: 'java'
-
-// The Kotlin plugin allows us to compile Kotlin, source files
 apply plugin: 'kotlin'
-
-// The Scala plugin expands upon the Java plugin, allowing us to compile
-// Scala source files.
 apply plugin: 'scala'
-
-// These plugins allow for this build script to be compatible with IDEs.
 apply plugin: 'idea'
 apply plugin: 'eclipse'
 
-// Extra tools from battlecode (plugin not available, tasks defined below)
-
-// Tell gradle that we want Java 8.
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
-// We override Gradle's defaults for project directory layout.
+// Engine source set (the game server)
 sourceSets {
+    engine {
+        java.srcDirs = ["engine"]
+        resources.srcDirs = ["engine"]
+        output.classesDir = "$buildDir/engine-classes"
+        output.resourcesDir = "$buildDir/engine-classes"
+    }
+
+    // Player source set
     main {
+        java.srcDirs = ["src"]
         scala.srcDirs = ["src"]
         kotlin.srcDirs = ["src"]
         output.classesDir = "$buildDir/classes"
     }
 
     test {
+        java.srcDirs = ["test"]
         scala.srcDirs = ["test"]
         kotlin.srcDirs = ["test"]
         output.classesDir = "$buildDir/tests"
@@ -39,59 +51,49 @@ sourceSets {
 }
 
 repositories {
-    // Use local Maven repository for the battlecode server
     mavenLocal()
-
-    // Use Maven Central for other dependencies
     mavenCentral()
 }
 
-// Mark the client as a special dependency, so that we can handle it separately.
-configurations {
-    client
-}
-
-// Download a different version of the client depending on the local OS.
-def os = System.getProperty("os.name").toLowerCase()
-def clientName = os.startsWith('windows') ? 'battlecode-client-win' :
-                 os.startsWith('mac') ? 'battlecode-client-mac' :
-                 'battlecode-client-linux'
-
-// The dependencies of this project.
 dependencies {
-    // The Battlecode engine.
-    compile group: 'org.battlecode', name: 'battlecode', version: versions.battlecode
+    // Engine dependencies
+    engineCompile (
+        [group: 'org.slf4j', name: 'slf4j-api', version: '1.7.21'],
+        [group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.21'],
+        [group: 'org.apache.commons', name: 'commons-lang3', version: '3.4'],
+        [group: 'commons-cli', name: 'commons-cli', version: '1.3.1'],
+        [group: 'commons-io', name: 'commons-io', version: '2.4'],
+        [group: 'org.ow2.asm', name: 'asm', version: '5.0.4'],
+        [group: 'org.ow2.asm', name: 'asm-tree', version: '5.0.4'],
+        [group: 'com.github.davidmoten', name: 'flatbuffers-java', version: '1.4.0.1'],
+        [group: 'org.java-websocket', name: 'Java-WebSocket', version: '1.3.0'],
+        [group: 'org.hibernate', name: 'hibernate-search', version: '3.1.0.GA'],
+        [group: 'net.sf.jsi', name: 'jsi', version: '1.1.0-SNAPSHOT'],
+        [group: 'net.sf.trove4j', name: 'trove4j', version: '3.0.3'],
+        [group: 'org.jetbrains.kotlin', name: 'kotlin-stdlib', version: versions.kotlin]
+    )
 
-    // The Battlecode client (not available from Maven, use local build)
-    // client group: 'org.battlecode', name: clientName, version: versions.battlecode
+    // Javadoc manipulation (for engine)
+    engineCompile files(System.getenv('JAVA_HOME') + '/lib/tools.jar')
 
+    // Player dependencies - depend on the engine
+    compile sourceSets.engine.output
+    compile sourceSets.engine.compileClasspath
     compile "org.jetbrains.kotlin:kotlin-stdlib:$versions.kotlin"
-
-    // Scala!
     compile group: 'org.scala-lang', name: 'scala-library', version: versions.scala
     compile group: 'org.scala-lang', name: 'scala-compiler', version: versions.scala
     compile group: 'org.scala-lang', name: 'scala-reflect', version: versions.scala
+
+    // Test dependencies
+    testCompile sourceSets.main.output
+    testCompile 'junit:junit:4.12'
 }
 
-// Eclipse specific setup to enable docs and sources, and configure layout.
-eclipse {
-    classpath {
-        downloadJavadoc = true
-        downloadSources = true
+// Build the engine first
+compileJava.dependsOn compileEngineJava
+compileKotlin.dependsOn compileEngineKotlin
 
-        defaultOutputDir = new File(project.buildDir, 'classes-eclipse')
-    }
-}
-
-// IntelliJ settings.
-idea {
-    module {
-        downloadSources = true
-        downloadJavadoc = true
-    }
-}
-
-// Default configuration for running matches.
+// Default configuration for running matches
 if (!project.hasProperty("teamA")) {
     ext.teamA = "examplefuncsplayer"
 }
@@ -102,41 +104,13 @@ if (!project.hasProperty("maps")) {
     ext.maps = "shrine"
 }
 
-// Here we define a task. Tasks like this one, 'unpackClient', can be
-// executed in the terminal with `./gradlew unpackClient` in Unix or
-// `gradlew unpackClient` in Windows.
-task unpackClient(type: Copy, dependsOn: configurations.client) {
-    description 'Downloads the client.'
-    group 'battlecode'
-
-    dependsOn configurations.client
-
-    from {
-        configurations.client.collect {
-            zipTree(it)
-        }
-    }
-    into 'client/'
-}
-
-build.group = 'battlecode'
-// build.dependsOn('unpackClient')  // Client not available from Maven
-
-// Another task. This one accepts three optional parameters, or "properties",
-// corresponding to the bots used by the two teams, and the map(s) used in this
-// game. These properties can be set in the command line with:
-// On windows:
-//   `gradlew -PteamA=<team A bot> -PteamB=<team B bot> -Pmaps=<comma
-//   separated list of maps>`
-// On OS X and Linux:
-//   `./gradlew -PteamA=<team A bot> -PteamB=<team B bot> -Pmaps=<comma
-//   separated list of maps>`
+// Task to run a headless match
 task run(type: JavaExec, dependsOn: 'build') {
     description 'Runs a match without starting the client.'
     group 'battlecode'
 
     main = 'battlecode.server.Main'
-    classpath = sourceSets.main.runtimeClasspath
+    classpath = sourceSets.main.runtimeClasspath + sourceSets.engine.runtimeClasspath
     args = ['-c=-']
     jvmArgs = [
         '-Dbc.server.mode=headless',
@@ -152,8 +126,30 @@ task run(type: JavaExec, dependsOn: 'build') {
     ]
 }
 
-// This task prints out all available players, in the format that the `run`
-// task expects them to be given as.
+// Task to run match with debug support
+task runDebug(type: JavaExec, dependsOn: 'build') {
+    description 'Runs a match with debug support on port 5005.'
+    group 'battlecode'
+
+    main = 'battlecode.server.Main'
+    classpath = sourceSets.main.runtimeClasspath + sourceSets.engine.runtimeClasspath
+    args = ['-c=-']
+    jvmArgs = [
+        '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005',
+        '-Dbc.server.mode=headless',
+        '-Dbc.server.map-path=maps',
+        '-Dbc.server.debug=true',
+        '-Dbc.engine.debug-methods=true',
+        '-Dbc.game.team-a='+project.property('teamA'),
+        '-Dbc.game.team-b='+project.property('teamB'),
+        '-Dbc.game.team-a.url='+sourceSets.main.output.classesDir,
+        '-Dbc.game.team-b.url='+sourceSets.main.output.classesDir,
+        '-Dbc.game.maps='+project.property('maps'),
+        '-Dbc.server.save-file=' + 'matches/' + project.property('teamA') + '-vs-' + project.property('teamB') + '-on-' + project.property('maps') + '.bc17'
+    ]
+}
+
+// List all available players
 task listPlayers {
     description 'Lists all available players.'
     group 'battlecode'
@@ -172,66 +168,83 @@ task listPlayers {
     }
 }
 
-// This task prints out all available maps, in the format that the `run` task
-// expects them to be given as.
+// List all available maps
 task listMaps {
     description 'Lists all available maps.'
     group 'battlecode'
 
     doLast {
-        sourceSets.main.compileClasspath.each {
-            if (it.toString().contains('battlecode-2017')) {
-                FileCollection fc = zipTree(it)
-                fc += fileTree(new File(project.projectDir, 'maps'))
-                fc.each {
-                    String fn = it.getName()
-                    if (fn.endsWith('.map17')) {
-                        println 'MAP: '+fn.substring(0, fn.indexOf('.map17'))
+        sourceSets.engine.runtimeClasspath.each {
+            if (it.isDirectory()) {
+                fileTree(it).each { f ->
+                    if (f.getName().endsWith('.map17')) {
+                        println 'MAP: '+f.getName().replace('.map17', '')
                     }
                 }
+            } else if (it.getName().endsWith('.jar')) {
+                zipTree(it).each { f ->
+                    if (f.getName().endsWith('.map17')) {
+                        println 'MAP: '+f.getName().replace('.map17', '')
+                    }
+                }
+            }
+        }
+        // Also check local maps folder
+        fileTree('maps').each { f ->
+            if (f.getName().endsWith('.map17')) {
+                println 'MAP: '+f.getName().replace('.map17', '')
             }
         }
     }
 }
 
-// This task prepares player code for upload, assembling it into a Java archive.
-// This archive can be uploaded at `www.battlecode.org`.
+// Client tasks
+task clientInstall(type: Exec) {
+    description 'Installs client dependencies (npm install).'
+    group 'battlecode'
+    workingDir 'client'
+    commandLine 'npm', 'install'
+}
+
+task clientBuild(type: Exec, dependsOn: 'clientInstall') {
+    description 'Builds the client.'
+    group 'battlecode'
+    workingDir 'client'
+    commandLine 'npm', 'run', 'build'
+}
+
+task clientWatch(type: Exec) {
+    description 'Starts the client dev server at http://localhost:8080'
+    group 'battlecode'
+    workingDir 'client'
+    commandLine 'npm', 'run', 'watch'
+}
+
+// Prepare upload jar
 task jarForUpload(type: Jar) {
-    description 'Assembles source code into an archive, ready to be uploaded to the Battlecode site.'
+    description 'Assembles source code into an archive for upload to battlecode.org'
     group 'battlecode'
 
-    from sourceSets.main.scala.srcDirs
+    from sourceSets.main.allSource
     destinationDir = project.projectDir
     archiveName = 'battlecode-player-upload.jar'
 }
 
-// Battlecode updates a lot.
-// We should make sure to check for new dependencies frequently.
-configurations.all {
-    // Check for updates every build.
-    resolutionStrategy.cacheDynamicVersionsFor 60, 'seconds'
-}
-
-
-// We need to download the battlecode plugin before we can run the build script; this does that.
-buildscript {
-    ext.versions = [
-        battlecode: '2017.1.0.0',
-        kotlin: '1.0.6',
-        scala: '2.11.7'
-    ]
-
-    repositories {
-        mavenLocal()
-        mavenCentral()
-    }
-    dependencies {
-        // Load the battlecode plugin onto the classpath.
-        // Note: We're not using the gradle plugin since it's not available
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$versions.kotlin"
-    }
-    configurations.all {
-        // Check for updates every build.
-        resolutionStrategy.cacheDynamicVersionsFor 60, 'seconds'
+// Eclipse settings
+eclipse {
+    classpath {
+        downloadJavadoc = true
+        downloadSources = true
+        defaultOutputDir = new File(project.buildDir, 'classes-eclipse')
     }
 }
+
+// IntelliJ settings
+idea {
+    module {
+        downloadSources = true
+        downloadJavadoc = true
+    }
+}
+
+build.group = 'battlecode'

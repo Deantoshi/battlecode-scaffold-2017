@@ -1,28 +1,38 @@
-/matches
-/deploy/lib
-/deploy/bin
-*.rms
-*.bc17
+# Build outputs
 /build/
 /bin/
+/matches/
+/deploy/lib
+/deploy/bin
+
+# Match files
+*.bc17
+*.rms
+
+# Client build artifacts
+/client/node_modules/
+/client/bc17/
+/client/out/
+
+# Config files
 *.conf
-.DS_Store
 *.log
+
+# OS files
+.DS_Store
 *.swp
 *.pyc
+
+# Gradle
 .gradle
-/client/
 *.jar
+
+# IDE files
 *.iml
 *.ipr
 *.iws
 /.idea/
-
-
-# User-specific stuff:
 battlecode-scaffold.iws
-
-# Eclipse user-specific files
 .classpath
 .project
 .settings/
