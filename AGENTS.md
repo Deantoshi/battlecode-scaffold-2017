@@ -1,4 +1,4 @@
-This is the 2017 version of MITs Battlecode Scaffold Repo. You are on a M1 macbook pro. The game uses Java 8. You are in VScode.
+This is the 2017 version of MITs Battlecode Scaffold Repo. You are on a M1 macbook pro.T The game uses Java 8. You are in VScode.
 
 ## Project Structure
 
@@ -48,3 +48,4 @@ battlecode-scaffold-2017/
 1. Create folder: `src/mybot/`
 2. Add `RobotPlayer.java` with `public static void run(RobotController rc)`
 3. Run: `./gradlew run -PteamA=mybot -PteamB=examplefuncsplayer -Pmaps=shrine`
+
