@@ -332,7 +332,7 @@ public strictfp class ObjectInfo {
         ArrayList<InternalTree> returnTrees = new ArrayList<InternalTree>();
 
         treeIndex.nearestN(
-                new Point(center.x,center.y),   // Search from center
+                new Point((int)center.x,(int)center.y),   // Search from center
                 new TIntProcedure() {          // Add each to a list
                     public boolean execute(int i) {
                         InternalTree potentialTree = getTreeByID(i);
@@ -355,7 +355,7 @@ public strictfp class ObjectInfo {
         ArrayList<InternalRobot> returnRobots = new ArrayList<InternalRobot>();
 
         robotIndex.nearestN(
-                new Point(center.x,center.y),   // Search from center
+                new Point((int)center.x,(int)center.y),   // Search from center
                 new TIntProcedure() {           // Add each to a list
                     public boolean execute(int i) {
                         InternalRobot potentialRobot = getRobotByID(i);
@@ -377,7 +377,7 @@ public strictfp class ObjectInfo {
 
         // Add each to a list
         bulletIndex.nearestN(
-                new Point(center.x,center.y),   // Search from center
+                new Point((int)center.x,(int)center.y),   // Search from center
                 i -> {
                     returnBullets.add(getBulletByID(i));
                     return true;
@@ -395,7 +395,7 @@ public strictfp class ObjectInfo {
         ArrayList<InternalTree> returnTrees = new ArrayList<InternalTree>();
 
         treeIndex.nearestN(
-                new Point(loc.x,loc.y),
+                new Point((int)loc.x,(int)loc.y),
                 i -> {
                     InternalTree potentialTree = getTreeByID(i);
                     if (potentialTree.getLocation().isWithinDistance(loc,potentialTree.getRadius())) {
@@ -420,7 +420,7 @@ public strictfp class ObjectInfo {
         ArrayList<InternalRobot> returnRobots = new ArrayList<InternalRobot>();
 
         robotIndex.nearestN(
-                new Point(loc.x,loc.y),
+                new Point((int)loc.x,(int)loc.y),
                 new TIntProcedure() {
                     public boolean execute(int i) {
                         InternalRobot potentialRobot = getRobotByID(i);
@@ -471,15 +471,15 @@ public strictfp class ObjectInfo {
     }
 
     private Rectangle fromPoint(float x, float y) {
-        return new Rectangle(x,y,x,y);
+        return new Rectangle((int)x,(int)y,(int)x,(int)y);
     }
 
     private Rectangle fromPoint(Point p) {
-        return new Rectangle(p.x,p.y,p.x,p.y);
+        return new Rectangle((int)p.x,(int)p.y,(int)p.x,(int)p.y);
     }
 
     private Rectangle fromPoint(MapLocation loc) {
-        return new Rectangle(loc.x,loc.y,loc.x,loc.y);
+        return new Rectangle((int)loc.x,(int)loc.y,(int)loc.x,(int)loc.y);
     }
 
     // ****************************
