@@ -249,3 +249,102 @@ idea {
 }
 
 build.group = 'battlecode'
+
+// Match summary generation
+// Creates summaries/ directory if it doesn't exist
+task createSummariesDir {
+    doLast {
+        file('summaries').mkdirs()
+    }
+}
+
+// Generate summary for a specific match file
+task summarize(type: Exec, dependsOn: 'createSummariesDir') {
+    description 'Generates an LLM-friendly summary of a match file.'
+    group 'battlecode'
+
+    def matchFile = project.hasProperty('matchFile') ? project.property('matchFile') : null
+    def outputFile = project.hasProperty('outputFile') ? project.property('outputFile') : null
+
+    doFirst {
+        if (!matchFile) {
+            throw new GradleException('Please specify -PmatchFile=path/to/match.bc17')
+        }
+
+        def timestamp = new Date().format('yyyyMMdd_HHmmss')
+        def baseName = new File(matchFile).name.replace('.bc17', '')
+        def summaryFile = outputFile ?: "summaries/summary_${baseName}_${timestamp}.md"
+
+        commandLine 'python3', 'scripts/bc17_summary.py', matchFile, summaryFile
+    }
+
+    // Fallback if doFirst doesn't set commandLine properly
+    commandLine 'python3', '--version'
+}
+
+// Combined task: run match and generate summary
+task runWithSummary(dependsOn: 'createSummariesDir') {
+    description 'Runs a match and generates an LLM-friendly summary.'
+    group 'battlecode'
+
+    doLast {
+        // Build the match file path
+        def matchFile = 'matches/' + project.property('teamA') + '-vs-' + project.property('teamB') + '-on-' + project.property('maps') + '.bc17'
+        def timestamp = new Date().format('yyyyMMdd_HHmmss')
+        def baseName = project.property('teamA') + '-vs-' + project.property('teamB') + '-on-' + project.property('maps')
+        def summaryFile = "summaries/summary_${baseName}_${timestamp}.md"
+
+        // Run the match
+        javaexec {
+            main = 'battlecode.server.Main'
+            classpath = sourceSets.main.runtimeClasspath + sourceSets.engine.runtimeClasspath
+            args = ['-c=-']
+            jvmArgs = [
+                '-Dbc.server.mode=headless',
+                '-Dbc.server.map-path=maps',
+                '-Dbc.server.debug=true',
+                '-Dbc.engine.debug-methods=true',
+                '-Dbc.game.team-a='+project.property('teamA'),
+                '-Dbc.game.team-b='+project.property('teamB'),
+                '-Dbc.game.team-a.url='+sourceSets.main.output.classesDir,
+                '-Dbc.game.team-b.url='+sourceSets.main.output.classesDir,
+                '-Dbc.game.maps='+project.property('maps'),
+                '-Dbc.server.wait-for-client=false',
+                '-Dbc.server.save-file=' + matchFile
+            ]
+        }
+
+        // Generate summary
+        exec {
+            commandLine 'python3', 'scripts/bc17_summary.py', matchFile, summaryFile
+        }
+
+        println "\n=========================================="
+        println "Match complete!"
+        println "Replay file: ${matchFile}"
+        println "Summary file: ${summaryFile}"
+        println "==========================================\n"
+    }
+}
+runWithSummary.dependsOn build
+
+// Generate summaries for all existing match files
+task summarizeAll(dependsOn: 'createSummariesDir') {
+    description 'Generates summaries for all match files in matches/ directory.'
+    group 'battlecode'
+
+    doLast {
+        def timestamp = new Date().format('yyyyMMdd_HHmmss')
+        fileTree('matches').each { matchFile ->
+            if (matchFile.name.endsWith('.bc17')) {
+                def baseName = matchFile.name.replace('.bc17', '')
+                def summaryFile = "summaries/summary_${baseName}_${timestamp}.md"
+
+                exec {
+                    commandLine 'python3', 'scripts/bc17_summary.py', matchFile.absolutePath, summaryFile
+                }
+                println "Generated: ${summaryFile}"
+            }
+        }
+    }
+}
