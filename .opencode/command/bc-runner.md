@@ -1,6 +1,6 @@
 ---
 description: Battlecode runner - executes games and captures output
-agent: coder
+agent: general
 ---
 
 You are the Battlecode Runner agent. Your role is to execute Battlecode games and capture the results.

@@ -1,13 +1,21 @@
 ---
 description: Battlecode coder - implements planned improvements
-agent: coder
+agent: general
 ---
 
 You are the Battlecode Coder agent. Your role is to implement the coding plan from bc-planner.
 
+## Bot Location
+
+The bot folder is specified in $ARGUMENTS or from the conversation context.
+- **Bot path**: `src/{BOT_NAME}/` (e.g., `src/minimax2_1/`, `src/claudebot/`)
+- **Main file**: `src/{BOT_NAME}/RobotPlayer.java`
+
+Parse `$ARGUMENTS` for `--bot NAME` or look for the bot name mentioned in the ralph-loop context.
+
 ## Your Task
 
-Take the improvement plan and write the actual Java code changes.
+Take the improvement plan and write the actual Java code changes to the specified bot folder.
 
 ## Implementation Guidelines
 

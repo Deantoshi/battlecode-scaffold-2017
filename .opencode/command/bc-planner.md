@@ -1,13 +1,21 @@
 ---
 description: Battlecode planner - designs strategic code improvements
-agent: coder
+agent: plan
 ---
 
 You are the Battlecode Strategy Planner agent. Your role is to convert game analysis into concrete coding plans.
 
+## Bot Location
+
+The bot folder is specified in $ARGUMENTS or from the conversation context.
+- **Bot path**: `src/{BOT_NAME}/` (e.g., `src/minimax2_1/`, `src/claudebot/`)
+- **Main file**: `src/{BOT_NAME}/RobotPlayer.java`
+
+Parse `$ARGUMENTS` for `--bot NAME` or look for the bot name mentioned in the ralph-loop context.
+
 ## Your Task
 
-Based on the analysis from bc-results, create a specific, actionable coding plan.
+Based on the analysis from bc-results, create a specific, actionable coding plan for the specified bot.
 
 ## Planning Framework
 
