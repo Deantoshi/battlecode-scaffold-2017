@@ -57,6 +57,9 @@ UNIT_COSTS = {
 # Combat unit types (excludes trees)
 COMBAT_UNITS = {'ARCHON', 'GARDENER', 'LUMBERJACK', 'SOLDIER', 'TANK', 'SCOUT'}
 
+# Units to show in snapshots (combat units + bullet trees)
+SNAPSHOT_UNITS = {'ARCHON', 'GARDENER', 'LUMBERJACK', 'SOLDIER', 'TANK', 'SCOUT', 'TREE_BULLET'}
+
 
 class FlatBufferReader:
     """FlatBuffer reader for .bc17 files with proper table/vector parsing."""
@@ -159,7 +162,8 @@ class RoundData:
         self.team_bullets = [0.0, 0.0]  # Team A (index 0), Team B (index 1)
         self.team_victory_points = [0, 0]
         self.spawned_units = {0: defaultdict(int), 1: defaultdict(int)}  # team -> {type: count}
-        self.deaths = {0: 0, 1: 0}  # team -> count
+        self.spawned_robot_info = []  # List of (robot_id, team, type) tuples
+        self.died_ids = []  # List of robot IDs that died this round
         self.logs = ""
 
 
@@ -179,6 +183,9 @@ class GameSnapshot:
         self.team_b_bullets_spent = 0.0
         self.team_a_bullets_earned = 0.0
         self.team_b_bullets_earned = 0.0
+        # Cumulative units alive at this snapshot
+        self.team_a_units_alive = defaultdict(int)
+        self.team_b_units_alive = defaultdict(int)
 
 
 class BC17Parser:
@@ -228,6 +235,11 @@ class BC17Parser:
             prev_bullets = [0.0, 0.0]
             current_snapshot = GameSnapshot(0)
 
+            # Track robot ownership: robot_id -> (team_idx, body_type)
+            robot_registry = {}
+            # Track cumulative units alive: {team_idx: {body_type: count}}
+            units_alive = {0: defaultdict(int), 1: defaultdict(int)}
+
             for i in range(num_events):
                 # Each event is an offset to EventWrapper table
                 event_ptr = events_start + i * 4
@@ -254,6 +266,20 @@ class BC17Parser:
                     if round_data and round_data.round_id > 0:
                         self.rounds.append(round_data)
 
+                        # Register new robots and update units alive
+                        for robot_id, team_idx, body_type in round_data.spawned_robot_info:
+                            robot_registry[robot_id] = (team_idx, body_type)
+                            units_alive[team_idx][body_type] += 1
+
+                        # Process deaths
+                        deaths_by_team = {0: 0, 1: 0}
+                        for robot_id in round_data.died_ids:
+                            if robot_id in robot_registry:
+                                team_idx, body_type = robot_registry[robot_id]
+                                units_alive[team_idx][body_type] = max(0, units_alive[team_idx][body_type] - 1)
+                                deaths_by_team[team_idx] += 1
+                                del robot_registry[robot_id]
+
                         # Calculate bullets earned this round
                         bullets_earned_a = max(0, round_data.team_bullets[0] - prev_bullets[0])
                         bullets_earned_b = max(0, round_data.team_bullets[1] - prev_bullets[1])
@@ -277,8 +303,8 @@ class BC17Parser:
                         current_snapshot.team_b_bullets_earned += bullets_earned_b
                         current_snapshot.team_a_bullets_spent += spent_a
                         current_snapshot.team_b_bullets_spent += spent_b
-                        current_snapshot.team_a_units_lost += round_data.deaths[0]
-                        current_snapshot.team_b_units_lost += round_data.deaths[1]
+                        current_snapshot.team_a_units_lost += deaths_by_team[0]
+                        current_snapshot.team_b_units_lost += deaths_by_team[1]
 
                         for unit_type, count in round_data.spawned_units[0].items():
                             type_name = BODY_TYPES.get(unit_type, f'UNKNOWN_{unit_type}')
@@ -290,9 +316,16 @@ class BC17Parser:
 
                         prev_bullets = round_data.team_bullets[:]
 
-                        # Save snapshot every 100 rounds
-                        if round_data.round_id % 100 == 0:
+                        # Save snapshot every 200 rounds
+                        if round_data.round_id % 200 == 0:
                             current_snapshot.round = round_data.round_id
+                            # Copy current units alive to snapshot
+                            for body_type, count in units_alive[0].items():
+                                type_name = BODY_TYPES.get(body_type, f'UNKNOWN_{body_type}')
+                                current_snapshot.team_a_units_alive[type_name] = count
+                            for body_type, count in units_alive[1].items():
+                                type_name = BODY_TYPES.get(body_type, f'UNKNOWN_{body_type}')
+                                current_snapshot.team_b_units_alive[type_name] = count
                             self.snapshots.append(current_snapshot)
                             current_snapshot = GameSnapshot(round_data.round_id)
 
@@ -303,6 +336,13 @@ class BC17Parser:
             # Save final snapshot if we have remaining data
             if self.rounds and current_snapshot.round != self.rounds[-1].round_id:
                 current_snapshot.round = self.rounds[-1].round_id
+                # Copy final units alive to snapshot
+                for body_type, count in units_alive[0].items():
+                    type_name = BODY_TYPES.get(body_type, f'UNKNOWN_{body_type}')
+                    current_snapshot.team_a_units_alive[type_name] = count
+                for body_type, count in units_alive[1].items():
+                    type_name = BODY_TYPES.get(body_type, f'UNKNOWN_{body_type}')
+                    current_snapshot.team_b_units_alive[type_name] = count
                 self.snapshots.append(current_snapshot)
 
             return True
@@ -357,11 +397,13 @@ class BC17Parser:
                 self.parse_spawned_bodies(spawned_table, round_data)
 
             # Get diedIDs (field 9) - vector of ints (robot IDs that died)
-            # Note: We can't easily determine which team they belonged to without tracking
             died_offset = self.reader.get_field_offset(table_pos, 9)
             if died_offset > 0:
                 num_died = self.reader.get_vector_length(died_offset)
-                # For now, we'll track total deaths and estimate team distribution later
+                died_start = self.reader.get_vector_start(died_offset)
+                for i in range(num_died):
+                    robot_id = self.reader.read_int32(died_start + i * 4)
+                    round_data.died_ids.append(robot_id)
 
             return round_data
 
@@ -380,6 +422,7 @@ class BC17Parser:
             # 2: types (vector of byte - BodyType)
             # 3: locs (VecTable)
 
+            robot_ids_offset = self.reader.get_field_offset(table_pos, 0)
             team_ids_offset = self.reader.get_field_offset(table_pos, 1)
             types_offset = self.reader.get_field_offset(table_pos, 2)
 
@@ -390,14 +433,27 @@ class BC17Parser:
             teams_start = self.reader.get_vector_start(team_ids_offset)
             types_start = self.reader.get_vector_start(types_offset)
 
+            # Get robot IDs if available
+            robot_ids_start = 0
+            if robot_ids_offset > 0:
+                robot_ids_start = self.reader.get_vector_start(robot_ids_offset)
+
             for i in range(num_bodies):
                 team_id = self.reader.read_byte(teams_start + i)
                 body_type = self.reader.read_byte(types_start + i)
+
+                # Get robot ID if available
+                robot_id = 0
+                if robot_ids_start > 0:
+                    robot_id = self.reader.read_int32(robot_ids_start + i * 4)
 
                 # team_id: 1 = Team A, 2 = Team B (convert to 0-indexed)
                 team_idx = team_id - 1 if team_id in (1, 2) else -1
                 if team_idx >= 0:
                     round_data.spawned_units[team_idx][body_type] += 1
+                    # Store robot info for death tracking
+                    if robot_id > 0:
+                        round_data.spawned_robot_info.append((robot_id, team_idx, body_type))
 
         except Exception:
             pass
@@ -600,18 +656,34 @@ class MatchSummarizer:
         lines.append(f"| Bullets Spent (period) | {snapshot.team_a_bullets_spent:.1f} | {snapshot.team_b_bullets_spent:.1f} |")
         lines.append(f"| Units Lost (period) | {snapshot.team_a_units_lost} | {snapshot.team_b_units_lost} |")
 
-        # Units produced this period
-        all_unit_types = set(snapshot.team_a_units_produced.keys()) | set(snapshot.team_b_units_produced.keys())
-        combat_types = [t for t in all_unit_types if t in COMBAT_UNITS]
+        # Units alive at this snapshot
+        all_alive_types = set(snapshot.team_a_units_alive.keys()) | set(snapshot.team_b_units_alive.keys())
+        alive_display_types = [t for t in all_alive_types if t in SNAPSHOT_UNITS]
 
-        if combat_types:
+        if alive_display_types:
+            lines.append("")
+            lines.append("**Units Alive (total):**")
+            for unit_type in sorted(alive_display_types):
+                a_count = snapshot.team_a_units_alive.get(unit_type, 0)
+                b_count = snapshot.team_b_units_alive.get(unit_type, 0)
+                if a_count > 0 or b_count > 0:
+                    display_name = "TREE" if unit_type == "TREE_BULLET" else unit_type
+                    lines.append(f"- {display_name}: A={a_count}, B={b_count}")
+
+        # Units produced this period (including trees)
+        all_unit_types = set(snapshot.team_a_units_produced.keys()) | set(snapshot.team_b_units_produced.keys())
+        display_types = [t for t in all_unit_types if t in SNAPSHOT_UNITS]
+
+        if display_types:
             lines.append("")
             lines.append("**Units Produced (period):**")
-            for unit_type in sorted(combat_types):
+            for unit_type in sorted(display_types):
                 a_count = snapshot.team_a_units_produced.get(unit_type, 0)
                 b_count = snapshot.team_b_units_produced.get(unit_type, 0)
                 if a_count > 0 or b_count > 0:
-                    lines.append(f"- {unit_type}: A={a_count}, B={b_count}")
+                    # Display friendly name for trees
+                    display_name = "TREE" if unit_type == "TREE_BULLET" else unit_type
+                    lines.append(f"- {display_name}: A={a_count}, B={b_count}")
 
         lines.append("")
         return lines
@@ -649,9 +721,9 @@ class MatchSummarizer:
         lines.append(f"- **Total log entries**: {len(self.logs)}")
         lines.append("")
 
-        # Game Timeline Snapshots (every 100 rounds)
+        # Game Timeline Snapshots (every 200 rounds)
         if self.snapshots:
-            lines.append("## Game Timeline (Snapshots every 100 rounds)")
+            lines.append("## Game Timeline (Snapshots every 200 rounds)")
             lines.append("")
             lines.append("Each snapshot shows the cumulative state and what happened in the preceding period.")
             lines.append("")
@@ -702,29 +774,6 @@ class MatchSummarizer:
                 lines.append(f"- Team {log['team']} {log['type']}: {log['message']}{count_str}")
             lines.append("")
 
-        # Spawn messages
-        if categorized['spawn']:
-            deduped = self.deduplicate_logs(categorized['spawn'])
-            lines.append("## Unit Spawn Logs")
-            lines.append("")
-            for log in deduped[:self.MAX_LOGS_PER_TYPE]:
-                count_str = f" (x{log['count']})" if log.get('count', 1) > 1 else ""
-                lines.append(f"- Team {log['team']} {log['type']}: {log['message']}{count_str}")
-            lines.append("")
-
-        # Raw logs sample
-        if include_raw_logs and self.logs:
-            sample_size = min(self.MAX_RAW_LOGS, len(self.logs))
-            lines.append(f"## Raw Log Sample (First {sample_size} entries)")
-            lines.append("")
-            lines.append("```")
-            for log in self.logs[:sample_size]:
-                lines.append(f"[{log['team']}:{log['type']}#{log['id']}@{log['round']}] {log['message']}")
-            if len(self.logs) > sample_size:
-                lines.append(f"... and {len(self.logs) - sample_size} more entries")
-            lines.append("```")
-            lines.append("")
-
         # Context for LLM
         lines.append("## Context for Analysis")
         lines.append("")
@@ -735,7 +784,7 @@ class MatchSummarizer:
         lines.append("- Team A starts on the left, Team B on the right")
         lines.append("")
         lines.append("**Snapshot Interpretation:**")
-        lines.append("- 'Bullets Earned' = total income in that 100-round period")
+        lines.append("- 'Bullets Earned' = total income in that 200-round period")
         lines.append("- 'Bullets Spent' = cost of units produced in that period")
         lines.append("- Higher bullet counts indicate better economy")
         lines.append("- More units produced suggests aggressive expansion")
