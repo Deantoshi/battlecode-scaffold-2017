@@ -288,6 +288,11 @@ task runWithSummary(dependsOn: 'createSummariesDir') {
     group 'battlecode'
 
     doLast {
+        // Clean existing summaries before generating new one
+        fileTree('summaries').each { file ->
+            file.delete()
+        }
+
         // Build the match file path
         def matchFile = 'matches/' + project.property('teamA') + '-vs-' + project.property('teamB') + '-on-' + project.property('maps') + '.bc17'
         def timestamp = new Date().format('yyyyMMdd_HHmmss')
