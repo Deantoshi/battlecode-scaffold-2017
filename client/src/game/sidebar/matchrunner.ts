@@ -82,12 +82,12 @@ export default class MatchRunner {
     div.appendChild(this.divScaffold);
 
     // Show the correct div
-    if (!process.env.ELECTRON) {
-      // We're not even in electron
-      this.divNoElectron.style.display = "unset";
-    } else if (this.scaffold) {
+    if (this.scaffold) {
       // We have the scaffold!
       this.divScaffold.style.display = "unset";
+    } else if (!process.env.ELECTRON) {
+      // We're not even in electron
+      this.divNoElectron.style.display = "unset";
     } else {
       // Nope, no scaffold yet
       this.divNoScaffold.style.display = "unset";

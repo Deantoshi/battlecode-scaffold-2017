@@ -72,7 +72,7 @@ export default class Sidebar {
     this.loadStyles();
     this.div.appendChild(this.battlecodeLogo());
     this.div.appendChild(this.modeButton(Mode.GAME, "Game"));
-    this.div.appendChild(this.modeButton(Mode.QUEUE, "Queue"));
+    this.div.appendChild(this.modeButton(Mode.QUEUE, "Run Match"));
     this.div.appendChild(this.modeButton(Mode.CONSOLE, "Console"));
     this.div.appendChild(this.modeButton(Mode.MAPEDITOR, "Map Editor"));
     this.div.appendChild(this.modeButton(Mode.HELP, "Help"));
@@ -193,7 +193,7 @@ export default class Sidebar {
   /**
    * Update the inner div depending on the mode
    */
-  private setSidebar(): void {
+  public setSidebar(): void {
     // Clear the sidebar
     while (this.innerDiv.firstChild) {
       this.innerDiv.removeChild(this.innerDiv.firstChild);

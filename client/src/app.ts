@@ -91,10 +91,16 @@ export default class Client {
       this.root.appendChild(this.loadSidebar());
       this.root.appendChild(this.loadGameArea());
       this.loadScaffold();
+      if (!process.env.ELECTRON) {
+        this.conf.mode = config.Mode.QUEUE;
+        this.sidebar.setSidebar();
+      }
       this.ready();
     });
 
     this.games = [];
+    this.currentGame = null;
+    this.currentMatch = null;
 
     if (this.conf.websocketURL !== null) {
       this.listener = new WebSocketListener(
@@ -187,6 +193,10 @@ export default class Client {
       } else {
         console.log("Couldn't load scaffold: click \"Queue\" to learn more.");
       }
+    } else {
+      // Browser mode
+      this.scaffold = new ScaffoldCommunicator("browser");
+      this.sidebar.addScaffold(this.scaffold);
     }
   }
 

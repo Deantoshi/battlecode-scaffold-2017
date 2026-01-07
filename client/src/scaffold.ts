@@ -14,15 +14,16 @@ export default class ScaffoldCommunicator {
   scaffoldPath: string;
 
   constructor(scaffoldPath: string) {
-    if (!process.env.ELECTRON) throw new Error("Can't talk to scaffold in the browser!");
+    if (process.env.ELECTRON) {
+      console.log('Using scaffold at: '+scaffoldPath);
+      this.scaffoldPath = scaffoldPath;
 
-    console.log('Using scaffold at: '+scaffoldPath);
-
-    this.scaffoldPath = scaffoldPath;
-
-    // cursory check
-    if (!fs.existsSync(this.wrapperPath)) {
-      throw new Error(`Can't find gradle wrapper: ${this.wrapperPath}`);
+      // cursory check
+      if (!fs.existsSync(this.wrapperPath)) {
+        throw new Error(`Can't find gradle wrapper: ${this.wrapperPath}`);
+      }
+    } else {
+      console.log("Using browser scaffold bridge.");
     }
   }
 
@@ -42,7 +43,7 @@ export default class ScaffoldCommunicator {
    * Make a best-effort attempt to find the scaffold.
    */
   static findDefaultScaffoldPath(): string | null {
-    if (!process.env.ELECTRON) return null;
+    if (!process.env.ELECTRON) return "browser"; // Return dummy path for browser
 
     const appPath = electron.remote.app.getAppPath();
 
@@ -74,6 +75,14 @@ export default class ScaffoldCommunicator {
    * Asynchronously get a list of available players in the scaffold.
    */
   getPlayers(cb: (err: Error | null, packages?: string[]) => void) {
+    if (!process.env.ELECTRON) {
+      fetch('/api/players')
+        .then(response => response.json())
+        .then(data => cb(null, data))
+        .catch(err => cb(err));
+      return;
+    }
+
     walk(this.sourcePath, (err, files) => {
       if (err) return cb(err);
       if (!files) return cb(null, []);
@@ -98,6 +107,14 @@ export default class ScaffoldCommunicator {
    * Asynchronously get a list of map paths.
    */
   getMaps(cb: (err: Error | null, maps?: Set<string>) => void) {
+    if (!process.env.ELECTRON) {
+      fetch('/api/maps')
+        .then(response => response.json())
+        .then(data => cb(null, new Set(data)))
+        .catch(err => cb(err));
+      return;
+    }
+
     fs.stat(this.mapPath, (err, stat) => {
       if (err != null) {
         // map path doesn't exist
@@ -143,12 +160,41 @@ export default class ScaffoldCommunicator {
    */
   runMatch(teamA: string, teamB: string, maps: string[], onErr: (err: Error) => void, onExitNoError: () => void,
            onStdout: (data: string) => void, onStderr: (data: string) => void) {
+    if (!process.env.ELECTRON) {
+      const url = `/api/run?teamA=${encodeURIComponent(teamA)}&teamB=${encodeURIComponent(teamB)}&maps=${encodeURIComponent(maps.join(','))}`;
+      const evtSource = new EventSource(url);
+      
+      evtSource.addEventListener('stdout', function(e: any) {
+        onStdout(JSON.parse(e.data));
+      });
+      
+      evtSource.addEventListener('stderr', function(e: any) {
+        onStderr(JSON.parse(e.data));
+      });
+      
+      evtSource.addEventListener('exit', function(e: any) {
+        const code = JSON.parse(e.data);
+        evtSource.close();
+        if (code === 0) {
+          onExitNoError();
+        } else {
+          onErr(new Error(`Non-zero exit code: ${code}`));
+        }
+      });
+      
+      evtSource.onerror = function(e) {
+        console.error(e);
+        evtSource.close();
+        onErr(new Error("EventSource error"));
+      };
+      
+      return;
+    }
+
     const proc = child_process.spawn(
       this.wrapperPath,
       [
-        `runFromClient`,
-        `-x`,
-        `unpackClient`,
+        `run`,
         `-PteamA=${teamA}`,
         `-PteamB=${teamB}`,
         `-Pmaps=${maps.join(',')}`,
