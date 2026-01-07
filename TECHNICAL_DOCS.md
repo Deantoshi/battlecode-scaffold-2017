@@ -118,7 +118,49 @@ public strictfp class RobotPlayer {
 }
 ```
 
-## 7. Implementation Requirements for Competence
+## 7. File Structure Recommendations (Top Team Practices)
+
+Top teams almost always used multiple files for maintainability and iteration speed. A very common pattern was:
+
+### RobotPlayer.java as a Dispatcher
+```java
+public static void run(RobotController rc) {
+    switch (rc.getType()) {
+        case ARCHON:     Archon.run(rc);     break;
+        case GARDENER:   Gardener.run(rc);   break;
+        case SOLDIER:    Soldier.run(rc);    break;
+        case LUMBERJACK: Lumberjack.run(rc); break;
+        case SCOUT:      Scout.run(rc);      break;
+        case TANK:       Tank.run(rc);       break;
+    }
+}
+```
+
+### Supporting Classes
+- **Navigation/Pathfinding** - Bug navigation, obstacle avoidance
+- **Combat Micro** - Targeting, dodging, kiting logic
+- **Broadcast/Communication** - Channel encoding, message protocols
+- **Map Analysis** - Terrain evaluation, enemy tracking
+- **Utilities** - Bit packing, geometry helpers, caching, constants
+
+### Typical 2017 Project Layout
+```
+src/<yourbotpackage>/
+├── RobotPlayer.java   # Required entry point (dispatcher)
+├── Archon.java        # Archon-specific logic
+├── Gardener.java      # Gardener-specific logic
+├── Soldier.java       # Soldier-specific logic
+├── Lumberjack.java    # Lumberjack-specific logic
+├── Scout.java         # Scout-specific logic
+├── Tank.java          # Tank-specific logic
+├── Nav.java           # Navigation/pathfinding utilities
+├── Comms.java         # Broadcast communication helpers
+└── Utils.java         # Shared utility functions
+```
+
+> **Note:** While you can technically put multiple classes in one `.java` file (non-public helper classes), this is uncommon among strong teams because it slows development and makes iteration harder.
+
+## 8. Implementation Requirements for Competence
 
 1.  **Movement Engine:** Do not just `rc.move(dir)`. Implement a `tryMove(dir)` helper that checks `rc.canMove(dir)` and tries rotated angles if blocked (simple obstacle avoidance).
 2.  **Combat Micro:**
@@ -133,12 +175,12 @@ public strictfp class RobotPlayer {
     *   Pattern: Build trees in a circle around the gardener.
     *   **Watering:** Always prioritize `rc.water()` on the tree with lowest health within range.
 
-## 8. Common Pitfalls to Avoid
+## 9. Common Pitfalls to Avoid
 *   **Friendly Fire:** `rc.strike()` hits allies. `rc.fire...()` hits allies if they are in the line of fire. Check line of sight before shooting.
 *   **Bytecode Limit:** Avoid heavy loops (like pathfinding across the whole map) in a single turn.
 *   **Stuck Units:** Gardeners often trap themselves with trees. Ensure they keep a "door" open or leave space to move.
 
-## 9. Example "Smart" Move Helper
+## 10. Example "Smart" Move Helper
 ```java
 static void tryMove(Direction dir) throws GameActionException {
     if (rc.canMove(dir)) {
