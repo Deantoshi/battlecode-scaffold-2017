@@ -1,4 +1,4 @@
-This is the 2017 version of MITs Battlecode Scaffold Repo. You are on a M1 macbook pro.T The game uses Java 8. You are in VScode.
+This is the 2017 version of MITs Battlecode Scaffold Repo. You are on a Ubuntu WSL.T The game uses Java 8. You are in VScode.
 
 ## Project Structure
 

@@ -52,6 +52,7 @@ module.exports = function(env) {
           var projectRoot = path.resolve(__dirname, '..');
           var sourcePath = path.join(projectRoot, 'src');
           var mapPath = path.join(projectRoot, 'maps');
+          var matchesPath = path.join(projectRoot, 'matches');
           var isWin = /^win/.test(process.platform);
           var gradlew = isWin ? 'gradlew.bat' : './gradlew';
 
@@ -161,6 +162,55 @@ module.exports = function(env) {
             child.on('close', function(code) {
                res.write('event: exit\ndata: ' + code + '\n\n');
                res.end();
+            });
+          });
+
+          // API endpoint to list saved match files
+          app.get('/api/matches', function(req, res) {
+            fs.readdir(matchesPath, function(err, files) {
+              if (err) {
+                // If matches folder doesn't exist, return empty array
+                if (err.code === 'ENOENT') {
+                  res.json([]);
+                  return;
+                }
+                res.status(500).send(err);
+                return;
+              }
+              var matches = files
+                .filter(function(f) { return f.endsWith('.bc17'); })
+                .map(function(f) {
+                  var filePath = path.join(matchesPath, f);
+                  var stats = fs.statSync(filePath);
+                  return {
+                    name: f,
+                    size: stats.size,
+                    modified: stats.mtime
+                  };
+                })
+                .sort(function(a, b) {
+                  // Sort by modified time, newest first
+                  return new Date(b.modified) - new Date(a.modified);
+                });
+              res.json(matches);
+            });
+          });
+
+          // Serve match files directly
+          app.get('/matches/:filename', function(req, res) {
+            var filename = req.params.filename;
+            // Security: only allow .bc17 files and prevent path traversal
+            if (!filename.endsWith('.bc17') || filename.includes('..') || filename.includes('/')) {
+              res.status(400).send('Invalid filename');
+              return;
+            }
+            var filePath = path.join(matchesPath, filename);
+            fs.access(filePath, fs.constants.R_OK, function(err) {
+              if (err) {
+                res.status(404).send('Match file not found');
+                return;
+              }
+              res.sendFile(filePath);
             });
           });
         }

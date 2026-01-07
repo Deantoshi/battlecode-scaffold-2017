@@ -370,3 +370,76 @@ input[type='file'] {
     margin-top: 1em;
     width: 40px;
 }
+
+/* Match Browser Styles */
+#matchBrowser {
+    text-align: left;
+    font-size: 14px;
+    padding: 10px;
+    margin-bottom: 16px;
+    font-family: Tahoma, sans-serif;
+    background: #222;
+    border-radius: 4px;
+}
+
+.match-browser-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+
+.match-browser-header b {
+    font-size: 16px;
+    flex-shrink: 0;
+}
+
+.match-browser-status {
+    font-size: 12px;
+    color: #46ff00;
+    margin-left: auto;
+}
+
+#matchListContainer {
+    max-height: 200px;
+    overflow-y: auto;
+    padding: 0;
+    margin: 0;
+}
+
+.match-item {
+    background: #333;
+    padding: 8px 10px;
+    margin-bottom: 4px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.match-item:hover {
+    background: #444;
+}
+
+.match-item:active {
+    background: #555;
+}
+
+.match-item-name {
+    font-size: 13px;
+    color: #fff;
+    margin-bottom: 2px;
+    word-break: break-word;
+}
+
+.match-item-info {
+    font-size: 11px;
+    color: #888;
+}
+
+.match-browser-empty {
+    text-align: center;
+    color: #666;
+    padding: 20px 10px;
+    font-style: italic;
+}

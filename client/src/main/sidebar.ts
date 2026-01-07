@@ -5,6 +5,7 @@ import Stats from '../game/sidebar/stats';
 import Console from '../game/sidebar/console';
 import MatchRunner from '../game/sidebar/matchrunner';
 import MatchQueue from '../game/sidebar/matchqueue';
+import MatchBrowser from '../game/sidebar/matchbrowser';
 import MapEditor from '../mapeditor/mapeditor';
 import ScaffoldCommunicator from '../scaffold';
 
@@ -23,6 +24,7 @@ export default class Sidebar {
   readonly mapeditor: MapEditor;
   readonly matchrunner: MatchRunner;
   readonly matchqueue: MatchQueue;
+  readonly matchbrowser: MatchBrowser;
   private readonly help: HTMLDivElement;
 
   // Options
@@ -64,6 +66,7 @@ export default class Sidebar {
       })
     });
     this.matchqueue = new MatchQueue(conf, images);
+    this.matchbrowser = new MatchBrowser(conf);
     this.help = this.initializeHelp();
     this.conf = conf;
     this.onkeydownControls = onkeydownControls
@@ -246,6 +249,7 @@ export default class Sidebar {
         this.innerDiv.appendChild(this.console.div);
         break;
       case Mode.QUEUE:
+        this.innerDiv.appendChild(this.matchbrowser.div);
         this.innerDiv.appendChild(this.matchrunner.div);
         this.innerDiv.appendChild(this.matchqueue.div);
         break;
