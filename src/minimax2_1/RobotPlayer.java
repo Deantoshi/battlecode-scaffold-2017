@@ -191,7 +191,9 @@ public strictfp class RobotPlayer {
 
         if (awayFromEnemies != null) return awayFromEnemies;
 
-        return tryMoveInDirection(toCenter);
+        Direction result = tryMoveInDirection(toCenter);
+        if (result == null) return randomDirection();
+        return result;
     }
 
     static MapLocation getArchonCenter() {
@@ -254,7 +256,7 @@ public strictfp class RobotPlayer {
         if (center == null) return randomDirection();
 
         for (int i = 0; i < 8; i++) {
-            Direction dir = directions[i];
+            Direction dir = directions[i % 4];
             MapLocation spot = myLocation.add(dir);
             if (isValidGardenerSpot(spot)) {
                 return dir;
@@ -661,6 +663,7 @@ public strictfp class RobotPlayer {
     }
 
     static Direction tryMoveInDirection(Direction dir) throws GameActionException {
+        if (dir == null) return null;
         if (rc.canMove(dir)) {
             rc.move(dir);
             return dir;
