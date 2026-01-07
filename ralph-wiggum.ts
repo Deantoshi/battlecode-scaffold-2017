@@ -292,3 +292,33 @@
 // Use the `ralph_status` tool to check if there's an active Ralph loop and its current state.
 
 // Report the status to the user.
+
+// ~/.config/opencode/plugin/package.json
+// {
+//   "name": "opencode-ralph-wiggum",
+//   "version": "1.0.0",
+//   "description": "Ralph Wiggum iterative loop plugin for OpenCode",
+//   "type": "module",
+//   "dependencies": {
+//     "@opencode-ai/plugin": "^1.1.3"
+//   },
+//   "devDependencies": {
+//     "@types/node": "^25.0.3",
+//     "typescript": "^5.9.3"
+//   }
+// }
+
+// ~/.config/opencode/plugin/tsconfig.json
+// {
+//   "compilerOptions": {
+//     "target": "ES2022",
+//     "module": "ESNext",
+//     "moduleResolution": "bundler",
+//     "esModuleInterop": true,
+//     "strict": true,
+//     "skipLibCheck": true,
+//     "noEmit": true,
+//     "types": ["node"]
+//   },
+//   "include": ["*.ts"]
+// }
