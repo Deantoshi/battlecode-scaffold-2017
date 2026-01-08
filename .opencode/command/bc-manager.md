@@ -54,11 +54,14 @@ ralph_loop(
   prompt: "BATTLECODE ITERATION for bot '{BOT_NAME}'. Execute these steps IN ORDER:
 
 STEP 1 - RUN GAME:
-Run: export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64 && ./gradlew run -PteamA={BOT_NAME} -PteamB={OPPONENT} -Pmaps={MAP}
+Run: export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64 && ./gradlew runWithSummary -PteamA={BOT_NAME} -PteamB={OPPONENT} -Pmaps={MAP}
 Capture the full output.
 
 STEP 2 - ANALYZE RESULTS:
-Parse the game output for:
+First, check the summaries/ folder for the latest summary file:
+- Run: ls -t summaries/ | head -1
+- Read the latest summary file (summaries/[filename]) for detailed game context
+Then parse the game output for:
 - Winner (A or B) and which team name
 - Winning round number
 - Win reason
@@ -70,7 +73,8 @@ STEP 3 - CHECK GOALS:
 - Otherwise continue to Step 4
 
 STEP 4 - PLAN IMPROVEMENTS:
-Based on the game results, identify 1-3 specific improvements to make to src/{BOT_NAME}/RobotPlayer.java
+Review the latest summary file from summaries/ (if not already done in Step 2) for deeper game context.
+Based on both the game output AND the summary analysis, identify 1-3 specific improvements to make to src/{BOT_NAME}/RobotPlayer.java
 
 STEP 5 - IMPLEMENT CODE:
 Edit src/{BOT_NAME}/RobotPlayer.java with the planned improvements.

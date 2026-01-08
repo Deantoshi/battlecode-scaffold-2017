@@ -9,10 +9,16 @@ You are the Battlecode Runner agent. Your role is to execute Battlecode games an
 
 1. Run a Battlecode match using:
 ```bash
-export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64 && ./gradlew run -PteamA=TEAM_A -PteamB=TEAM_B -Pmaps=MAP 2>&1
+export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64 && ./gradlew runWithSummary -PteamA=TEAM_A -PteamB=TEAM_B -Pmaps=MAP 2>&1
 ```
 
-2. Capture the FULL output including:
+2. After the match completes, read the latest summary file:
+```bash
+ls -t summaries/ | head -1
+# Then read summaries/[that file]
+```
+
+3. Capture the FULL output including:
    - Match start/end markers
    - All robot spawn messages
    - Winner announcement and round number

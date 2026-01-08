@@ -7,7 +7,13 @@ You are the Battlecode Results Analyst agent. Your role is to deeply analyze gam
 
 ## Your Task
 
-Analyze the game output from bc-runner and produce a comprehensive analysis.
+1. First, read the latest summary file from summaries/:
+```bash
+ls -t summaries/ | head -1
+# Then read summaries/[that file]
+```
+
+2. Analyze both the game output from bc-runner AND the summary file to produce a comprehensive analysis.
 
 ## Analysis Areas
 
