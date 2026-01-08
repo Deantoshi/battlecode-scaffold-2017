@@ -3,6 +3,12 @@ description: Start a Ralph Wiggum loop for iterative task completion
 agent: build
 ---
 
+## CRITICAL RESTRICTION: File Access
+
+**You are ONLY allowed to create or modify files inside the `src/` folder.**
+- Allowed: `src/**/*`
+- NOT allowed: Any file outside `src/` (build.gradle, CLAUDE.md, engine/, client/, etc.)
+
 Use the `ralph_loop` tool to start an iterative loop with the following parameters:
 - prompt: $ARGUMENTS
 - max_iterations: The user may specify --max-iterations N in their arguments
