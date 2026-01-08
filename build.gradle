@@ -115,8 +115,9 @@ task run(type: JavaExec, dependsOn: 'build') {
     jvmArgs = [
         '-Dbc.server.mode=headless',
         '-Dbc.server.map-path=maps',
-        '-Dbc.server.debug=true',
-        '-Dbc.engine.debug-methods=true',
+        '-Dbc.server.debug=false',
+        '-Dbc.engine.debug-methods=false',
+        '-Dbc.server.robot-player-to-system-out=false',
         '-Dbc.game.team-a='+project.property('teamA'),
         '-Dbc.game.team-b='+project.property('teamB'),
         '-Dbc.game.team-a.url='+sourceSets.main.output.classesDir,
@@ -307,8 +308,9 @@ task runWithSummary(dependsOn: 'createSummariesDir') {
             jvmArgs = [
                 '-Dbc.server.mode=headless',
                 '-Dbc.server.map-path=maps',
-                '-Dbc.server.debug=true',
-                '-Dbc.engine.debug-methods=true',
+                '-Dbc.server.debug=false',
+                '-Dbc.engine.debug-methods=false',
+                '-Dbc.server.robot-player-to-system-out=false',
                 '-Dbc.game.team-a='+project.property('teamA'),
                 '-Dbc.game.team-b='+project.property('teamB'),
                 '-Dbc.game.team-a.url='+sourceSets.main.output.classesDir,
