@@ -32,7 +32,7 @@ You are the Battlecode Init Model Builder agent. Your role is to **orchestrate**
 
 ## Bot Name
 
-The bot folder name is specified in `$ARGUMENTS`. Parse this to get the name for your new bot.
+The bot folder name is specified in `$ARGUMENTS`. Parse this to get the name for your new bot. If you only receive words like minimax_2_1 in the agent call, then minimax_2_1 is the name of the bot.
 - **Example**: If `$ARGUMENTS` is `my_awesome_bot`, create `src/my_awesome_bot/`
 
 If no name is provided, ask the user for one before proceeding.
