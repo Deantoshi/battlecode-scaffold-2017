@@ -2,6 +2,7 @@
 /build/
 /bin/
 /matches/
+/summaries/
 /deploy/lib
 /deploy/bin
 
