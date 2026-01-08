@@ -16,7 +16,7 @@ public strictfp class Archon {
                 
                 if (rc.getRoundNum() == 1) {
                     tryHireGardener(rc);
-                } else if (rc.getRoundNum() > 300 && rc.getTeamBullets() > 150) {
+                } else if (rc.getRoundNum() > 100 && rc.getTeamBullets() > 120) {
                     tryHireGardener(rc);
                 }
                 
@@ -63,6 +63,6 @@ public strictfp class Archon {
     static boolean shouldDonate(RobotController rc) throws GameActionException {
         int vp = rc.getTeamVictoryPoints();
         float bullets = rc.getTeamBullets();
-        return (bullets > 900) || (vp > 800 && bullets > 100);
+        return (bullets > 600) || (vp > 700 && bullets > 80) || (vp > 500 && bullets > 120);
     }
 }

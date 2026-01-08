@@ -21,7 +21,7 @@ public strictfp class Gardener {
                     }
                 }
                 
-                if (rc.getTeamBullets() > 40 && treesPlanted < 5) {
+                if (rc.getTeamBullets() > 40 && treesPlanted < 8) {
                     tryPlantTree(rc);
                 }
                 
