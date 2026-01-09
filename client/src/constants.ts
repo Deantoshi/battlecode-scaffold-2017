@@ -115,7 +115,8 @@ export const SERVER_MAPS = [
   "TicTacToe",
   "TreeFarm",
   "Turtle",
-  "Whirligig"
+  "Whirligig",
+  "300"
 ];
 
 export function bodyTypeToString(bodyType: schema.BodyType) {
