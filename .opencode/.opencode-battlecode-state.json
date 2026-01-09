@@ -1,0 +1,12 @@
+{
+  "active": true,
+  "iteration": 0,
+  "targetIterations": 10,
+  "targetWinRounds": 1500,
+  "botName": "glm_4_7",
+  "opponent": "copy_bot",
+  "mapName": "Bullseye",
+  "results": [],
+  "bestResult": null,
+  "startTime": 1767994116512
+}

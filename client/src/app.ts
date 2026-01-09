@@ -259,6 +259,22 @@ export default class Client {
       this.matchqueue.refreshGameList(this.games, this.currentGame ? this.currentGame: 0, this.currentMatch ? this.currentMatch: 0);
     };
 
+    // Wire up match runner to auto-load completed matches for replay
+    this.sidebar.matchrunner.onMatchCompleted = (data: ArrayBuffer, filename: string) => {
+      console.log(`Match completed, loading replay: ${filename}`);
+      var lastGame = this.games.length
+      this.games[lastGame] = new Game();
+      this.games[lastGame].loadFullGameRaw(data);
+
+      // Auto-play the newly completed match
+      this.setGame(lastGame);
+      this.setMatch(0);
+      this.matchqueue.refreshGameList(this.games, this.currentGame ? this.currentGame: 0, this.currentMatch ? this.currentMatch: 0);
+
+      // Refresh the match browser list to show the new match
+      this.sidebar.matchbrowser.refresh();
+    };
+
     if (this.listener != null) {
       this.listener.start(
         // What to do when we get a game from the websocket

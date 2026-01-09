@@ -22,7 +22,7 @@ You are the Battlecode Project Manager agent. Your role is to orchestrate iterat
 
 Parse $ARGUMENTS for these parameters:
 - `--bot NAME` - **REQUIRED**: The bot folder name in `src/NAME/` (e.g., `minimax2_1`, `claudebot`)
-- `--opponent NAME` - Opponent bot to test against (default: `examplefuncsplayer`)
+- `--opponent NAME` - Opponent bot to test against (default: `copy_bot` - a copy of your bot)
 - `--map NAME` - Map to use (default: `shrine`)
 - `--iterations N` - Target iterations (default: `10`)
 - `--target-rounds N` - Win in this many rounds to succeed early (default: `1500`)
@@ -30,8 +30,9 @@ Parse $ARGUMENTS for these parameters:
 **Example usage:**
 ```
 /bc-manager --bot minimax2_1
-/bc-manager --bot my_new_bot --opponent claudebot --map Bullseye
+/bc-manager --bot glm_4_7 --map Bullseye
 /bc-manager --bot grok_code_fast_1 --iterations 5 --target-rounds 1000
+/bc-manager --bot my_bot --opponent examplefuncsplayer  # use a different opponent
 ```
 
 ## Goals (stop when EITHER is achieved)
@@ -41,10 +42,20 @@ Parse $ARGUMENTS for these parameters:
 ## Your Workflow
 
 ### Step 1: Setup
-1. Parse arguments to get BOT_NAME, OPPONENT, MAP, ITERATIONS, TARGET_ROUNDS
+1. Parse arguments to get BOT_NAME, OPPONENT (default: copy_bot), MAP, ITERATIONS, TARGET_ROUNDS
 2. Check if `src/{BOT_NAME}/RobotPlayer.java` exists
    - If not, copy from `src/examplefuncsplayer/` to `src/{BOT_NAME}/`
-3. Initialize tracking: iteration=0, best_rounds=999999
+3. **If OPPONENT is `copy_bot`**: Create a fresh copy of the bot as the opponent
+   - Run: `rm -rf src/copy_bot/ && mkdir -p src/copy_bot/`
+   - For each .java file in `src/{BOT_NAME}/`:
+     ```bash
+     for file in src/{BOT_NAME}/*.java; do
+       filename=$(basename "$file")
+       sed '1s/package .*/package copy_bot;/' "$file" > "src/copy_bot/$filename"
+     done
+     ```
+   - This ensures you're always testing against the current version of your own bot
+4. Initialize tracking: iteration=0, best_rounds=999999
 
 ### Step 2: Start the Ralph Loop
 Use the `ralph_loop` tool to start an iterative loop:

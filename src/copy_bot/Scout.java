@@ -13,7 +13,7 @@ public strictfp class Scout {
             try {
                 shakeNearestTree(rc);
                 scoutAndReport(rc);
-
+                
                 RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
                 if (enemies.length > 0) {
                     for (RobotInfo enemy : enemies) {
@@ -23,11 +23,11 @@ public strictfp class Scout {
                         }
                     }
                 }
-
+                
                 if (!moved) {
                     moveInSpiral(rc);
                 }
-
+                
                 Clock.yield();
             } catch (Exception e) {
                 System.out.println("Scout Exception");
@@ -70,7 +70,7 @@ public strictfp class Scout {
                 moved = true;
             }
         }
-
+        
         if (rc.canFireSingleShot() && rc.getTeamBullets() > 5) {
             if (rc.canFireSingleShot()) {
                 rc.fireSingleShot(rc.getLocation().directionTo(gardener.location));

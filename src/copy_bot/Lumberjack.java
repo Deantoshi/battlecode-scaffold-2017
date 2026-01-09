@@ -10,11 +10,11 @@ public strictfp class Lumberjack {
             try {
                 RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
                 TreeInfo[] trees = rc.senseNearbyTrees();
-
+                
                 if (enemies.length > 0) {
                     strikeEnemies(rc, enemies);
                 }
-
+                
                 if (rc.canStrike()) {
                     boolean struck = false;
                     for (RobotInfo enemy : enemies) {
@@ -32,7 +32,7 @@ public strictfp class Lumberjack {
                 } else {
                     chopNearestTree(rc, trees);
                 }
-
+                
                 if (!moved) {
                     MapLocation enemyLoc = Comms.readEnemyLocation(rc);
                     if (enemies.length == 0 && enemyLoc != null) {
@@ -41,7 +41,7 @@ public strictfp class Lumberjack {
                         Nav.tryMove(rc, Nav.randomDirection());
                     }
                 }
-
+                
                 Clock.yield();
             } catch (Exception e) {
                 System.out.println("Lumberjack Exception");
@@ -60,7 +60,7 @@ public strictfp class Lumberjack {
     static void chopNearestTree(RobotController rc, TreeInfo[] trees) throws GameActionException {
         TreeInfo nearest = null;
         float minDist = Float.MAX_VALUE;
-
+        
         for (TreeInfo tree : trees) {
             float dist = rc.getLocation().distanceTo(tree.location);
             if (dist < minDist && dist <= rc.getType().strideRadius) {
@@ -70,7 +70,7 @@ public strictfp class Lumberjack {
                 }
             }
         }
-
+        
         if (nearest != null && rc.canChop(nearest.ID)) {
             rc.chop(nearest.ID);
         }

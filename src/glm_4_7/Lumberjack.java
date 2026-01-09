@@ -35,7 +35,7 @@ public strictfp class Lumberjack {
                 
                 if (!moved) {
                     MapLocation enemyLoc = Comms.readEnemyLocation(rc);
-                    if (enemies.length == 0 && enemyLoc != null) {
+                    if (enemyLoc != null) {
                         Nav.moveToward(rc, enemyLoc);
                     } else {
                         Nav.tryMove(rc, Nav.randomDirection());
@@ -63,16 +63,21 @@ public strictfp class Lumberjack {
         
         for (TreeInfo tree : trees) {
             float dist = rc.getLocation().distanceTo(tree.location);
-            if (dist < minDist && dist <= rc.getType().strideRadius) {
-                if (tree.team != rc.getTeam() || tree.health < 50) {
+            if (dist < minDist) {
+                if (tree.team != rc.getTeam()) {
                     minDist = dist;
                     nearest = tree;
                 }
             }
         }
         
-        if (nearest != null && rc.canChop(nearest.ID)) {
-            rc.chop(nearest.ID);
+        if (nearest != null) {
+            if (rc.canChop(nearest.ID)) {
+                rc.chop(nearest.ID);
+            } else if (!moved && minDist <= rc.getType().sensorRadius) {
+                Nav.moveToward(rc, nearest.location);
+                moved = true;
+            }
         }
     }
 

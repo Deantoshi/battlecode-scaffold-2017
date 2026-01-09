@@ -16,12 +16,16 @@ public strictfp class Gardener {
                 if (shouldBuildUnit(rc)) {
                     if (rc.getRoundNum() < 100 && !hasBuiltScout()) {
                         tryBuild(rc, RobotType.SCOUT, buildDir);
-                    } else if (rc.getTreeCount() > 2) {
-                        tryBuild(rc, RobotType.SOLDIER, buildDir);
+                    } else if (rc.getRoundNum() > 50) {
+                        if (rc.getRoundNum() % 6 == 0 && rc.getTreeCount() > 3) {
+                            tryBuild(rc, RobotType.LUMBERJACK, buildDir);
+                        } else {
+                            tryBuild(rc, RobotType.SOLDIER, buildDir);
+                        }
                     }
                 }
                 
-                if (rc.getTeamBullets() > 40 && treesPlanted < 8) {
+                if (rc.getTeamBullets() > 20) {
                     tryPlantTree(rc);
                 }
                 
@@ -67,7 +71,7 @@ public strictfp class Gardener {
     }
 
     static boolean shouldBuildUnit(RobotController rc) {
-        return rc.getTeamBullets() > 80;
+        return rc.getTeamBullets() > 55 || (rc.getRoundNum() > 600 && rc.getTeamBullets() > 45);
     }
 
     static void tryBuild(RobotController rc, RobotType type, Direction dir) throws GameActionException {

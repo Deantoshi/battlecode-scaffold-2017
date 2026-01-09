@@ -12,19 +12,21 @@ public strictfp class Gardener {
             try {
                 findOpenSpace(rc);
                 waterLowestHealthTree(rc);
-
+                
                 if (shouldBuildUnit(rc)) {
                     if (rc.getRoundNum() < 100 && !hasBuiltScout()) {
                         tryBuild(rc, RobotType.SCOUT, buildDir);
                     } else if (rc.getTreeCount() > 2) {
                         tryBuild(rc, RobotType.SOLDIER, buildDir);
+                    } else if (rc.getRoundNum() > 800 && rc.getTeamBullets() > 80) {
+                        tryBuild(rc, RobotType.SOLDIER, buildDir);
                     }
                 }
-
-                if (rc.getTeamBullets() > 40 && treesPlanted < 5) {
+                
+                if (rc.getTeamBullets() > 40 && treesPlanted < 10) {
                     tryPlantTree(rc);
                 }
-
+                
                 Clock.yield();
             } catch (Exception e) {
                 System.out.println("Gardener Exception");
@@ -41,7 +43,7 @@ public strictfp class Gardener {
                 moved = true;
             }
         }
-
+        
         if (!moved) {
             RobotInfo[] gardeners = rc.senseNearbyRobots(-1, rc.getTeam());
             for (RobotInfo g : gardeners) {
@@ -59,7 +61,7 @@ public strictfp class Gardener {
     static void waterLowestHealthTree(RobotController rc) throws GameActionException {
         TreeInfo[] trees = rc.senseNearbyTrees(RobotType.GARDENER.sensorRadius, rc.getTeam());
         if (trees.length == 0) return;
-
+        
         TreeInfo lowest = Utils.findLowestHealthTree(trees);
         if (rc.canWater(lowest.ID)) {
             rc.water(lowest.ID);
@@ -67,7 +69,7 @@ public strictfp class Gardener {
     }
 
     static boolean shouldBuildUnit(RobotController rc) {
-        return rc.getTeamBullets() > 80;
+        return rc.getTeamBullets() > 60;
     }
 
     static void tryBuild(RobotController rc, RobotType type, Direction dir) throws GameActionException {
@@ -88,7 +90,7 @@ public strictfp class Gardener {
         for (int i = 0; i < 6; i++) {
             dirs[i] = new Direction((float)(i * 60 * Math.PI / 180));
         }
-
+        
         for (Direction d : dirs) {
             if (d.equals(buildDir)) continue;
             if (rc.canPlantTree(d)) {

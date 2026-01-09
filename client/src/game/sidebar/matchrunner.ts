@@ -40,6 +40,9 @@ export default class MatchRunner {
   private runMatch: HTMLButtonElement;
   private refreshButton: HTMLButtonElement
 
+  // Callback when match completes and should be loaded for replay
+  onMatchCompleted: (data: ArrayBuffer, filename: string) => void;
+
   constructor(conf: Config, cb: () => void) {
     this.conf = conf;
     this.cb = cb;
@@ -251,7 +254,9 @@ export default class MatchRunner {
         this.isLoadingMatch = false;
       },
       () => {
+        // Match completed successfully - load the latest match file
         this.isLoadingMatch = false;
+        this.loadLatestMatch();
       },
       (stdoutdata) => {
         const logs = document.createElement('p');
@@ -267,6 +272,64 @@ export default class MatchRunner {
         this.compileLogs.scrollTop = this.compileLogs.scrollHeight;
       }
     );
+  }
+
+  /**
+   * Load the latest match file from the matches folder and trigger playback
+   */
+  private loadLatestMatch = () => {
+    const statusLog = document.createElement('p');
+    statusLog.innerHTML = 'Match complete! Loading replay...';
+    this.compileLogs.appendChild(statusLog);
+    this.compileLogs.scrollTop = this.compileLogs.scrollHeight;
+
+    // Fetch the list of matches (sorted by newest first)
+    fetch('/api/matches')
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Failed to fetch matches list');
+        }
+        return response.json();
+      })
+      .then((matches: Array<{name: string, size: number, modified: string}>) => {
+        if (matches.length === 0) {
+          throw new Error('No match files found');
+        }
+        // Get the most recent match (first in list since sorted by modified desc)
+        const latestMatch = matches[0];
+        return this.loadMatchFile(latestMatch.name);
+      })
+      .catch(error => {
+        const errorLog = document.createElement('p');
+        errorLog.className = 'errorLog';
+        errorLog.innerHTML = `Error loading match: ${error.message}`;
+        this.compileLogs.appendChild(errorLog);
+        this.compileLogs.scrollTop = this.compileLogs.scrollHeight;
+        console.error('Failed to load latest match:', error);
+      });
+  }
+
+  /**
+   * Load a specific match file and trigger the callback
+   */
+  private loadMatchFile = (filename: string): Promise<void> => {
+    return fetch(`/matches/${encodeURIComponent(filename)}`)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Failed to load match file');
+        }
+        return response.arrayBuffer();
+      })
+      .then(data => {
+        const successLog = document.createElement('p');
+        successLog.innerHTML = `Loaded: ${filename}`;
+        this.compileLogs.appendChild(successLog);
+        this.compileLogs.scrollTop = this.compileLogs.scrollHeight;
+
+        if (this.onMatchCompleted) {
+          this.onMatchCompleted(data, filename);
+        }
+      });
   }
 
   /**
