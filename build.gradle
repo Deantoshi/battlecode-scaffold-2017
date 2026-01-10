@@ -335,6 +335,22 @@ task runWithSummary(dependsOn: 'createSummariesDir') {
 }
 runWithSummary.dependsOn build
 
+// Map info extraction task
+task mapInfo(type: JavaExec, dependsOn: 'compileEngineJava') {
+    description 'Prints detailed information about a map.'
+    group 'battlecode'
+
+    main = 'battlecode.util.MapInfoPrinter'
+    classpath = sourceSets.engine.runtimeClasspath
+
+    doFirst {
+        if (!project.hasProperty('map')) {
+            throw new GradleException('Please specify -Pmap=MapName')
+        }
+        args = [project.property('map')]
+    }
+}
+
 // Generate summaries for all existing match files
 task summarizeAll(dependsOn: 'createSummariesDir') {
     description 'Generates summaries for all match files in matches/ directory.'
