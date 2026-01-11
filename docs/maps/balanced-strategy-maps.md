@@ -16,30 +16,6 @@ Maps with no dominant strategy. Adaptable play is rewarded.
 
 ---
 
-## DenseForest
-
-- **Size**: 50 x 50 (MEDIUM)
-- **Archons**: 2 per team, distance: 32.95
-- **Terrain**: HIGH (23.12% tree coverage, 46 trees)
-- **Archon Spawns**:
-  - Team A: (378.79, 276.83), (404.82, 272.16)
-  - Team B: (410.39, 286.17), (384.36, 290.84)
-- **Visual**: Medium forested arena with evenly distributed moderate tree density
-
----
-
-## Enclosure
-
-- **Size**: 80 x 80 (LARGE)
-- **Archons**: 3 per team, distance: 15.17
-- **Terrain**: MEDIUM (11.00% tree coverage, 14 trees)
-- **Archon Spawns**:
-  - Team A: (448.95, 501.44), (419.94, 465.07), (492.91, 464.85)
-  - Team B: (464.12, 501.22), (493.13, 537.60), (420.16, 537.82)
-- **Visual**: Large open arena with clustered archon spawns and sparse perimeter trees
-
----
-
 ## Hurdle
 
 - **Size**: 50 x 50 (MEDIUM)
@@ -49,18 +25,6 @@ Maps with no dominant strategy. Adaptable play is rewarded.
   - Team A: (382.65, 539.23)
   - Team B: (382.65, 499.23)
 - **Visual**: Medium arena with vertical tree barrier between archons
-
----
-
-## SparseForest
-
-- **Size**: 60 x 60 (MEDIUM)
-- **Archons**: 1 per team, distance: 71.21
-- **Terrain**: MEDIUM (6.28% tree coverage, 18 trees)
-- **Archon Spawns**:
-  - Team A: (260.36, 124.52)
-  - Team B: (311.06, 174.52)
-- **Visual**: Large open arena with minimal scattered trees
 
 ---
 
@@ -76,18 +40,6 @@ Maps with no dominant strategy. Adaptable play is rewarded.
 
 ---
 
-## Cramped
-
-- **Size**: 50 x 50 (MEDIUM)
-- **Archons**: 1 per team, distance: 5.0
-- **Terrain**: HIGH (23.09% tree coverage, 44 trees)
-- **Archon Spawns**:
-  - Team A: (325.96, 230.66)
-  - Team B: (330.96, 230.66)
-- **Visual**: Extremely tight arena with archons only 5 units apart in dense forest
-
----
-
 ## DigMeOut
 
 - **Size**: 50 x 40 (MEDIUM)
@@ -97,42 +49,6 @@ Maps with no dominant strategy. Adaptable play is rewarded.
   - Team A: (413.30, 451.71), (438.23, 451.52), (418.57, 460.98)
   - Team B: (449.75, 451.71), (424.82, 451.52), (444.48, 460.98)
 - **Visual**: Medium arena with dense tree network requiring pathfinding
-
----
-
-## LilForts
-
-- **Size**: 30 x 30 (SMALL)
-- **Archons**: 1 per team, distance: 14.0
-- **Terrain**: HIGH (27.93% tree coverage, 290 trees)
-- **Archon Spawns**:
-  - Team A: (123.04, 304.85)
-  - Team B: (137.04, 304.85)
-- **Visual**: Small arena with extremely dense tree coverage forming two fort clusters
-
----
-
-## OMGTree
-
-- **Size**: 30 x 30 (SMALL)
-- **Archons**: 1 per team, distance: 24.55
-- **Terrain**: HIGH (34.91% tree coverage, 1 tree)
-- **Archon Spawns**:
-  - Team A: (440.92, 518.74)
-  - Team B: (440.92, 494.19)
-- **Visual**: Small arena with single massive central tree (radius 10)
-
----
-
-## PasscalsTriangles
-
-- **Size**: 32 x 32 (SMALL)
-- **Archons**: 1 per team, distance: 26.0
-- **Terrain**: HIGH (39.27% tree coverage, 128 trees)
-- **Archon Spawns**:
-  - Team A: (442.80, 468.21)
-  - Team B: (468.80, 468.21)
-- **Visual**: Small arena with triangular patterns of trees
 
 ---
 
@@ -172,54 +88,6 @@ Maps with no dominant strategy. Adaptable play is rewarded.
 
 ---
 
-## GreenHouse
-
-- **Size**: 30 x 30 (SMALL)
-- **Archons**: 1 per team, distance: 20.10
-- **Terrain**: HIGH (20.25% tree coverage, 58 trees)
-- **Archon Spawns**:
-  - Team A: (133.58, 471.72)
-  - Team B: (135.58, 451.72)
-- **Visual**: Small arena with greenhouse-style tree formations
-
----
-
-## HiddenTunnel
-
-- **Size**: 30 x 30 (SMALL)
-- **Archons**: 1 per team, distance: 25.16
-- **Terrain**: HIGH (42.24% tree coverage, 484 trees)
-- **Archon Spawns**:
-  - Team A: (230.71, 82.73)
-  - Team B: (255.69, 79.73)
-- **Visual**: Small arena with hidden tunnel-like dense tree formations
-
----
-
-## Levels
-
-- **Size**: 30 x 100 (MEDIUM)
-- **Archons**: 3 per team, distance: 72.80
-- **Terrain**: MEDIUM (10.68% tree coverage, 15 trees)
-- **Archon Spawns**:
-  - Team A: (114.95, 253.00), (134.95, 288.00), (114.95, 323.00)
-  - Team B: (134.95, 323.00), (114.95, 288.00), (134.95, 253.00)
-- **Visual**: Medium vertical arena with tiered level formations
-
----
-
-## LilMaze
-
-- **Size**: 30 x 30 (SMALL)
-- **Archons**: 1 per team, distance: 35.36
-- **Terrain**: HIGH (39.62% tree coverage, 454 trees)
-- **Archon Spawns**:
-  - Team A: (426.05, 250.77)
-  - Team B: (451.05, 275.77)
-- **Visual**: Small arena with maze-like dense tree formations
-
----
-
 ## PeacefulEncounter
 
 - **Size**: 50 x 50 (MEDIUM)
@@ -241,6 +109,174 @@ Maps with no dominant strategy. Adaptable play is rewarded.
   - Team A: (151.16, 514.57)
   - Team B: (171.74, 514.57)
 - **Visual**: Small arena with pure imagination-style tree patterns
+
+---
+
+## Maniple
+
+- **Size**: 100 x 60 (LARGE)
+- **Archons**: 3 per team, distance: 50.0
+- **Terrain**: HIGH (21.26% tree coverage, 406 trees)
+- **Archon Spawns**:
+  - Team A: (507.15, 211.03), (545.15, 211.03), (583.15, 211.03)
+  - Team B: (507.15, 161.03), (545.15, 161.03), (583.15, 161.03)
+- **Visual**: Large rectangular arena with three archons per team in horizontal formation
+
+---
+
+## Shrubbery
+
+- **Size**: 50 x 30 (MEDIUM)
+- **Archons**: 1 per team, distance: 44.0
+- **Terrain**: MEDIUM (7.54% tree coverage, 144 trees)
+- **Archon Spawns**:
+  - Team A: (131.36, 64.56)
+  - Team B: (175.36, 64.56)
+- **Visual**: Medium horizontal arena with scattered shrubbery (small trees) along edges
+
+---
+
+## Standoff
+
+- **Size**: 50 x 30 (MEDIUM)
+- **Archons**: 1 per team, distance: 36.77
+- **Terrain**: MEDIUM (14.66% tree coverage, 54 trees)
+- **Archon Spawns**:
+  - Team A: (148.24, 292.31)
+  - Team B: (182.24, 306.31)
+- **Visual**: Medium arena with central standoff position and trees
+
+---
+
+## Waves
+
+- **Size**: 60 x 50 (MEDIUM)
+- **Archons**: 2 per team, distance: 58.89
+- **Terrain**: MEDIUM (13.19% tree coverage, 142 trees)
+- **Archon Spawns**:
+  - Team A: (79.30, 256.65), (108.18, 276.59)
+  - Team B: (125.53, 293.12), (96.65, 273.18)
+- **Visual**: Medium arena with wave-like tree patterns
+
+---
+
+## 1337Tree
+
+- **Size**: 60 x 40 (MEDIUM)
+- **Archons**: 1 per team, distance: 62.13
+- **Terrain**: MEDIUM (9.50% tree coverage, 278 trees)
+- **Archon Spawns**:
+  - Team A: (249.17, 326.49)
+  - Team B: (301.17, 292.49)
+- **Visual**: Medium arena with 1337 trees scattered throughout
+
+---
+
+## Blitzkrieg
+
+- **Size**: 60 x 40 (MEDIUM)
+- **Archons**: 3 per team, distance: 53.85
+- **Terrain**: MEDIUM (8.84% tree coverage, 180 trees)
+- **Archon Spawns**:
+  - Team A: (187.50, 465.26), (187.50, 475.26), (187.50, 485.26)
+  - Team B: (237.50, 485.26), (237.50, 475.26), (237.50, 465.26)
+- **Visual**: Medium arena with vertical column formations for rapid attacks
+
+---
+
+## Chevron
+
+- **Size**: 54 x 52 (MEDIUM)
+- **Archons**: 1 per team, distance: 48.67
+- **Terrain**: HIGH (21.15% tree coverage, 183 trees)
+- **Archon Spawns**:
+  - Team A: (424.37, 201.99)
+  - Team B: (473.04, 201.99)
+- **Visual**: Medium arena with chevron pattern of tree formations
+
+---
+
+## DarkSide
+
+- **Size**: 60 x 53 (MEDIUM)
+- **Archons**: 1 per team, distance: 51.86
+- **Terrain**: MEDIUM (5.44% tree coverage, 98 trees)
+- **Archon Spawns**:
+  - Team A: (318.67, 326.08)
+  - Team B: (358.67, 359.08)
+- **Visual**: Medium arena with dark-side diagonal tree formations
+
+---
+
+## Oxygen
+
+- **Size**: 60 x 60 (MEDIUM)
+- **Archons**: 1 per team, distance: 50.04
+- **Terrain**: MEDIUM (14.57% tree coverage, 179 trees)
+- **Archon Spawns**:
+  - Team A: (14.90, 174.62)
+  - Team B: (64.90, 172.62)
+- **Visual**: Medium arena with oxygen bubble-like tree formations
+
+---
+
+## Planets
+
+- **Size**: 100 x 50 (LARGE)
+- **Archons**: 1 per team, distance: 42.0
+- **Terrain**: HIGH (19.14% tree coverage, 51 trees)
+- **Archon Spawns**:
+  - Team A: (300.43, 86.80)
+  - Team B: (300.43, 128.81)
+- **Visual**: Large arena with planet-like tree formations
+
+---
+
+## Slant
+
+- **Size**: 60 x 40 (MEDIUM)
+- **Archons**: 1 per team, distance: 47.76
+- **Terrain**: HIGH (23.42% tree coverage, 447 trees)
+- **Archon Spawns**:
+  - Team A: (316.82, 354.12)
+  - Team B: (357.82, 326.12)
+- **Visual**: Medium arena with diagonal slant tree formations
+
+---
+
+## Snowflake
+
+- **Size**: 60 x 60 (MEDIUM)
+- **Archons**: 3 per team, distance: 51.12
+- **Terrain**: HIGH (19.16% tree coverage, 89 trees)
+- **Archon Spawns**:
+  - Team A: (270.46, 136.82), (291.90, 148.84), (313.76, 136.82)
+  - Team B: (270.46, 110.45), (292.55, 110.45), (314.00, 110.45)
+- **Visual**: Medium arena with snowflake-like tree patterns
+
+---
+
+## TicTacToe
+
+- **Size**: 62 x 62 (MEDIUM)
+- **Archons**: 1 per team, distance: 44.0
+- **Terrain**: HIGH (20.51% tree coverage, 245 trees)
+- **Archon Spawns**:
+  - Team A: (38.09, 173.63)
+  - Team B: (82.09, 219.63)
+- **Visual**: Medium arena with tic-tac-toe tree patterns
+
+---
+
+## TreeFarm
+
+- **Size**: 52 x 52 (MEDIUM)
+- **Archons**: 1 per team, distance: 56.85
+- **Terrain**: HIGH (16.50% tree coverage, 142 trees)
+- **Archon Spawns**:
+  - Team A: (358.75, 133.18)
+  - Team B: (402.75, 169.18)
+- **Visual**: Medium arena with tree farm-like formations
 
 ---
 

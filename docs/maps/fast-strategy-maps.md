@@ -52,3 +52,39 @@ Maps where early aggression and rushes are effective. Close archon spawns and mi
 
 ---
 
+## shrine
+
+- **Size**: 30 x 30 (SMALL)
+- **Archons**: 1 per team, distance: 36.74
+- **Terrain**: LOW (1.40% tree coverage, 1 tree)
+- **Archon Spawns**:
+  - Team A: (309.31, 174.67)
+  - Team B: (335.29, 148.69)
+- **Visual**: Small open arena with single central tree shrine
+
+---
+
+## Enclosure
+
+- **Size**: 80 x 80 (LARGE)
+- **Archons**: 3 per team, distance: 15.17
+- **Terrain**: MEDIUM (11.00% tree coverage, 14 trees)
+- **Archon Spawns**:
+  - Team A: (448.95, 501.44), (419.94, 465.07), (492.91, 464.85)
+  - Team B: (464.12, 501.22), (493.13, 537.60), (420.16, 537.82)
+- **Visual**: Large open arena with clustered archon spawns and sparse perimeter trees
+
+---
+
+## GreenHouse
+
+- **Size**: 30 x 30 (SMALL)
+- **Archons**: 1 per team, distance: 20.10
+- **Terrain**: HIGH (20.25% tree coverage, 58 trees)
+- **Archon Spawns**:
+  - Team A: (133.58, 471.72)
+  - Team B: (135.58, 451.72)
+- **Visual**: Small arena with greenhouse-style tree formations
+
+---
+
