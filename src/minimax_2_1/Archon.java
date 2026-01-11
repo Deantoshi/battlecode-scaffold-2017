@@ -28,16 +28,20 @@ public strictfp class Archon {
             RobotInfo closest = Utils.findClosestEnemy(rc, enemies);
             Direction away = rc.getLocation().directionTo(closest.location).opposite();
             Nav.tryMove(away);
-            
-            RobotInfo[] nearbyAllies = rc.senseNearbyRobots(10, rc.getTeam());
-            int soldierCount = 0;
-            for (RobotInfo ally : nearbyAllies) {
-                if (ally.type == RobotType.SOLDIER || ally.type == RobotType.LUMBERJACK || ally.type == RobotType.TANK) {
-                    soldierCount++;
-                }
+        }
+
+        RobotInfo[] nearbyAllies = rc.senseNearbyRobots(-1, rc.getTeam());
+        int soldierCount = 0;
+        for (RobotInfo ally : nearbyAllies) {
+            if (ally.type == RobotType.SOLDIER || ally.type == RobotType.LUMBERJACK || ally.type == RobotType.TANK) {
+                soldierCount++;
             }
-            if (soldierCount < 2 && rc.canBuildRobot(RobotType.SOLDIER, away)) {
-                rc.buildRobot(RobotType.SOLDIER, away);
+        }
+        
+        int round = rc.getRoundNum();
+        if ((soldierCount < 3 && round < 500) || (soldierCount < 5 && round < 1000) || enemies.length > 0) {
+            if (rc.canBuildRobot(RobotType.SOLDIER, Nav.randomDirection())) {
+                rc.buildRobot(RobotType.SOLDIER, Nav.randomDirection());
             }
         }
 

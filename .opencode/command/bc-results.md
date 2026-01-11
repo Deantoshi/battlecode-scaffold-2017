@@ -87,3 +87,15 @@ Parse the spawn messages to understand:
 ```
 
 Pass this analysis to bc-planner for strategic planning.
+
+## Unit Capabilities Reference
+
+| Unit | Cost | Capabilities |
+|------|------|--------------|
+| **ARCHON** | - | Hires Gardeners. High HP. Cannot attack. Mobile base. |
+| **GARDENER** | 100 | Plants bullet trees (income). Waters trees to heal them. Builds combat units. Cannot attack. |
+| **SOLDIER** | 100 | Ranged combat. Fires single, triad (3-way), or pentad (5-way) shots. Balanced stats. |
+| **LUMBERJACK** | 100 | Melee combat. Chops trees. Strike ability deals AoE damage to ALL nearby units (including allies). |
+| **SCOUT** | 80 | Very fast. Huge vision radius. Can shake trees to steal bullets. Extremely fragile. |
+| **TANK** | 300 | High HP, high damage. Body slams destroy trees. Expensive late-game unit. |
+| **BULLET TREE** | 50 | Generates bullet income when watered. Planted by Gardeners. |
