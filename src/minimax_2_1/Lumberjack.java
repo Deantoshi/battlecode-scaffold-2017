@@ -4,51 +4,62 @@ import battlecode.common.*;
 public strictfp class Lumberjack {
     static RobotController rc;
 
-    public static void run() throws GameActionException {
-        System.out.println("I'm a lumberjack!");
-        Team enemy = rc.getTeam().opponent();
+    public static void run(RobotController rc) throws GameActionException {
+        Lumberjack.rc = rc;
+        Nav.init(rc);
+        Comms.init(rc);
+
         while (true) {
             try {
-                RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(3, enemy);
-                if (nearbyEnemies.length > 0 && !rc.hasAttacked()) {
-                    rc.strike();
-                }
-
-                TreeInfo[] neutralTrees = rc.senseNearbyTrees(-1, Team.NEUTRAL);
-                if (neutralTrees.length > 0) {
-                    TreeInfo closestTree = neutralTrees[0];
-                    float minDist = Float.MAX_VALUE;
-                    for (TreeInfo tree : neutralTrees) {
-                        float dist = rc.getLocation().distanceTo(tree.location);
-                        if (dist < minDist) {
-                            minDist = dist;
-                            closestTree = tree;
-                        }
-                    }
-                    if (rc.canChop(closestTree.ID)) {
-                        rc.chop(closestTree.ID);
-                    } else {
-                        Direction toTree = rc.getLocation().directionTo(closestTree.location);
-                        Nav.tryMove(toTree);
-                    }
-                } else if (nearbyEnemies.length > 0) {
-                    MapLocation enemyLoc = nearbyEnemies[0].location;
-                    Direction toEnemy = rc.getLocation().directionTo(enemyLoc);
-                    Nav.tryMove(toEnemy);
-                } else {
-                    MapLocation archonLoc = Comms.getArchonLocation();
-                    if (archonLoc != null) {
-                        Direction toArchon = rc.getLocation().directionTo(archonLoc);
-                        Nav.tryMove(toArchon);
-                    } else {
-                        Nav.tryMove(Nav.randomDirection());
-                    }
-                }
-
-                Clock.yield();
+                doTurn();
             } catch (Exception e) {
                 e.printStackTrace();
+            } finally {
+                Clock.yield();
             }
         }
+    }
+
+    static void doTurn() throws GameActionException {
+        if (tryStrike()) {
+            return;
+        }
+
+        if (tryChopTree()) {
+            return;
+        }
+
+        RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
+        if (enemies.length > 0) {
+            RobotInfo closest = Utils.findClosestEnemy(rc, enemies);
+            if (Nav.moveToward(closest.location)) {
+                return;
+            }
+        }
+
+        Nav.tryMove(Nav.randomDirection());
+    }
+
+    static boolean tryStrike() throws GameActionException {
+        RobotInfo[] enemies = rc.senseNearbyRobots(GameConstants.LUMBERJACK_STRIKE_RADIUS, rc.getTeam().opponent());
+        RobotInfo[] allies = rc.senseNearbyRobots(GameConstants.LUMBERJACK_STRIKE_RADIUS, rc.getTeam());
+        if (enemies.length > 0 && allies.length == 0) {
+            if (rc.canStrike()) {
+                rc.strike();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    static boolean tryChopTree() throws GameActionException {
+        TreeInfo[] trees = rc.senseNearbyTrees(2.0f, Team.NEUTRAL);
+        if (trees.length > 0) {
+            if (rc.canChop(trees[0].ID)) {
+                rc.chop(trees[0].ID);
+                return true;
+            }
+        }
+        return false;
     }
 }

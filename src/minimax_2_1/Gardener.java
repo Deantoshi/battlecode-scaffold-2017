@@ -3,52 +3,85 @@ import battlecode.common.*;
 
 public strictfp class Gardener {
     static RobotController rc;
-    static int gardenersBuilt = 0;
+    static int treesPlanted = 0;
+    static Direction buildDirection = Direction.SOUTH;
 
-    public static void run() throws GameActionException {
-        System.out.println("I'm a gardener!");
-        MapLocation archonLoc = Comms.getArchonLocation();
-        if (archonLoc != null && rc.getLocation().distanceTo(archonLoc) < 5) {
-            Direction awayFromArchon = rc.getLocation().directionTo(archonLoc).opposite();
-            Nav.tryMove(awayFromArchon);
-        }
+    public static void run(RobotController rc) throws GameActionException {
+        Gardener.rc = rc;
+        Nav.init(rc);
+        Comms.init(rc);
+
         while (true) {
             try {
-                TreeInfo[] nearbyTrees = rc.senseNearbyTrees(-1, rc.getTeam());
-                TreeInfo lowestHealthTree = null;
-                float minHealth = Float.MAX_VALUE;
-                for (TreeInfo tree : nearbyTrees) {
-                    if (tree.health < minHealth && tree.health < 100) {
-                        minHealth = tree.health;
-                        lowestHealthTree = tree;
-                    }
-                }
-                if (lowestHealthTree != null && rc.canWater(lowestHealthTree.ID)) {
-                    rc.water(lowestHealthTree.ID);
-                }
-
-                Direction plantDir = Nav.randomDirection();
-                if (rc.canPlantTree(plantDir)) {
-                    rc.plantTree(plantDir);
-                }
-
-                if (rc.isBuildReady() && rc.getTeamBullets() > 100) {
-                    Direction buildDir = Nav.randomDirection();
-                    if (rc.canBuildRobot(RobotType.SCOUT, buildDir)) {
-                        rc.buildRobot(RobotType.SCOUT, buildDir);
-                    } else if (rc.canBuildRobot(RobotType.LUMBERJACK, buildDir)) {
-                        rc.buildRobot(RobotType.LUMBERJACK, buildDir);
-                    } else if (rc.canBuildRobot(RobotType.SOLDIER, buildDir)) {
-                        rc.buildRobot(RobotType.SOLDIER, buildDir);
-                    }
-                }
-
-                Nav.tryMove(Nav.randomDirection());
-
-                Clock.yield();
+                doTurn();
             } catch (Exception e) {
                 e.printStackTrace();
+            } finally {
+                Clock.yield();
             }
         }
+    }
+
+    static void doTurn() throws GameActionException {
+        waterLowestHealthTree();
+
+        if (treesPlanted < 5) {
+            if (tryPlantTree()) {
+                return;
+            }
+        } else {
+            if (tryBuildUnit()) {
+                return;
+            }
+        }
+
+        if (!rc.hasMoved()) {
+            Nav.tryMove(Nav.randomDirection());
+        }
+    }
+
+    static void waterLowestHealthTree() throws GameActionException {
+        TreeInfo[] trees = rc.senseNearbyTrees(2.0f, rc.getTeam());
+        TreeInfo lowestTree = null;
+        float lowestHealth = Float.MAX_VALUE;
+        for (TreeInfo tree : trees) {
+            if (rc.canWater(tree.ID) && tree.health < lowestHealth) {
+                lowestHealth = tree.health;
+                lowestTree = tree;
+            }
+        }
+        if (lowestTree != null) {
+            rc.water(lowestTree.ID);
+        }
+    }
+
+    static boolean tryPlantTree() throws GameActionException {
+        for (int i = 0; i < 6; i++) {
+            Direction dir = new Direction(i * (float)Math.PI / 3);
+            if (Math.abs(dir.radians - buildDirection.radians) < 0.5f) continue;
+            if (rc.canPlantTree(dir)) {
+                rc.plantTree(dir);
+                treesPlanted++;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    static boolean tryBuildUnit() throws GameActionException {
+        int round = rc.getRoundNum();
+        RobotType toBuild;
+        if (round < 100) {
+            toBuild = RobotType.SCOUT;
+        } else if (round < 300) {
+            toBuild = RobotType.SOLDIER;
+        } else {
+            toBuild = Math.random() < 0.7 ? RobotType.SOLDIER : RobotType.TANK;
+        }
+        if (rc.canBuildRobot(toBuild, buildDirection)) {
+            rc.buildRobot(toBuild, buildDirection);
+            return true;
+        }
+        return false;
     }
 }

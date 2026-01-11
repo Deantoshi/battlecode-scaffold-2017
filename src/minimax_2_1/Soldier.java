@@ -4,57 +4,62 @@ import battlecode.common.*;
 public strictfp class Soldier {
     static RobotController rc;
 
-    public static void run() throws GameActionException {
-        System.out.println("I'm a soldier!");
-        Team enemy = rc.getTeam().opponent();
+    public static void run(RobotController rc) throws GameActionException {
+        Soldier.rc = rc;
+        Nav.init(rc);
+        Comms.init(rc);
+
         while (true) {
             try {
-                BulletInfo[] bullets = rc.senseNearbyBullets(-1);
-                for (BulletInfo bullet : bullets) {
-                    if (Nav.willCollideWithMe(bullet)) {
-                        Direction dodgeDir = bullet.dir.rotateLeftDegrees(90);
-                        if (!rc.canMove(dodgeDir)) {
-                            dodgeDir = bullet.dir.rotateRightDegrees(90);
-                        }
-                        if (rc.canMove(dodgeDir)) {
-                            rc.move(dodgeDir);
-                        }
-                    }
-                }
-
-                RobotInfo[] enemies = rc.senseNearbyRobots(-1, enemy);
-                RobotInfo target = null;
-                float minHealth = Float.MAX_VALUE;
-                for (RobotInfo enemyRobot : enemies) {
-                    if (enemyRobot.health < minHealth) {
-                        minHealth = enemyRobot.health;
-                        target = enemyRobot;
-                    }
-                }
-
-                if (target != null && rc.canFireSingleShot()) {
-                    Direction toEnemy = rc.getLocation().directionTo(target.location);
-                    rc.fireSingleShot(toEnemy);
-                }
-
-                if (enemies.length > 0) {
-                    MapLocation enemyLoc = enemies[0].location;
-                    Direction toEnemy = rc.getLocation().directionTo(enemyLoc);
-                    Nav.tryMove(toEnemy);
-                } else {
-                    MapLocation archonLoc = Comms.getArchonLocation();
-                    if (archonLoc != null) {
-                        Direction toArchon = rc.getLocation().directionTo(archonLoc);
-                        Nav.tryMove(toArchon);
-                    } else {
-                        Nav.tryMove(Nav.randomDirection());
-                    }
-                }
-
-                Clock.yield();
+                doTurn();
             } catch (Exception e) {
                 e.printStackTrace();
+            } finally {
+                Clock.yield();
             }
         }
+    }
+
+    static void doTurn() throws GameActionException {
+        RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
+        if (enemies.length > 0) {
+            RobotInfo target = findTarget();
+            if (tryShoot(target)) {
+                return;
+            }
+        }
+
+        MapLocation enemyArchon = Comms.getEnemyArchonLocation();
+        if (enemyArchon != null) {
+            if (Nav.moveToward(enemyArchon)) {
+                return;
+            }
+        }
+
+        Nav.tryMove(Nav.randomDirection());
+    }
+
+    static RobotInfo findTarget() throws GameActionException {
+        RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
+        return Utils.findLowestHealthTarget(enemies);
+    }
+
+    static boolean tryShoot(RobotInfo target) throws GameActionException {
+        if (target == null) return false;
+        Direction dir = rc.getLocation().directionTo(target.location);
+        RobotInfo[] allies = rc.senseNearbyRobots(rc.getType().sensorRadius, rc.getTeam());
+        for (RobotInfo ally : allies) {
+            Direction toAlly = rc.getLocation().directionTo(ally.location);
+            float dist = rc.getLocation().distanceTo(ally.location);
+            float distToTarget = rc.getLocation().distanceTo(target.location);
+            if (dist < distToTarget && Math.abs(dir.degreesBetween(toAlly)) < 15) {
+                return false;
+            }
+        }
+        if (rc.canFireSingleShot()) {
+            rc.fireSingleShot(dir);
+            return true;
+        }
+        return false;
     }
 }
