@@ -46,9 +46,11 @@ Each iteration tests against ALL 5 maps to create well-rounded bots:
 | Lanes | Slow | 3v3 archons, lane strategy, late-game |
 | Blitzkrieg | Balanced | 3v3 archons, rapid tactical formations |
 
-## Goals (stop when EITHER is achieved)
-1. Win at least 3/5 games with avg rounds ≤{TARGET_ROUNDS}
-2. Complete {ITERATIONS} full improvement cycles
+## Goals
+1. **Graduation Threshold**: Win at least 3/5 games with avg rounds ≤{TARGET_ROUNDS}
+   - When achieved: Update copy_bot to match current bot version (raise the bar)
+   - Then continue iterating to improve further
+2. **Stop Condition**: Complete {ITERATIONS} full improvement cycles
 
 ## Your Workflow
 
@@ -57,18 +59,20 @@ Each iteration tests against ALL 5 maps to create well-rounded bots:
 2. Define the 5 test maps: `MAPS="shrine,Barrier,Bullseye,Lanes,Blitzkrieg"`
 3. Check if `src/{BOT_NAME}/RobotPlayer.java` exists
    - If not, copy from `src/examplefuncsplayer/` to `src/{BOT_NAME}/`
-4. **If OPPONENT is `copy_bot`**: Create a fresh copy of the bot as the opponent
-   - Run: `rm -rf src/copy_bot/ && mkdir -p src/copy_bot/`
-   - For each .java file in `src/{BOT_NAME}/`:
+4. **If OPPONENT is `copy_bot`**: Create copy_bot ONLY if it doesn't exist
+   - First check: `ls src/copy_bot/RobotPlayer.java 2>/dev/null`
+   - **If copy_bot exists**: Skip creation, use existing copy_bot as opponent
+   - **If copy_bot does NOT exist**: Create it from the main bot:
      ```bash
+     mkdir -p src/copy_bot/
      for file in src/{BOT_NAME}/*.java; do
        filename=$(basename "$file")
        sed '1s/package .*/package copy_bot;/' "$file" > "src/copy_bot/$filename"
      done
      ```
-   - This ensures you're always testing against the current version of your own bot
+   - copy_bot will be updated later when the main bot "graduates" (wins 3/5 with avg ≤{TARGET_ROUNDS})
 5. Clean old summaries to start fresh: `rm -f summaries/*.md`
-6. Initialize tracking: iteration=0, best_avg_rounds=999999
+6. Initialize tracking: iteration=0, best_avg_rounds=999999, graduation_count=0
 
 ### Step 2: Start the Ralph Loop
 Use the `ralph_loop` tool to start an iterative loop:
@@ -116,10 +120,21 @@ STEP 3 - CALCULATE AGGREGATE METRICS:
 - Average rounds across all games
 - Identify patterns: Which map types cause problems?
 
-STEP 4 - CHECK GOALS:
-- If we WON at least 3/5 games with avg rounds ≤{TARGET_ROUNDS}: Output <promise>BATTLECODE_GOAL_ACHIEVED</promise>
-- If iteration count ≥ {ITERATIONS}: Output <promise>BATTLECODE_GOAL_ACHIEVED</promise>
-- Otherwise continue to Step 5
+STEP 4 - CHECK GOALS AND GRADUATION:
+- **If iteration count ≥ {ITERATIONS}**: Output <promise>BATTLECODE_GOAL_ACHIEVED</promise> (we're done)
+- **If we WON at least 3/5 games with avg rounds ≤{TARGET_ROUNDS}** (GRADUATION):
+  - The bot has beaten copy_bot! Time to raise the bar.
+  - Update copy_bot to match the current improved bot:
+    ```bash
+    rm -rf src/copy_bot/ && mkdir -p src/copy_bot/
+    for file in src/{BOT_NAME}/*.java; do
+      filename=$(basename \"$file\")
+      sed '1s/package .*/package copy_bot;/' \"$file\" > \"src/copy_bot/$filename\"
+    done
+    ```
+  - Report: \"GRADUATED! Updated copy_bot to current version. Now training against stronger opponent.\"
+  - Continue to Step 5 to keep improving (do NOT output the promise)
+- **Otherwise**: Continue to Step 5
 
 STEP 5 - COMPREHENSIVE ANALYSIS & PLANNING:
 Based on ALL 5 summaries, identify:
@@ -141,11 +156,13 @@ rm -f summaries/*.md
 STEP 8 - REPORT STATUS:
 Report:
 - Iteration X/{ITERATIONS}
+- Graduations: N (times copy_bot was updated)
 - Games won: X/5
 - Results by map: shrine=W/L, Barrier=W/L, Bullseye=W/L, Lanes=W/L, Blitzkrieg=W/L
 - Avg rounds: N
 - Best avg so far: N
 - Improvement focus: [what was changed]
+- If graduated this iteration: Note that copy_bot was updated
 
 Then the loop will automatically continue to the next iteration.",
   max_iterations: {ITERATIONS},
