@@ -1,76 +1,75 @@
 # Map Classification Checklist
 
-## Pending Maps
-- [ ] Barrier
-- [ ] DenseForest
-- [ ] Enclosure
-- [ ] Hurdle
-- [ ] LineOfFire
-- [ ] MagicWood
-- [ ] shrine
-- [ ] SparseForest
-- [ ] Arena
-- [ ] Barbell
-- [ ] Boxed
-- [ ] Bullseye
-- [ ] Chess
-- [ ] Clusters
-- [ ] Cramped
-- [ ] CrossFire
-- [ ] DigMeOut
-- [ ] GiantForest
-- [ ] LilForts
-- [ ] Maniple
-- [ ] MyFirstMap
-- [ ] OMGTree
-- [ ] PasscalsTriangles
-- [ ] Shrubbery
-- [ ] Sprinkles
-- [ ] Standoff
-- [ ] Waves
-- [ ] 1337Tree
-- [ ] Aligned
-- [ ] Alone
-- [ ] Blitzkrieg
-- [ ] BugTrap
-- [ ] Captive
-- [ ] Caterpillar
-- [ ] Chevron
-- [ ] Conga
-- [ ] CropCircles
-- [ ] Croquembouche
-- [ ] DarkSide
-- [ ] DeathStar
-- [ ] Defenseless
-- [ ] Fancy
-- [ ] FlappyTree
-- [ ] Grass
-- [ ] GreatDekuTree
-- [ ] GreenHouse
-- [ ] HedgeMaze
-- [ ] HiddenTunnel
-- [ ] HouseDivided
-- [ ] Interference
-- [ ] Lanes
-- [ ] Levels
-- [ ] LilMaze
-- [ ] Misaligned
-- [ ] ModernArt
-- [ ] Ocean
-- [ ] Oxygen
-- [ ] PacMan
-- [ ] PeacefulEncounter
-- [ ] Planets
-- [ ] Present
-- [ ] PureImagination
-- [ ] Shortcut
-- [ ] Slant
-- [ ] Snowflake
-- [ ] TheOtherSide
-- [ ] TicTacToe
-- [ ] TreeFarm
+Maps are checked off in place as they are processed. The summarizer processes the first unchecked `[ ]` map.
+
+- [x] Barrier
+- [x] DenseForest
+- [x] Enclosure
+- [x] Hurdle
+- [x] LineOfFire
+- [x] MagicWood
+- [x] shrine
+- [x] SparseForest
+- [x] Arena
+- [x] Barbell
+- [x] Boxed
+- [x] Bullseye
+- [x] Chess
+- [x] Clusters
+- [x] Cramped
+- [x] CrossFire
+- [x] DigMeOut
+- [x] GiantForest
+- [x] LilForts
+- [x] Maniple
+- [x] MyFirstMap
+- [x] OMGTree
+- [x] PasscalsTriangles
+- [x] Shrubbery
+- [x] Sprinkles
+- [x] Standoff
+- [x] Waves
+- [x] 1337Tree
+- [x] Aligned
+- [x] Alone
+- [x] Blitzkrieg
+- [x] BugTrap
+- [x] Captive
+- [x] Caterpillar
+- [x] Chevron
+- [x] Conga
+- [x] CropCircles
+- [x] Croquembouche
+- [x] DarkSide
+- [x] DeathStar
+- [x] Defenseless
+- [x] Fancy
+- [x] FlappyTree
+- [x] Grass
+- [x] GreatDekuTree
+- [x] GreenHouse
+- [x] HedgeMaze
+- [x] HiddenTunnel
+- [x] HouseDivided
+- [x] Interference
+- [x] Lanes
+- [x] Levels
+- [x] LilMaze
+- [x] Misaligned
+- [x] ModernArt
+- [x] Ocean
+- [x] Oxygen
+- [x] PacMan
+- [x] PeacefulEncounter
+- [x] Planets
+- [x] Present
+- [x] PureImagination
+- [x] Shortcut
+- [x] Slant
+- [x] Snowflake
+- [x] TheOtherSide
+- [x] TicTacToe
+- [x] TreeFarm
 - [ ] Turtle
 - [ ] Whirligig
 - [ ] 300
-
-## Completed Maps
