@@ -289,10 +289,8 @@ task runWithSummary(dependsOn: 'createSummariesDir') {
     group 'battlecode'
 
     doLast {
-        // Clean existing summaries before generating new one
-        fileTree('summaries').each { file ->
-            file.delete()
-        }
+        // NOTE: Summaries are NOT deleted here - bc-manager handles cleanup
+        // after reading all 5 map summaries for comprehensive analysis
 
         // Build the match file path
         def matchFile = 'matches/' + project.property('teamA') + '-vs-' + project.property('teamB') + '-on-' + project.property('maps') + '.bc17'
