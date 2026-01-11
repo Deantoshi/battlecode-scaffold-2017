@@ -183,3 +183,15 @@ Maps requiring careful pathfinding and navigation. Dense terrain creates tactica
 - **Visual**: Medium arena with shortcut-like tree formations
 
 ---
+
+## 300
+
+- **Size**: 90 x 90 (LARGE)
+- **Archons**: 1 per team, distance: 66.0
+- **Terrain**: HIGH (208.47% tree coverage, 860 trees)
+- **Archon Spawns**:
+  - Team A: (12.0, 45.0)
+  - Team B: (78.0, 45.0)
+- **Visual**: Large square arena with dense uniform distribution of many small trees across the entire map
+
+---

@@ -14,14 +14,18 @@
 
 - **Visual**: Large arena with planet-like tree formations
 
----
-- **Size**: 100 x 30 (MEDIUM)
-- **Archons**: 2 per team, distance: 95.0
-- **Terrain**: HIGH (33.72% tree coverage, 1228 trees)
+## Turtle
+
+- **Size**: 81 x 81 (LARGE)
+- **Archons**: 1 per team, distance: 76.08
+- **Terrain**: HIGH (21.48% tree coverage, 258 trees)
 - **Archon Spawns**:
-  - Team A: (168.66, 300.54), (168.66, 278.54)
-  - Team B: (263.66, 300.54), (263.66, 278.54)
-- **Visual**: Narrow horizontal corridor with extremely dense tree coverage creating shooting lanes
+  - Team A: (40.53, 124.53)
+  - Team B: (116.61, 124.53)
+- **Visual**: Large square arena with scattered tree clusters across the terrain
+
+---
+
 
 ---
 
@@ -315,6 +319,18 @@
   - Team A: (358.75, 133.18)
   - Team B: (402.75, 169.18)
 - **Visual**: Medium arena with tree farm-like formations
+
+---
+
+## Whirligig
+
+- **Size**: 100 x 100 (LARGE)
+- **Archons**: 3 per team, distance: 88.99
+- **Terrain**: MEDIUM (14.95% tree coverage, 476 trees)
+- **Archon Spawns**:
+  - Team A: (19.33, 93.68), (94.23, 67.35), (20.66, 33.68)
+  - Team B: (91.37, 41.44), (16.47, 67.76), (90.04, 101.44)
+- **Visual**: Large square arena with scattered tree clusters across open terrain
 
 ---
 
