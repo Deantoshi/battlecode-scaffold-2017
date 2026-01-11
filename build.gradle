@@ -351,6 +351,70 @@ task mapInfo(type: JavaExec, dependsOn: 'compileEngineJava') {
     }
 }
 
+// Map tree cleaning task
+task cleanMapTrees(type: JavaExec, dependsOn: 'compileEngineJava') {
+    description 'Removes overlapping trees from a map to improve performance.'
+    group 'battlecode'
+
+    main = 'battlecode.util.MapTreeCleaner'
+    classpath = sourceSets.engine.runtimeClasspath
+
+    doFirst {
+        if (!project.hasProperty('map')) {
+            throw new GradleException('Please specify -Pmap=MapName')
+        }
+        args = project.hasProperty('output') ? [project.property('map'), project.property('output')] : [project.property('map')]
+    }
+}
+
+// Map tree regeneration task
+task regenerateMapTrees(type: JavaExec, dependsOn: 'compileEngineJava') {
+    description 'Regenerates map with symmetrical, neatly spaced trees.'
+    group 'battlecode'
+
+    main = 'battlecode.util.MapTreeRegenerator'
+    classpath = sourceSets.engine.runtimeClasspath
+
+    doFirst {
+        if (!project.hasProperty('map')) {
+            throw new GradleException('Please specify -Pmap=MapName')
+        }
+        args = project.hasProperty('output') ? [project.property('map'), project.property('output')] : [project.property('map')]
+    }
+}
+
+// Map tree dumper task
+task dumpMapTrees(type: JavaExec, dependsOn: 'compileEngineJava') {
+    description 'Dumps all tree positions and checks symmetry.'
+    group 'battlecode'
+
+    main = 'battlecode.util.MapTreeDumper'
+    classpath = sourceSets.engine.runtimeClasspath
+
+    doFirst {
+        if (!project.hasProperty('map')) {
+            throw new GradleException('Please specify -Pmap=MapName')
+        }
+        args = [project.property('map')]
+    }
+}
+
+// Map visualizer task
+task visualizeMap(type: JavaExec, dependsOn: 'compileEngineJava') {
+    description 'Visualizes map as ASCII grid.'
+    group 'battlecode'
+
+    main = 'battlecode.util.MapVisualizer'
+    classpath = sourceSets.engine.runtimeClasspath
+
+    doFirst {
+        if (!project.hasProperty('map')) {
+            throw new GradleException('Please specify -Pmap=MapName')
+        }
+        args = [project.property('map')]
+    }
+}
+
 // Generate summaries for all existing match files
 task summarizeAll(dependsOn: 'createSummariesDir') {
     description 'Generates summaries for all match files in matches/ directory.'
