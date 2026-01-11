@@ -4,8 +4,8 @@ import battlecode.common.*;
 public strictfp class Gardener {
     static RobotController rc;
     static int treesPlanted = 0;
-    static int maxTrees = 5;
-    static int unitBuildRoundTrigger = 50;
+    static int maxTrees = 10;
+    static int unitBuildRoundTrigger = 15;
     static Direction treeDirection = Direction.SOUTH;
     static Direction buildDirection = Direction.NORTH;
 
@@ -29,7 +29,19 @@ public strictfp class Gardener {
         waterLowestHealthTree();
 
         int round = rc.getRoundNum();
-        boolean shouldBuildUnits = (round > unitBuildRoundTrigger && treesPlanted >= 2) || treesPlanted >= maxTrees;
+        RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(10, rc.getTeam().opponent());
+        boolean enemiesNearby = nearbyEnemies.length > 0;
+        
+        boolean shouldBuildUnits = false;
+        if (enemiesNearby) {
+            shouldBuildUnits = true;
+        } else if (round > unitBuildRoundTrigger && treesPlanted >= 2) {
+            shouldBuildUnits = true;
+        } else if (treesPlanted >= maxTrees) {
+            shouldBuildUnits = true;
+        } else if (rc.getTeamBullets() > 500 && treesPlanted >= 5) {
+            shouldBuildUnits = true;
+        }
         
         if (shouldBuildUnits) {
             if (tryBuildUnit()) {
@@ -37,7 +49,7 @@ public strictfp class Gardener {
             }
         }
         
-        if (treesPlanted < maxTrees) {
+        if (treesPlanted < maxTrees || (round < 100 && treesPlanted < maxTrees + 3)) {
             if (tryPlantTree()) {
                 return;
             }
@@ -64,9 +76,8 @@ public strictfp class Gardener {
     }
 
     static boolean tryPlantTree() throws GameActionException {
-        for (int i = 0; i < 6; i++) {
-            Direction dir = new Direction(i * (float)Math.PI / 3);
-            if (Math.abs(dir.radians - treeDirection.radians) < 0.5f) continue;
+        for (int i = 0; i < 8; i++) {
+            Direction dir = new Direction(i * (float)Math.PI / 4);
             if (rc.canPlantTree(dir)) {
                 rc.plantTree(dir);
                 treesPlanted++;
@@ -79,16 +90,16 @@ public strictfp class Gardener {
     static boolean tryBuildUnit() throws GameActionException {
         int round = rc.getRoundNum();
         RobotType toBuild;
-        if (round < 200) {
+        if (round < 300) {
             toBuild = RobotType.SOLDIER;
-        } else if (round < 500) {
-            toBuild = Math.random() < 0.8 ? RobotType.SOLDIER : RobotType.TANK;
+        } else if (round < 800) {
+            toBuild = Math.random() < 0.7 ? RobotType.SOLDIER : RobotType.TANK;
         } else {
-            toBuild = Math.random() < 0.6 ? RobotType.SOLDIER : RobotType.TANK;
+            toBuild = Math.random() < 0.5 ? RobotType.SOLDIER : RobotType.TANK;
         }
         
-        for (int i = 0; i < 6; i++) {
-            Direction dir = new Direction(i * (float)Math.PI / 3);
+        for (int i = 0; i < 8; i++) {
+            Direction dir = new Direction(i * (float)Math.PI / 4);
             if (rc.canBuildRobot(toBuild, dir)) {
                 rc.buildRobot(toBuild, dir);
                 buildDirection = dir;

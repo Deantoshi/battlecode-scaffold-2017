@@ -27,4 +27,19 @@ public strictfp class Comms {
     public static MapLocation getEnemyArchonLocation() throws GameActionException {
         return readLocation(2, 3);
     }
+
+    public static int countFriendlyGardeners() throws GameActionException {
+        RobotInfo[] robots = rc.senseNearbyRobots(-1, rc.getTeam());
+        int count = 0;
+        for (RobotInfo robot : robots) {
+            if (robot.type == RobotType.GARDENER) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    public static MapLocation getFriendlyArchonLocation() throws GameActionException {
+        return readLocation(0, 1);
+    }
 }

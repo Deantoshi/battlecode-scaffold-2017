@@ -27,6 +27,27 @@ public strictfp class Soldier {
             if (tryShoot(target)) {
                 return;
             }
+            if (tryMoveToAttack(target)) {
+                return;
+            }
+        }
+
+        RobotInfo[] nearbyAllies = rc.senseNearbyRobots(10, rc.getTeam());
+        int allyCount = 0;
+        for (RobotInfo ally : nearbyAllies) {
+            if (ally.type == RobotType.SOLDIER || ally.type == RobotType.LUMBERJACK || ally.type == RobotType.TANK) {
+                allyCount++;
+            }
+        }
+        
+        if (allyCount < 3) {
+            MapLocation myLoc = rc.getLocation();
+            MapLocation archonLoc = Comms.getFriendlyArchonLocation();
+            if (archonLoc != null && myLoc.distanceTo(archonLoc) > 15) {
+                if (Nav.moveToward(archonLoc)) {
+                    return;
+                }
+            }
         }
 
         MapLocation enemyArchon = Comms.getEnemyArchonLocation();
@@ -37,6 +58,15 @@ public strictfp class Soldier {
         }
 
         Nav.tryMove(Nav.randomDirection());
+    }
+
+    static boolean tryMoveToAttack(RobotInfo target) throws GameActionException {
+        if (target == null) return false;
+        float dist = rc.getLocation().distanceTo(target.location);
+        if (dist > 5.0f) {
+            return Nav.moveToward(target.location);
+        }
+        return false;
     }
 
     static RobotInfo findTarget() throws GameActionException {
