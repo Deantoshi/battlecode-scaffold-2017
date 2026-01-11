@@ -2,63 +2,42 @@ package copy_bot;
 import battlecode.common.*;
 
 public strictfp class Utils {
+
     public static RobotInfo findLowestHealthTarget(RobotInfo[] enemies) {
-        if (enemies.length == 0) return null;
-        RobotInfo lowest = enemies[0];
+        RobotInfo best = null;
+        float lowestHealth = Float.MAX_VALUE;
         for (RobotInfo enemy : enemies) {
-            if (enemy.health < lowest.health) {
-                lowest = enemy;
+            if (enemy.health < lowestHealth) {
+                lowestHealth = enemy.health;
+                best = enemy;
             }
         }
-        return lowest;
+        return best;
     }
 
     public static TreeInfo findLowestHealthTree(TreeInfo[] trees) {
-        if (trees.length == 0) return null;
-        TreeInfo lowest = trees[0];
+        TreeInfo best = null;
+        float lowestHealth = Float.MAX_VALUE;
         for (TreeInfo tree : trees) {
-            if (tree.health < lowest.health) {
-                lowest = tree;
+            if (tree.health < lowestHealth) {
+                lowestHealth = tree.health;
+                best = tree;
             }
         }
-        return lowest;
+        return best;
     }
 
-    public static boolean willCollideWithMe(RobotController rc, BulletInfo bullet) {
-        MapLocation myLocation = rc.getLocation();
-        Direction propagationDirection = bullet.dir;
-        MapLocation bulletLocation = bullet.location;
-        Direction directionToRobot = bulletLocation.directionTo(myLocation);
-        float distToRobot = bulletLocation.distanceTo(myLocation);
-        float theta = propagationDirection.radiansBetween(directionToRobot);
-        if (Math.abs(theta) > Math.PI / 2) {
-            return false;
-        }
-        float perpendicularDist = (float) Math.abs(distToRobot * Math.sin(theta));
-        return (perpendicularDist <= rc.getType().bodyRadius);
-    }
-
-    public static boolean isLocationSafe(RobotController rc, MapLocation loc, BulletInfo[] bullets) {
-        for (BulletInfo bullet : bullets) {
-            Direction propagationDirection = bullet.dir;
-            MapLocation bulletLocation = bullet.location;
-            Direction directionToLoc = bulletLocation.directionTo(loc);
-            float distToLoc = bulletLocation.distanceTo(loc);
-            float theta = propagationDirection.radiansBetween(directionToLoc);
-            if (Math.abs(theta) <= Math.PI / 2) {
-                float perpendicularDist = (float) Math.abs(distToLoc * Math.sin(theta));
-                if (perpendicularDist <= rc.getType().bodyRadius) {
-                    return false;
-                }
+    public static RobotInfo findClosestEnemy(RobotController rc, RobotInfo[] enemies) {
+        RobotInfo closest = null;
+        float closestDist = Float.MAX_VALUE;
+        MapLocation myLoc = rc.getLocation();
+        for (RobotInfo enemy : enemies) {
+            float dist = myLoc.distanceTo(enemy.location);
+            if (dist < closestDist) {
+                closestDist = dist;
+                closest = enemy;
             }
         }
-        return true;
-    }
-
-    public static int getShotType(RobotController rc, MapLocation target) {
-        float distance = rc.getLocation().distanceTo(target);
-        if (distance <= 3) return 3;
-        if (distance <= 5) return 2;
-        return 1;
+        return closest;
     }
 }

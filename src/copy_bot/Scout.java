@@ -2,96 +2,52 @@ package copy_bot;
 import battlecode.common.*;
 
 public strictfp class Scout {
-    static Direction spiralDir = Direction.EAST;
-    static int spiralSteps = 0;
-    static int spiralTurns = 0;
-    static boolean moved = false;
+    static RobotController rc;
 
     public static void run(RobotController rc) throws GameActionException {
+        Scout.rc = rc;
+        Nav.init(rc);
+        Comms.init(rc);
+
         while (true) {
-            moved = false;
             try {
-                shakeNearestTree(rc);
-                scoutAndReport(rc);
-                
-                RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
-                if (enemies.length > 0) {
-                    for (RobotInfo enemy : enemies) {
-                        if (enemy.type == RobotType.GARDENER) {
-                            harassGardener(rc, enemy);
-                            break;
-                        }
-                    }
-                }
-                
-                if (!moved) {
-                    moveInSpiral(rc);
-                }
-                
-                Clock.yield();
+                doTurn();
             } catch (Exception e) {
-                System.out.println("Scout Exception");
                 e.printStackTrace();
+            } finally {
+                Clock.yield();
             }
         }
     }
 
-    static void shakeNearestTree(RobotController rc) throws GameActionException {
-        TreeInfo[] trees = rc.senseNearbyTrees();
-        for (TreeInfo tree : trees) {
-            if (tree.getContainedBullets() > 0 && rc.canShake(tree.ID)) {
-                rc.shake(tree.ID);
-                return;
-            }
+    static void doTurn() throws GameActionException {
+        if (tryShakeTree()) {
+            return;
         }
-    }
 
-    static void scoutAndReport(RobotController rc) throws GameActionException {
         RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
         for (RobotInfo enemy : enemies) {
-            if (enemy.type == RobotType.ARCHON || enemy.type == RobotType.GARDENER) {
-                Comms.broadcastEnemySpotted(rc, enemy.location, rc.getRoundNum());
-                if (enemy.type == RobotType.ARCHON) {
-                    Comms.broadcastLocation(rc, 2, 3, enemy.location);
-                }
-                return;
-            }
+            reportEnemy(enemy);
         }
+
+        Nav.tryMove(Nav.randomDirection());
     }
 
-    static void harassGardener(RobotController rc, RobotInfo gardener) throws GameActionException {
-        float dist = rc.getLocation().distanceTo(gardener.location);
-        if (dist > 4) {
-            if (Nav.moveToward(rc, gardener.location)) {
-                moved = true;
-            }
-        } else if (dist < 3) {
-            if (Nav.moveAway(rc, gardener.location)) {
-                moved = true;
+    static boolean tryShakeTree() throws GameActionException {
+        TreeInfo[] trees = rc.senseNearbyTrees(2.0f, Team.NEUTRAL);
+        for (TreeInfo tree : trees) {
+            if (tree.containedBullets > 0 && rc.canShake(tree.ID)) {
+                rc.shake(tree.ID);
+                return true;
             }
         }
-        
-        if (rc.canFireSingleShot() && rc.getTeamBullets() > 5) {
-            if (rc.canFireSingleShot()) {
-                rc.fireSingleShot(rc.getLocation().directionTo(gardener.location));
-            }
-        }
+        return false;
     }
 
-    static void moveInSpiral(RobotController rc) throws GameActionException {
-        MapLocation archonLoc = Comms.readLocation(rc, 0, 1);
-        if (archonLoc != null && rc.getLocation().distanceTo(archonLoc) < 10) {
-            if (Nav.moveToward(rc, archonLoc)) {
-                return;
-            }
-        }
-        if (spiralSteps >= 2 + spiralTurns / 2) {
-            spiralDir = spiralDir.rotateLeftDegrees(90);
-            spiralSteps = 0;
-            spiralTurns++;
-        }
-        if (Nav.tryMove(rc, spiralDir)) {
-            spiralSteps++;
+    static void reportEnemy(RobotInfo enemy) throws GameActionException {
+        if (enemy.type == RobotType.ARCHON) {
+            Comms.broadcastLocation(2, 3, enemy.location);
+            rc.broadcast(4, 1);
         }
     }
 }

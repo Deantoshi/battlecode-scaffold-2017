@@ -2,106 +2,86 @@ package copy_bot;
 import battlecode.common.*;
 
 public strictfp class Gardener {
+    static RobotController rc;
     static int treesPlanted = 0;
-    static Direction buildDir = Direction.EAST;
-    static boolean moved = false;
+    static Direction buildDirection = Direction.SOUTH;
 
     public static void run(RobotController rc) throws GameActionException {
+        Gardener.rc = rc;
+        Nav.init(rc);
+        Comms.init(rc);
+
         while (true) {
-            moved = false;
             try {
-                findOpenSpace(rc);
-                waterLowestHealthTree(rc);
-                
-                if (shouldBuildUnit(rc)) {
-                    if (rc.getRoundNum() < 100 && !hasBuiltScout()) {
-                        tryBuild(rc, RobotType.SCOUT, buildDir);
-                    } else if (rc.getTreeCount() > 2) {
-                        tryBuild(rc, RobotType.SOLDIER, buildDir);
-                    } else if (rc.getRoundNum() > 800 && rc.getTeamBullets() > 80) {
-                        tryBuild(rc, RobotType.SOLDIER, buildDir);
-                    }
-                }
-                
-                if (rc.getTeamBullets() > 40 && treesPlanted < 10) {
-                    tryPlantTree(rc);
-                }
-                
-                Clock.yield();
+                doTurn();
             } catch (Exception e) {
-                System.out.println("Gardener Exception");
                 e.printStackTrace();
+            } finally {
+                Clock.yield();
             }
         }
     }
 
-    static void findOpenSpace(RobotController rc) throws GameActionException {
-        MapLocation archonLoc = Comms.readLocation(rc, 0, 1);
-        if (archonLoc != null && rc.getLocation().distanceTo(archonLoc) < 5 && !moved) {
-            Direction away = rc.getLocation().directionTo(archonLoc).opposite();
-            if (Nav.tryMove(rc, away)) {
-                moved = true;
+    static void doTurn() throws GameActionException {
+        waterLowestHealthTree();
+
+        if (treesPlanted < 5) {
+            if (tryPlantTree()) {
+                return;
             }
-        }
-        
-        if (!moved) {
-            RobotInfo[] gardeners = rc.senseNearbyRobots(-1, rc.getTeam());
-            for (RobotInfo g : gardeners) {
-                if (g.type == RobotType.GARDENER && g.location.distanceTo(rc.getLocation()) < 5) {
-                    Direction away = rc.getLocation().directionTo(g.location).opposite();
-                    if (Nav.tryMove(rc, away)) {
-                        moved = true;
-                    }
-                    break;
-                }
-            }
-        }
-    }
-
-    static void waterLowestHealthTree(RobotController rc) throws GameActionException {
-        TreeInfo[] trees = rc.senseNearbyTrees(RobotType.GARDENER.sensorRadius, rc.getTeam());
-        if (trees.length == 0) return;
-        
-        TreeInfo lowest = Utils.findLowestHealthTree(trees);
-        if (rc.canWater(lowest.ID)) {
-            rc.water(lowest.ID);
-        }
-    }
-
-    static boolean shouldBuildUnit(RobotController rc) {
-        return rc.getTeamBullets() > 60;
-    }
-
-    static void tryBuild(RobotController rc, RobotType type, Direction dir) throws GameActionException {
-        if (rc.canBuildRobot(type, dir)) {
-            rc.buildRobot(type, dir);
         } else {
-            for (int i = 0; i < 6; i++) {
-                if (rc.canBuildRobot(type, dir.rotateLeftDegrees(60 * i))) {
-                    rc.buildRobot(type, dir.rotateLeftDegrees(60 * i));
-                    return;
-                }
-            }
-        }
-    }
-
-    static void tryPlantTree(RobotController rc) throws GameActionException {
-        Direction[] dirs = new Direction[6];
-        for (int i = 0; i < 6; i++) {
-            dirs[i] = new Direction((float)(i * 60 * Math.PI / 180));
-        }
-        
-        for (Direction d : dirs) {
-            if (d.equals(buildDir)) continue;
-            if (rc.canPlantTree(d)) {
-                rc.plantTree(d);
-                treesPlanted++;
+            if (tryBuildUnit()) {
                 return;
             }
         }
+
+        if (!rc.hasMoved()) {
+            Nav.tryMove(Nav.randomDirection());
+        }
     }
 
-    static boolean hasBuiltScout() {
-        return treesPlanted > 0;
+    static void waterLowestHealthTree() throws GameActionException {
+        TreeInfo[] trees = rc.senseNearbyTrees(2.0f, rc.getTeam());
+        TreeInfo lowestTree = null;
+        float lowestHealth = Float.MAX_VALUE;
+        for (TreeInfo tree : trees) {
+            if (rc.canWater(tree.ID) && tree.health < lowestHealth) {
+                lowestHealth = tree.health;
+                lowestTree = tree;
+            }
+        }
+        if (lowestTree != null) {
+            rc.water(lowestTree.ID);
+        }
+    }
+
+    static boolean tryPlantTree() throws GameActionException {
+        for (int i = 0; i < 6; i++) {
+            Direction dir = new Direction(i * (float)Math.PI / 3);
+            if (Math.abs(dir.radians - buildDirection.radians) < 0.5f) continue;
+            if (rc.canPlantTree(dir)) {
+                rc.plantTree(dir);
+                treesPlanted++;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    static boolean tryBuildUnit() throws GameActionException {
+        int round = rc.getRoundNum();
+        RobotType toBuild;
+        if (round < 100) {
+            toBuild = RobotType.SCOUT;
+        } else if (round < 300) {
+            toBuild = RobotType.SOLDIER;
+        } else {
+            toBuild = Math.random() < 0.7 ? RobotType.SOLDIER : RobotType.TANK;
+        }
+        if (rc.canBuildRobot(toBuild, buildDirection)) {
+            rc.buildRobot(toBuild, buildDirection);
+            return true;
+        }
+        return false;
     }
 }

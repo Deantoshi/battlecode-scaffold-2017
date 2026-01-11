@@ -2,41 +2,39 @@ package copy_bot;
 import battlecode.common.*;
 
 public strictfp class Nav {
-    public static boolean tryMove(RobotController rc, Direction dir) throws GameActionException {
-        return tryMove(rc, dir, 20, 3);
+    static RobotController rc;
+
+    public static void init(RobotController rc) {
+        Nav.rc = rc;
     }
 
-    public static boolean tryMove(RobotController rc, Direction dir, float degreeOffset, int checksPerSide) throws GameActionException {
+    public static boolean tryMove(Direction dir) throws GameActionException {
         if (rc.canMove(dir)) {
             rc.move(dir);
             return true;
         }
-        int currentCheck = 1;
-        while (currentCheck <= checksPerSide) {
-            if (rc.canMove(dir.rotateLeftDegrees(degreeOffset * currentCheck))) {
-                rc.move(dir.rotateLeftDegrees(degreeOffset * currentCheck));
+        for (int i = 1; i <= 6; i++) {
+            Direction left = dir.rotateLeftDegrees(15 * i);
+            if (rc.canMove(left)) {
+                rc.move(left);
                 return true;
             }
-            if (rc.canMove(dir.rotateRightDegrees(degreeOffset * currentCheck))) {
-                rc.move(dir.rotateRightDegrees(degreeOffset * currentCheck));
+            Direction right = dir.rotateRightDegrees(15 * i);
+            if (rc.canMove(right)) {
+                rc.move(right);
                 return true;
             }
-            currentCheck++;
         }
         return false;
     }
 
-    public static boolean moveToward(RobotController rc, MapLocation target) throws GameActionException {
-        Direction toTarget = rc.getLocation().directionTo(target);
-        return tryMove(rc, toTarget, 15, 6);
-    }
-
-    public static boolean moveAway(RobotController rc, MapLocation danger) throws GameActionException {
-        Direction fromDanger = rc.getLocation().directionTo(danger).opposite();
-        return tryMove(rc, fromDanger, 15, 6);
+    public static boolean moveToward(MapLocation target) throws GameActionException {
+        if (target == null) return false;
+        Direction dir = rc.getLocation().directionTo(target);
+        return tryMove(dir);
     }
 
     public static Direction randomDirection() {
-        return new Direction((float) Math.random() * 2 * (float) Math.PI);
+        return new Direction((float)(Math.random() * 2 * Math.PI));
     }
 }

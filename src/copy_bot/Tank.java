@@ -2,41 +2,67 @@ package copy_bot;
 import battlecode.common.*;
 
 public strictfp class Tank {
+    static RobotController rc;
+
     public static void run(RobotController rc) throws GameActionException {
+        Tank.rc = rc;
+        Nav.init(rc);
+        Comms.init(rc);
+
         while (true) {
             try {
-                RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
-                
-                if (enemies.length > 0) {
-                    fireAtTarget(rc, enemies);
-                }
-                
-                bulldozeTrees(rc);
-                
-                MapLocation enemyLoc = Comms.readEnemyLocation(rc);
-                if (enemyLoc != null) {
-                    Nav.moveToward(rc, enemyLoc);
-                } else {
-                    Nav.tryMove(rc, Nav.randomDirection());
-                }
-                
-                Clock.yield();
+                doTurn();
             } catch (Exception e) {
-                System.out.println("Tank Exception");
                 e.printStackTrace();
+            } finally {
+                Clock.yield();
             }
         }
     }
 
-    static void fireAtTarget(RobotController rc, RobotInfo[] enemies) throws GameActionException {
-        RobotInfo target = Utils.findLowestHealthTarget(enemies);
-        
-        if (rc.canFirePentadShot() && rc.getTeamBullets() > 20) {
-            rc.firePentadShot(rc.getLocation().directionTo(target.location));
+    static void doTurn() throws GameActionException {
+        RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
+        RobotInfo target = null;
+        if (enemies.length > 0) {
+            target = Utils.findLowestHealthTarget(enemies);
+            if (target != null) {
+                Direction dir = rc.getLocation().directionTo(target.location);
+                RobotInfo[] allies = rc.senseNearbyRobots(rc.getType().sensorRadius, rc.getTeam());
+                boolean safe = true;
+                for (RobotInfo ally : allies) {
+                    Direction toAlly = rc.getLocation().directionTo(ally.location);
+                    float dist = rc.getLocation().distanceTo(ally.location);
+                    float distToTarget = rc.getLocation().distanceTo(target.location);
+                    if (dist < distToTarget && Math.abs(dir.degreesBetween(toAlly)) < 20) {
+                        safe = false;
+                        break;
+                    }
+                }
+                if (safe) {
+                    int enemyCount = 0;
+                    for (RobotInfo e : enemies) {
+                        if (rc.getLocation().distanceTo(e.location) <= 5) {
+                            enemyCount++;
+                        }
+                    }
+                    if (enemyCount >= 3 && rc.canFireTriadShot()) {
+                        rc.fireTriadShot(dir);
+                    } else if (rc.canFireSingleShot()) {
+                        rc.fireSingleShot(dir);
+                    }
+                }
+            }
         }
-    }
 
-    static void bulldozeTrees(RobotController rc) throws GameActionException {
-        Nav.tryMove(rc, Nav.randomDirection());
+        MapLocation enemyArchon = Comms.getEnemyArchonLocation();
+        if (enemyArchon != null) {
+            if (Nav.moveToward(enemyArchon)) {
+                return;
+            }
+        }
+
+        if (!rc.hasMoved()) {
+            Nav.tryMove(Nav.randomDirection());
+        }
     }
 }

@@ -30,13 +30,30 @@ public strictfp class Archon {
             Nav.tryMove(away);
         }
 
-        if (rc.getTeamBullets() >= 100) {
+        int gardenerCount = countNearbyGardeners();
+        if (rc.getTeamBullets() >= 100 && gardenerCount < 4) {
+            tryHireGardener();
+            tryHireGardener();
+        }
+
+        if (rc.getTeamBullets() >= 100 && gardenerCount < 6) {
             tryHireGardener();
         }
 
         if (!rc.hasMoved()) {
             Nav.tryMove(Nav.randomDirection());
         }
+    }
+
+    static int countNearbyGardeners() throws GameActionException {
+        RobotInfo[] robots = rc.senseNearbyRobots(20, rc.getTeam());
+        int count = 0;
+        for (RobotInfo robot : robots) {
+            if (robot.type == RobotType.GARDENER) {
+                count++;
+            }
+        }
+        return count;
     }
 
     static boolean tryHireGardener() throws GameActionException {

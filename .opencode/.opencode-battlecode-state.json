@@ -3,10 +3,10 @@
   "iteration": 0,
   "targetIterations": 10,
   "targetWinRounds": 1500,
-  "botName": "glm_4_7",
+  "botName": "minimax_2_1",
   "opponent": "copy_bot",
-  "mapName": "Bullseye",
+  "mapName": "shrine,Barrier,Bullseye,Lanes,Blitzkrieg",
   "results": [],
   "bestResult": null,
-  "startTime": 1767994116512
+  "startTime": 1768104052892
 }

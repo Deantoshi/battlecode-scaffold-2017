@@ -4,7 +4,10 @@ import battlecode.common.*;
 public strictfp class Gardener {
     static RobotController rc;
     static int treesPlanted = 0;
-    static Direction buildDirection = Direction.SOUTH;
+    static int maxTrees = 5;
+    static int unitBuildRoundTrigger = 50;
+    static Direction treeDirection = Direction.SOUTH;
+    static Direction buildDirection = Direction.NORTH;
 
     public static void run(RobotController rc) throws GameActionException {
         Gardener.rc = rc;
@@ -25,12 +28,17 @@ public strictfp class Gardener {
     static void doTurn() throws GameActionException {
         waterLowestHealthTree();
 
-        if (treesPlanted < 5) {
-            if (tryPlantTree()) {
+        int round = rc.getRoundNum();
+        boolean shouldBuildUnits = (round > unitBuildRoundTrigger && treesPlanted >= 2) || treesPlanted >= maxTrees;
+        
+        if (shouldBuildUnits) {
+            if (tryBuildUnit()) {
                 return;
             }
-        } else {
-            if (tryBuildUnit()) {
+        }
+        
+        if (treesPlanted < maxTrees) {
+            if (tryPlantTree()) {
                 return;
             }
         }
@@ -58,7 +66,7 @@ public strictfp class Gardener {
     static boolean tryPlantTree() throws GameActionException {
         for (int i = 0; i < 6; i++) {
             Direction dir = new Direction(i * (float)Math.PI / 3);
-            if (Math.abs(dir.radians - buildDirection.radians) < 0.5f) continue;
+            if (Math.abs(dir.radians - treeDirection.radians) < 0.5f) continue;
             if (rc.canPlantTree(dir)) {
                 rc.plantTree(dir);
                 treesPlanted++;
@@ -71,16 +79,21 @@ public strictfp class Gardener {
     static boolean tryBuildUnit() throws GameActionException {
         int round = rc.getRoundNum();
         RobotType toBuild;
-        if (round < 100) {
-            toBuild = RobotType.SCOUT;
-        } else if (round < 300) {
+        if (round < 200) {
             toBuild = RobotType.SOLDIER;
+        } else if (round < 500) {
+            toBuild = Math.random() < 0.8 ? RobotType.SOLDIER : RobotType.TANK;
         } else {
-            toBuild = Math.random() < 0.7 ? RobotType.SOLDIER : RobotType.TANK;
+            toBuild = Math.random() < 0.6 ? RobotType.SOLDIER : RobotType.TANK;
         }
-        if (rc.canBuildRobot(toBuild, buildDirection)) {
-            rc.buildRobot(toBuild, buildDirection);
-            return true;
+        
+        for (int i = 0; i < 6; i++) {
+            Direction dir = new Direction(i * (float)Math.PI / 3);
+            if (rc.canBuildRobot(toBuild, dir)) {
+                rc.buildRobot(toBuild, dir);
+                buildDirection = dir;
+                return true;
+            }
         }
         return false;
     }
