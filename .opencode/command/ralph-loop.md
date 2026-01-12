@@ -1,6 +1,7 @@
 ---
 description: Start a Ralph Wiggum loop for iterative task completion
 agent: build
+temperature: 0
 ---
 
 ## CRITICAL RESTRICTION: File Access

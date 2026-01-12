@@ -1,6 +1,7 @@
 ---
 description: Soldier combat specialist for Battlecode 2017 (micro, targeting, formation)
 mode: subagent
+temperature: 1
 tools:
   write: false
   edit: false

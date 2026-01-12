@@ -1,6 +1,7 @@
 ---
 description: Tank combat specialist for Battlecode 2017 (late-game pressure, sieges)
 mode: subagent
+temperature: 1
 tools:
   write: false
   edit: false

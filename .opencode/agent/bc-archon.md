@@ -1,6 +1,7 @@
 ---
 description: Archon strategy specialist for Battlecode 2017 (hiring, survival, macro)
 mode: subagent
+temperature: 1
 tools:
   write: false
   edit: false

@@ -1,6 +1,7 @@
 ---
 description: Economy and victory points specialist for Battlecode 2017
 mode: subagent
+temperature: 1
 tools:
   write: false
   edit: false

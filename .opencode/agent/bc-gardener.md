@@ -1,6 +1,7 @@
 ---
 description: Gardener strategy specialist for Battlecode 2017 (economy, production, tree farms)
 mode: subagent
+temperature: 1
 tools:
   write: false
   edit: false

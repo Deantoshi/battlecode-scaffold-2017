@@ -1,6 +1,7 @@
 ---
 description: Exploration and map control specialist for Battlecode 2017
 mode: subagent
+temperature: 1
 tools:
   write: false
   edit: false

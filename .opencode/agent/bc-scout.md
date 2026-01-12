@@ -1,6 +1,7 @@
 ---
 description: Scout specialist for Battlecode 2017 (recon, harass, bullet income)
 mode: subagent
+temperature: 1
 tools:
   write: false
   edit: false
