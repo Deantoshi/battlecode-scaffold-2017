@@ -3,11 +3,13 @@ import battlecode.common.*;
 
 public strictfp class Scout {
     static RobotController rc;
+    static MapLocation target;
 
     public static void run(RobotController rc) throws GameActionException {
         Scout.rc = rc;
         Nav.init(rc);
         Comms.init(rc);
+        target = null;
 
         while (true) {
             try {
@@ -30,7 +32,14 @@ public strictfp class Scout {
             reportEnemy(enemy);
         }
 
-        Nav.tryMove(Nav.randomDirection());
+        if (target == null || rc.getLocation().distanceTo(target) < 5) {
+            target = new MapLocation(rc.getLocation().x + 20 * (Math.random() < 0.5 ? -1 : 1), 
+                                    rc.getLocation().y + 20 * (Math.random() < 0.5 ? -1 : 1));
+        }
+
+        if (!Nav.moveToward(target)) {
+            Nav.tryMove(Nav.randomDirection());
+        }
     }
 
     static boolean tryShakeTree() throws GameActionException {

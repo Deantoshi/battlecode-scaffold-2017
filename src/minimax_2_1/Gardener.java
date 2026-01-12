@@ -5,7 +5,7 @@ public strictfp class Gardener {
     static RobotController rc;
     static int treesPlanted = 0;
     static int maxTrees = 5;
-    static int unitBuildRoundTrigger = 5;
+    static int unitBuildRoundTrigger = 3;
     static Direction treeDirection = Direction.SOUTH;
     static Direction buildDirection = Direction.NORTH;
 
@@ -32,12 +32,30 @@ public strictfp class Gardener {
         RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(10, rc.getTeam().opponent());
         boolean enemiesNearby = nearbyEnemies.length > 0;
         
+        if (enemiesNearby) {
+            if (tryBuildUnit()) {
+                return;
+            }
+        }
+        
+        if (round < 100 && treesPlanted < 1) {
+            if (tryPlantTree()) {
+                return;
+            }
+        }
+        
+        if (treesPlanted < maxTrees) {
+            if (tryPlantTree()) {
+                return;
+            }
+        }
+        
         boolean shouldBuildUnits = false;
         if (enemiesNearby) {
             shouldBuildUnits = true;
-        } else if (rc.getTeamBullets() >= 120 && treesPlanted >= 1) {
+        } else if (rc.getTeamBullets() >= 100 && treesPlanted >= 1) {
             shouldBuildUnits = true;
-        } else if (round > 80 && treesPlanted >= 1) {
+        } else if (round > 60 && treesPlanted >= 1) {
             shouldBuildUnits = true;
         } else if (treesPlanted >= maxTrees) {
             shouldBuildUnits = true;
@@ -47,12 +65,6 @@ public strictfp class Gardener {
         
         if (shouldBuildUnits) {
             if (tryBuildUnit()) {
-                return;
-            }
-        }
-        
-        if (treesPlanted < maxTrees || (round < 100 && treesPlanted < maxTrees + 4)) {
-            if (tryPlantTree()) {
                 return;
             }
         }
@@ -92,12 +104,38 @@ public strictfp class Gardener {
     static boolean tryBuildUnit() throws GameActionException {
         int round = rc.getRoundNum();
         RobotType toBuild;
-        if (round < 300) {
+        
+        if (round < 400 && Math.random() < 0.25 && treesPlanted >= 1) {
+            toBuild = RobotType.SCOUT;
+        } else if (round < 400) {
             toBuild = RobotType.SOLDIER;
-        } else if (round < 800) {
-            toBuild = Math.random() < 0.7 ? RobotType.SOLDIER : RobotType.TANK;
+        } else if (round < 1000) {
+            double rand = Math.random();
+            if (rand < 0.70) {
+                toBuild = RobotType.SOLDIER;
+            } else if (rand < 0.92) {
+                toBuild = RobotType.SCOUT;
+            } else {
+                toBuild = RobotType.SOLDIER;
+            }
+        } else if (round < 1500) {
+            double rand = Math.random();
+            if (rand < 0.80) {
+                toBuild = RobotType.SOLDIER;
+            } else if (rand < 0.90) {
+                toBuild = RobotType.SCOUT;
+            } else {
+                toBuild = RobotType.SOLDIER;
+            }
         } else {
-            toBuild = Math.random() < 0.5 ? RobotType.SOLDIER : RobotType.TANK;
+            double rand = Math.random();
+            if (rand < 0.70) {
+                toBuild = RobotType.SOLDIER;
+            } else if (rand < 0.85) {
+                toBuild = RobotType.SCOUT;
+            } else {
+                toBuild = RobotType.SOLDIER;
+            }
         }
         
         for (int i = 0; i < 8; i++) {

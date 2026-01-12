@@ -22,6 +22,13 @@ public strictfp class Soldier {
 
     static void doTurn() throws GameActionException {
         RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
+        
+        for (RobotInfo enemy : enemies) {
+            if (enemy.type == RobotType.ARCHON) {
+                Comms.broadcastLocation(2, 3, enemy.location);
+            }
+        }
+        
         if (enemies.length > 0) {
             RobotInfo target = findTarget();
             if (tryShoot(target)) {
@@ -40,10 +47,10 @@ public strictfp class Soldier {
             }
         }
         
-        if (allyCount < 3) {
+        if (allyCount < 1) {
             MapLocation myLoc = rc.getLocation();
             MapLocation archonLoc = Comms.getFriendlyArchonLocation();
-            if (archonLoc != null && myLoc.distanceTo(archonLoc) > 15) {
+            if (archonLoc != null && myLoc.distanceTo(archonLoc) > 20) {
                 if (Nav.moveToward(archonLoc)) {
                     return;
                 }
@@ -63,7 +70,7 @@ public strictfp class Soldier {
     static boolean tryMoveToAttack(RobotInfo target) throws GameActionException {
         if (target == null) return false;
         float dist = rc.getLocation().distanceTo(target.location);
-        if (dist > 5.0f) {
+        if (dist > 3.0f) {
             return Nav.moveToward(target.location);
         }
         return false;
@@ -83,13 +90,18 @@ public strictfp class Soldier {
             return false;
         }
         
-        if (rc.canFireSingleShot()) {
-            rc.fireSingleShot(dir);
+        if (rc.canFirePentadShot() && distToTarget < 2.0f) {
+            rc.firePentadShot(dir);
             return true;
         }
         
         if (rc.canFireTriadShot() && distToTarget < 3.0f) {
             rc.fireTriadShot(dir);
+            return true;
+        }
+        
+        if (rc.canFireSingleShot()) {
+            rc.fireSingleShot(dir);
             return true;
         }
         
