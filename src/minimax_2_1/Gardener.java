@@ -25,17 +25,14 @@ public strictfp class Gardener {
     }
 
     static void doTurn() throws GameActionException {
-        TreeInfo[] nearbyNeutralTrees = rc.senseNearbyTrees(5.0f, Team.NEUTRAL);
-        for (TreeInfo tree : nearbyNeutralTrees) {
-            if (tree.containedBullets > 0 && rc.canShake(tree.ID)) {
-                rc.shake(tree.ID);
+        int round = rc.getRoundNum();
+        
+        if (treesPlanted < 3) {
+            if (tryPlantTree()) {
                 return;
             }
         }
         
-        waterLowestHealthTree();
-
-        int round = rc.getRoundNum();
         RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(10, rc.getTeam().opponent());
         boolean enemiesNearby = nearbyEnemies.length > 0;
         
@@ -45,30 +42,7 @@ public strictfp class Gardener {
             }
         }
         
-        if (round < 100 && treesPlanted < 1) {
-            if (tryPlantTree()) {
-                return;
-            }
-        }
-        
-        if (treesPlanted < maxTrees) {
-            if (tryPlantTree()) {
-                return;
-            }
-        }
-        
-        boolean shouldBuildUnits = false;
-        if (enemiesNearby) {
-            shouldBuildUnits = true;
-        } else if (rc.getTeamBullets() >= 60 && treesPlanted >= 1) {
-            shouldBuildUnits = true;
-        } else if (round > 20 && treesPlanted >= 1) {
-            shouldBuildUnits = true;
-        } else if (treesPlanted >= maxTrees) {
-            shouldBuildUnits = true;
-        } else if (round > 5) {
-            shouldBuildUnits = true;
-        }
+        boolean shouldBuildUnits = true;
         
         if (shouldBuildUnits) {
             if (tryBuildUnit()) {
@@ -114,30 +88,21 @@ public strictfp class Gardener {
         
         if (round < 200) {
             toBuild = RobotType.SCOUT;
-        } else if (round < 500) {
+        } else if (round < 600) {
             double rand = Math.random();
-            if (rand < 0.8) {
+            if (rand < 0.95) {
                 toBuild = RobotType.SOLDIER;
-            } else {
-                toBuild = RobotType.LUMBERJACK;
-            }
-        } else if (round < 1000) {
-            double rand = Math.random();
-            if (rand < 0.7) {
-                toBuild = RobotType.SOLDIER;
-            } else if (rand < 0.85) {
-                toBuild = RobotType.LUMBERJACK;
             } else {
                 toBuild = RobotType.TANK;
             }
         } else {
             double rand = Math.random();
-            if (rand < 0.6) {
+            if (rand < 0.7) {
                 toBuild = RobotType.SOLDIER;
-            } else if (rand < 0.8) {
-                toBuild = RobotType.LUMBERJACK;
-            } else {
+            } else if (rand < 0.95) {
                 toBuild = RobotType.TANK;
+            } else {
+                toBuild = RobotType.LUMBERJACK;
             }
         }
         

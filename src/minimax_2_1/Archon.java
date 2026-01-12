@@ -26,7 +26,7 @@ public strictfp class Archon {
         RobotInfo[] nearbyAllies = rc.senseNearbyRobots(-1, rc.getTeam());
         int soldierCount = 0;
         for (RobotInfo ally : nearbyAllies) {
-            if (ally.type == RobotType.SOLDIER || ally.type == RobotType.LUMBERJACK || ally.type == RobotType.TANK) {
+            if (ally.type == RobotType.SOLDIER || ally.type == RobotType.LUMBERJACK || ally.type == RobotType.TANK || ally.type == RobotType.SCOUT) {
                 soldierCount++;
             }
         }
@@ -38,50 +38,37 @@ public strictfp class Archon {
             Direction away = rc.getLocation().directionTo(closest.location).opposite();
             Nav.tryMove(away);
             
-            if (rc.canBuildRobot(RobotType.SOLDIER, Nav.randomDirection())) {
-                rc.buildRobot(RobotType.SOLDIER, Nav.randomDirection());
+            for (int i = 0; i < 8; i++) {
+                if (rc.canBuildRobot(RobotType.SOLDIER, Nav.randomDirection())) {
+                    rc.buildRobot(RobotType.SOLDIER, Nav.randomDirection());
+                }
             }
-            if (rc.canBuildRobot(RobotType.SOLDIER, Nav.randomDirection())) {
-                rc.buildRobot(RobotType.SOLDIER, Nav.randomDirection());
+        } else if (soldierCount < 15) {
+            for (int i = 0; i < 5; i++) {
+                if (rc.canBuildRobot(RobotType.SOLDIER, Nav.randomDirection())) {
+                    rc.buildRobot(RobotType.SOLDIER, Nav.randomDirection());
+                }
             }
-            if (rc.canBuildRobot(RobotType.SCOUT, Nav.randomDirection())) {
-                rc.buildRobot(RobotType.SCOUT, Nav.randomDirection());
+        } else if (soldierCount < 30) {
+            for (int i = 0; i < 4; i++) {
+                if (rc.canBuildRobot(RobotType.SOLDIER, Nav.randomDirection())) {
+                    rc.buildRobot(RobotType.SOLDIER, Nav.randomDirection());
+                }
             }
-        } else if (soldierCount < 5 && round < 200) {
-            if (rc.canBuildRobot(RobotType.SCOUT, Nav.randomDirection())) {
-                rc.buildRobot(RobotType.SCOUT, Nav.randomDirection());
-            }
-            if (rc.canBuildRobot(RobotType.SOLDIER, Nav.randomDirection())) {
-                rc.buildRobot(RobotType.SOLDIER, Nav.randomDirection());
-            }
-        } else if (soldierCount < 10 && round < 400) {
-            if (rc.canBuildRobot(RobotType.SOLDIER, Nav.randomDirection())) {
-                rc.buildRobot(RobotType.SOLDIER, Nav.randomDirection());
-            }
-        } else if (soldierCount < 15 && round < 800) {
-            if (rc.canBuildRobot(RobotType.LUMBERJACK, Nav.randomDirection())) {
-                rc.buildRobot(RobotType.LUMBERJACK, Nav.randomDirection());
-            }
-        } else if (rc.getTeamBullets() > 150 && soldierCount < 25) {
-            if (rc.canBuildRobot(RobotType.SOLDIER, Nav.randomDirection())) {
-                rc.buildRobot(RobotType.SOLDIER, Nav.randomDirection());
+        } else if (rc.getTeamBullets() > 40 && soldierCount < 50) {
+            for (int i = 0; i < 2; i++) {
+                if (rc.canBuildRobot(RobotType.SOLDIER, Nav.randomDirection())) {
+                    rc.buildRobot(RobotType.SOLDIER, Nav.randomDirection());
+                }
             }
         }
 
         int gardenerCount = Comms.countFriendlyGardeners();
-        if (rc.getTeamBullets() >= 80 && gardenerCount < 3) {
+        if (rc.getTeamBullets() >= 80 && gardenerCount < 2) {
             tryHireGardener();
         }
 
-        if (rc.getTeamBullets() >= 100 && gardenerCount < 4) {
-            tryHireGardener();
-        }
-
-        if (rc.getTeamBullets() >= 80 && round > 200 && gardenerCount < 5) {
-            tryHireGardener();
-        }
-
-        if (rc.getTeamBullets() >= 80 && round > 400 && gardenerCount < 6) {
+        if (rc.getTeamBullets() >= 80 && round > 400 && gardenerCount < 4) {
             tryHireGardener();
         }
 

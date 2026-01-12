@@ -4,11 +4,22 @@ Battlecode 2017 Match Summary Generator
 
 Parses .bc17 replay files and generates LLM-friendly summaries of matches.
 Extracts logs, game events, unit production, resources, and victory points.
-Provides snapshots every 100 rounds for game progression analysis.
+Provides snapshots every 200 rounds for game progression analysis.
+
+Features:
+- Victory condition detection (VP, elimination, tiebreaker)
+- Economy tracking (bullets generated, spent, donated, net balance)
+- Turning point detection (heavy losses, economy shifts, VP surges)
+- Compact table format for context-efficient summaries
 
 Usage:
     python3 bc17_summary.py <match_file.bc17> [output_file.md]
+    python3 bc17_summary.py <match_file.bc17> --compact [output_file.md]
     python3 bc17_summary.py <match_file.bc17> --json
+
+Options:
+    --compact   Use compact single-table timeline format (context-efficient)
+    --json      Output as JSON instead of markdown
 """
 
 import gzip
@@ -17,7 +28,6 @@ import sys
 import os
 import re
 import json
-from datetime import datetime
 from collections import defaultdict
 from typing import Dict, List, Tuple, Optional, Any
 
@@ -179,13 +189,19 @@ class GameSnapshot:
         self.team_b_units_produced = defaultdict(int)
         self.team_a_units_lost = 0
         self.team_b_units_lost = 0
-        self.team_a_bullets_spent = 0.0
+        # Economy tracking: generated = income, spent = units, net = balance change
+        self.team_a_bullets_spent = 0.0  # Spent on units
         self.team_b_bullets_spent = 0.0
-        self.team_a_bullets_earned = 0.0
-        self.team_b_bullets_earned = 0.0
+        self.team_a_bullets_generated = 0.0  # Total income (trees + passive + shaking)
+        self.team_b_bullets_generated = 0.0
+        self.team_a_bullets_donated = 0.0  # Spent on VP
+        self.team_b_bullets_donated = 0.0
         # Cumulative units alive at this snapshot
         self.team_a_units_alive = defaultdict(int)
         self.team_b_units_alive = defaultdict(int)
+        # VP tracking for donation calculation
+        self.team_a_vp_prev = 0
+        self.team_b_vp_prev = 0
 
 
 class BC17Parser:
@@ -233,6 +249,7 @@ class BC17Parser:
             events_start = self.reader.get_vector_start(events_offset)
 
             prev_bullets = [0.0, 0.0]
+            prev_vp = [0, 0]
             current_snapshot = GameSnapshot(0)
 
             # Track robot ownership: robot_id -> (team_idx, body_type)
@@ -280,29 +297,37 @@ class BC17Parser:
                                 deaths_by_team[team_idx] += 1
                                 del robot_registry[robot_id]
 
-                        # Calculate bullets earned this round
-                        bullets_earned_a = max(0, round_data.team_bullets[0] - prev_bullets[0])
-                        bullets_earned_b = max(0, round_data.team_bullets[1] - prev_bullets[1])
-
                         # Calculate bullets spent on units
                         spent_a = sum(UNIT_COSTS.get(BODY_TYPES.get(t, ''), 0) * c
                                      for t, c in round_data.spawned_units[0].items())
                         spent_b = sum(UNIT_COSTS.get(BODY_TYPES.get(t, ''), 0) * c
                                      for t, c in round_data.spawned_units[1].items())
 
-                        # Add to bullets earned if we spent (means we earned more than shown)
-                        bullets_earned_a += spent_a
-                        bullets_earned_b += spent_b
+                        # Calculate VP donations (VP cost = 7.5 + round * 12.5 / 3000)
+                        vp_gained_a = round_data.team_victory_points[0] - prev_vp[0]
+                        vp_gained_b = round_data.team_victory_points[1] - prev_vp[1]
+                        vp_cost = 7.5 + (round_data.round_id * 12.5 / 3000)
+                        donated_a = vp_gained_a * vp_cost if vp_gained_a > 0 else 0
+                        donated_b = vp_gained_b * vp_cost if vp_gained_b > 0 else 0
+
+                        # Calculate bullets generated (income):
+                        # generated = (current - prev) + spent + donated
+                        bullet_delta_a = round_data.team_bullets[0] - prev_bullets[0]
+                        bullet_delta_b = round_data.team_bullets[1] - prev_bullets[1]
+                        generated_a = bullet_delta_a + spent_a + donated_a
+                        generated_b = bullet_delta_b + spent_b + donated_b
 
                         # Update current snapshot
                         current_snapshot.team_a_bullets = round_data.team_bullets[0]
                         current_snapshot.team_b_bullets = round_data.team_bullets[1]
                         current_snapshot.team_a_vp = round_data.team_victory_points[0]
                         current_snapshot.team_b_vp = round_data.team_victory_points[1]
-                        current_snapshot.team_a_bullets_earned += bullets_earned_a
-                        current_snapshot.team_b_bullets_earned += bullets_earned_b
+                        current_snapshot.team_a_bullets_generated += generated_a
+                        current_snapshot.team_b_bullets_generated += generated_b
                         current_snapshot.team_a_bullets_spent += spent_a
                         current_snapshot.team_b_bullets_spent += spent_b
+                        current_snapshot.team_a_bullets_donated += donated_a
+                        current_snapshot.team_b_bullets_donated += donated_b
                         current_snapshot.team_a_units_lost += deaths_by_team[0]
                         current_snapshot.team_b_units_lost += deaths_by_team[1]
 
@@ -315,6 +340,7 @@ class BC17Parser:
                             current_snapshot.team_b_units_produced[type_name] += count
 
                         prev_bullets = round_data.team_bullets[:]
+                        prev_vp = round_data.team_victory_points[:]
 
                         # Save snapshot every 200 rounds
                         if round_data.round_id % 200 == 0:
@@ -407,7 +433,7 @@ class BC17Parser:
 
             return round_data
 
-        except Exception as e:
+        except Exception:
             return None
 
     def parse_spawned_bodies(self, table_pos: int, round_data: RoundData):
@@ -575,6 +601,148 @@ class MatchSummarizer:
         self.logs = parsed_data.get('logs', [])
         self.snapshots = parsed_data.get('snapshots', [])
 
+    def detect_victory_condition(self) -> Dict[str, Any]:
+        """Detect how the match was won."""
+        winner = self.metadata.get('winner')
+        total_rounds = self.metadata.get('total_rounds', 0)
+
+        if not self.snapshots or not winner:
+            return {'type': 'UNKNOWN', 'details': 'Insufficient data'}
+
+        final = self.snapshots[-1]
+        winner_vp = final.team_a_vp if winner == 'A' else final.team_b_vp
+        loser_vp = final.team_b_vp if winner == 'A' else final.team_a_vp
+
+        # Get final unit counts (combat units only)
+        loser_units = final.team_b_units_alive if winner == 'A' else final.team_a_units_alive
+        loser_combat_units = sum(loser_units.get(t, 0) for t in COMBAT_UNITS)
+
+        winner_units = final.team_a_units_alive if winner == 'A' else final.team_b_units_alive
+        winner_combat_units = sum(winner_units.get(t, 0) for t in COMBAT_UNITS)
+
+        # Determine victory type
+        if winner_vp >= 1000:
+            return {
+                'type': 'VICTORY_POINTS',
+                'details': f'Reached 1000 VP at round {total_rounds}',
+                'winner_vp': winner_vp,
+                'loser_vp': loser_vp
+            }
+        elif loser_combat_units == 0:
+            return {
+                'type': 'ELIMINATION',
+                'details': f'Eliminated all enemy units by round {total_rounds}',
+                'winner_units': winner_combat_units,
+                'loser_units': 0
+            }
+        elif total_rounds >= 3000:
+            # Tiebreaker: highest VP > most bullet trees > most resources
+            winner_trees = winner_units.get('TREE_BULLET', 0)
+            loser_trees = loser_units.get('TREE_BULLET', 0)
+            winner_bullets = final.team_a_bullets if winner == 'A' else final.team_b_bullets
+            loser_bullets = final.team_b_bullets if winner == 'A' else final.team_a_bullets
+
+            if winner_vp > loser_vp:
+                reason = f'VP tiebreaker ({winner_vp} vs {loser_vp})'
+            elif winner_trees > loser_trees:
+                reason = f'Tree tiebreaker ({winner_trees} vs {loser_trees})'
+            else:
+                reason = f'Resource tiebreaker ({winner_bullets:.0f} vs {loser_bullets:.0f})'
+
+            return {
+                'type': 'TIEBREAKER',
+                'details': f'Round limit reached. {reason}',
+                'winner_vp': winner_vp,
+                'loser_vp': loser_vp
+            }
+        else:
+            # Likely elimination but units died same round as victory
+            return {
+                'type': 'ELIMINATION',
+                'details': f'Match ended at round {total_rounds}',
+                'winner_units': winner_combat_units,
+                'loser_units': loser_combat_units
+            }
+
+    def detect_turning_points(self) -> List[Dict]:
+        """Detect significant turning points in the match."""
+        turning_points = []
+
+        if len(self.snapshots) < 2:
+            return turning_points
+
+        prev = None
+        for snapshot in self.snapshots:
+            if prev is None:
+                prev = snapshot
+                continue
+
+            # Check for significant unit loss (3+ units in one period)
+            if snapshot.team_a_units_lost >= 3:
+                turning_points.append({
+                    'round': snapshot.round,
+                    'type': 'HEAVY_LOSSES',
+                    'team': 'A',
+                    'detail': f'Lost {snapshot.team_a_units_lost} units'
+                })
+            if snapshot.team_b_units_lost >= 3:
+                turning_points.append({
+                    'round': snapshot.round,
+                    'type': 'HEAVY_LOSSES',
+                    'team': 'B',
+                    'detail': f'Lost {snapshot.team_b_units_lost} units'
+                })
+
+            # Check for economy crossover
+            a_was_leading = prev.team_a_bullets > prev.team_b_bullets
+            a_is_leading = snapshot.team_a_bullets > snapshot.team_b_bullets
+            if a_was_leading != a_is_leading:
+                new_leader = 'A' if a_is_leading else 'B'
+                turning_points.append({
+                    'round': snapshot.round,
+                    'type': 'ECONOMY_SHIFT',
+                    'team': new_leader,
+                    'detail': f'Took economy lead ({snapshot.team_a_bullets:.0f} vs {snapshot.team_b_bullets:.0f})'
+                })
+
+            # Check for VP donation start
+            if prev.team_a_vp == 0 and snapshot.team_a_vp > 0:
+                turning_points.append({
+                    'round': snapshot.round,
+                    'type': 'VP_START',
+                    'team': 'A',
+                    'detail': f'Started VP donations ({snapshot.team_a_vp} VP)'
+                })
+            if prev.team_b_vp == 0 and snapshot.team_b_vp > 0:
+                turning_points.append({
+                    'round': snapshot.round,
+                    'type': 'VP_START',
+                    'team': 'B',
+                    'detail': f'Started VP donations ({snapshot.team_b_vp} VP)'
+                })
+
+            # Check for large VP spike (100+ VP gained in one period)
+            vp_gained_a = snapshot.team_a_vp - prev.team_a_vp
+            vp_gained_b = snapshot.team_b_vp - prev.team_b_vp
+            if vp_gained_a >= 100:
+                turning_points.append({
+                    'round': snapshot.round,
+                    'type': 'VP_SURGE',
+                    'team': 'A',
+                    'detail': f'Gained {vp_gained_a} VP this period'
+                })
+            if vp_gained_b >= 100:
+                turning_points.append({
+                    'round': snapshot.round,
+                    'type': 'VP_SURGE',
+                    'team': 'B',
+                    'detail': f'Gained {vp_gained_b} VP this period'
+                })
+
+            prev = snapshot
+
+        return turning_points
+
     def categorize_logs(self) -> Dict[str, List[Dict]]:
         """Categorize logs by type and importance."""
         categorized = {
@@ -646,15 +814,21 @@ class MatchSummarizer:
         else:
             period_start = 1
 
+        # Calculate net balance (generated - spent - donated)
+        net_a = snapshot.team_a_bullets_generated - snapshot.team_a_bullets_spent - snapshot.team_a_bullets_donated
+        net_b = snapshot.team_b_bullets_generated - snapshot.team_b_bullets_spent - snapshot.team_b_bullets_donated
+
         lines.append(f"### Round {snapshot.round} (Period: R{period_start}-R{snapshot.round})")
         lines.append("")
         lines.append("| Metric | Team A | Team B |")
         lines.append("|--------|--------|--------|")
         lines.append(f"| **Current Bullets** | {snapshot.team_a_bullets:.1f} | {snapshot.team_b_bullets:.1f} |")
         lines.append(f"| **Victory Points** | {snapshot.team_a_vp} | {snapshot.team_b_vp} |")
-        lines.append(f"| Bullets Earned (period) | {snapshot.team_a_bullets_earned:.1f} | {snapshot.team_b_bullets_earned:.1f} |")
-        lines.append(f"| Bullets Spent (period) | {snapshot.team_a_bullets_spent:.1f} | {snapshot.team_b_bullets_spent:.1f} |")
-        lines.append(f"| Units Lost (period) | {snapshot.team_a_units_lost} | {snapshot.team_b_units_lost} |")
+        lines.append(f"| Bullets Generated | {snapshot.team_a_bullets_generated:.1f} | {snapshot.team_b_bullets_generated:.1f} |")
+        lines.append(f"| Bullets Spent (units) | {snapshot.team_a_bullets_spent:.1f} | {snapshot.team_b_bullets_spent:.1f} |")
+        lines.append(f"| Bullets Donated (VP) | {snapshot.team_a_bullets_donated:.1f} | {snapshot.team_b_bullets_donated:.1f} |")
+        lines.append(f"| Net Balance | {net_a:+.1f} | {net_b:+.1f} |")
+        lines.append(f"| Units Lost | {snapshot.team_a_units_lost} | {snapshot.team_b_units_lost} |")
 
         # Units alive at this snapshot
         all_alive_types = set(snapshot.team_a_units_alive.keys()) | set(snapshot.team_b_units_alive.keys())
@@ -688,8 +862,51 @@ class MatchSummarizer:
         lines.append("")
         return lines
 
-    def generate_summary(self, include_raw_logs: bool = True) -> str:
-        """Generate a markdown summary of the match."""
+    def generate_compact_timeline(self) -> List[str]:
+        """Generate a compact single-table timeline for context efficiency."""
+        lines = []
+        lines.append("## Timeline (Compact)")
+        lines.append("")
+        lines.append("| Round | A Bullets | B Bullets | A VP | B VP | A Units | B Units | A Trees | B Trees | A Gen | B Gen | Notes |")
+        lines.append("|-------|-----------|-----------|------|------|---------|---------|---------|---------|-------|-------|-------|")
+
+        for snapshot in self.snapshots:
+            # Count combat units (excluding trees)
+            a_combat = sum(snapshot.team_a_units_alive.get(t, 0) for t in COMBAT_UNITS)
+            b_combat = sum(snapshot.team_b_units_alive.get(t, 0) for t in COMBAT_UNITS)
+            a_trees = snapshot.team_a_units_alive.get('TREE_BULLET', 0)
+            b_trees = snapshot.team_b_units_alive.get('TREE_BULLET', 0)
+
+            # Determine note based on state
+            notes = []
+            if snapshot.team_a_bullets > snapshot.team_b_bullets * 1.5:
+                notes.append("A econ lead")
+            elif snapshot.team_b_bullets > snapshot.team_a_bullets * 1.5:
+                notes.append("B econ lead")
+            if snapshot.team_a_units_lost >= 3:
+                notes.append(f"A lost {snapshot.team_a_units_lost}")
+            if snapshot.team_b_units_lost >= 3:
+                notes.append(f"B lost {snapshot.team_b_units_lost}")
+            if snapshot.team_a_vp >= 500 or snapshot.team_b_vp >= 500:
+                notes.append("VP race")
+
+            note_str = "; ".join(notes) if notes else "-"
+
+            lines.append(
+                f"| {snapshot.round} | {snapshot.team_a_bullets:.0f} | {snapshot.team_b_bullets:.0f} | "
+                f"{snapshot.team_a_vp} | {snapshot.team_b_vp} | {a_combat} | {b_combat} | "
+                f"{a_trees} | {b_trees} | {snapshot.team_a_bullets_generated:.0f} | {snapshot.team_b_bullets_generated:.0f} | {note_str} |"
+            )
+
+        lines.append("")
+        return lines
+
+    def generate_summary(self, compact: bool = False) -> str:
+        """Generate a markdown summary of the match.
+
+        Args:
+            compact: If True, use compact table format for timeline (context-efficient)
+        """
         lines = []
 
         # Header
@@ -703,8 +920,23 @@ class MatchSummarizer:
         team_a = teams[0] if len(teams) > 0 else 'Unknown'
         team_b = teams[1] if len(teams) > 1 else 'Unknown'
 
+        # Victory condition detection
+        victory = self.detect_victory_condition()
+
         lines.append("# Battlecode 2017 Match Summary")
         lines.append("")
+
+        # End-state summary line (compact, scannable)
+        if winner and self.snapshots:
+            final = self.snapshots[-1]
+            a_units = sum(final.team_a_units_alive.get(t, 0) for t in COMBAT_UNITS)
+            b_units = sum(final.team_b_units_alive.get(t, 0) for t in COMBAT_UNITS)
+            winner_name = team_a if winner == 'A' else team_b
+            lines.append(f"**RESULT: {winner_name} wins by {victory['type']} at R{total_rounds}** | "
+                        f"Final: A={a_units} units, {final.team_a_bullets:.0f} bullets, {final.team_a_vp} VP vs "
+                        f"B={b_units} units, {final.team_b_bullets:.0f} bullets, {final.team_b_vp} VP")
+            lines.append("")
+
         lines.append("## Match Information")
         lines.append(f"- **File**: `{filename}` ({file_size} KB)")
         lines.append(f"- **Team A**: {team_a}")
@@ -717,21 +949,35 @@ class MatchSummarizer:
         if winner:
             winner_name = team_a if winner == 'A' else team_b if winner == 'B' else winner
             lines.append(f"- **Winner**: Team {winner} ({winner_name})")
+            lines.append(f"- **Victory Type**: {victory['type']} - {victory['details']}")
 
         lines.append(f"- **Total log entries**: {len(self.logs)}")
         lines.append("")
 
-        # Game Timeline Snapshots (every 200 rounds)
-        if self.snapshots:
-            lines.append("## Game Timeline (Snapshots every 200 rounds)")
+        # Key Events / Turning Points
+        turning_points = self.detect_turning_points()
+        if turning_points:
+            lines.append("## Key Events")
             lines.append("")
-            lines.append("Each snapshot shows the cumulative state and what happened in the preceding period.")
+            for tp in turning_points:
+                team_name = team_a if tp['team'] == 'A' else team_b
+                lines.append(f"- **R{tp['round']}**: {team_name} - {tp['type']}: {tp['detail']}")
             lines.append("")
 
-            prev_snapshot = None
-            for snapshot in self.snapshots:
-                lines.extend(self.format_snapshot(snapshot, prev_snapshot))
-                prev_snapshot = snapshot
+        # Game Timeline - compact or detailed
+        if self.snapshots:
+            if compact:
+                lines.extend(self.generate_compact_timeline())
+            else:
+                lines.append("## Game Timeline (Snapshots every 200 rounds)")
+                lines.append("")
+                lines.append("Each snapshot shows the cumulative state and what happened in the preceding period.")
+                lines.append("")
+
+                prev_snapshot = None
+                for snapshot in self.snapshots:
+                    lines.extend(self.format_snapshot(snapshot, prev_snapshot))
+                    prev_snapshot = snapshot
         else:
             lines.append("## Game Timeline")
             lines.append("")
@@ -798,28 +1044,40 @@ class MatchSummarizer:
 
         snapshots_data = []
         for s in self.snapshots:
+            # Calculate net balance
+            net_a = s.team_a_bullets_generated - s.team_a_bullets_spent - s.team_a_bullets_donated
+            net_b = s.team_b_bullets_generated - s.team_b_bullets_spent - s.team_b_bullets_donated
+
             snapshots_data.append({
                 'round': s.round,
                 'team_a': {
                     'bullets': s.team_a_bullets,
                     'victory_points': s.team_a_vp,
-                    'bullets_earned': s.team_a_bullets_earned,
+                    'bullets_generated': s.team_a_bullets_generated,
                     'bullets_spent': s.team_a_bullets_spent,
+                    'bullets_donated': s.team_a_bullets_donated,
+                    'net_balance': net_a,
                     'units_produced': dict(s.team_a_units_produced),
+                    'units_alive': dict(s.team_a_units_alive),
                     'units_lost': s.team_a_units_lost
                 },
                 'team_b': {
                     'bullets': s.team_b_bullets,
                     'victory_points': s.team_b_vp,
-                    'bullets_earned': s.team_b_bullets_earned,
+                    'bullets_generated': s.team_b_bullets_generated,
                     'bullets_spent': s.team_b_bullets_spent,
+                    'bullets_donated': s.team_b_bullets_donated,
+                    'net_balance': net_b,
                     'units_produced': dict(s.team_b_units_produced),
+                    'units_alive': dict(s.team_b_units_alive),
                     'units_lost': s.team_b_units_lost
                 }
             })
 
         summary = {
             'metadata': self.metadata,
+            'victory_condition': self.detect_victory_condition(),
+            'turning_points': self.detect_turning_points(),
             'snapshots': snapshots_data,
             'round_range': self.get_round_range(),
             'team_stats': self.get_team_stats(),
@@ -857,15 +1115,16 @@ def main():
     summarizer = MatchSummarizer(parsed)
 
     output_json = '--json' in sys.argv
+    compact_mode = '--compact' in sys.argv
 
     if output_json:
         output = summarizer.generate_json()
     else:
-        output = summarizer.generate_summary()
+        output = summarizer.generate_summary(compact=compact_mode)
 
     # Determine output file
     output_file = None
-    for i, arg in enumerate(sys.argv[2:], 2):
+    for arg in sys.argv[2:]:
         if not arg.startswith('--'):
             output_file = arg
             break

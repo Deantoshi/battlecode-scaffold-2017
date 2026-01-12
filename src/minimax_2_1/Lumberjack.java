@@ -21,33 +21,17 @@ public strictfp class Lumberjack {
     }
 
     static void doTurn() throws GameActionException {
-        TreeInfo[] nearbyTrees = rc.senseNearbyTrees(10.0f, Team.NEUTRAL);
-        for (TreeInfo tree : nearbyTrees) {
-            if (tree.containedBullets > 0 && rc.canShake(tree.ID)) {
-                rc.shake(tree.ID);
-                return;
-            }
-        }
-
         RobotInfo[] enemies = rc.senseNearbyRobots(10, rc.getTeam().opponent());
-        RobotInfo[] allies = rc.senseNearbyRobots(10, rc.getTeam());
         
         if (enemies.length > 0) {
-            if (enemies.length <= allies.length + 1) {
-                RobotInfo closest = Utils.findClosestEnemy(rc, enemies);
-                if (closest != null && rc.getLocation().distanceTo(closest.location) <= GameConstants.LUMBERJACK_STRIKE_RADIUS) {
-                    if (tryStrike()) {
-                        return;
-                    }
+            RobotInfo closest = Utils.findClosestEnemy(rc, enemies);
+            if (closest != null && rc.getLocation().distanceTo(closest.location) <= GameConstants.LUMBERJACK_STRIKE_RADIUS) {
+                if (tryStrike()) {
+                    return;
                 }
-                Nav.moveToward(closest.location);
-                return;
-            } else {
-                RobotInfo closest = Utils.findClosestEnemy(rc, enemies);
-                Direction away = rc.getLocation().directionTo(closest.location).opposite();
-                Nav.tryMove(away);
-                return;
             }
+            Nav.moveToward(closest.location);
+            return;
         }
 
         if (tryChopTree()) {

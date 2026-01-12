@@ -40,18 +40,13 @@ public strictfp class Scout {
             RobotInfo closest = Utils.findClosestEnemy(rc, enemies);
             if (closest != null) {
                 MapLocation enemyLoc = closest.location;
-                if (rc.getLocation().distanceTo(enemyLoc) > 12) {
-                    Nav.moveToward(enemyLoc);
-                    return;
-                }
-                if (rc.getLocation().distanceTo(enemyLoc) > 8 && rc.canFireSingleShot()) {
+                if (rc.getLocation().distanceTo(enemyLoc) > 6 && rc.canFireSingleShot()) {
                     Direction dir = rc.getLocation().directionTo(enemyLoc);
                     rc.fireSingleShot(dir);
                     return;
                 }
-                if (rc.getLocation().distanceTo(enemyLoc) <= 8) {
-                    Direction away = rc.getLocation().directionTo(enemyLoc).opposite();
-                    Nav.tryMove(away);
+                if (rc.getLocation().distanceTo(enemyLoc) > 4) {
+                    Nav.moveToward(enemyLoc);
                     return;
                 }
             }

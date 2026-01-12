@@ -11,12 +11,11 @@ Parse $ARGUMENTS for:
 - `--bot NAME` - **REQUIRED**: Bot folder name in `src/NAME/`
 - `--opponent NAME` - Opponent bot (default: `copy_bot`)
 - `--iterations N` - Target iterations (default: `10`)
-- `--target-rounds N` - Max rounds per WIN for graduation (default: `1500`)
 
 **Example:**
 ```
 /bc-manager --bot minimax_2_1
-/bc-manager --bot my_bot --iterations 5 --target-rounds 1000
+/bc-manager --bot my_bot --iterations 5
 ```
 
 ## Sub-Agents
@@ -101,17 +100,7 @@ Note: To win by ≤1500 rounds, target only elimination or 1000 VP; do not plan 
 STEP 3 - CHECK GOALS:
 From the analysis:
 - If iteration ≥ {ITERATIONS}: Output <promise>BATTLECODE_GOAL_ACHIEVED</promise>
-- If WON ≥3/5 games and each WIN is ≤{TARGET_ROUNDS} rounds (GRADUATION):
-  Update copy_bot to match current bot:
-  ```bash
-  rm -rf src/copy_bot/ && mkdir -p src/copy_bot/
-  for file in src/{BOT_NAME}/*.java; do
-    filename=\$(basename \"\$file\")
-    sed '1s/package .*/package copy_bot;/' \"\$file\" > \"src/copy_bot/\$filename\"
-  done
-  ```
-  Report: 'GRADUATED! Updated copy_bot. Now training against stronger opponent.'
-  Continue to STEP 4.
+- Otherwise: Continue to STEP 4.
 
 Strategic Goal Template (fill for this iteration):
 - Primary objective:
@@ -152,7 +141,6 @@ Append to src/{BOT_NAME}/battle-log.md:
 ### Results
 - Wins: X/5 (shrine=W/L, Barrier=W/L, Bullseye=W/L, Lanes=W/L, Blitzkrieg=W/L)
 - Avg rounds: N
-- Graduated: Yes/No
 
 ### Navigation Assessment
 - Death rate: X%
@@ -170,9 +158,7 @@ Append to src/{BOT_NAME}/battle-log.md:
 STEP 9 - REPORT STATUS:
 Report:
 - Iteration X/{ITERATIONS}
-- Graduations: N
 - Games won: X/5
-- Wins ≤{TARGET_ROUNDS} rounds: X/5
 - Navigation status: HEALTHY/CONCERNING/BROKEN
 - Changes made: [summary]
 
@@ -181,14 +167,6 @@ Then loop continues to next iteration.",
   completion_promise: "BATTLECODE_GOAL_ACHIEVED"
 )
 ```
-
-## Graduation Logic
-
-**Graduation Threshold**: Win ≥3/5 games and each WIN is ≤{TARGET_ROUNDS} rounds
-- When achieved: Update copy_bot to match current bot (raise the bar)
-- Then continue iterating against the stronger opponent
-
-**Stop Condition**: Complete {ITERATIONS} improvement cycles
 
 ## Key Principles
 

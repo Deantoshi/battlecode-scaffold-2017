@@ -21,26 +21,7 @@ public strictfp class Tank {
     }
 
     static void doTurn() throws GameActionException {
-        TreeInfo[] nearbyTrees = rc.senseNearbyTrees(10.0f, Team.NEUTRAL);
-        for (TreeInfo tree : nearbyTrees) {
-            if (tree.containedBullets > 0 && rc.canShake(tree.ID)) {
-                rc.shake(tree.ID);
-                return;
-            }
-        }
-
         RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
-        RobotInfo[] allies = rc.senseNearbyRobots(10, rc.getTeam());
-        boolean outnumbered = enemies.length > allies.length;
-        
-        if (outnumbered && enemies.length > 0) {
-            RobotInfo closest = Utils.findClosestEnemy(rc, enemies);
-            if (closest != null) {
-                Direction away = rc.getLocation().directionTo(closest.location).opposite();
-                Nav.tryMove(away);
-                return;
-            }
-        }
         
         RobotInfo target = null;
         
@@ -51,9 +32,7 @@ public strictfp class Tank {
                 float dist = rc.getLocation().distanceTo(target.location);
                 
                 if (dist <= rc.getType().bulletSightRadius) {
-                    if (dist < 10 && rc.canFireTriadShot()) {
-                        rc.fireTriadShot(dir);
-                    } else if (rc.canFireSingleShot()) {
+                    if (rc.canFireSingleShot()) {
                         rc.fireSingleShot(dir);
                     }
                 }
