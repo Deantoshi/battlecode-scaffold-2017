@@ -73,6 +73,23 @@ Each iteration tests against ALL 5 maps to create well-rounded bots:
    - copy_bot will be updated later when the main bot "graduates" (wins 3/5 with avg ≤{TARGET_ROUNDS})
 5. Clean old summaries to start fresh: `rm -f summaries/*.md`
 6. Initialize tracking: iteration=0, best_avg_rounds=999999, graduation_count=0
+7. **Initialize fresh battle log** for this training run:
+   - Battle log location: `src/{BOT_NAME}/battle-log.md`
+   - **DELETE any existing battle-log** to start fresh, then create a new one:
+     ```bash
+     rm -f src/{BOT_NAME}/battle-log.md
+     cat > src/{BOT_NAME}/battle-log.md << 'EOF'
+# Battle Log for {BOT_NAME}
+
+This log tracks iteration history, insights, and strategic changes across all iterations.
+The agent reads this at the start of each iteration to learn from past attempts.
+Entries accumulate during this training run - DO NOT delete during iterations!
+
+---
+
+EOF
+     ```
+   - The log will accumulate entries during iterations (STEP 7.5 appends, never overwrites)
 
 ### Step 2: Start the Ralph Loop
 Use the `ralph_loop` tool to start an iterative loop:
@@ -129,6 +146,41 @@ Read this file to understand ALL available actions. Key methods include:
 - Sensing: `senseNearbyRobots()`, `senseNearbyTrees()`, `senseNearbyBullets()`
 - Economy: `getTeamBullets()`, `donate()` (converts bullets to victory points)
 
+## Navigation & Pathfinding (CRITICAL FOR TREE-HEAVY MAPS)
+
+Tree obstacles are a MAJOR factor on maps like Bullseye (35% trees), Barrier, and Lanes.
+Units that cannot navigate around trees will FAIL to engage enemies, causing timeouts and losses.
+
+### Key Navigation API Methods:
+- `rc.isCircleOccupied(MapLocation center, float radius)` - Check if a position is blocked by trees/units
+- `rc.isLocationOccupied(MapLocation loc)` - Check if exact location is blocked
+- `rc.senseNearbyTrees(float radius)` - Detect trees to path around (returns TreeInfo[])
+- `rc.canMove(Direction dir)` - Basic movement check (considers obstacles)
+- `rc.canMove(Direction dir, float dist)` - Movement check with distance
+- `rc.onTheMap(MapLocation loc)` - Boundary check before moving
+- `rc.senseNearbyBullets(float radius)` - For bullet dodging while navigating
+
+### Navigation Red Flags (MUST CHECK EACH ITERATION):
+- **High unit count but low deaths** (<30% death rate) = units are STUCK, not engaging
+- **Games going to timeout** (2500+ rounds) with many units alive = GRIDLOCK
+- **Losses on Bullseye/Barrier/Lanes but wins on shrine** = tree pathing is broken
+- **Units spawned but never reach enemy** = no pathfinding toward enemy archons
+
+### Recommended Navigation Patterns:
+1. **Direction rotation**: If `canMove(dir)` fails, try `dir.rotateLeftDegrees(15)`, then 30, 45, 60, etc.
+2. **Fuzzy movement**: Pick a target direction, try multiple angles until one works
+3. **Lumberjack deployment**: On tree-heavy maps, build Lumberjacks to clear corridors
+4. **Target-seeking**: Always move TOWARD enemy archon location, not random wandering
+5. **Obstacle memory**: Track blocked directions and try alternatives
+
+### Death Rate Formula (Calculate Every Iteration):
+```
+death_rate = total_deaths / total_units_created
+- HEALTHY: death_rate > 50% (units engaging effectively)
+- CONCERNING: death_rate 30-50% (some units stuck)
+- BROKEN: death_rate < 30% (PATHING ISSUE - fix immediately!)
+```
+
 ## Complete Game Mechanics Source Files (READ-ONLY!)
 **CRITICAL**: These files are for REFERENCE ONLY. READ them to understand mechanics.
 **DO NOT edit ANY files outside src/{BOT_NAME}/ folder. Engine files are OFF-LIMITS.**
@@ -144,6 +196,21 @@ When making strategic decisions, READ these files to understand exact mechanics:
 - **engine/battlecode/common/MapLocation.java** - Position and distance calculations
 
 **REMINDER**: You can ONLY edit files in src/{BOT_NAME}/ folder. All other files are READ-ONLY.
+
+═══════════════════════════════════════════════════════════════
+BATTLE LOG - CROSS-ITERATION MEMORY
+═══════════════════════════════════════════════════════════════
+
+STEP 0 - READ BATTLE LOG (DO THIS FIRST!):
+Read src/{BOT_NAME}/battle-log.md to understand previous iteration learnings:
+- What changes were made in previous iterations
+- What strategies worked and what failed
+- Patterns and insights already discovered
+- Navigation/pathing issues that were identified
+- **DO NOT repeat approaches that already failed!**
+- **BUILD ON strategies that showed improvement!**
+
+If the battle log doesn't exist yet, skip this step (first iteration).
 
 ═══════════════════════════════════════════════════════════════
 
@@ -206,7 +273,16 @@ STEP 5 - COMPREHENSIVE ANALYSIS & PLANNING:
 Based on ALL 5 summaries, identify:
 1. **Weakest map type** - Which category (Fast/Balanced/Exploration/Slow) is the bot struggling with?
 2. **Common failure patterns** - What behaviors cause losses across multiple maps?
-3. **Strengths to preserve** - What's working well?
+3. **NAVIGATION ASSESSMENT** (CRITICAL - calculate for EVERY iteration):
+   - Count total units created (ours) from all 5 games
+   - Count total deaths (ours) from all 5 games
+   - Calculate: death_rate = total_deaths / total_units_created
+   - **HEALTHY (>50%)**: Units are engaging - focus on combat/economy improvements
+   - **CONCERNING (30-50%)**: Some units stuck - consider adding navigation fixes
+   - **BROKEN (<30%)**: PATHING CRISIS! Prioritize navigation fixes ABOVE ALL ELSE!
+   - Note which maps have the worst engagement (likely tree-heavy: Bullseye, Barrier, Lanes)
+4. **Strengths to preserve** - What's working well?
+5. **Battle log review** - What did previous iterations try? Don't repeat failures!
 
 **IMPORTANT**: When planning strategic changes, READ the game mechanics source files listed above!
 - Unsure about unit stats? Read engine/battlecode/common/RobotType.java
@@ -228,6 +304,50 @@ STEP 7 - CLEAN SUMMARIES FOR NEXT ITERATION:
 After reading and analyzing all summaries, clean them for the next iteration:
 rm -f summaries/*.md
 
+STEP 7.5 - UPDATE BATTLE LOG (CRITICAL FOR LEARNING!):
+**APPEND** (do NOT overwrite!) this iteration's learnings to src/{BOT_NAME}/battle-log.md.
+Use the Edit tool to add to the END of the file, preserving all previous entries:
+
+```markdown
+## Iteration [N]
+
+### Results
+- **Wins**: X/5 (shrine=W/L, Barrier=W/L, Bullseye=W/L, Lanes=W/L, Blitzkrieg=W/L)
+- **Avg rounds**: N
+- **Graduated**: Yes/No
+
+### Navigation Assessment
+- Units created: X | Deaths: Y | Death rate: Z%
+- **Status**: HEALTHY / CONCERNING / BROKEN
+- Worst map for engagement: [map name]
+
+### Analysis Insights
+- [Key pattern observed across games]
+- [Main weakness identified]
+- [What the opponent did well]
+
+### Changes Made This Iteration
+1. [Change 1: what was modified and why]
+2. [Change 2: what was modified and why]
+3. [Change 3: what was modified and why]
+
+### What Worked
+- [Positive outcomes from changes]
+- [Strategies that showed improvement]
+
+### What Didn't Work / AVOID IN FUTURE
+- [Failed approaches - DO NOT REPEAT]
+- [Regressions observed]
+
+### Next Iteration Focus
+- [Primary issue to address next]
+- [Secondary improvements to consider]
+
+---
+```
+
+This battle log entry gives future iterations context about what's been tried and what works!
+
 STEP 8 - REPORT STATUS:
 Report:
 - Iteration X/{ITERATIONS}
@@ -236,8 +356,10 @@ Report:
 - Results by map: shrine=W/L, Barrier=W/L, Bullseye=W/L, Lanes=W/L, Blitzkrieg=W/L
 - Avg rounds: N
 - Best avg so far: N
+- **Navigation status**: HEALTHY/CONCERNING/BROKEN (death rate: X%)
 - Improvement focus: [what was changed]
 - If graduated this iteration: Note that copy_bot was updated
+- Battle log updated: Yes
 
 Then the loop will automatically continue to the next iteration.",
   max_iterations: {ITERATIONS},
