@@ -11,7 +11,7 @@ Parse $ARGUMENTS for:
 - `--bot NAME` - **REQUIRED**: Bot folder name in `src/NAME/`
 - `--opponent NAME` - Opponent bot (default: `copy_bot`)
 - `--iterations N` - Target iterations (default: `10`)
-- `--target-rounds N` - Win threshold for graduation (default: `1500`)
+- `--target-rounds N` - Max rounds per WIN for graduation (default: `1500`)
 
 **Example:**
 ```
@@ -95,13 +95,13 @@ Call @bc-runner once to run all 5 maps in parallel:
 
 STEP 2 - ANALYZE RESULTS:
 Call @bc-results --bot={BOT_NAME}
-Collect the analysis output (wins/losses, avg rounds, map-by-map notes, navigation status).
+Collect the analysis output (wins/losses, per-map rounds, map-by-map notes, navigation status).
 Note: To win by ≤1500 rounds, target only elimination or 1000 VP; do not plan for tiebreakers.
 
 STEP 3 - CHECK GOALS:
 From the analysis:
 - If iteration ≥ {ITERATIONS}: Output <promise>BATTLECODE_GOAL_ACHIEVED</promise>
-- If WON ≥3/5 games with avg rounds ≤{TARGET_ROUNDS} (GRADUATION):
+- If WON ≥3/5 games and each WIN is ≤{TARGET_ROUNDS} rounds (GRADUATION):
   Update copy_bot to match current bot:
   ```bash
   rm -rf src/copy_bot/ && mkdir -p src/copy_bot/
@@ -172,7 +172,7 @@ Report:
 - Iteration X/{ITERATIONS}
 - Graduations: N
 - Games won: X/5
-- Avg rounds: N
+- Wins ≤{TARGET_ROUNDS} rounds: X/5
 - Navigation status: HEALTHY/CONCERNING/BROKEN
 - Changes made: [summary]
 
@@ -184,7 +184,7 @@ Then loop continues to next iteration.",
 
 ## Graduation Logic
 
-**Graduation Threshold**: Win ≥3/5 games with avg rounds ≤{TARGET_ROUNDS}
+**Graduation Threshold**: Win ≥3/5 games and each WIN is ≤{TARGET_ROUNDS} rounds
 - When achieved: Update copy_bot to match current bot (raise the bar)
 - Then continue iterating against the stronger opponent
 

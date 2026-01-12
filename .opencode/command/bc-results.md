@@ -13,6 +13,7 @@ Read `.opencode/context/battlecode-mechanics.md` for game mechanics and navigati
 
 Parse $ARGUMENTS for:
 - `--bot NAME` - The bot being analyzed (required)
+- `--target-rounds N` - Max rounds per win (optional; used for reporting)
 
 **Example:**
 ```
@@ -46,6 +47,7 @@ Read all 5 summary files to get detailed per-game data.
 - **Total Wins**: X/5
 - **Average Rounds**: N
 - **Overall Death Rate**: total_deaths / total_units_created
+- **Wins ≤ Target Rounds**: X/5 (only if `--target-rounds` provided)
 
 ### Step 4: Navigation Assessment (CRITICAL)
 
@@ -70,8 +72,16 @@ Note which maps have worst engagement (typically tree-heavy: Bullseye, Barrier, 
 ## Aggregate Results
 - Wins: X/5
 - Average Rounds: N
+- Wins ≤ Target Rounds: X/5 (if target provided)
 - Maps Won: [list]
 - Maps Lost: [list]
+
+## Per-Map Win Rounds (W/L @ Rounds)
+- shrine: W/L @ N
+- Barrier: W/L @ N
+- Bullseye: W/L @ N
+- Lanes: W/L @ N
+- Blitzkrieg: W/L @ N
 
 ## Results Table
 | Map | Result | Rounds | Death Rate |
