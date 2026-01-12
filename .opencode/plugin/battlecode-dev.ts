@@ -145,7 +145,7 @@ const plugin: Plugin = async (input: PluginInput): Promise<Hooks> => {
 
           try {
             const output = execSync(
-              `export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64 && ./gradlew run -PteamA=${teamA} -PteamB=${teamB} -Pmaps=${mapName} 2>&1`,
+              `export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64 && ./gradlew runWithSummary -PteamA=${teamA} -PteamB=${teamB} -Pmaps=${mapName} 2>&1`,
               {
                 cwd: directory,
                 maxBuffer: 10 * 1024 * 1024,
