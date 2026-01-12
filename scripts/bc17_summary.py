@@ -901,6 +901,113 @@ class MatchSummarizer:
         lines.append("")
         return lines
 
+    def generate_detailed_tables(self) -> List[str]:
+        """Generate detailed tables for economy and units over time."""
+        lines = []
+
+        # Economy table
+        lines.append("## Economy Timeline")
+        lines.append("")
+        lines.append("| Round | A Bullets | B Bullets | A Gen | B Gen | A Spent | B Spent | A Donated | B Donated | A Net | B Net |")
+        lines.append("|-------|-----------|-----------|-------|-------|---------|---------|-----------|-----------|-------|-------|")
+
+        for snapshot in self.snapshots:
+            net_a = snapshot.team_a_bullets_generated - snapshot.team_a_bullets_spent - snapshot.team_a_bullets_donated
+            net_b = snapshot.team_b_bullets_generated - snapshot.team_b_bullets_spent - snapshot.team_b_bullets_donated
+
+            lines.append(
+                f"| {snapshot.round} | {snapshot.team_a_bullets:.0f} | {snapshot.team_b_bullets:.0f} | "
+                f"{snapshot.team_a_bullets_generated:.0f} | {snapshot.team_b_bullets_generated:.0f} | "
+                f"{snapshot.team_a_bullets_spent:.0f} | {snapshot.team_b_bullets_spent:.0f} | "
+                f"{snapshot.team_a_bullets_donated:.0f} | {snapshot.team_b_bullets_donated:.0f} | "
+                f"{net_a:+.0f} | {net_b:+.0f} |"
+            )
+
+        lines.append("")
+
+        # Victory Points table
+        lines.append("## Victory Points Timeline")
+        lines.append("")
+        lines.append("| Round | A VP | B VP | A Lost | B Lost |")
+        lines.append("|-------|------|------|--------|--------|")
+
+        for snapshot in self.snapshots:
+            lines.append(
+                f"| {snapshot.round} | {snapshot.team_a_vp} | {snapshot.team_b_vp} | "
+                f"{snapshot.team_a_units_lost} | {snapshot.team_b_units_lost} |"
+            )
+
+        lines.append("")
+
+        # Units Alive table - collect all unit types that appear
+        all_unit_types = set()
+        for snapshot in self.snapshots:
+            all_unit_types.update(k for k in snapshot.team_a_units_alive.keys() if k in SNAPSHOT_UNITS)
+            all_unit_types.update(k for k in snapshot.team_b_units_alive.keys() if k in SNAPSHOT_UNITS)
+
+        if all_unit_types:
+            # Sort unit types in a logical order
+            unit_order = ['ARCHON', 'GARDENER', 'LUMBERJACK', 'SOLDIER', 'TANK', 'SCOUT', 'TREE_BULLET']
+            sorted_units = [u for u in unit_order if u in all_unit_types]
+
+            lines.append("## Units Alive Timeline")
+            lines.append("")
+
+            # Build header with A/B columns for each unit type
+            header = "| Round |"
+            separator = "|-------|"
+            for unit in sorted_units:
+                display_name = "TREE" if unit == "TREE_BULLET" else unit[:4]  # Abbreviate
+                header += f" A {display_name} | B {display_name} |"
+                separator += "--------|--------|"
+
+            lines.append(header)
+            lines.append(separator)
+
+            for snapshot in self.snapshots:
+                row = f"| {snapshot.round} |"
+                for unit in sorted_units:
+                    a_count = snapshot.team_a_units_alive.get(unit, 0)
+                    b_count = snapshot.team_b_units_alive.get(unit, 0)
+                    row += f" {a_count} | {b_count} |"
+                lines.append(row)
+
+            lines.append("")
+
+        # Units Produced table (per period)
+        produced_types = set()
+        for snapshot in self.snapshots:
+            produced_types.update(k for k in snapshot.team_a_units_produced.keys() if k in SNAPSHOT_UNITS)
+            produced_types.update(k for k in snapshot.team_b_units_produced.keys() if k in SNAPSHOT_UNITS)
+
+        if produced_types:
+            sorted_produced = [u for u in unit_order if u in produced_types]
+
+            lines.append("## Units Produced Per Period")
+            lines.append("")
+
+            header = "| Round |"
+            separator = "|-------|"
+            for unit in sorted_produced:
+                display_name = "TREE" if unit == "TREE_BULLET" else unit[:4]
+                header += f" A {display_name} | B {display_name} |"
+                separator += "--------|--------|"
+
+            lines.append(header)
+            lines.append(separator)
+
+            for snapshot in self.snapshots:
+                row = f"| {snapshot.round} |"
+                for unit in sorted_produced:
+                    a_count = snapshot.team_a_units_produced.get(unit, 0)
+                    b_count = snapshot.team_b_units_produced.get(unit, 0)
+                    row += f" {a_count} | {b_count} |"
+                lines.append(row)
+
+            lines.append("")
+
+        return lines
+
     def generate_summary(self, compact: bool = False) -> str:
         """Generate a markdown summary of the match.
 
@@ -964,20 +1071,12 @@ class MatchSummarizer:
                 lines.append(f"- **R{tp['round']}**: {team_name} - {tp['type']}: {tp['detail']}")
             lines.append("")
 
-        # Game Timeline - compact or detailed
+        # Game Timeline - compact or detailed tables
         if self.snapshots:
             if compact:
                 lines.extend(self.generate_compact_timeline())
             else:
-                lines.append("## Game Timeline (Snapshots every 200 rounds)")
-                lines.append("")
-                lines.append("Each snapshot shows the cumulative state and what happened in the preceding period.")
-                lines.append("")
-
-                prev_snapshot = None
-                for snapshot in self.snapshots:
-                    lines.extend(self.format_snapshot(snapshot, prev_snapshot))
-                    prev_snapshot = snapshot
+                lines.extend(self.generate_detailed_tables())
         else:
             lines.append("## Game Timeline")
             lines.append("")
