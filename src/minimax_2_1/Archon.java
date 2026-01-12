@@ -39,19 +39,26 @@ public strictfp class Archon {
         }
         
         int round = rc.getRoundNum();
-        if ((soldierCount < 3 && round < 500) || (soldierCount < 5 && round < 1000) || enemies.length > 0) {
+        if (enemies.length > 0) {
+            if (rc.canBuildRobot(RobotType.SOLDIER, Nav.randomDirection())) {
+                rc.buildRobot(RobotType.SOLDIER, Nav.randomDirection());
+            }
+        } else if (soldierCount < 5 && round < 500) {
+            if (rc.canBuildRobot(RobotType.SOLDIER, Nav.randomDirection())) {
+                rc.buildRobot(RobotType.SOLDIER, Nav.randomDirection());
+            }
+        } else if (rc.getTeamBullets() > 300 && soldierCount < 10) {
             if (rc.canBuildRobot(RobotType.SOLDIER, Nav.randomDirection())) {
                 rc.buildRobot(RobotType.SOLDIER, Nav.randomDirection());
             }
         }
 
         int gardenerCount = Comms.countFriendlyGardeners();
-        if (rc.getTeamBullets() >= 100 && gardenerCount < 5) {
-            tryHireGardener();
+        if (rc.getTeamBullets() >= 100 && gardenerCount < 2) {
             tryHireGardener();
         }
 
-        if (rc.getTeamBullets() >= 100 && gardenerCount < 8) {
+        if (rc.getTeamBullets() >= 200 && gardenerCount < 3) {
             tryHireGardener();
         }
 

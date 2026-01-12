@@ -4,8 +4,8 @@ import battlecode.common.*;
 public strictfp class Gardener {
     static RobotController rc;
     static int treesPlanted = 0;
-    static int maxTrees = 8;
-    static int unitBuildRoundTrigger = 10;
+    static int maxTrees = 5;
+    static int unitBuildRoundTrigger = 5;
     static Direction treeDirection = Direction.SOUTH;
     static Direction buildDirection = Direction.NORTH;
 
@@ -35,13 +35,13 @@ public strictfp class Gardener {
         boolean shouldBuildUnits = false;
         if (enemiesNearby) {
             shouldBuildUnits = true;
-        } else if (round > unitBuildRoundTrigger && treesPlanted >= 3) {
+        } else if (rc.getTeamBullets() >= 120 && treesPlanted >= 1) {
+            shouldBuildUnits = true;
+        } else if (round > 80 && treesPlanted >= 1) {
             shouldBuildUnits = true;
         } else if (treesPlanted >= maxTrees) {
             shouldBuildUnits = true;
-        } else if (rc.getTeamBullets() > 300 && treesPlanted >= 3) {
-            shouldBuildUnits = true;
-        } else if (round > 200 && treesPlanted >= 2) {
+        } else if (round > unitBuildRoundTrigger) {
             shouldBuildUnits = true;
         }
         
