@@ -81,12 +81,8 @@ Read src/{BOT_NAME}/battle-log.md for previous iteration learnings.
 Skip if first iteration.
 
 STEP 1 - RUN ALL 5 GAMES (in parallel):
-Run these 5 games using @bc-runner:
-  @bc-runner --teamA={BOT_NAME} --teamB={OPPONENT} --map=shrine
-  @bc-runner --teamA={BOT_NAME} --teamB={OPPONENT} --map=Barrier
-  @bc-runner --teamA={BOT_NAME} --teamB={OPPONENT} --map=Bullseye
-  @bc-runner --teamA={BOT_NAME} --teamB={OPPONENT} --map=Lanes
-  @bc-runner --teamA={BOT_NAME} --teamB={OPPONENT} --map=Blitzkrieg
+Call @bc-runner once to run all 5 maps in parallel:
+  @bc-runner --teamA={BOT_NAME} --teamB={OPPONENT}
 
 STEP 2 - ANALYZE RESULTS:
 Call @bc-results --bot={BOT_NAME}
