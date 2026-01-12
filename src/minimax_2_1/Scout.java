@@ -23,7 +23,7 @@ public strictfp class Scout {
     }
 
     static void doTurn() throws GameActionException {
-        TreeInfo[] nearbyTrees = rc.senseNearbyTrees(2.0f, Team.NEUTRAL);
+        TreeInfo[] nearbyTrees = rc.senseNearbyTrees(5.0f, Team.NEUTRAL);
         for (TreeInfo tree : nearbyTrees) {
             if (tree.containedBullets > 0 && rc.canShake(tree.ID)) {
                 rc.shake(tree.ID);
@@ -40,13 +40,18 @@ public strictfp class Scout {
             RobotInfo closest = Utils.findClosestEnemy(rc, enemies);
             if (closest != null) {
                 MapLocation enemyLoc = closest.location;
-                if (rc.getLocation().distanceTo(enemyLoc) > 8) {
+                if (rc.getLocation().distanceTo(enemyLoc) > 12) {
                     Nav.moveToward(enemyLoc);
                     return;
                 }
-                if (rc.canFireSingleShot()) {
+                if (rc.getLocation().distanceTo(enemyLoc) > 8 && rc.canFireSingleShot()) {
                     Direction dir = rc.getLocation().directionTo(enemyLoc);
                     rc.fireSingleShot(dir);
+                    return;
+                }
+                if (rc.getLocation().distanceTo(enemyLoc) <= 8) {
+                    Direction away = rc.getLocation().directionTo(enemyLoc).opposite();
+                    Nav.tryMove(away);
                     return;
                 }
             }

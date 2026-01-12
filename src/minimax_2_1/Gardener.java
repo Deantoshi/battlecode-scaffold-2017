@@ -4,8 +4,7 @@ import battlecode.common.*;
 public strictfp class Gardener {
     static RobotController rc;
     static int treesPlanted = 0;
-    static int maxTrees = 5;
-    static int unitBuildRoundTrigger = 3;
+    static int maxTrees = 3;
     static Direction treeDirection = Direction.SOUTH;
     static Direction buildDirection = Direction.NORTH;
 
@@ -26,6 +25,14 @@ public strictfp class Gardener {
     }
 
     static void doTurn() throws GameActionException {
+        TreeInfo[] nearbyNeutralTrees = rc.senseNearbyTrees(5.0f, Team.NEUTRAL);
+        for (TreeInfo tree : nearbyNeutralTrees) {
+            if (tree.containedBullets > 0 && rc.canShake(tree.ID)) {
+                rc.shake(tree.ID);
+                return;
+            }
+        }
+        
         waterLowestHealthTree();
 
         int round = rc.getRoundNum();
@@ -53,13 +60,13 @@ public strictfp class Gardener {
         boolean shouldBuildUnits = false;
         if (enemiesNearby) {
             shouldBuildUnits = true;
-        } else if (rc.getTeamBullets() >= 100 && treesPlanted >= 1) {
+        } else if (rc.getTeamBullets() >= 60 && treesPlanted >= 1) {
             shouldBuildUnits = true;
-        } else if (round > 60 && treesPlanted >= 1) {
+        } else if (round > 20 && treesPlanted >= 1) {
             shouldBuildUnits = true;
         } else if (treesPlanted >= maxTrees) {
             shouldBuildUnits = true;
-        } else if (round > unitBuildRoundTrigger) {
+        } else if (round > 5) {
             shouldBuildUnits = true;
         }
         

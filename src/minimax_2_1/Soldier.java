@@ -21,7 +21,7 @@ public strictfp class Soldier {
     }
 
     static void doTurn() throws GameActionException {
-        TreeInfo[] nearbyTrees = rc.senseNearbyTrees(2.0f, Team.NEUTRAL);
+        TreeInfo[] nearbyTrees = rc.senseNearbyTrees(5.0f, Team.NEUTRAL);
         for (TreeInfo tree : nearbyTrees) {
             if (tree.containedBullets > 0 && rc.canShake(tree.ID)) {
                 rc.shake(tree.ID);
@@ -37,7 +37,28 @@ public strictfp class Soldier {
             }
         }
         
+        RobotInfo[] allies = rc.senseNearbyRobots(10, rc.getTeam());
+        boolean outnumbered = enemies.length > allies.length;
+        
+        if (outnumbered && enemies.length > 0) {
+            RobotInfo closest = Utils.findClosestEnemy(rc, enemies);
+            if (closest != null) {
+                Direction away = rc.getLocation().directionTo(closest.location).opposite();
+                Nav.tryMove(away);
+                return;
+            }
+        }
+        
         if (enemies.length > 0) {
+            RobotInfo archonTarget = Utils.findEnemyArchon(enemies);
+            if (archonTarget != null) {
+                if (tryShoot(archonTarget)) {
+                    return;
+                }
+                if (tryMoveToAttack(archonTarget)) {
+                    return;
+                }
+            }
             RobotInfo target = Utils.findLowestHealthTarget(enemies);
             if (tryShoot(target)) {
                 return;

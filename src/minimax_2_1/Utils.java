@@ -44,4 +44,13 @@ public strictfp class Utils {
         }
         return closest;
     }
+
+    public static RobotInfo findEnemyArchon(RobotInfo[] enemies) {
+        for (RobotInfo enemy : enemies) {
+            if (enemy.type == RobotType.ARCHON) {
+                return enemy;
+            }
+        }
+        return null;
+    }
 }

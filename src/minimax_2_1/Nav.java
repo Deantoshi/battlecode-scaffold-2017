@@ -41,6 +41,13 @@ public strictfp class Nav {
                 return true;
             }
         }
+        for (int i = 0; i < 8; i++) {
+            Direction randomDir = new Direction((float)(i * Math.PI / 4));
+            if (rc.canMove(randomDir)) {
+                rc.move(randomDir);
+                return true;
+            }
+        }
         return false;
     }
 
