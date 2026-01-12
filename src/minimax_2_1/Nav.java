@@ -19,23 +19,23 @@ public strictfp class Nav {
         for (RobotInfo r : nearbyRobots) {
             if (r.type != RobotType.ARCHON && r.type != RobotType.GARDENER) continue;
             Direction d = rc.getLocation().directionTo(r.location);
-            int idx = (int)Math.round(d.radians / (Math.PI / 4)) % 8;
+            int idx = ((int)Math.round(d.radians / (Math.PI / 4)) % 8 + 8) % 8;
             blocked[idx] = true;
         }
         for (TreeInfo t : nearbyTrees) {
             Direction d = rc.getLocation().directionTo(t.location);
-            int idx = (int)Math.round(d.radians / (Math.PI / 4)) % 8;
+            int idx = ((int)Math.round(d.radians / (Math.PI / 4)) % 8 + 8) % 8;
             blocked[idx] = true;
         }
         for (int i = 1; i <= 6; i++) {
             Direction left = dir.rotateLeftDegrees(15 * i);
-            int leftIdx = (int)Math.round(left.radians / (Math.PI / 4)) % 8;
+            int leftIdx = ((int)Math.round(left.radians / (Math.PI / 4)) % 8 + 8) % 8;
             if (!blocked[leftIdx] && rc.canMove(left)) {
                 rc.move(left);
                 return true;
             }
             Direction right = dir.rotateRightDegrees(15 * i);
-            int rightIdx = (int)Math.round(right.radians / (Math.PI / 4)) % 8;
+            int rightIdx = ((int)Math.round(right.radians / (Math.PI / 4)) % 8 + 8) % 8;
             if (!blocked[rightIdx] && rc.canMove(right)) {
                 rc.move(right);
                 return true;

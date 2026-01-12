@@ -64,11 +64,11 @@ public strictfp class Archon {
         }
 
         int gardenerCount = Comms.countFriendlyGardeners();
-        if (rc.getTeamBullets() >= 80 && gardenerCount < 2) {
+        if (rc.getTeamBullets() >= 80 && gardenerCount < 3) {
             tryHireGardener();
         }
 
-        if (rc.getTeamBullets() >= 80 && round > 400 && gardenerCount < 4) {
+        if (rc.getTeamBullets() >= 80 && round > 400 && gardenerCount < 6) {
             tryHireGardener();
         }
 

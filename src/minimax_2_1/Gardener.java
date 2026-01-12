@@ -4,7 +4,7 @@ import battlecode.common.*;
 public strictfp class Gardener {
     static RobotController rc;
     static int treesPlanted = 0;
-    static int maxTrees = 3;
+    static int maxTrees = 5;
     static Direction treeDirection = Direction.SOUTH;
     static Direction buildDirection = Direction.NORTH;
 
@@ -27,7 +27,9 @@ public strictfp class Gardener {
     static void doTurn() throws GameActionException {
         int round = rc.getRoundNum();
         
-        if (treesPlanted < 3) {
+        waterLowestHealthTree();
+        
+        if (round < 500 && treesPlanted < maxTrees) {
             if (tryPlantTree()) {
                 return;
             }
@@ -46,6 +48,12 @@ public strictfp class Gardener {
         
         if (shouldBuildUnits) {
             if (tryBuildUnit()) {
+                return;
+            }
+        }
+
+        if (round < 500 && treesPlanted < maxTrees) {
+            if (tryPlantTree()) {
                 return;
             }
         }
@@ -87,7 +95,12 @@ public strictfp class Gardener {
         RobotType toBuild;
         
         if (round < 200) {
-            toBuild = RobotType.SCOUT;
+            double rand = Math.random();
+            if (rand < 0.5) {
+                toBuild = RobotType.SOLDIER;
+            } else {
+                toBuild = RobotType.SCOUT;
+            }
         } else if (round < 600) {
             double rand = Math.random();
             if (rand < 0.95) {
