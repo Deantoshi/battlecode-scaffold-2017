@@ -12,6 +12,7 @@ Process:
    - bc-exploration, bc-economy
 3) Synthesize their guidance into a single coherent plan. Resolve conflicts and prioritize by impact and effort.
 4) If the Task tool is unavailable, proceed with best-effort synthesis and note the missing consultations.
+5) Enforce win-condition focus: for ≤1500-round targets, only plan for elimination or 1000 VP; do not rely on tiebreakers.
 
 Output format:
 - Strategic objective(s) for this iteration

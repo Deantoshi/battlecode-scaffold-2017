@@ -95,7 +95,8 @@ Call @bc-runner once to run all 5 maps in parallel:
 
 STEP 2 - ANALYZE RESULTS:
 Call @bc-results --bot={BOT_NAME}
-Collect the analysis output.
+Collect the analysis output (wins/losses, avg rounds, map-by-map notes, navigation status).
+Note: To win by ≤1500 rounds, target only elimination or 1000 VP; do not plan for tiebreakers.
 
 STEP 3 - CHECK GOALS:
 From the analysis:
@@ -112,14 +113,27 @@ From the analysis:
   Report: 'GRADUATED! Updated copy_bot. Now training against stronger opponent.'
   Continue to STEP 4.
 
+Strategic Goal Template (fill for this iteration):
+- Primary objective:
+- Secondary objective:
+- Maps affected (if any):
+- Units/subsystems to focus:
+- Success criteria (measurable):
+
 STEP 4 - CONSULT SPECIALISTS:
 Call @bc-general --bot={BOT_NAME} --opponent={OPPONENT}
-Provide it the analysis summary and any key battle-log insights.
+Provide it:
+- @bc-results summary (wins/losses, avg rounds, map notes, nav status)
+- Key battle-log insights for this bot (last iteration + overall trend)
+- Strategic goal for this iteration (e.g., fix pathing on tree-heavy maps, improve early eco)
 The general will consult the unit, exploration, and economy specialists, then return a coordinated strategy.
 
 STEP 5 - PLAN IMPROVEMENTS:
 Call @bc-planner --bot={BOT_NAME}
-Include the @bc-general recommendations so the plan aligns across unit roles.
+Provide it:
+- @bc-results output
+- @bc-general coordinated strategy and priorities
+The planner should reconcile these into a concrete improvement plan.
 
 STEP 6 - IMPLEMENT CHANGES:
 Call @bc-coder --bot={BOT_NAME}
