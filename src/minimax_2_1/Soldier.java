@@ -32,20 +32,32 @@ public strictfp class Soldier {
         RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
         
         if (enemies.length > 0) {
-            RobotInfo target = Utils.findLowestHealthTarget(enemies);
+            Comms.broadcastEnemySpotted(enemies[0].location);
+            RobotInfo target = findArchonTarget(enemies);
             if (tryShoot(target)) {
                 return;
             }
-        }
-
-        MapLocation enemyArchon = Comms.getEnemyArchonLocation();
-        if (enemyArchon != null) {
-            if (Nav.moveToward(enemyArchon)) {
+            target = findGardenerTarget(enemies);
+            if (tryShoot(target)) {
                 return;
             }
+            target = Utils.findLowestHealthTarget(enemies);
+            if (tryShoot(target)) {
+                return;
+            }
+        } else {
+            MapLocation enemyArchon = Comms.getEnemyArchonLocation();
+            if (enemyArchon != null) {
+                Nav.moveToward(enemyArchon);
+            } else {
+                MapLocation lastSighting = Comms.getLastEnemySighting();
+                if (lastSighting != null) {
+                    Nav.moveToward(lastSighting);
+                } else {
+                    Nav.tryMove(Nav.randomDirection());
+                }
+            }
         }
-
-        Nav.tryMove(Nav.randomDirection());
     }
 
     static boolean tryMoveToAttack(RobotInfo target) throws GameActionException {
@@ -79,8 +91,8 @@ public strictfp class Soldier {
             float dist = rc.getLocation().distanceTo(enemy.location);
             float health = enemy.health;
             float score = health + dist * 0.5f;
-            if (enemy.type == RobotType.ARCHON) score -= 100;
-            if (enemy.type == RobotType.GARDENER) score -= 50;
+            if (enemy.type == RobotType.ARCHON) score -= 200;
+            else if (enemy.type == RobotType.GARDENER) score -= 100;
             if (score < bestScore) {
                 bestScore = score;
                 best = enemy;
@@ -89,10 +101,36 @@ public strictfp class Soldier {
         return best;
     }
 
+    static RobotInfo findArchonTarget(RobotInfo[] enemies) throws GameActionException {
+        for (RobotInfo enemy : enemies) {
+            if (enemy.type == RobotType.ARCHON) {
+                return enemy;
+            }
+        }
+        return null;
+    }
+    
+    static RobotInfo findGardenerTarget(RobotInfo[] enemies) throws GameActionException {
+        for (RobotInfo enemy : enemies) {
+            if (enemy.type == RobotType.GARDENER) {
+                return enemy;
+            }
+        }
+        return null;
+    }
+    
     static boolean tryShoot(RobotInfo target) throws GameActionException {
         if (target == null) return false;
         Direction dir = rc.getLocation().directionTo(target.location);
         
+        if (rc.canFirePentadShot()) {
+            rc.firePentadShot(dir);
+            return true;
+        }
+        if (rc.canFireTriadShot()) {
+            rc.fireTriadShot(dir);
+            return true;
+        }
         if (rc.canFireSingleShot()) {
             rc.fireSingleShot(dir);
             return true;

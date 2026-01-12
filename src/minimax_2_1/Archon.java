@@ -37,38 +37,20 @@ public strictfp class Archon {
             RobotInfo closest = Utils.findClosestEnemy(rc, enemies);
             Direction away = rc.getLocation().directionTo(closest.location).opposite();
             Nav.tryMove(away);
-            
-            for (int i = 0; i < 8; i++) {
-                if (rc.canBuildRobot(RobotType.SOLDIER, Nav.randomDirection())) {
-                    rc.buildRobot(RobotType.SOLDIER, Nav.randomDirection());
-                }
-            }
-        } else if (soldierCount < 15) {
-            for (int i = 0; i < 5; i++) {
-                if (rc.canBuildRobot(RobotType.SOLDIER, Nav.randomDirection())) {
-                    rc.buildRobot(RobotType.SOLDIER, Nav.randomDirection());
-                }
-            }
-        } else if (soldierCount < 30) {
-            for (int i = 0; i < 4; i++) {
-                if (rc.canBuildRobot(RobotType.SOLDIER, Nav.randomDirection())) {
-                    rc.buildRobot(RobotType.SOLDIER, Nav.randomDirection());
-                }
-            }
-        } else if (rc.getTeamBullets() > 40 && soldierCount < 50) {
-            for (int i = 0; i < 2; i++) {
-                if (rc.canBuildRobot(RobotType.SOLDIER, Nav.randomDirection())) {
-                    rc.buildRobot(RobotType.SOLDIER, Nav.randomDirection());
-                }
+        }
+        
+        for (int i = 0; i < 8; i++) {
+            if (rc.canBuildRobot(RobotType.SOLDIER, Nav.randomDirection())) {
+                rc.buildRobot(RobotType.SOLDIER, Nav.randomDirection());
             }
         }
 
         int gardenerCount = Comms.countFriendlyGardeners();
-        if (rc.getTeamBullets() >= 80 && gardenerCount < 3) {
+        if (rc.getTeamBullets() >= 80 && gardenerCount < 2) {
             tryHireGardener();
         }
 
-        if (rc.getTeamBullets() >= 80 && round > 400 && gardenerCount < 6) {
+        if (rc.getTeamBullets() >= 80 && round > 400 && gardenerCount < 4) {
             tryHireGardener();
         }
 
