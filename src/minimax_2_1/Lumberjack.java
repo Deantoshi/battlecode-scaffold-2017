@@ -21,7 +21,23 @@ public strictfp class Lumberjack {
     }
 
     static void doTurn() throws GameActionException {
-        if (tryStrike()) {
+        TreeInfo[] nearbyTrees = rc.senseNearbyTrees(2.0f, Team.NEUTRAL);
+        for (TreeInfo tree : nearbyTrees) {
+            if (tree.containedBullets > 0 && rc.canShake(tree.ID)) {
+                rc.shake(tree.ID);
+                return;
+            }
+        }
+
+        RobotInfo[] enemies = rc.senseNearbyRobots(5, rc.getTeam().opponent());
+        if (enemies.length > 0) {
+            RobotInfo closest = Utils.findClosestEnemy(rc, enemies);
+            if (closest != null && rc.getLocation().distanceTo(closest.location) <= GameConstants.LUMBERJACK_STRIKE_RADIUS) {
+                if (tryStrike()) {
+                    return;
+                }
+            }
+            Nav.moveToward(closest.location);
             return;
         }
 
@@ -29,12 +45,10 @@ public strictfp class Lumberjack {
             return;
         }
 
-        RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
-        if (enemies.length > 0) {
-            RobotInfo closest = Utils.findClosestEnemy(rc, enemies);
-            if (Nav.moveToward(closest.location)) {
-                return;
-            }
+        MapLocation enemyArchon = Comms.getEnemyArchonLocation();
+        if (enemyArchon != null) {
+            Nav.moveToward(enemyArchon);
+            return;
         }
 
         Nav.tryMove(Nav.randomDirection());
@@ -42,8 +56,8 @@ public strictfp class Lumberjack {
 
     static boolean tryStrike() throws GameActionException {
         RobotInfo[] enemies = rc.senseNearbyRobots(GameConstants.LUMBERJACK_STRIKE_RADIUS, rc.getTeam().opponent());
-        RobotInfo[] allies = rc.senseNearbyRobots(GameConstants.LUMBERJACK_STRIKE_RADIUS, rc.getTeam());
-        if (enemies.length > 0 && allies.length == 0) {
+        RobotInfo[] allies = rc.senseNearbyRobots(GameConstants.LUMBERJACK_STRIKE_RADIUS / 2, rc.getTeam());
+        if (enemies.length > 0) {
             if (rc.canStrike()) {
                 rc.strike();
                 return true;

@@ -21,6 +21,14 @@ public strictfp class Soldier {
     }
 
     static void doTurn() throws GameActionException {
+        TreeInfo[] nearbyTrees = rc.senseNearbyTrees(2.0f, Team.NEUTRAL);
+        for (TreeInfo tree : nearbyTrees) {
+            if (tree.containedBullets > 0 && rc.canShake(tree.ID)) {
+                rc.shake(tree.ID);
+                return;
+            }
+        }
+
         RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
         
         for (RobotInfo enemy : enemies) {
@@ -30,7 +38,7 @@ public strictfp class Soldier {
         }
         
         if (enemies.length > 0) {
-            RobotInfo target = findTarget();
+            RobotInfo target = Utils.findLowestHealthTarget(enemies);
             if (tryShoot(target)) {
                 return;
             }
@@ -39,29 +47,10 @@ public strictfp class Soldier {
             }
         }
 
-        RobotInfo[] nearbyAllies = rc.senseNearbyRobots(10, rc.getTeam());
-        int allyCount = 0;
-        for (RobotInfo ally : nearbyAllies) {
-            if (ally.type == RobotType.SOLDIER || ally.type == RobotType.LUMBERJACK || ally.type == RobotType.TANK) {
-                allyCount++;
-            }
-        }
-        
-        if (allyCount < 1) {
-            MapLocation myLoc = rc.getLocation();
-            MapLocation archonLoc = Comms.getFriendlyArchonLocation();
-            if (archonLoc != null && myLoc.distanceTo(archonLoc) > 20) {
-                if (Nav.moveToward(archonLoc)) {
-                    return;
-                }
-            }
-        }
-
         MapLocation enemyArchon = Comms.getEnemyArchonLocation();
         if (enemyArchon != null) {
-            if (Nav.moveToward(enemyArchon)) {
-                return;
-            }
+            Nav.moveToward(enemyArchon);
+            return;
         }
 
         Nav.tryMove(Nav.randomDirection());
@@ -70,15 +59,42 @@ public strictfp class Soldier {
     static boolean tryMoveToAttack(RobotInfo target) throws GameActionException {
         if (target == null) return false;
         float dist = rc.getLocation().distanceTo(target.location);
-        if (dist > 3.0f) {
-            return Nav.moveToward(target.location);
+        if (dist > 2.0f) {
+            if (Nav.moveToward(target.location)) {
+                return true;
+            }
+            MapLocation loc = target.location;
+            for (int i = 0; i < 8; i++) {
+                Direction d = new Direction((float)(i * Math.PI / 4));
+                MapLocation nearby = loc.add(d, 2.0f);
+                if (Nav.moveToward(nearby)) {
+                    return true;
+                }
+            }
+            Nav.tryMove(Nav.randomDirection());
+            return true;
         }
         return false;
     }
 
     static RobotInfo findTarget() throws GameActionException {
         RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
-        return Utils.findLowestHealthTarget(enemies);
+        if (enemies.length == 0) return null;
+        
+        RobotInfo best = null;
+        float bestScore = Float.MAX_VALUE;
+        for (RobotInfo enemy : enemies) {
+            float dist = rc.getLocation().distanceTo(enemy.location);
+            float health = enemy.health;
+            float score = health + dist * 0.5f;
+            if (enemy.type == RobotType.ARCHON) score -= 100;
+            if (enemy.type == RobotType.GARDENER) score -= 50;
+            if (score < bestScore) {
+                bestScore = score;
+                best = enemy;
+            }
+        }
+        return best;
     }
 
     static boolean tryShoot(RobotInfo target) throws GameActionException {
@@ -90,12 +106,12 @@ public strictfp class Soldier {
             return false;
         }
         
-        if (rc.canFirePentadShot() && distToTarget < 2.0f) {
+        if (rc.canFirePentadShot() && distToTarget < 9.0f) {
             rc.firePentadShot(dir);
             return true;
         }
         
-        if (rc.canFireTriadShot() && distToTarget < 3.0f) {
+        if (rc.canFireTriadShot() && distToTarget < 10.0f) {
             rc.fireTriadShot(dir);
             return true;
         }

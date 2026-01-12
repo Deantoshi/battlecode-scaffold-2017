@@ -43,22 +43,33 @@ public strictfp class Archon {
             if (rc.canBuildRobot(RobotType.SOLDIER, Nav.randomDirection())) {
                 rc.buildRobot(RobotType.SOLDIER, Nav.randomDirection());
             }
-        } else if (soldierCount < 5 && round < 500) {
             if (rc.canBuildRobot(RobotType.SOLDIER, Nav.randomDirection())) {
                 rc.buildRobot(RobotType.SOLDIER, Nav.randomDirection());
             }
-        } else if (rc.getTeamBullets() > 300 && soldierCount < 10) {
+        } else if (soldierCount < 10 && round < 400) {
+            if (rc.canBuildRobot(RobotType.SOLDIER, Nav.randomDirection())) {
+                rc.buildRobot(RobotType.SOLDIER, Nav.randomDirection());
+            }
+        } else if (soldierCount < 20 && round < 800) {
+            if (rc.canBuildRobot(RobotType.SOLDIER, Nav.randomDirection())) {
+                rc.buildRobot(RobotType.SOLDIER, Nav.randomDirection());
+            }
+        } else if (rc.getTeamBullets() > 150 && soldierCount < 30) {
             if (rc.canBuildRobot(RobotType.SOLDIER, Nav.randomDirection())) {
                 rc.buildRobot(RobotType.SOLDIER, Nav.randomDirection());
             }
         }
 
         int gardenerCount = Comms.countFriendlyGardeners();
-        if (rc.getTeamBullets() >= 100 && gardenerCount < 2) {
+        if (rc.getTeamBullets() >= 100 && gardenerCount < 3) {
             tryHireGardener();
         }
 
-        if (rc.getTeamBullets() >= 200 && gardenerCount < 3) {
+        if (rc.getTeamBullets() >= 150 && gardenerCount < 4) {
+            tryHireGardener();
+        }
+
+        if (rc.getTeamBullets() >= 100 && round > 300 && gardenerCount < 5) {
             tryHireGardener();
         }
 

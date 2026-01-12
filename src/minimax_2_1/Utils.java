@@ -7,8 +7,12 @@ public strictfp class Utils {
         RobotInfo best = null;
         float lowestHealth = Float.MAX_VALUE;
         for (RobotInfo enemy : enemies) {
-            if (enemy.health < lowestHealth) {
-                lowestHealth = enemy.health;
+            float score = enemy.health;
+            if (enemy.type == RobotType.ARCHON) score -= 100;
+            if (enemy.type == RobotType.GARDENER) score -= 50;
+            if (enemy.type == RobotType.SCOUT) score += 20;
+            if (score < lowestHealth) {
+                lowestHealth = score;
                 best = enemy;
             }
         }

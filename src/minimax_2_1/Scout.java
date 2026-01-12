@@ -23,8 +23,12 @@ public strictfp class Scout {
     }
 
     static void doTurn() throws GameActionException {
-        if (tryShakeTree()) {
-            return;
+        TreeInfo[] nearbyTrees = rc.senseNearbyTrees(2.0f, Team.NEUTRAL);
+        for (TreeInfo tree : nearbyTrees) {
+            if (tree.containedBullets > 0 && rc.canShake(tree.ID)) {
+                rc.shake(tree.ID);
+                return;
+            }
         }
 
         RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
@@ -32,14 +36,33 @@ public strictfp class Scout {
             reportEnemy(enemy);
         }
 
-        if (target == null || rc.getLocation().distanceTo(target) < 5) {
-            target = new MapLocation(rc.getLocation().x + 20 * (Math.random() < 0.5 ? -1 : 1), 
-                                    rc.getLocation().y + 20 * (Math.random() < 0.5 ? -1 : 1));
+        if (enemies.length > 0) {
+            RobotInfo closest = Utils.findClosestEnemy(rc, enemies);
+            if (closest != null) {
+                MapLocation enemyLoc = closest.location;
+                if (rc.getLocation().distanceTo(enemyLoc) > 8) {
+                    Nav.moveToward(enemyLoc);
+                    return;
+                }
+                if (rc.canFireSingleShot()) {
+                    Direction dir = rc.getLocation().directionTo(enemyLoc);
+                    rc.fireSingleShot(dir);
+                    return;
+                }
+            }
         }
 
-        if (!Nav.moveToward(target)) {
-            Nav.tryMove(Nav.randomDirection());
+        MapLocation enemyArchon = Comms.getEnemyArchonLocation();
+        if (enemyArchon != null) {
+            Nav.moveToward(enemyArchon);
+            return;
         }
+
+        if (target == null || rc.getLocation().distanceTo(target) < 10) {
+            target = rc.getLocation().add(new Direction((float)(Math.random() * 2 * Math.PI)), 30);
+        }
+
+        Nav.moveToward(target);
     }
 
     static boolean tryShakeTree() throws GameActionException {

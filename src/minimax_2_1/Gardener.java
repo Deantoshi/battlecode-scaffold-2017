@@ -105,36 +105,32 @@ public strictfp class Gardener {
         int round = rc.getRoundNum();
         RobotType toBuild;
         
-        if (round < 400 && Math.random() < 0.25 && treesPlanted >= 1) {
+        if (round < 200) {
             toBuild = RobotType.SCOUT;
-        } else if (round < 400) {
-            toBuild = RobotType.SOLDIER;
+        } else if (round < 500) {
+            double rand = Math.random();
+            if (rand < 0.8) {
+                toBuild = RobotType.SOLDIER;
+            } else {
+                toBuild = RobotType.LUMBERJACK;
+            }
         } else if (round < 1000) {
             double rand = Math.random();
-            if (rand < 0.70) {
+            if (rand < 0.7) {
                 toBuild = RobotType.SOLDIER;
-            } else if (rand < 0.92) {
-                toBuild = RobotType.SCOUT;
+            } else if (rand < 0.85) {
+                toBuild = RobotType.LUMBERJACK;
             } else {
-                toBuild = RobotType.SOLDIER;
-            }
-        } else if (round < 1500) {
-            double rand = Math.random();
-            if (rand < 0.80) {
-                toBuild = RobotType.SOLDIER;
-            } else if (rand < 0.90) {
-                toBuild = RobotType.SCOUT;
-            } else {
-                toBuild = RobotType.SOLDIER;
+                toBuild = RobotType.TANK;
             }
         } else {
             double rand = Math.random();
-            if (rand < 0.70) {
+            if (rand < 0.6) {
                 toBuild = RobotType.SOLDIER;
-            } else if (rand < 0.85) {
-                toBuild = RobotType.SCOUT;
+            } else if (rand < 0.8) {
+                toBuild = RobotType.LUMBERJACK;
             } else {
-                toBuild = RobotType.SOLDIER;
+                toBuild = RobotType.TANK;
             }
         }
         
