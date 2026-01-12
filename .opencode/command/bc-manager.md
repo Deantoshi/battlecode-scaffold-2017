@@ -81,6 +81,72 @@ Use the `ralph_loop` tool to start an iterative loop:
 ralph_loop(
   prompt: "BATTLECODE ITERATION for bot '{BOT_NAME}'. Execute these steps IN ORDER:
 
+═══════════════════════════════════════════════════════════════
+CRITICAL RESTRICTIONS - READ THIS FIRST!
+═══════════════════════════════════════════════════════════════
+**FILE ACCESS RESTRICTIONS**:
+- You can ONLY edit files in: src/{BOT_NAME}/*.java
+- You can READ but NOT edit: engine/, client/, build.gradle, CLAUDE.md, summaries/
+- DO NOT create or modify ANY files outside src/{BOT_NAME}/ folder
+- Violation of these rules will break the game engine!
+
+**JAVA VERSION**: This project uses Java 8. Do NOT use Java 9+ features.
+
+═══════════════════════════════════════════════════════════════
+GAME MECHANICS REFERENCE
+═══════════════════════════════════════════════════════════════
+
+## Unit Capabilities & Costs
+| Unit | Cost | HP | Speed | Sensor | Attack | Special Abilities |
+|------|------|----|----|--------|--------|-------------------|
+| **ARCHON** | - | 400 | 0.5 | 10 | None | Hires Gardeners (100 bullets). Cannot attack. Mobile base. Generates 2 bullets/turn. |
+| **GARDENER** | 100 | 40* | 0.5 | 7 | None | Plants bullet trees (50 bullets). Waters trees (+5 HP). Builds all combat units. 10-turn build cooldown. |
+| **SOLDIER** | 100 | 50* | 0.8 | 7 | 2.0 | Ranged: Single shot (1 bullet), Triad/3-way (4 bullets), Pentad/5-way (6 bullets). Bullet speed: 2.0 |
+| **LUMBERJACK** | 100 | 50* | 0.75 | 7 | 2.0 | Melee combat. Chops trees (-5 HP/chop). STRIKE: 2-radius AoE to ALL units (friend+foe). |
+| **SCOUT** | 80 | 10* | 1.25 | 14 | 0.5 | Fastest unit. Huge vision (14 sensor, 20 bullet sight). Shakes trees for bullets. Very fragile. |
+| **TANK** | 300 | 200* | 0.5 | 7 | 5.0 | Heavy unit. Body slam destroys trees (-4 HP). High damage. Bullet speed: 4.0. Expensive. |
+| **BULLET TREE** | 50 | 50 | 0 | - | None | Generates 1 bullet/turn when watered. Decays -0.5 HP/turn. Radius: 1.0. Planted by Gardeners. |
+
+*Units spawn at 20% HP and must be watered to full health by Gardeners.
+
+## Key Game Constants (engine/battlecode/common/GameConstants.java)
+- Starting bullets: 300
+- Win condition: 1000 victory points OR destroy all enemy units OR 3000 rounds (most VP wins). The only way to win in less than 3000 rounds is through 1000 victory points OR destroy all enemy units.
+- Bullet income penalty: -0.01 bullets/turn per bullet held (discourages hoarding)
+- Interaction range: 1.0 from robot edge (for water/shake/chop)
+- Water heals: +5 HP per water action
+- Lumberjack chop: -5 HP to trees
+- Lumberjack strike radius: 2.0 (hits ALL units in range)
+- Tree planting cooldown: 10 turns
+- Victory point costs: 7.5 bullets initially, increases by 12.5/3000 per round
+
+## Critical API Methods (engine/battlecode/common/RobotController.java)
+Read this file to understand ALL available actions. Key methods include:
+- Movement: `canMove()`, `move(Direction, float distance)`
+- Combat: `fireSingleShot()`, `fireTriadShot()`, `firePentadShot()`, `strike()`
+- Building: `hireGardener()`, `buildRobot()`, `plantTree()`
+- Tree interaction: `water()`, `shake()`, `chop()`
+- Sensing: `senseNearbyRobots()`, `senseNearbyTrees()`, `senseNearbyBullets()`
+- Economy: `getTeamBullets()`, `donate()` (converts bullets to victory points)
+
+## Complete Game Mechanics Source Files (READ-ONLY!)
+**CRITICAL**: These files are for REFERENCE ONLY. READ them to understand mechanics.
+**DO NOT edit ANY files outside src/{BOT_NAME}/ folder. Engine files are OFF-LIMITS.**
+
+When making strategic decisions, READ these files to understand exact mechanics:
+- **engine/battlecode/common/RobotType.java** - All unit stats (HP, cost, speed, sensor range, attack power)
+- **engine/battlecode/common/GameConstants.java** - Game rules, costs, limits, tree mechanics
+- **engine/battlecode/common/RobotController.java** - Full API: all actions your bot can perform
+- **engine/battlecode/common/Direction.java** - Movement directions and angle calculations
+- **engine/battlecode/common/RobotInfo.java** - Information about sensed robots
+- **engine/battlecode/common/TreeInfo.java** - Information about sensed trees
+- **engine/battlecode/common/BulletInfo.java** - Information about sensed bullets
+- **engine/battlecode/common/MapLocation.java** - Position and distance calculations
+
+**REMINDER**: You can ONLY edit files in src/{BOT_NAME}/ folder. All other files are READ-ONLY.
+
+═══════════════════════════════════════════════════════════════
+
 STEP 1 - RUN ALL 5 GAMES:
 Run all 5 games sequentially, capturing results for each:
 
@@ -142,10 +208,19 @@ Based on ALL 5 summaries, identify:
 2. **Common failure patterns** - What behaviors cause losses across multiple maps?
 3. **Strengths to preserve** - What's working well?
 
+**IMPORTANT**: When planning strategic changes, READ the game mechanics source files listed above!
+- Unsure about unit stats? Read engine/battlecode/common/RobotType.java
+- Need to know exact costs? Read engine/battlecode/common/GameConstants.java
+- Want to use a new API method? Read engine/battlecode/common/RobotController.java
+- Understanding the exact mechanics is CRITICAL for making optimal strategic decisions.
+
 Plan 1-3 improvements that address the MOST IMPACTFUL issues across all maps.
 Prioritize fixes that help multiple map types, not just one.
 
 STEP 6 - IMPLEMENT CODE:
+**CRITICAL FILE RESTRICTIONS**: You can ONLY edit files in src/{BOT_NAME}/ folder.
+DO NOT edit: engine/, client/, build.gradle, CLAUDE.md, or any files outside src/{BOT_NAME}/.
+
 Edit src/{BOT_NAME}/RobotPlayer.java with the planned improvements.
 Verify compilation: export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64 && ./gradlew compileJava
 
@@ -193,14 +268,30 @@ Do NOT just describe what you would do - DO IT!
 - Prioritize improvements that benefit the bot across multiple map types
 - The goal is a well-rounded bot, not one that excels on a single map
 
-## Unit Capabilities Reference
+## Game Mechanics Reference (For Manager Agent)
 
-| Unit | Cost | Capabilities |
-|------|------|--------------|
-| **ARCHON** | - | Hires Gardeners. High HP. Cannot attack. Mobile base. |
-| **GARDENER** | 100 | Plants bullet trees (income). Waters trees to heal them. Builds combat units. Cannot attack. |
-| **SOLDIER** | 100 | Ranged combat. Fires single, triad (3-way), or pentad (5-way) shots. Balanced stats. |
-| **LUMBERJACK** | 100 | Melee combat. Chops trees. Strike ability deals AoE damage to ALL nearby units (including allies). |
-| **SCOUT** | 80 | Very fast. Huge vision radius. Can shake trees to steal bullets. Extremely fragile. |
-| **TANK** | 300 | High HP, high damage. Body slams destroy trees. Expensive late-game unit. |
-| **BULLET TREE** | 50 | Generates bullet income when watered. Planted by Gardeners. |
+This section is a quick reference for the manager agent. **The full game mechanics are embedded in the ralph_loop prompt above**, so sub-agents automatically have access to all unit stats, costs, and links to source files.
+
+### Core Game Files (in engine/battlecode/common/)
+| File | Purpose | Key Contents |
+|------|---------|--------------|
+| **RobotType.java** | Unit definitions | All 6 unit types with exact stats (HP, cost, speed, sensor range, attack power, build cooldown) |
+| **GameConstants.java** | Game rules | Bullet costs (single=1, triad=4, pentad=6), tree mechanics (cost=50, decay=0.5/turn, water heals=5), income rules, victory conditions |
+| **RobotController.java** | Bot API | 50+ methods: movement, combat (fire/strike), building (hire/build/plant), tree interaction (water/shake/chop), sensing, economy |
+| **Direction.java** | Movement | 8 cardinal directions, angle calculations, rotation methods |
+| **RobotInfo.java** | Sensing | Information about sensed enemy/friendly robots (location, HP, type) |
+| **TreeInfo.java** | Tree sensing | Tree properties (location, radius, HP, team, bullet count) |
+| **BulletInfo.java** | Bullet sensing | Bullet trajectories for dodging/prediction |
+| **MapLocation.java** | Positioning | Distance calculations, direction to target, isWithinDistance() checks |
+
+### Unit Quick Reference
+| Unit | Cost | HP | Speed | Sensor | Key Role |
+|------|------|----|----|--------|----------|
+| ARCHON | - | 400 | 0.5 | 10 | Hires Gardeners (100 bullets), generates 2 bullets/turn |
+| GARDENER | 100 | 40 | 0.5 | 7 | Plants trees (50), waters (+5 HP), builds combat units |
+| SOLDIER | 100 | 50 | 0.8 | 7 | Main combat unit, ranged attacks (single/triad/pentad shots) |
+| LUMBERJACK | 100 | 50 | 0.75 | 7 | Melee, chops trees (-5 HP), strike AoE (hits allies too!) |
+| SCOUT | 80 | 10 | 1.25 | 14 | Fast reconnaissance, huge vision, shakes trees, very fragile |
+| TANK | 300 | 200 | 0.5 | 7 | Heavy unit, body slams trees (-4 HP), expensive late-game |
+
+**Note**: All units built by Gardeners spawn at 20% HP and need watering to reach full health.
