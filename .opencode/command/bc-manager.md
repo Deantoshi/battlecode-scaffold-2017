@@ -25,6 +25,15 @@ You orchestrate these specialized agents:
 
 | Agent | Purpose |
 |-------|---------|
+| `@bc-general` | Synthesizes strategy by consulting unit, exploration, and economy specialists |
+| `@bc-archon` | Archon strategy and survival guidance |
+| `@bc-gardener` | Economy/production and tree-farm guidance |
+| `@bc-soldier` | Soldier combat micro and targeting guidance |
+| `@bc-lumberjack` | Lumberjack clearing and melee pressure guidance |
+| `@bc-scout` | Scout recon, harassment, and bullet shaking guidance |
+| `@bc-tank` | Tank siege and late-game combat guidance |
+| `@bc-exploration` | Map exploration and intel-sharing guidance |
+| `@bc-economy` | Bullet economy and victory-point timing guidance |
 | `@bc-runner` | Executes games, captures results |
 | `@bc-results` | Analyzes game outcomes, identifies patterns |
 | `@bc-planner` | Designs strategic code improvements |
@@ -103,20 +112,25 @@ From the analysis:
   Report: 'GRADUATED! Updated copy_bot. Now training against stronger opponent.'
   Continue to STEP 4.
 
-STEP 4 - PLAN IMPROVEMENTS:
-Call @bc-planner --bot={BOT_NAME}
-The planner will read the analysis and create an improvement plan.
+STEP 4 - CONSULT SPECIALISTS:
+Call @bc-general --bot={BOT_NAME} --opponent={OPPONENT}
+Provide it the analysis summary and any key battle-log insights.
+The general will consult the unit, exploration, and economy specialists, then return a coordinated strategy.
 
-STEP 5 - IMPLEMENT CHANGES:
+STEP 5 - PLAN IMPROVEMENTS:
+Call @bc-planner --bot={BOT_NAME}
+Include the @bc-general recommendations so the plan aligns across unit roles.
+
+STEP 6 - IMPLEMENT CHANGES:
 Call @bc-coder --bot={BOT_NAME}
 The coder will implement the plan and verify compilation.
 
-STEP 6 - CLEAN SUMMARIES:
+STEP 7 - CLEAN SUMMARIES:
 ```bash
 rm -f summaries/*.md
 ```
 
-STEP 7 - UPDATE BATTLE LOG:
+STEP 8 - UPDATE BATTLE LOG:
 Append to src/{BOT_NAME}/battle-log.md:
 
 ## Iteration [N]
@@ -139,7 +153,7 @@ Append to src/{BOT_NAME}/battle-log.md:
 
 ---
 
-STEP 8 - REPORT STATUS:
+STEP 9 - REPORT STATUS:
 Report:
 - Iteration X/{ITERATIONS}
 - Graduations: N
