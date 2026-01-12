@@ -122,7 +122,7 @@ export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64 && ./gradlew compileJava
 Once compiled, run a test match against examplefuncsplayer:
 
 ```bash
-export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64 && ./gradlew run -PteamA={BOT_NAME} -PteamB=examplefuncsplayer -Pmaps=Bullseye
+export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64 && ./gradlew runWithSummary -PteamA={BOT_NAME} -PteamB=examplefuncsplayer -Pmaps=Bullseye
 ```
 
 Capture the match output to report results.
@@ -180,7 +180,7 @@ Match observations: [What happened]
 
 ## Bot Ready for Use
 Run matches with:
-./gradlew run -PteamA={BOT_NAME} -PteamB=<opponent> -Pmaps=<map>
+./gradlew runWithSummary -PteamA={BOT_NAME} -PteamB=<opponent> -Pmaps=<map>
 
 === END BOT CREATION ===
 ```

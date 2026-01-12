@@ -600,7 +600,7 @@ newBodies.add(new RobotInfo(
 
 5. **Test balance** - Run games with `examplefuncsplayer` vs `examplefuncsplayer`:
    ```bash
-   ./gradlew run -PteamA=examplefuncsplayer -PteamB=examplefuncsplayer -Pmaps=300
+   ./gradlew runWithSummary -PteamA=examplefuncsplayer -PteamB=examplefuncsplayer -Pmaps=300
    ```
 
 6. **Document changes** - Update this file when adding new patterns or utilities

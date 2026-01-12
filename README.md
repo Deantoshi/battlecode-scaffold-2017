@@ -275,7 +275,7 @@ doSomething()
 If you have questions, ask in IRC.
 
 ### Starting the server in debug mode
-Do `./gradlew runDebug -PteamA=examplefuncsplayer -PteamB=examplefuncsplayer -Pmaps=shrine,Barrier` in a terminal. (Or equivalent, for the teams and maps you want.) (This works exactly like `./gradlew run`.)
+Do `./gradlew runDebug -PteamA=examplefuncsplayer -PteamB=examplefuncsplayer -Pmaps=shrine,Barrier` in a terminal. (Or equivalent, for the teams and maps you want.) (This works exactly like `./gradlew runWithSummary`.)
 
 It should say `Listening for transport dt_socket at address: 5005` and pause.
 

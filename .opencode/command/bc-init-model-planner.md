@@ -83,7 +83,7 @@ Your output MUST follow this exact format so bc-coder can parse and implement it
 - Language: Java 8 (no var keyword, no modules, no records, no switch expressions)
 - Source folder: src/{BOT_NAME}/
 - Build command: ./gradlew compileJava
-- Test command: ./gradlew run -PteamA={BOT_NAME} -PteamB=examplefuncsplayer -Pmaps=Bullseye
+- Test command: ./gradlew runWithSummary -PteamA={BOT_NAME} -PteamB=examplefuncsplayer -Pmaps=Bullseye
 
 ## File Structure
 src/{BOT_NAME}/
