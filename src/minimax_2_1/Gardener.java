@@ -4,7 +4,7 @@ import battlecode.common.*;
 public strictfp class Gardener {
     static RobotController rc;
     static int treesPlanted = 0;
-    static int maxTrees = 5;
+    static int maxTrees = 15;
     static Direction treeDirection = Direction.SOUTH;
     static Direction buildDirection = Direction.NORTH;
 
@@ -29,30 +29,24 @@ public strictfp class Gardener {
         
         waterLowestHealthTree();
         
-        if (round < 500 && treesPlanted < maxTrees) {
-            if (tryPlantTree()) {
-                return;
-            }
-        }
-        
         RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(10, rc.getTeam().opponent());
         boolean enemiesNearby = nearbyEnemies.length > 0;
         
+        // PRIORITY 1: Build combat units if enemies are nearby
         if (enemiesNearby) {
             if (tryBuildUnit()) {
                 return;
             }
         }
         
-        boolean shouldBuildUnits = true;
-        
-        if (shouldBuildUnits) {
-            if (tryBuildUnit()) {
-                return;
-            }
+        // PRIORITY 2: Build soldiers throughout the game (not just trees!)
+        // Only plant trees after we've built some soldiers
+        if (tryBuildUnit()) {
+            return;
         }
-
-        if (round < 500 && treesPlanted < maxTrees) {
+        
+        // PRIORITY 3: Plant trees (but don't overdo it - soldiers win games)
+        if (treesPlanted < maxTrees) {
             if (tryPlantTree()) {
                 return;
             }
@@ -94,16 +88,34 @@ public strictfp class Gardener {
         int round = rc.getRoundNum();
         RobotType toBuild;
         
-        if (round < 200) {
-            toBuild = RobotType.SOLDIER;
-        } else if (round < 600) {
-            toBuild = RobotType.SOLDIER;
-        } else {
+        // Build diverse army based on game phase
+        if (round < 300) {
+            // Early game: Scouts for harassment, Soldiers for defense
             double rand = Math.random();
-            if (rand < 0.8) {
+            if (rand < 0.6) {
+                toBuild = RobotType.SCOUT;  // Fast, good for early harassment
+            } else {
                 toBuild = RobotType.SOLDIER;
+            }
+        } else if (round < 1000) {
+            // Mid game: Soldiers + Lumberjacks for melee pressure
+            double rand = Math.random();
+            if (rand < 0.7) {
+                toBuild = RobotType.SOLDIER;
+            } else if (rand < 0.9) {
+                toBuild = RobotType.LUMBERJACK;
             } else {
                 toBuild = RobotType.TANK;
+            }
+        } else {
+            // Late game: Heavy hitters
+            double rand = Math.random();
+            if (rand < 0.5) {
+                toBuild = RobotType.SOLDIER;
+            } else if (rand < 0.8) {
+                toBuild = RobotType.TANK;
+            } else {
+                toBuild = RobotType.LUMBERJACK;
             }
         }
         

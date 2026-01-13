@@ -39,18 +39,29 @@ public strictfp class Archon {
             Nav.tryMove(away);
         }
         
-        for (int i = 0; i < 8; i++) {
-            if (rc.canBuildRobot(RobotType.SOLDIER, Nav.randomDirection())) {
-                rc.buildRobot(RobotType.SOLDIER, Nav.randomDirection());
+        // PRIORITY: Build soldiers aggressively in early game
+        // This is critical - we need combat units to survive!
+        for (int i = 0; i < 3; i++) {  // Try up to 3 times per turn
+            Direction dir = new Direction(i * (float)Math.PI / 4);
+            if (rc.canBuildRobot(RobotType.SOLDIER, dir)) {
+                rc.buildRobot(RobotType.SOLDIER, dir);
             }
         }
-
+        
+        // After round 300, start hiring gardeners (but not before!)
         int gardenerCount = Comms.countFriendlyGardeners();
-        if (rc.getTeamBullets() >= 80 && gardenerCount < 2) {
+        
+        // Only hire gardeners after round 100 and we have some soldiers
+        // Soldiers are critical for survival in early game
+        if (round > 100 && gardenerCount < 2 && rc.getTeamBullets() >= 100) {
             tryHireGardener();
         }
 
-        if (rc.getTeamBullets() >= 80 && round > 400 && gardenerCount < 4) {
+        if (rc.getTeamBullets() >= 100 && round > 200 && gardenerCount < 4) {
+            tryHireGardener();
+        }
+
+        if (rc.getTeamBullets() >= 100 && round > 400 && gardenerCount < 6) {
             tryHireGardener();
         }
 
