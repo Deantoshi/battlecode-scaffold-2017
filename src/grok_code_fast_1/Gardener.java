@@ -24,7 +24,7 @@ public strictfp class Gardener {
 
     static void doTurn() throws GameActionException {
         waterLowestHealthTree();
-        if (treesPlanted < 3) {
+        if (treesPlanted < 2) {
             tryPlantTree();
         } else {
             tryBuildUnit();
@@ -64,11 +64,11 @@ public strictfp class Gardener {
         int round = rc.getRoundNum();
         RobotType toBuild;
         if (round < 50) {
-            toBuild = RobotType.SCOUT;
+            toBuild = RobotType.LUMBERJACK;
         } else if (round < 200) {
-            toBuild = Math.random() < 0.3 ? RobotType.LUMBERJACK : RobotType.SOLDIER;
+            toBuild = RobotType.SOLDIER;
         } else {
-            toBuild = Math.random() < 0.6 ? RobotType.SOLDIER : RobotType.TANK;
+            toBuild = Math.random() < 0.7 ? RobotType.SOLDIER : RobotType.TANK;
         }
         if (rc.canBuildRobot(toBuild, buildDirection)) {
             rc.buildRobot(toBuild, buildDirection);

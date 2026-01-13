@@ -24,12 +24,32 @@ public strictfp class Soldier {
         RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
         if (enemies.length > 0) {
             RobotInfo target = findTarget();
-            tryShoot(target);
+        // Bullet evasion before movement
+        BulletInfo[] bullets = rc.senseNearbyBullets();
+        Direction safeDir = null;
+        for (Direction dir : Utils.getDirections()) {
+            boolean safe = true;
+            for (BulletInfo bullet : bullets) {
+                if (rc.getLocation().add(dir, rc.getType().strideRadius).distanceTo(bullet.location) < 3.0f) {
+                    safe = false;
+                    break;
+                }
+            }
+            if (safe) {
+                safeDir = dir;
+                break;
+            }
         }
-        MapLocation enemyLoc = Comms.getEnemyArchonLocation();
-        if (enemyLoc != null) {
-            Nav.moveToward(enemyLoc);
-        } else {
+        if (safeDir != null && !rc.hasMoved()) {
+            Nav.tryMove(safeDir);
+        } else if (!rc.hasMoved()) {
+            MapLocation enemyLoc = Comms.getEnemyArchonLocation();
+            if (enemyLoc != null) {
+                Nav.moveToward(enemyLoc);
+            } else {
+                Nav.tryMove(Nav.randomDirection());
+            }
+        }
             Nav.tryMove(Nav.randomDirection());
         }
     }

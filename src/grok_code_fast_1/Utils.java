@@ -40,4 +40,7 @@ public strictfp class Utils {
         }
         return closest;
     }
+    public static Direction[] getDirections() {
+        return new Direction[]{Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST};
+    }
 }
