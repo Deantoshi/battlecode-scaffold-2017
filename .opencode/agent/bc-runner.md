@@ -51,7 +51,58 @@ echo "=== ALL 5 GAMES COMPLETED ==="
 
 **IMPORTANT:** Use a 5-minute timeout (300000ms) for this command since games run in parallel but some maps take longer.
 
-### Step 2: Read All 5 Summaries
+### Step 2: Verify All Maps Completed
+
+Check that all 5 summary files were generated:
+
+```bash
+echo "=== Checking for summary files ==="
+for map in shrine Barrier Bullseye Lanes Blitzkrieg; do
+  if ls summaries/*-${map}-*.md 1>/dev/null 2>&1; then
+    echo "OK: $map"
+  else
+    echo "MISSING: $map"
+  fi
+done
+```
+
+### Step 3: Retry Missing Maps (if any)
+
+If any maps are missing summaries, retry them individually (up to 2 retries per map):
+
+```bash
+export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+
+retry_map() {
+  local map=$1
+  local attempt=$2
+  echo "=== Retrying $map (attempt $attempt) ==="
+  ./gradlew runWithSummary -PteamA={TEAM_A} -PteamB={TEAM_B} -Pmaps=$map 2>&1
+}
+
+for map in shrine Barrier Bullseye Lanes Blitzkrieg; do
+  if ! ls summaries/*-${map}-*.md 1>/dev/null 2>&1; then
+    echo "MISSING: $map - attempting retry..."
+    retry_map $map 1
+
+    # Check again after first retry
+    if ! ls summaries/*-${map}-*.md 1>/dev/null 2>&1; then
+      echo "Still missing $map - final retry..."
+      retry_map $map 2
+    fi
+  fi
+done
+```
+
+After retries, verify final state:
+```bash
+echo "=== Final Summary Check ==="
+ls -t summaries/*.md 2>/dev/null || echo "WARNING: No summary files found!"
+```
+
+**If a map still fails after 2 retries**, report it as a failed map in the output and continue with available results.
+
+### Step 4: Read All Summaries
 
 List and read all summaries generated:
 
@@ -59,9 +110,9 @@ List and read all summaries generated:
 ls -t summaries/*.md
 ```
 
-Then read each of the 5 summary files to extract results.
+Then read each summary file to extract results.
 
-### Step 3: Output Structured Results
+### Step 5: Output Structured Results
 
 For each map, output:
 
@@ -93,7 +144,21 @@ Maps won by B: [list]
 
 ## Error Handling
 
+### Compilation Failure
 If build fails:
 1. Report the compilation error clearly
 2. Do NOT proceed with game execution
 3. The orchestrator will handle the fix
+
+### Missing Summary Files
+If maps fail to generate summaries:
+1. Steps 2-3 will automatically retry missing maps (up to 2 retries each)
+2. If a map still fails after retries, report it in the output:
+   ```
+   === GAME RESULT: {MAP} ===
+   Status: FAILED
+   Reason: No summary generated after 2 retries
+   === END {MAP} ===
+   ```
+3. Continue with available results (don't block on failed maps)
+4. The orchestrator may re-invoke bc-runner if too many maps failed
