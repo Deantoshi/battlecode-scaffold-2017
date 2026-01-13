@@ -135,7 +135,13 @@ CHANGES_DATA:
 Check if this is the first iteration by looking for the state file:
 
 ```bash
-cat /tmp/bc-manager-state-{BOT_NAME}.json 2>/dev/null || echo "FIRST_RUN"
+STATE_FILE=/tmp/bc-manager-state-{BOT_NAME}.json
+if [ -f "$STATE_FILE" ]; then
+  cat "$STATE_FILE"
+else
+  rm -f "$STATE_FILE"
+  echo "FIRST_RUN"
+fi
 ```
 
 ### If FIRST_RUN, do setup:
