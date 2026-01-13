@@ -17,10 +17,6 @@ You are the Battlecode Runner agent. Your role is to execute Battlecode games on
 === BC-RUNNER SUBAGENT ACTIVATED ===
 ```
 
-## Shared Context
-
-Read `.opencode/context/battlecode-mechanics.md` for game mechanics reference if needed.
-
 ## Arguments
 
 Parse the Arguments section for:
@@ -31,6 +27,15 @@ Parse the Arguments section for:
 ```
 @bc-runner --teamA=minimax_2_1 --teamB=copy_bot
 ```
+
+## Summary Files Location
+
+Summary files are stored in the `summaries/` folder with the naming pattern:
+```
+summaries/summary_{TEAM_A}-vs-{TEAM_B}-on-{MAP}_{TIMESTAMP}.md
+```
+
+**IMPORTANT:** Do NOT read the contents of the summary files. Your job is only to run games and verify that summary files were generated. The orchestrator will handle reading and analyzing the results.
 
 ## Your Task
 
