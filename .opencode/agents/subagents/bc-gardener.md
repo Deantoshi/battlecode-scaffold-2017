@@ -3,8 +3,6 @@ description: Gardener strategy specialist for Battlecode 2017 (economy, producti
 mode: subagent
 temperature: 1
 tools:
-  write: false
-  edit: false
   bash: false
 ---
 

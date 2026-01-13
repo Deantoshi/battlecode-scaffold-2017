@@ -2,7 +2,6 @@ import type { Plugin, PluginInput, Hooks } from "@opencode-ai/plugin"
 import { tool } from "@opencode-ai/plugin"
 import * as fs from "fs"
 import * as path from "path"
-import { execSync } from "child_process"
 
 interface BattlecodeState {
   active: boolean
@@ -66,31 +65,6 @@ function clearState(directory: string): void {
   }
 }
 
-function parseGameOutput(output: string): Partial<GameResult> {
-  const result: Partial<GameResult> = {
-    winner: "unknown",
-    winningTeam: "unknown",
-    rounds: 0,
-    reason: "unknown"
-  }
-
-  // Parse winner: "[server]               examplefuncsplayer (A) wins (round 2211)"
-  const winMatch = output.match(/\[server\]\s+(\S+)\s+\(([AB])\)\s+wins\s+\(round\s+(\d+)\)/i)
-  if (winMatch) {
-    result.winningTeam = winMatch[1]
-    result.winner = winMatch[2] as "A" | "B"
-    result.rounds = parseInt(winMatch[3], 10)
-  }
-
-  // Parse reason: "[server] Reason: The winning team won by destruction."
-  const reasonMatch = output.match(/\[server\]\s+Reason:\s+(.+)/i)
-  if (reasonMatch) {
-    result.reason = reasonMatch[1].trim()
-  }
-
-  return result
-}
-
 const plugin: Plugin = async (input: PluginInput): Promise<Hooks> => {
   const { client, directory } = input
 
@@ -125,77 +99,9 @@ const plugin: Plugin = async (input: PluginInput): Promise<Hooks> => {
 - Bot: ${state.botName}
 - Opponent: ${state.opponent}
 - Map: ${state.mapName}
-- Target: Win in ≤${state.targetWinRounds} rounds OR complete ${state.targetIterations} iterations`
-        }
-      }),
+- Target: Win in ≤${state.targetWinRounds} rounds OR complete ${state.targetIterations} iterations
 
-      bc_run_game: tool({
-        description: "Run a Battlecode game and record the result",
-        args: {
-          team_a: tool.schema.string().optional().describe("Team A (default: from session state)"),
-          team_b: tool.schema.string().optional().describe("Team B (default: from session state)"),
-          map_name: tool.schema.string().optional().describe("Map (default: from session state)")
-        },
-        async execute(args, _context) {
-          const state = loadState(directory)
-
-          const teamA = args.team_a ?? state?.botName ?? "claudebot"
-          const teamB = args.team_b ?? state?.opponent ?? "examplefuncsplayer"
-          const mapName = args.map_name ?? state?.mapName ?? "shrine"
-
-          try {
-            const output = execSync(
-              `export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64 && ./gradlew runWithSummary -PteamA=${teamA} -PteamB=${teamB} -Pmaps=${mapName} 2>&1`,
-              {
-                cwd: directory,
-                maxBuffer: 10 * 1024 * 1024,
-                timeout: 300000 // 5 minute timeout
-              }
-            ).toString()
-
-            const gameResult = parseGameOutput(output)
-
-            const result: GameResult = {
-              iteration: state ? state.iteration + 1 : 1,
-              winner: gameResult.winner ?? "unknown",
-              winningTeam: gameResult.winningTeam ?? "unknown",
-              rounds: gameResult.rounds ?? 0,
-              reason: gameResult.reason ?? "unknown",
-              ourTeam: "A", // We're always team A
-              timestamp: Date.now()
-            }
-
-            // Update state if active
-            if (state && state.active) {
-              state.iteration++
-              state.results.push(result)
-
-              // Track best result (lowest winning rounds for our team)
-              const weWon = result.winner === "A"
-              if (weWon) {
-                if (!state.bestResult || result.rounds < state.bestResult.rounds) {
-                  state.bestResult = result
-                }
-              }
-
-              saveState(directory, state)
-            }
-
-            const weWon = result.winner === "A"
-            return `=== GAME RESULT ===
-Match: ${teamA} (A) vs ${teamB} (B) on ${mapName}
-Winner: ${result.winningTeam} (${result.winner})
-Rounds: ${result.rounds}
-Reason: ${result.reason}
-Our Team (A) ${weWon ? "WON" : "LOST"}
-
-Raw output available in match file.
-${state ? `\nIteration: ${state.iteration}/${state.targetIterations}` : ""}
-${state?.bestResult ? `Best win so far: ${state.bestResult.rounds} rounds` : ""}`
-
-          } catch (error: any) {
-            return `Game failed to run: ${error.message}\n\nCheck that the bot compiles and Java 8 is available.`
-          }
+Next: run /bc-runner --teamA=${state.botName} --teamB=${state.opponent} to execute 5 maps in parallel.`
         }
       }),
 
