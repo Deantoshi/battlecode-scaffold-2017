@@ -47,11 +47,11 @@ For `update` action, also parse:
   "total_wins": 0,
   "total_losses": 0,
   "maps": {
-    "shrine": { "wins": 0, "losses": 0, "total_win_rounds": 0, "avg_win_rounds": 0 },
-    "Barrier": { "wins": 0, "losses": 0, "total_win_rounds": 0, "avg_win_rounds": 0 },
-    "Bullseye": { "wins": 0, "losses": 0, "total_win_rounds": 0, "avg_win_rounds": 0 },
-    "Lanes": { "wins": 0, "losses": 0, "total_win_rounds": 0, "avg_win_rounds": 0 },
-    "Blitzkrieg": { "wins": 0, "losses": 0, "total_win_rounds": 0, "avg_win_rounds": 0 }
+    "shrine": { "wins": 0, "losses": 0 },
+    "Barrier": { "wins": 0, "losses": 0 },
+    "Bullseye": { "wins": 0, "losses": 0 },
+    "Lanes": { "wins": 0, "losses": 0 },
+    "Blitzkrieg": { "wins": 0, "losses": 0 }
   }
 }
 ```
@@ -72,11 +72,11 @@ if [ ! -f src/{BOT_NAME}/cumulative-stats.json ]; then
   "total_wins": 0,
   "total_losses": 0,
   "maps": {
-    "shrine": { "wins": 0, "losses": 0, "total_win_rounds": 0, "avg_win_rounds": 0 },
-    "Barrier": { "wins": 0, "losses": 0, "total_win_rounds": 0, "avg_win_rounds": 0 },
-    "Bullseye": { "wins": 0, "losses": 0, "total_win_rounds": 0, "avg_win_rounds": 0 },
-    "Lanes": { "wins": 0, "losses": 0, "total_win_rounds": 0, "avg_win_rounds": 0 },
-    "Blitzkrieg": { "wins": 0, "losses": 0, "total_win_rounds": 0, "avg_win_rounds": 0 }
+    "shrine": { "wins": 0, "losses": 0 },
+    "Barrier": { "wins": 0, "losses": 0 },
+    "Bullseye": { "wins": 0, "losses": 0 },
+    "Lanes": { "wins": 0, "losses": 0 },
+    "Blitzkrieg": { "wins": 0, "losses": 0 }
   }
 }
 EOF
@@ -116,15 +116,10 @@ Update stats with new iteration results.
 2. Increment `total_iterations` by 1
 3. Increment `total_games` by 5
 4. For each map in results:
-   - If WIN: increment `maps[map].wins`, add rounds to `total_win_rounds`, recalculate `avg_win_rounds`
+   - If WIN: increment `maps[map].wins`
    - If LOSS: increment `maps[map].losses`
 5. Recalculate `total_wins` and `total_losses` from map totals
 6. Write updated stats back to file
-
-**Average rounds formula:**
-```
-avg_win_rounds = total_win_rounds / wins
-```
 
 ## Output Format
 
@@ -147,13 +142,13 @@ File: src/{BOT_NAME}/cumulative-stats.json
 - Overall Record: W-L (X% win rate)
 
 ## Per-Map Records
-| Map        | Wins | Losses | Win Rate | Avg Win Rounds |
-|------------|------|--------|----------|----------------|
-| shrine     |   W  |   L    |    X%    |       N        |
-| Barrier    |   W  |   L    |    X%    |       N        |
-| Bullseye   |   W  |   L    |    X%    |       N        |
-| Lanes      |   W  |   L    |    X%    |       N        |
-| Blitzkrieg |   W  |   L    |    X%    |       N        |
+| Map        | Wins | Losses | Win Rate |
+|------------|------|--------|----------|
+| shrine     |   W  |   L    |    X%    |
+| Barrier    |   W  |   L    |    X%    |
+| Bullseye   |   W  |   L    |    X%    |
+| Lanes      |   W  |   L    |    X%    |
+| Blitzkrieg |   W  |   L    |    X%    |
 
 ## Structured Data (for parsing)
 STATS_JSON: {"total_iterations": N, "total_games": N, "total_wins": W, "total_losses": L, "win_rate": X.X}
