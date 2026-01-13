@@ -63,40 +63,57 @@ Parse the Arguments section for:
 
 ## Your Task
 
-You will receive analysis from bc-results. Convert it into an actionable coding plan.
+You will receive:
+1. **Analysis from bc-results** - Battle outcomes, navigation status, patterns
+2. **Strategy from bc-general** - Prioritized recommendations with **SELECTED CODE CHANGES**
 
-### Step 1: Read Current Bot Code
+**IMPORTANT:** bc-general provides pre-approved code changes from unit specialists (bc-archon, bc-gardener, bc-soldier, etc.). These specialists have already read the bot's code and designed specific improvements. **Use their code as the primary basis for your plan.**
 
-Read the bot's source files to understand current implementation:
+### Step 1: Review Specialist Code Changes (PRIORITY)
+
+bc-general's output includes a **"SELECTED CODE CHANGES FOR BC-PLANNER"** section containing:
+- 1-3 high-priority code changes from specialists
+- Full Java code snippets ready for implementation
+- Rationale for why each change was selected
+
+**Start by reviewing these pre-designed changes.** They are based on actual code analysis by specialists.
+
+### Step 2: Read Current Bot Code (for context)
+
+Read the bot's source files to verify specialist recommendations and understand context:
 ```
 src/{BOT_NAME}/RobotPlayer.java
 src/{BOT_NAME}/*.java (any other files)
 ```
 
-### Step 2: Read Battle Log
+### Step 3: Read Battle Log
 
 Check `src/{BOT_NAME}/battle-log.md` for:
 - What was tried before
 - What worked vs failed
 - Approaches to AVOID repeating
 
-### Step 3: Prioritize Improvements
+**Cross-reference with specialist recommendations to avoid repeating failed approaches.**
 
-Based on analysis, prioritize changes that:
-1. Have biggest impact on win rate
-2. Help across multiple map types (not just one)
-3. Don't break existing functionality
-4. Are achievable in a single iteration
+### Step 4: Prioritize and Refine Changes
 
-**If navigation is BROKEN**: Pathfinding MUST be priority #1.
+Based on analysis and specialist code:
+1. **Use specialist code changes as the foundation** - They've already analyzed the bot
+2. Have biggest impact on win rate
+3. Help across multiple map types (not just one)
+4. Don't break existing functionality
+5. Are achievable in a single iteration
 
-### Step 4: Design 1-3 Changes
+**If navigation is BROKEN**: Pathfinding MUST be priority #1, even if specialists suggest other changes.
+
+### Step 5: Design 1-3 Changes
 
 For each change, specify:
 - **File**: Which file to modify
+- **Source**: "From bc-{specialist}" or "Original" (if you designed it)
 - **Current behavior**: What it does now
 - **New behavior**: What it should do
-- **Implementation**: Pseudocode or code snippet
+- **Implementation**: Use specialist code when available, or provide your own
 - **Expected impact**: Why this helps
 
 ## Strategy Categories
@@ -135,15 +152,22 @@ For each change, specify:
 - Previous attempts: [summary]
 - Approaches to avoid: [list]
 
+## Specialist Code Used
+- bc-archon: [Used/Not used] - [reason]
+- bc-gardener: [Used/Not used] - [reason]
+- bc-soldier: [Used/Not used] - [reason]
+- etc.
+
 ## Changes to Implement
 
 ### Change 1: [Title]
 - **File**: src/{BOT_NAME}/[file].java
+- **Source**: From bc-{specialist} / Original
 - **Current**: [what it does now]
 - **New**: [what it should do]
 - **Code**:
   ```java
-  // Implementation
+  // Implementation - use specialist code when available
   ```
 - **Impact**: [why this helps]
 
