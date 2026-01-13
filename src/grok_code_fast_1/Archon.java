@@ -4,6 +4,7 @@ import battlecode.common.*;
 public strictfp class Archon {
     static RobotController rc;
     static int turnCounter = 0;
+    static int hireCounter = 0;
 
     public static void run(RobotController rc) throws GameActionException {
         Archon.rc = rc;
@@ -38,12 +39,17 @@ public strictfp class Archon {
         
         int hireInterval = 3;
         if (turnCounter % hireInterval == 0 && rc.getTeamBullets() >= 50) {
-            tryHireGardener();
+            if (hireCounter == 0) {
+                tryHireScout();
+            } else {
+                tryHireGardener();
+            }
+            hireCounter++;
         }
 
-        // Donate excess bullets starting from round 300
-        if (rc.getRoundNum() >= 200 && rc.getTeamBullets() > 100) {
-            int donateAmount = Math.min((int)(rc.getTeamBullets() - 50), 10);
+        // Donate excess bullets starting from round 100
+        if (rc.getRoundNum() >= 100 && rc.getTeamBullets() > 50) {
+            int donateAmount = Math.min((int)(rc.getTeamBullets() - 50), 50);
             if (donateAmount > 0) {
                 rc.donate(donateAmount);
             }
@@ -70,6 +76,17 @@ public strictfp class Archon {
             Direction dir = new Direction(i * (float)Math.PI / 4);
             if (rc.canHireGardener(dir)) {
                 rc.hireGardener(dir);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    static boolean tryHireScout() throws GameActionException {
+        for (int i = 0; i < 8; i++) {
+            Direction dir = new Direction(i * (float)Math.PI / 4);
+            if (rc.canBuildRobot(RobotType.SCOUT, dir)) {
+                rc.buildRobot(RobotType.SCOUT, dir);
                 return true;
             }
         }

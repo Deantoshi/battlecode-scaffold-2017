@@ -23,12 +23,13 @@ public strictfp class Soldier {
     static void doTurn() throws GameActionException {
         RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
         if (enemies.length > 0) {
+            Comms.broadcastEnemyLocation(enemies[0].location);
             RobotInfo target = findTarget();
             // Try to shoot the target
             tryShoot(target);
-if (enemies.length > 0 && !rc.hasMoved()) {
-    Nav.moveToward(target.location);
-}
+            if (enemies.length > 0 && !rc.hasMoved()) {
+                Nav.moveToward(target.location);
+            }
         }
         // Bullet evasion before movement
         BulletInfo[] bullets = rc.senseNearbyBullets();
@@ -56,11 +57,16 @@ if (enemies.length > 0 && !rc.hasMoved()) {
                 Nav.tryMove(bestDir);
             }
         } else if (!rc.hasMoved()) {
-            MapLocation enemyLoc = Comms.getEnemyArchonLocation();
-            if (enemyLoc != null) {
-                Nav.moveToward(enemyLoc);
+            MapLocation rallyPoint = Comms.getEnemyLocation();
+            if (rallyPoint != null) {
+                Nav.moveToward(rallyPoint);
             } else {
-                Nav.tryMove(Nav.randomDirection());
+                MapLocation enemyLoc = Comms.getEnemyArchonLocation();
+                if (enemyLoc != null) {
+                    Nav.moveToward(enemyLoc);
+                } else {
+                    Nav.tryMove(Nav.randomDirection());
+                }
             }
         }
         // Removed the unconditional Nav.tryMove(Nav.randomDirection());

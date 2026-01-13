@@ -29,11 +29,15 @@ public strictfp class Comms {
     }
 
     public static void broadcastEnemyLocation(MapLocation loc) throws GameActionException {
-        broadcastLocation(9, 10, loc);
+        rc.broadcast(2, (int)(loc.x * 10));
+        rc.broadcast(3, (int)(loc.y * 10));
     }
 
     public static MapLocation getEnemyLocation() throws GameActionException {
-        return readLocation(9, 10);
+        float x = rc.readBroadcast(2) / 10.0f;
+        float y = rc.readBroadcast(3) / 10.0f;
+        if (x == 0 && y == 0) return null;
+        return new MapLocation(x, y);
     }
 
     public static void broadcastSafeArea(MapLocation loc) throws GameActionException {
@@ -59,4 +63,6 @@ public strictfp class Comms {
     public static MapLocation getMapEdge() throws GameActionException {
         return readLocation(7, 8);
     }
+
+
 }
