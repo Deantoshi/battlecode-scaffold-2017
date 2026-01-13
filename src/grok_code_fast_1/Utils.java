@@ -2,28 +2,42 @@ package grok_code_fast_1;
 import battlecode.common.*;
 
 public strictfp class Utils {
-    // Constants
-    public static final float EPSILON = 0.001f;
-    public static final int MAX_MAP_SIZE = 100;
 
-    // Bit packing helpers
-    public static int packLocation(MapLocation loc) {
-        return ((int)loc.x << 16) | ((int)loc.y & 0xFFFF);
+    public static RobotInfo findLowestHealthTarget(RobotInfo[] enemies) {
+        RobotInfo best = null;
+        float lowestHealth = Float.MAX_VALUE;
+        for (RobotInfo enemy : enemies) {
+            if (enemy.health < lowestHealth) {
+                lowestHealth = enemy.health;
+                best = enemy;
+            }
+        }
+        return best;
     }
 
-    public static MapLocation unpackLocation(int packed) {
-        return new MapLocation((packed >> 16) & 0xFFFF, packed & 0xFFFF);
+    public static TreeInfo findLowestHealthTree(TreeInfo[] trees) {
+        TreeInfo best = null;
+        float lowestHealth = Float.MAX_VALUE;
+        for (TreeInfo tree : trees) {
+            if (tree.health < lowestHealth) {
+                lowestHealth = tree.health;
+                best = tree;
+            }
+        }
+        return best;
     }
 
-    // Geometry helpers
-    public static float distSq(MapLocation a, MapLocation b) {
-        return a.distanceSquaredTo(b);
+    public static RobotInfo findClosestEnemy(RobotController rc, RobotInfo[] enemies) {
+        RobotInfo closest = null;
+        float closestDist = Float.MAX_VALUE;
+        MapLocation myLoc = rc.getLocation();
+        for (RobotInfo enemy : enemies) {
+            float dist = myLoc.distanceTo(enemy.location);
+            if (dist < closestDist) {
+                closestDist = dist;
+                closest = enemy;
+            }
+        }
+        return closest;
     }
-
-    // Random direction
-    public static Direction randomDirection() {
-        return new Direction((float)Math.random() * 2 * (float)Math.PI);
-    }
-
-
 }

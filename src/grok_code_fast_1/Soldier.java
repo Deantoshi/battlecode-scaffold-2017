@@ -7,67 +7,55 @@ public strictfp class Soldier {
     public static void run(RobotController rc) throws GameActionException {
         Soldier.rc = rc;
         Nav.init(rc);
+        Comms.init(rc);
 
         while (true) {
             try {
-                // Dodge bullets
-                BulletInfo[] bullets = rc.senseNearbyBullets();
-                for (BulletInfo bullet : bullets) {
-                    if (willCollideWithMe(bullet)) {
-                        Direction away = bullet.dir.opposite();
-                        Nav.tryMove(away);
-                        break;
-                    }
-                }
-
-                // Attack enemies
-                RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
-                RobotInfo target = null;
-                for (RobotInfo enemy : enemies) {
-                    if (target == null || enemy.health < target.health) {
-                        target = enemy;
-                    }
-                }
-
-                if (target != null) {
-                    Direction dir = rc.getLocation().directionTo(target.location);
-                    if (rc.canFireTriadShot()) {
-                        rc.fireTriadShot(dir);
-                    } else if (rc.canFireSingleShot()) {
-                        rc.fireSingleShot(dir);
-                    }
-                    // Kite: move away if too close
-                    if (rc.getLocation().distanceTo(target.location) < 3) {
-                        Nav.tryMove(dir.opposite());
-                    }
-                } else {
-                    // Patrol or move towards enemy archon
-                    MapLocation enemyArchon = Comms.readArchon(rc, 0);
-                    if (enemyArchon != null) {
-                        Nav.tryMoveTowards(enemyArchon);
-                    }
-                }
-
+                doTurn();
             } catch (Exception e) {
                 e.printStackTrace();
+            } finally {
+                Clock.yield();
             }
-            Clock.yield();
         }
     }
 
-    static boolean willCollideWithMe(BulletInfo bullet) {
-        MapLocation myLocation = rc.getLocation();
-        Direction propagationDirection = bullet.dir;
-        MapLocation bulletLocation = bullet.location;
-        Direction directionToRobot = bulletLocation.directionTo(myLocation);
-        float distToRobot = bulletLocation.distanceTo(myLocation);
-        float theta = propagationDirection.radiansBetween(directionToRobot);
-
-        if (Math.abs(theta) > Math.PI/2) {
-            return false;
+    static void doTurn() throws GameActionException {
+        RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
+        if (enemies.length > 0) {
+            RobotInfo target = findTarget();
+            tryShoot(target);
         }
+        MapLocation enemyLoc = Comms.getEnemyArchonLocation();
+        if (enemyLoc != null) {
+            Nav.moveToward(enemyLoc);
+        } else {
+            Nav.tryMove(Nav.randomDirection());
+        }
+    }
 
-        float perpendicularDist = (float)Math.abs(distToRobot * Math.sin(theta));
-        return (perpendicularDist <= rc.getType().bodyRadius);
+    static RobotInfo findTarget() throws GameActionException {
+        RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
+        return Utils.findLowestHealthTarget(enemies);
+    }
+
+    static boolean tryShoot(RobotInfo target) throws GameActionException {
+        if (target == null) return false;
+        Direction dir = rc.getLocation().directionTo(target.location);
+        // Check for friendly fire
+        RobotInfo[] allies = rc.senseNearbyRobots(rc.getType().sensorRadius, rc.getTeam());
+        for (RobotInfo ally : allies) {
+            Direction toAlly = rc.getLocation().directionTo(ally.location);
+            float dist = rc.getLocation().distanceTo(ally.location);
+            float distToTarget = rc.getLocation().distanceTo(target.location);
+            if (dist < distToTarget && Math.abs(dir.degreesBetween(toAlly)) < 15) {
+                return false; // Ally in the way
+            }
+        }
+        if (rc.canFireSingleShot()) {
+            rc.fireSingleShot(dir);
+            return true;
+        }
+        return false;
     }
 }

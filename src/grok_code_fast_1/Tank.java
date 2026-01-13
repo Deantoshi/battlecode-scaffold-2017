@@ -7,26 +7,49 @@ public strictfp class Tank {
     public static void run(RobotController rc) throws GameActionException {
         Tank.rc = rc;
         Nav.init(rc);
+        Comms.init(rc);
 
         while (true) {
             try {
-                // Attack enemies
-                RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
-                if (enemies.length > 0) {
-                    RobotInfo target = enemies[0];
-                    Direction dir = rc.getLocation().directionTo(target.location);
-                    if (rc.canFirePentadShot()) {
-                        rc.firePentadShot(dir);
-                    }
-                    Nav.tryMoveTowards(target.location);
-                } else {
-                    Nav.tryMove(Utils.randomDirection());
-                }
-
+                doTurn();
             } catch (Exception e) {
                 e.printStackTrace();
+            } finally {
+                Clock.yield();
             }
-            Clock.yield();
+        }
+    }
+
+    static void doTurn() throws GameActionException {
+        RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
+        if (enemies.length > 0) {
+            RobotInfo target = Utils.findLowestHealthTarget(enemies);
+            if (target != null) {
+                Direction dir = rc.getLocation().directionTo(target.location);
+                // Check for friendly fire
+                RobotInfo[] allies = rc.senseNearbyRobots(rc.getType().sensorRadius, rc.getTeam());
+                boolean safe = true;
+                for (RobotInfo ally : allies) {
+                    Direction toAlly = rc.getLocation().directionTo(ally.location);
+                    if (Math.abs(dir.degreesBetween(toAlly)) < 20) {
+                        safe = false;
+                        break;
+                    }
+                }
+                if (safe) {
+                    if (enemies.length >= 3 && rc.canFireTriadShot()) {
+                        rc.fireTriadShot(dir);
+                    } else if (rc.canFireSingleShot()) {
+                        rc.fireSingleShot(dir);
+                    }
+                }
+            }
+        }
+        MapLocation enemyLoc = Comms.getEnemyArchonLocation();
+        if (enemyLoc != null) {
+            Nav.moveToward(enemyLoc);
+        } else {
+            Nav.tryMove(Nav.randomDirection());
         }
     }
 }

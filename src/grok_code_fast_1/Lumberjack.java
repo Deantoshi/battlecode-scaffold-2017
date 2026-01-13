@@ -7,34 +7,57 @@ public strictfp class Lumberjack {
     public static void run(RobotController rc) throws GameActionException {
         Lumberjack.rc = rc;
         Nav.init(rc);
+        Comms.init(rc);
 
         while (true) {
             try {
-                // Strike if enemies nearby
-                RobotInfo[] enemies = rc.senseNearbyRobots(2, rc.getTeam().opponent());
-                if (enemies.length > 0 && rc.canStrike()) {
-                    rc.strike();
-                }
-
-                // Chop neutral trees
-                TreeInfo[] trees = rc.senseNearbyTrees(2, Team.NEUTRAL);
-                if (trees.length > 0 && rc.canChop(trees[0].ID)) {
-                    rc.chop(trees[0].ID);
-                }
-
-                // Move towards enemies or trees
-                if (enemies.length > 0) {
-                    Nav.tryMoveTowards(enemies[0].location);
-                } else if (trees.length > 0) {
-                    Nav.tryMoveTowards(trees[0].location);
-                } else {
-                    Nav.tryMove(Utils.randomDirection());
-                }
-
+                doTurn();
             } catch (Exception e) {
                 e.printStackTrace();
+            } finally {
+                Clock.yield();
             }
-            Clock.yield();
         }
+    }
+
+    static void doTurn() throws GameActionException {
+        if (tryStrike()) {
+            // Already struck
+        } else if (tryChopTree()) {
+            // Chopped
+        } else {
+            RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
+            if (enemies.length > 0) {
+                RobotInfo closest = Utils.findClosestEnemy(rc, enemies);
+                if (closest != null) {
+                    Nav.moveToward(closest.location);
+                }
+            } else {
+                Nav.tryMove(Nav.randomDirection());
+            }
+        }
+    }
+
+    static boolean tryStrike() throws GameActionException {
+        RobotInfo[] enemies = rc.senseNearbyRobots(GameConstants.LUMBERJACK_STRIKE_RADIUS, rc.getTeam().opponent());
+        RobotInfo[] allies = rc.senseNearbyRobots(GameConstants.LUMBERJACK_STRIKE_RADIUS, rc.getTeam());
+        if (enemies.length > 0 && allies.length == 0) {
+            if (rc.canStrike()) {
+                rc.strike();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    static boolean tryChopTree() throws GameActionException {
+        TreeInfo[] trees = rc.senseNearbyTrees(2.0f, Team.NEUTRAL);
+        if (trees.length > 0) {
+            if (rc.canChop(trees[0].ID)) {
+                rc.chop(trees[0].ID);
+                return true;
+            }
+        }
+        return false;
     }
 }
