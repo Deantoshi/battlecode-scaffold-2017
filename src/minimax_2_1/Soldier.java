@@ -31,22 +31,46 @@ public strictfp class Soldier {
 
         RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
         
+        // SURVIVAL: Check if we should retreat due to low HP
+        if (shouldRetreat()) {
+            retreatToArchon();
+            return;
+        }
+        
         if (enemies.length > 0) {
             Comms.broadcastEnemySpotted(enemies[0].location);
             RobotInfo target = findArchonTarget(enemies);
             if (tryShoot(target)) {
+                // Try to kite after shooting
+                tryKitingMove(target);
                 return;
             }
             target = findGardenerTarget(enemies);
             if (tryShoot(target)) {
+                tryKitingMove(target);
                 return;
             }
             target = Utils.findLowestHealthTarget(enemies);
             if (tryShoot(target)) {
+                tryKitingMove(target);
                 return;
             }
+            // If can't shoot, try kiting anyway
+            if (enemies.length > 0) {
+                tryKitingMove(enemies[0]);
+            }
         } else {
+            int round = rc.getRoundNum();
             MapLocation enemyArchon = Comms.getEnemyArchonLocation();
+            
+            // AGGRESSIVE MODE: After round 500, push hard to enemy base
+            if (round >= 500 && enemyArchon != null) {
+                Direction toEnemy = rc.getLocation().directionTo(enemyArchon);
+                Nav.tryMove(toEnemy);
+                return;
+            }
+            
+            // Normal mode: hunt enemies
             if (enemyArchon != null) {
                 Nav.moveToward(enemyArchon);
             } else {
@@ -134,6 +158,54 @@ public strictfp class Soldier {
         if (rc.canFireSingleShot()) {
             rc.fireSingleShot(dir);
             return true;
+        }
+        return false;
+    }
+    
+    static boolean shouldRetreat() throws GameActionException {
+        float myHealth = rc.getHealth();
+        float maxHealth = rc.getType().maxHealth;
+        float healthPercent = myHealth / maxHealth;
+        
+        // Retreat if HP < 30% and enemies are nearby
+        if (healthPercent < 0.30f) {
+            RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(10, rc.getTeam().opponent());
+            if (nearbyEnemies.length > 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    static void retreatToArchon() throws GameActionException {
+        MapLocation archonLoc = Comms.getFriendlyArchonLocation();
+        if (archonLoc != null) {
+            Direction awayFromEnemy = rc.getLocation().directionTo(archonLoc);
+            Nav.tryMove(awayFromEnemy);
+        } else {
+            Nav.tryMove(Nav.randomDirection());
+        }
+    }
+
+    static boolean tryKitingMove(RobotInfo target) throws GameActionException {
+        if (target == null) return false;
+        float dist = rc.getLocation().distanceTo(target.location);
+        
+        // If too close (< 4), move away (kite)
+        if (dist < 4.0f) {
+            Direction away = rc.getLocation().directionTo(target.location).opposite();
+            if (Nav.tryMove(away)) {
+                return true;
+            }
+        }
+        // If in good range (4-6), strafe perpendicular
+        else if (dist < 7.0f) {
+            Direction toTarget = rc.getLocation().directionTo(target.location);
+            Direction left = toTarget.rotateLeftDegrees(90);
+            Direction right = toTarget.rotateRightDegrees(90);
+            if (Nav.tryMove(left) || Nav.tryMove(right)) {
+                return true;
+            }
         }
         return false;
     }
