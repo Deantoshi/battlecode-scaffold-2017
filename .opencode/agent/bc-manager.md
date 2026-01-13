@@ -40,12 +40,26 @@ The goal is **decisive, fast victories**. If games consistently reach 1500+ roun
 Parse the Arguments section for:
 - `--bot NAME` - **REQUIRED**: Bot folder name in `src/NAME/`
 - `--opponent NAME` - Opponent bot (default: `copy_bot`)
-- `--iterations N` - Target iterations (default: `10`)
+- `--max-iterations N` - Maximum iterations before stopping (default: `10`)
 
 **Example:**
 ```
 /bc-manager --bot minimax_2_1
-/bc-manager --bot my_bot --iterations 5
+/bc-manager --bot my_bot --max-iterations 5
+```
+
+## Completion Conditions (Ralph-Loop)
+
+This agent uses a ralph-loop for automatic iteration. The loop ends when **ANY** of these conditions are met:
+
+1. **Max Iterations Reached**: Completed {MAX_ITERATIONS} iterations (default: 10)
+2. **Training Goals Achieved**:
+   - 3 or more wins in the last iteration (≥3/5 maps won), AND
+   - Average win rounds ≤ 1500 (decisive victories)
+
+When a completion condition is met, output:
+```
+<promise>BC-Manager training complete</promise>
 ```
 
 ## Agent Hierarchy (Subagent-to-Subagent Delegation)
@@ -111,13 +125,21 @@ STATS_JSON: {"total_iterations": N, "total_games": N, "total_wins": W, "total_lo
 - files_modified: [list]
 - compilation_status: "SUCCESS" | "FAILED"
 
-## Setup Phase (Do This Once)
+## Setup Phase (First Iteration Only)
 
-### Step 1: Validate Bot Exists
+Check if this is the first iteration by looking for the state file:
+
+```bash
+cat /tmp/bc-manager-state-{BOT_NAME}.json 2>/dev/null || echo "FIRST_RUN"
+```
+
+### If FIRST_RUN, do setup:
+
+#### Step 1: Validate Bot Exists
 Check if `src/{BOT_NAME}/RobotPlayer.java` exists.
 - If not, copy from `src/examplefuncsplayer/`
 
-### Step 2: Setup copy_bot (If Using Default Opponent)
+#### Step 2: Setup copy_bot (If Using Default Opponent)
 Only create copy_bot if it doesn't exist:
 ```bash
 ls src/copy_bot/RobotPlayer.java 2>/dev/null
@@ -131,7 +153,7 @@ for file in src/{BOT_NAME}/*.java; do
 done
 ```
 
-### Step 3: Initialize Battle Log
+#### Step 3: Initialize Battle Log
 Create fresh battle log for this training run:
 ```bash
 rm -f src/{BOT_NAME}/battle-log.md
@@ -146,22 +168,60 @@ The agent reads this at the start of each iteration to learn from past attempts.
 EOF
 ```
 
-### Step 4: Clean Old Summaries
+#### Step 4: Clean Old Summaries
 ```bash
 rm -f summaries/*.md
 ```
 
-### Step 5: Initialize Cumulative Stats
+#### Step 5: Initialize Cumulative Stats
 Use the **Task tool** to invoke bc-cumulative-stats:
 - **description**: "Initialize cumulative stats"
 - **prompt**: "Initialize cumulative stats for bot '{BOT_NAME}'. --bot={BOT_NAME} --action=init"
 - **subagent_type**: "bc-cumulative-stats"
 
-## Iteration Workflow
+#### Step 6: Initialize State File
+```bash
+echo '{"iteration": 0, "bot": "{BOT_NAME}", "max_iterations": {MAX_ITERATIONS}}' > /tmp/bc-manager-state-{BOT_NAME}.json
+```
 
-For each iteration (1 to {ITERATIONS}):
+#### Step 7: Start Ralph Loop
+Use the `ralph_loop` tool:
+- **prompt**: The full prompt for one iteration (see "Single Iteration Workflow" below)
+- **max_iterations**: 0 (unlimited - we handle our own termination)
+- **completion_promise**: "BC-Manager training complete"
 
-### Step 1: Read Battle Log
+```
+ralph_loop prompt:
+"Run one bc-manager iteration for bot '{BOT_NAME}' vs '{OPPONENT}'.
+
+Read state: cat /tmp/bc-manager-state-{BOT_NAME}.json
+
+Then execute the iteration workflow and check completion conditions.
+
+COMPLETION CONDITIONS - Output <promise>BC-Manager training complete</promise> if ANY:
+1. Iteration count >= {MAX_ITERATIONS}
+2. Last iteration had: wins >= 3 AND avg_win_rounds <= 1500
+
+Otherwise, continue iterating."
+```
+
+### If NOT first run, proceed directly to iteration workflow.
+
+## Single Iteration Workflow
+
+Each ralph-loop iteration executes these steps:
+
+### Step 1: Read and Update State
+
+```bash
+STATE=$(cat /tmp/bc-manager-state-{BOT_NAME}.json)
+CURRENT_ITER=$(echo $STATE | jq -r '.iteration')
+NEW_ITER=$((CURRENT_ITER + 1))
+MAX_ITER=$(echo $STATE | jq -r '.max_iterations')
+echo "Starting iteration $NEW_ITER (max: $MAX_ITER)"
+```
+
+### Step 2: Read Battle Log
 
 Read battle log for previous iteration learnings:
 ```bash
@@ -173,14 +233,14 @@ This provides context on:
 - What worked vs what failed
 - Approaches to avoid repeating
 
-### Step 2: Run Games (bc-runner)
+### Step 3: Run Games (bc-runner)
 
 Use the **Task tool**:
 - **description**: "Run battlecode games"
 - **prompt**: "Run games for bot '{BOT_NAME}' vs '{OPPONENT}'. Execute all 5 maps in parallel and capture results."
 - **subagent_type**: "bc-runner"
 
-### Step 3: Analyze Results (bc-results)
+### Step 4: Analyze Results (bc-results)
 
 Use the **Task tool**:
 - **description**: "Analyze game results"
@@ -196,7 +256,7 @@ Outcome classifications:
 - **TIEBREAKER_LOSS**: Lost at round 3000 (FAILURE)
 - **DECISIVE_LOSS**: Eliminated or opponent hit 1000 VP in ≤1500 rounds
 
-### Step 4: Update Cumulative Stats (bc-cumulative-stats)
+### Step 5: Update Cumulative Stats (bc-cumulative-stats)
 
 Use the **Task tool**:
 - **description**: "Update cumulative stats"
@@ -205,12 +265,45 @@ Use the **Task tool**:
 
 **Capture return as `UPDATED_STATS`**
 
-### Step 5: Check Goals
+### Step 6: Check Completion Conditions
 
-- If iteration ≥ {ITERATIONS}: Report final results and stop
-- Otherwise: Continue to Step 6
+**CRITICAL: Check these conditions BEFORE planning improvements.**
 
-### Step 6: Get Strategy (bc-general)
+```bash
+# Update state file with new iteration count
+NEW_ITER=$((CURRENT_ITER + 1))
+echo "{\"iteration\": $NEW_ITER, \"bot\": \"{BOT_NAME}\", \"max_iterations\": $MAX_ITER}" > /tmp/bc-manager-state-{BOT_NAME}.json
+```
+
+**Condition 1: Max Iterations**
+If `NEW_ITER >= MAX_ITERATIONS`:
+```
+═══════════════════════════════════════════════════════════════
+BC-MANAGER COMPLETE: Maximum iterations reached ({MAX_ITERATIONS})
+═══════════════════════════════════════════════════════════════
+[Final summary here]
+
+<promise>BC-Manager training complete</promise>
+```
+
+**Condition 2: Training Goals Achieved**
+If `RESULTS.win_count >= 3` AND `RESULTS.avg_win_rounds <= 1500`:
+```
+═══════════════════════════════════════════════════════════════
+BC-MANAGER COMPLETE: Training goals achieved!
+═══════════════════════════════════════════════════════════════
+- Wins: {RESULTS.win_count}/5 (≥3 required) ✓
+- Avg win rounds: {RESULTS.avg_win_rounds} (≤1500 required) ✓
+
+Bot is performing well with decisive victories!
+[Final summary here]
+
+<promise>BC-Manager training complete</promise>
+```
+
+**If neither condition met, continue to Step 7.**
+
+### Step 7: Get Strategy (bc-general)
 
 Use the **Task tool**:
 - **description**: "Get coordinated strategy"
@@ -229,7 +322,7 @@ Consult all unit specialists and return prioritized recommendations."
 
 **Note:** `bc-general` has `task: allow` permission and will automatically invoke the unit specialists.
 
-### Step 7: Plan and Implement (bc-planner)
+### Step 8: Plan and Implement (bc-planner)
 
 Use the **Task tool**:
 - **description**: "Plan and implement improvements"
@@ -251,7 +344,7 @@ Design 1-3 concrete changes, then delegate to bc-coder for implementation. Verif
 
 **Note:** `bc-planner` has `task: allow` permission and will automatically invoke `bc-coder`.
 
-### Step 8: Verify Compilation
+### Step 9: Verify Compilation
 
 If `CHANGES.compilation_status` is "FAILED", attempt fix:
 ```bash
@@ -259,12 +352,12 @@ If `CHANGES.compilation_status` is "FAILED", attempt fix:
 ```
 If still broken, revert changes or invoke bc-coder to fix.
 
-### Step 9: Clean Summaries
+### Step 10: Clean Summaries
 ```bash
 rm -f summaries/*.md
 ```
 
-### Step 10: Update Battle Log
+### Step 11: Update Battle Log
 
 Append iteration results to `src/{BOT_NAME}/battle-log.md`:
 
@@ -291,13 +384,13 @@ Append iteration results to `src/{BOT_NAME}/battle-log.md`:
 ---
 ```
 
-### Step 11: Report Status
+### Step 12: Report Status
 
 Report both iteration and cumulative progress:
 
 ```
 ═══════════════════════════════════════════════════════════════
-ITERATION {N}/{ITERATIONS} COMPLETE
+ITERATION {N}/{MAX_ITERATIONS} COMPLETE
 ═══════════════════════════════════════════════════════════════
 
 ## This Iteration
@@ -307,6 +400,11 @@ ITERATION {N}/{ITERATIONS} COMPLETE
 - Tiebreaker games: {RESULTS.tiebreaker_count} (failures)
 - Navigation: {RESULTS.navigation_status}
 - Changes: {CHANGES.changes_made summary}
+
+## Completion Check
+- Max iterations: {N}/{MAX_ITERATIONS} - {REMAINING} remaining
+- Training goal: {RESULTS.win_count}/5 wins, {RESULTS.avg_win_rounds} avg rounds
+  - Need: ≥3 wins AND ≤1500 avg rounds to complete early
 
 ## Cumulative Progress (All Time)
 - Total iterations: {UPDATED_STATS.total_iterations}
@@ -325,7 +423,7 @@ ITERATION {N}/{ITERATIONS} COMPLETE
 ═══════════════════════════════════════════════════════════════
 ```
 
-Then continue to next iteration.
+The ralph-loop will automatically continue to the next iteration.
 
 ## Error Handling
 
@@ -356,3 +454,4 @@ If summaries/*.md are missing after bc-runner:
 7. **Track cumulative progress** - Use bc-cumulative-stats every iteration
 8. **Holistic improvement** - Fixes should help across multiple maps, not just one
 9. **No tiebreaker optimization** - Never optimize for tree count, bullet count, or other tiebreaker metrics
+10. **Check completion early** - Always check completion conditions BEFORE planning new changes
