@@ -68,7 +68,9 @@ done
 
 ### Step 3: Retry Missing Maps (if any)
 
-If any maps are missing summaries, retry them individually (up to 2 retries per map):
+**IMPORTANT:** Before retrying any map, you MUST verify that its summary file does not exist. Only retry maps that are confirmed missing.
+
+For each map, retry individually (up to 2 retries per map):
 
 ```bash
 export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
@@ -81,16 +83,23 @@ retry_map() {
 }
 
 for map in Shrine Barrier Bullseye Lanes Blitzkrieg; do
-  if ! ls summaries/*-${map}-*.md 1>/dev/null 2>&1; then
-    echo "MISSING: $map - attempting retry..."
-    retry_map $map 1
-
-    # Check again after first retry
-    if ! ls summaries/*-${map}-*.md 1>/dev/null 2>&1; then
-      echo "Still missing $map - final retry..."
-      retry_map $map 2
-    fi
+  # VERIFY: Check if summary file exists before attempting retry
+  if ls summaries/*-${map}-*.md 1>/dev/null 2>&1; then
+    echo "VERIFIED: $map summary exists - skipping"
+    continue
   fi
+
+  echo "MISSING: $map - attempting retry..."
+  retry_map $map 1
+
+  # VERIFY AGAIN: Check if summary was generated before second retry
+  if ls summaries/*-${map}-*.md 1>/dev/null 2>&1; then
+    echo "VERIFIED: $map summary now exists - skipping second retry"
+    continue
+  fi
+
+  echo "Still missing $map - final retry..."
+  retry_map $map 2
 done
 ```
 
