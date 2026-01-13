@@ -78,16 +78,14 @@ bc-manager (you - primary)
 │   ├── bc-tank ────────────── Tank siege and late-game combat
 │   ├── bc-exploration ─────── Map exploration and intel-sharing
 │   └── bc-economy ─────────── Bullet economy and VP timing
-├── bc-planner ─────────────── Designs strategic code improvements (HAS TASK PERMISSION)
-│   └── bc-coder ───────────── Implements code changes
-└── bc-coder ───────────────── (can also be called directly)
+├── bc-planner ─────────────── Designs strategic code improvements
+└── bc-coder ───────────────── Implements code changes
 ```
 
 **Subagents with `task: allow` can invoke other subagents:**
 - `bc-general` consults all unit/economy/exploration specialists automatically
-- `bc-planner` can delegate implementation to `bc-coder` directly
 
-This reduces your orchestration burden - you invoke the high-level agent and it handles sub-delegation.
+This reduces your orchestration burden for strategy - you invoke `bc-general` and it handles sub-delegation to unit specialists.
 
 ## Subagent Return Contracts
 
@@ -121,9 +119,16 @@ STATS_JSON: {"total_iterations": N, "total_games": N, "total_wins": W, "total_lo
 - rationale: string
 
 ### bc-planner returns:
+- Complete improvement plan with code changes to implement
+- Captures as `PLAN` and passed to bc-coder
+
+### bc-coder returns:
+```
+CHANGES_DATA:
 - changes_made: [list of descriptions]
 - files_modified: [list]
 - compilation_status: "SUCCESS" | "FAILED"
+```
 
 ## Setup Phase (First Iteration Only)
 
@@ -322,10 +327,10 @@ Consult all unit specialists and return prioritized recommendations."
 
 **Note:** `bc-general` has `task: allow` permission and will automatically invoke the unit specialists.
 
-### Step 8: Plan and Implement (bc-planner)
+### Step 8: Plan Improvements (bc-planner)
 
 Use the **Task tool**:
-- **description**: "Plan and implement improvements"
+- **description**: "Plan code improvements"
 - **prompt**: "Plan code improvements for bot '{BOT_NAME}'.
 
 Analysis from bc-results:
@@ -337,14 +342,25 @@ Analysis from bc-results:
 Strategy from bc-general:
 {STRATEGY.prioritized_recommendations}
 
-Design 1-3 concrete changes, then delegate to bc-coder for implementation. Verify compilation succeeds."
+Design 1-3 concrete changes. Return the plan for bc-coder to implement."
 - **subagent_type**: "bc-planner"
+
+**Capture return as `PLAN`**
+
+### Step 9: Implement Changes (bc-coder)
+
+Use the **Task tool**:
+- **description**: "Implement planned changes"
+- **prompt**: "Implement the following plan for bot '{BOT_NAME}':
+
+{PLAN}
+
+Apply all changes and verify compilation succeeds."
+- **subagent_type**: "bc-coder"
 
 **Capture return as `CHANGES`**
 
-**Note:** `bc-planner` has `task: allow` permission and will automatically invoke `bc-coder`.
-
-### Step 9: Verify Compilation
+### Step 10: Verify Compilation
 
 If `CHANGES.compilation_status` is "FAILED", attempt fix:
 ```bash
@@ -352,12 +368,12 @@ If `CHANGES.compilation_status` is "FAILED", attempt fix:
 ```
 If still broken, revert changes or invoke bc-coder to fix.
 
-### Step 10: Clean Summaries
+### Step 11: Clean Summaries
 ```bash
 rm -f summaries/*.md
 ```
 
-### Step 11: Update Battle Log
+### Step 12: Update Battle Log
 
 Append iteration results to `src/{BOT_NAME}/battle-log.md`:
 
@@ -384,7 +400,7 @@ Append iteration results to `src/{BOT_NAME}/battle-log.md`:
 ---
 ```
 
-### Step 12: Report Status
+### Step 13: Report Status
 
 Report both iteration and cumulative progress:
 
