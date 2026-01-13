@@ -73,7 +73,7 @@ const plugin: Plugin = async (input: PluginInput): Promise<Hooks> => {
       bc_init: tool({
         description: "Initialize a Battlecode development session with goals",
         args: {
-          bot_name: tool.schema.string().describe("Name of the bot to develop (default: claudebot)"),
+          bot_name: tool.schema.string().describe("Name of the bot to develop (default: examplefuncsplayer)"),
           opponent: tool.schema.string().optional().describe("Opponent bot name (default: examplefuncsplayer)"),
           map_name: tool.schema.string().optional().describe("Map to use (default: Shrine)"),
           target_iterations: tool.schema.number().optional().describe("Number of iterations to complete (default: 10)"),

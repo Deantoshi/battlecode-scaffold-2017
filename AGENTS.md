@@ -6,7 +6,6 @@ This is the 2017 version of MITs Battlecode Scaffold Repo. You are on a Ubuntu W
 battlecode-scaffold-2017/
 ├── src/                    # Player bot code
 │   ├── examplefuncsplayer/ # Example bot
-│   └── claudebot/          # Custom bot
 ├── engine/                 # Game engine source (battlecode server)
 ├── client/                 # Web-based match viewer
 ├── test/                   # Player tests
@@ -28,7 +27,7 @@ battlecode-scaffold-2017/
 
 ### Run a match (headless)
 ```bash
-./gradlew runWithSummary -PteamA=claudebot -PteamB=examplefuncsplayer -Pmaps=Shrine
+./gradlew runWithSummary -PteamA=examplefuncsplayer -PteamB=examplefuncsplayer -Pmaps=Shrine
 ```
 
 ### Start the web client (view matches)
