@@ -40,11 +40,11 @@ Run this single bash command to execute all 5 maps simultaneously:
 
 ```bash
 export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64 && \
-./gradlew --no-daemon runWithSummary -PteamA={TEAM_A} -PteamB={TEAM_B} -Pmaps=Shrine 2>&1 &
-./gradlew --no-daemon runWithSummary -PteamA={TEAM_A} -PteamB={TEAM_B} -Pmaps=Barrier 2>&1 &
-./gradlew --no-daemon runWithSummary -PteamA={TEAM_A} -PteamB={TEAM_B} -Pmaps=Bullseye 2>&1 &
-./gradlew --no-daemon runWithSummary -PteamA={TEAM_A} -PteamB={TEAM_B} -Pmaps=Lanes 2>&1 &
-./gradlew --no-daemon runWithSummary -PteamA={TEAM_A} -PteamB={TEAM_B} -Pmaps=Blitzkrieg 2>&1 &
+./gradlew runWithSummary -PteamA={TEAM_A} -PteamB={TEAM_B} -Pmaps=Shrine 2>&1 &
+./gradlew runWithSummary -PteamA={TEAM_A} -PteamB={TEAM_B} -Pmaps=Barrier 2>&1 &
+./gradlew runWithSummary -PteamA={TEAM_A} -PteamB={TEAM_B} -Pmaps=Bullseye 2>&1 &
+./gradlew runWithSummary -PteamA={TEAM_A} -PteamB={TEAM_B} -Pmaps=Lanes 2>&1 &
+./gradlew runWithSummary -PteamA={TEAM_A} -PteamB={TEAM_B} -Pmaps=Blitzkrieg 2>&1 &
 wait
 echo "=== ALL 5 GAMES COMPLETED ==="
 ```
@@ -77,7 +77,7 @@ retry_map() {
   local map=$1
   local attempt=$2
   echo "=== Retrying $map (attempt $attempt) ==="
-  ./gradlew --no-daemon runWithSummary -PteamA={TEAM_A} -PteamB={TEAM_B} -Pmaps=$map 2>&1
+  ./gradlew runWithSummary -PteamA={TEAM_A} -PteamB={TEAM_B} -Pmaps=$map 2>&1
 }
 
 for map in Shrine Barrier Bullseye Lanes Blitzkrieg; do
@@ -141,6 +141,18 @@ Maps won by A: [list]
 Maps won by B: [list]
 === END OVERALL ===
 ```
+
+### Step 6: Cleanup Gradle Daemons
+
+After all results are collected, stop the Gradle daemons to free memory:
+
+```bash
+echo "=== Stopping Gradle daemons ==="
+./gradlew --stop
+echo "=== Daemons stopped ==="
+```
+
+This ensures daemons spawned during parallel game execution don't persist and consume memory.
 
 ## Error Handling
 
