@@ -52,7 +52,7 @@ export const SERVER_MAPS = [
   "Hurdle",
   "LineOfFire",
   "MagicWood",
-  "shrine",
+  "Shrine",
   "SparseForest",
   "Arena",
   "Barbell",

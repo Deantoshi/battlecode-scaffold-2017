@@ -52,7 +52,7 @@ Tree obstacles are a MAJOR factor on maps like Bullseye (35% trees), Barrier, an
 ### Navigation Red Flags:
 - **High unit count but low deaths** (<30% death rate) = units are STUCK
 - **Games going to timeout** (2500+ rounds) with many units alive = GRIDLOCK
-- **Losses on Bullseye/Barrier/Lanes but wins on shrine** = tree pathing broken
+- **Losses on Bullseye/Barrier/Lanes but wins on Shrine** = tree pathing broken
 
 ### Death Rate Formula:
 ```
@@ -75,7 +75,7 @@ When making strategic decisions, these files contain exact mechanics:
 
 | Map | Category | Tests |
 |-----|----------|-------|
-| shrine | Fast | Early aggression, 1v1, minimal obstacles |
+| Shrine | Fast | Early aggression, 1v1, minimal obstacles |
 | Barrier | Balanced | 2v2 archons, adaptable play, tree barriers |
 | Bullseye | Exploration | Dense pathfinding (35% trees), navigation |
 | Lanes | Slow | 3v3 archons, lane strategy, late-game |

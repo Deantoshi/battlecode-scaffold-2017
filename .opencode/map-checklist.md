@@ -8,7 +8,7 @@ Maps are checked off in place as they are processed. The summarizer processes th
 - [x] Hurdle
 - [x] LineOfFire
 - [x] MagicWood
-- [x] shrine
+- [x] Shrine
 - [x] SparseForest
 - [x] Arena
 - [x] Barbell

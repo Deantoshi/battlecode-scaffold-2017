@@ -163,7 +163,7 @@ Maps are checked off in place as they are processed. The summarizer processes th
 - [ ] Hurdle
 - [ ] LineOfFire
 - [ ] MagicWood
-- [ ] shrine
+- [ ] Shrine
 - [ ] SparseForest
 - [ ] Arena
 - [ ] Barbell

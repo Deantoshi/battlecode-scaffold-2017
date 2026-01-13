@@ -52,7 +52,7 @@ Maps where early aggression and rushes are effective. Close archon spawns and mi
 
 ---
 
-## shrine
+## Shrine
 
 - **Size**: 30 x 30 (SMALL)
 - **Archons**: 1 per team, distance: 36.74
@@ -60,7 +60,7 @@ Maps where early aggression and rushes are effective. Close archon spawns and mi
 - **Archon Spawns**:
   - Team A: (309.31, 174.67)
   - Team B: (335.29, 148.69)
-- **Visual**: Small open arena with single central tree shrine
+- **Visual**: Small open arena with single central tree Shrine
 
 ---
 

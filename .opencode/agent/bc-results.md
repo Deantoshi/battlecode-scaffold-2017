@@ -65,7 +65,7 @@ Read all 5 summary files to get detailed per-game data.
 
 | Map | Result | Rounds | Units Created | Deaths | Death Rate |
 |-----|--------|--------|---------------|--------|------------|
-| shrine | W/L | N | X | Y | Z% |
+| Shrine | W/L | N | X | Y | Z% |
 | Barrier | W/L | N | X | Y | Z% |
 | Bullseye | W/L | N | X | Y | Z% |
 | Lanes | W/L | N | X | Y | Z% |
@@ -108,7 +108,7 @@ Note which maps have worst engagement (typically tree-heavy: Bullseye, Barrier, 
 ## Per-Map Victory Types
 | Map | Outcome | Type | Rounds |
 |-----|---------|------|--------|
-| shrine | W/L | DECISIVE_WIN/SLOW_WIN/TIEBREAKER_WIN/TIEBREAKER_LOSS/DECISIVE_LOSS | N |
+| Shrine | W/L | DECISIVE_WIN/SLOW_WIN/TIEBREAKER_WIN/TIEBREAKER_LOSS/DECISIVE_LOSS | N |
 | Barrier | W/L | TYPE | N |
 | Bullseye | W/L | TYPE | N |
 | Lanes | W/L | TYPE | N |
@@ -144,7 +144,7 @@ Note which maps have worst engagement (typically tree-heavy: Bullseye, Barrier, 
 3. [tertiary priority]
 
 === RESULTS_DATA (STRUCTURED - DO NOT MODIFY FORMAT) ===
-per_map_results: {"shrine": {"result": "WIN", "type": "DECISIVE_WIN", "rounds": 1234}, "Barrier": {"result": "LOSS", "type": "DECISIVE_LOSS", "rounds": 987}, "Bullseye": {"result": "WIN", "type": "SLOW_WIN", "rounds": 2100}, "Lanes": {"result": "LOSS", "type": "TIEBREAKER_LOSS", "rounds": 3000}, "Blitzkrieg": {"result": "WIN", "type": "DECISIVE_WIN", "rounds": 1100}}
+per_map_results: {"Shrine": {"result": "WIN", "type": "DECISIVE_WIN", "rounds": 1234}, "Barrier": {"result": "LOSS", "type": "DECISIVE_LOSS", "rounds": 987}, "Bullseye": {"result": "WIN", "type": "SLOW_WIN", "rounds": 2100}, "Lanes": {"result": "LOSS", "type": "TIEBREAKER_LOSS", "rounds": 3000}, "Blitzkrieg": {"result": "WIN", "type": "DECISIVE_WIN", "rounds": 1100}}
 win_count: 3
 decisive_win_count: 2
 avg_win_rounds: 1478

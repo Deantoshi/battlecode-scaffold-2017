@@ -24,12 +24,12 @@ You are the Map Summarizer agent. Your role is to analyze ONE Battlecode map and
 ## Arguments (PARSE THESE FIRST!)
 
 Parse the Arguments section for:
-- `--map NAME` - **REQUIRED**: The map name to analyze (e.g., `Bullseye`, `shrine`)
+- `--map NAME` - **REQUIRED**: The map name to analyze (e.g., `Bullseye`, `Shrine`)
 
 **Example usage:**
 ```
 /map-summarizer --map Bullseye
-/map-summarizer --map shrine
+/map-summarizer --map Shrine
 /map-summarizer --map DenseForest
 ```
 

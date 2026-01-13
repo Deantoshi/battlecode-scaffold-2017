@@ -192,7 +192,7 @@ export default class MapFilter {
       case "Hurdle": return MapType.DEFAULT;
       case "LineOfFire": return MapType.DEFAULT;
       case "MagicWood": return MapType.DEFAULT;
-      case "shrine": return MapType.DEFAULT;
+      case "Shrine": return MapType.DEFAULT;
       case "SparseForest": return MapType.DEFAULT;
       case "Arena": return MapType.SPRINT;
       case "Barbell": return MapType.SPRINT;

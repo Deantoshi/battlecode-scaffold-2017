@@ -75,7 +75,7 @@ const plugin: Plugin = async (input: PluginInput): Promise<Hooks> => {
         args: {
           bot_name: tool.schema.string().describe("Name of the bot to develop (default: claudebot)"),
           opponent: tool.schema.string().optional().describe("Opponent bot name (default: examplefuncsplayer)"),
-          map_name: tool.schema.string().optional().describe("Map to use (default: shrine)"),
+          map_name: tool.schema.string().optional().describe("Map to use (default: Shrine)"),
           target_iterations: tool.schema.number().optional().describe("Number of iterations to complete (default: 10)"),
           target_win_rounds: tool.schema.number().optional().describe("Target rounds to win in (default: 1500)")
         },
@@ -87,7 +87,7 @@ const plugin: Plugin = async (input: PluginInput): Promise<Hooks> => {
             targetWinRounds: args.target_win_rounds ?? 1500,
             botName: args.bot_name,
             opponent: args.opponent ?? "examplefuncsplayer",
-            mapName: args.map_name ?? "shrine",
+            mapName: args.map_name ?? "Shrine",
             results: [],
             bestResult: null,
             startTime: Date.now()

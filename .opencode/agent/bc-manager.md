@@ -86,7 +86,7 @@ Each subagent MUST return structured data. Capture their output and pass to subs
 ### bc-results MUST return:
 ```
 RESULTS_DATA:
-- per_map_results: { "shrine": {"result": "WIN/LOSS", "type": "DECISIVE_WIN/SLOW_WIN/...", "rounds": N}, ... }
+- per_map_results: { "Shrine": {"result": "WIN/LOSS", "type": "DECISIVE_WIN/SLOW_WIN/...", "rounds": N}, ... }
 - win_count: N
 - decisive_win_count: N
 - avg_win_rounds: N
@@ -274,7 +274,7 @@ Append iteration results to `src/{BOT_NAME}/battle-log.md`:
 ### Results
 - Wins: {RESULTS.win_count}/5
 - Decisive Wins: {RESULTS.decisive_win_count}/5 (elimination or 1000 VP in ≤1500 rounds)
-- Per-map outcomes: shrine={type}, Barrier={type}, Bullseye={type}, Lanes={type}, Blitzkrieg={type}
+- Per-map outcomes: Shrine={type}, Barrier={type}, Bullseye={type}, Lanes={type}, Blitzkrieg={type}
 - Avg rounds (for wins): {RESULTS.avg_win_rounds}
 - Tiebreaker games: {RESULTS.tiebreaker_count} (FAILURES)
 
@@ -316,7 +316,7 @@ ITERATION {N}/{ITERATIONS} COMPLETE
 ## Per-Map Cumulative Record
 | Map        | Wins | Losses | Win Rate |
 |------------|------|--------|----------|
-| shrine     |  W   |   L    |    X%    |
+| Shrine     |  W   |   L    |    X%    |
 | Barrier    |  W   |   L    |    X%    |
 | Bullseye   |  W   |   L    |    X%    |
 | Lanes      |  W   |   L    |    X%    |

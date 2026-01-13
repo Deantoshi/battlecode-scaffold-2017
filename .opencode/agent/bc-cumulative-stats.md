@@ -30,7 +30,7 @@ For `update` action, also parse:
 ```
 @bc-cumulative-stats --bot=minimax_2_1 --action=init
 @bc-cumulative-stats --bot=minimax_2_1 --action=read
-@bc-cumulative-stats --bot=minimax_2_1 --action=update --results={"shrine":"WIN","Barrier":"LOSS",...}
+@bc-cumulative-stats --bot=minimax_2_1 --action=update --results={"Shrine":"WIN","Barrier":"LOSS",...}
 ```
 
 ## Stats File Location
@@ -47,7 +47,7 @@ For `update` action, also parse:
   "total_wins": 0,
   "total_losses": 0,
   "maps": {
-    "shrine": { "wins": 0, "losses": 0 },
+    "Shrine": { "wins": 0, "losses": 0 },
     "Barrier": { "wins": 0, "losses": 0 },
     "Bullseye": { "wins": 0, "losses": 0 },
     "Lanes": { "wins": 0, "losses": 0 },
@@ -72,7 +72,7 @@ if [ ! -f src/{BOT_NAME}/cumulative-stats.json ]; then
   "total_wins": 0,
   "total_losses": 0,
   "maps": {
-    "shrine": { "wins": 0, "losses": 0 },
+    "Shrine": { "wins": 0, "losses": 0 },
     "Barrier": { "wins": 0, "losses": 0 },
     "Bullseye": { "wins": 0, "losses": 0 },
     "Lanes": { "wins": 0, "losses": 0 },
@@ -103,7 +103,7 @@ Update stats with new iteration results.
 **Input format for `--results`:**
 ```json
 {
-  "shrine": { "result": "WIN", "rounds": 1234 },
+  "Shrine": { "result": "WIN", "rounds": 1234 },
   "Barrier": { "result": "LOSS", "rounds": 3000 },
   "Bullseye": { "result": "WIN", "rounds": 987 },
   "Lanes": { "result": "LOSS", "rounds": 1500 },
@@ -144,7 +144,7 @@ File: src/{BOT_NAME}/cumulative-stats.json
 ## Per-Map Records
 | Map        | Wins | Losses | Win Rate |
 |------------|------|--------|----------|
-| shrine     |   W  |   L    |    X%    |
+| Shrine     |   W  |   L    |    X%    |
 | Barrier    |   W  |   L    |    X%    |
 | Bullseye   |   W  |   L    |    X%    |
 | Lanes      |   W  |   L    |    X%    |

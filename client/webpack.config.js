@@ -67,7 +67,7 @@ module.exports = function(env) {
             "Planets", "1337Tree", "ModernArt", "Whirligig", "PasscalsTriangles",
             "TreeFarm", "DarkSide", "FlappyTree", "SparseForest", "HiddenTunnel",
             "Oxygen", "PureImagination", "Boxed", "GiantForest", "Sprinkles",
-            "DenseForest", "HedgeMaze", "shrine", "OMGTree", "Levels",
+            "DenseForest", "HedgeMaze", "Shrine", "OMGTree", "Levels",
             "TicTacToe", "Hurdle", "MagicWood", "Defenseless", "Barrier",
             "Present", "Snowflake", "Enclosure", "Grass", "DigMeOut",
             "CrossFire", "Conga", "Fancy", "Standoff"

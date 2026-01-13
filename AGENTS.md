@@ -28,7 +28,7 @@ battlecode-scaffold-2017/
 
 ### Run a match (headless)
 ```bash
-./gradlew runWithSummary -PteamA=claudebot -PteamB=examplefuncsplayer -Pmaps=shrine
+./gradlew runWithSummary -PteamA=claudebot -PteamB=examplefuncsplayer -Pmaps=Shrine
 ```
 
 ### Start the web client (view matches)
@@ -47,5 +47,5 @@ battlecode-scaffold-2017/
 
 1. Create folder: `src/mybot/`
 2. Add `RobotPlayer.java` with `public static void run(RobotController rc)`
-3. Run: `./gradlew runWithSummary -PteamA=mybot -PteamB=examplefuncsplayer -Pmaps=shrine`
+3. Run: `./gradlew runWithSummary -PteamA=mybot -PteamB=examplefuncsplayer -Pmaps=Shrine`
 

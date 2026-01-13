@@ -40,7 +40,7 @@ Run this single bash command to execute all 5 maps simultaneously:
 
 ```bash
 export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64 && \
-./gradlew runWithSummary -PteamA={TEAM_A} -PteamB={TEAM_B} -Pmaps=shrine 2>&1 &
+./gradlew runWithSummary -PteamA={TEAM_A} -PteamB={TEAM_B} -Pmaps=Shrine 2>&1 &
 ./gradlew runWithSummary -PteamA={TEAM_A} -PteamB={TEAM_B} -Pmaps=Barrier 2>&1 &
 ./gradlew runWithSummary -PteamA={TEAM_A} -PteamB={TEAM_B} -Pmaps=Bullseye 2>&1 &
 ./gradlew runWithSummary -PteamA={TEAM_A} -PteamB={TEAM_B} -Pmaps=Lanes 2>&1 &
@@ -57,7 +57,7 @@ Check that all 5 summary files were generated:
 
 ```bash
 echo "=== Checking for summary files ==="
-for map in shrine Barrier Bullseye Lanes Blitzkrieg; do
+for map in Shrine Barrier Bullseye Lanes Blitzkrieg; do
   if ls summaries/*-${map}-*.md 1>/dev/null 2>&1; then
     echo "OK: $map"
   else
@@ -80,7 +80,7 @@ retry_map() {
   ./gradlew runWithSummary -PteamA={TEAM_A} -PteamB={TEAM_B} -Pmaps=$map 2>&1
 }
 
-for map in shrine Barrier Bullseye Lanes Blitzkrieg; do
+for map in Shrine Barrier Bullseye Lanes Blitzkrieg; do
   if ! ls summaries/*-${map}-*.md 1>/dev/null 2>&1; then
     echo "MISSING: $map - attempting retry..."
     retry_map $map 1
