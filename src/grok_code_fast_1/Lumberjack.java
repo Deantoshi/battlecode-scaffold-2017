@@ -28,10 +28,17 @@ public strictfp class Lumberjack {
         } else {
             RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
             if (enemies.length > 0) {
-                RobotInfo closest = Utils.findClosestEnemy(rc, enemies);
-                if (closest != null) {
-                    Nav.moveToward(closest.location);
+                RobotInfo target = null;
+                for (RobotInfo enemy : enemies) {
+                    if (enemy.type == RobotType.GARDENER) {
+                        target = enemy;
+                        break;
+                    }
                 }
+                if (target == null) {
+                    target = Utils.findClosestEnemy(rc, enemies);
+                }
+                Nav.moveToward(target.location);
             } else {
                 Nav.tryMove(Nav.randomDirection());
             }
@@ -51,6 +58,17 @@ public strictfp class Lumberjack {
     }
 
     static boolean tryChopTree() throws GameActionException {
+        MapLocation archonLoc = Comms.readLocation(0, 1); // Friendly archon location
+        if (archonLoc != null) {
+            TreeInfo[] treesNearArchon = rc.senseNearbyTrees(archonLoc, 5.0f, Team.NEUTRAL);
+            for (TreeInfo tree : treesNearArchon) {
+                if (rc.canChop(tree.ID)) {
+                    rc.chop(tree.ID);
+                    return true;
+                }
+            }
+        }
+        // Fallback to original
         TreeInfo[] trees = rc.senseNearbyTrees(2.0f, Team.NEUTRAL);
         if (trees.length > 0) {
             if (rc.canChop(trees[0].ID)) {

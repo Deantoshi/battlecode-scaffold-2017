@@ -1,0 +1,14 @@
+{
+  "bot": "grok_code_fast_1",
+  "total_iterations": 1,
+  "total_games": 5,
+  "total_wins": 1,
+  "total_losses": 4,
+  "maps": {
+    "Shrine": { "wins": 0, "losses": 1 },
+    "Barrier": { "wins": 0, "losses": 1 },
+    "Bullseye": { "wins": 0, "losses": 1 },
+    "Lanes": { "wins": 1, "losses": 0 },
+    "Blitzkrieg": { "wins": 0, "losses": 1 }
+  }
+}
