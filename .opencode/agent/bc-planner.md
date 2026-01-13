@@ -124,6 +124,8 @@ For each change, specify:
 
 ## Output Format
 
+**IMPORTANT:** You MUST include both the plan AND the structured CHANGES_DATA block at the end after bc-coder completes. The orchestrator (bc-manager) parses the CHANGES_DATA section.
+
 ```
 === BATTLECODE IMPROVEMENT PLAN ===
 
@@ -155,6 +157,18 @@ For each change, specify:
 
 === END PLAN ===
 ```
+
+After bc-coder completes, append:
+
+```
+=== CHANGES_DATA (STRUCTURED - DO NOT MODIFY FORMAT) ===
+changes_made: ["Improved soldier targeting to prioritize Archons", "Added lumberjack spawning when trees block path"]
+files_modified: ["src/{BOT_NAME}/Soldier.java", "src/{BOT_NAME}/Gardener.java"]
+compilation_status: SUCCESS
+=== END CHANGES_DATA ===
+```
+
+**The CHANGES_DATA block is REQUIRED.** Replace example values with actual data. Set `compilation_status` to "FAILED" if compilation errors occurred.
 
 ## Constraints
 

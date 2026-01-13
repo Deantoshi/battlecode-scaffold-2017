@@ -54,6 +54,7 @@ Parse the Arguments section for:
 bc-manager (you - primary)
 ├── bc-runner ──────────────── Executes games, captures results
 ├── bc-results ─────────────── Analyzes game outcomes, identifies patterns
+├── bc-cumulative-stats ────── Tracks win/loss records across iterations
 ├── bc-general ─────────────── Synthesizes strategy (HAS TASK PERMISSION)
 │   ├── bc-archon ──────────── Archon strategy and survival
 │   ├── bc-gardener ────────── Economy/production and tree-farms
@@ -73,6 +74,42 @@ bc-manager (you - primary)
 - `bc-planner` can delegate implementation to `bc-coder` directly
 
 This reduces your orchestration burden - you invoke the high-level agent and it handles sub-delegation.
+
+## Subagent Return Contracts
+
+Each subagent MUST return structured data. Capture their output and pass to subsequent steps.
+
+### bc-runner returns:
+- Confirmation that `summaries/*.md` files were written
+- List of maps executed
+
+### bc-results MUST return:
+```
+RESULTS_DATA:
+- per_map_results: { "shrine": {"result": "WIN/LOSS", "type": "DECISIVE_WIN/SLOW_WIN/...", "rounds": N}, ... }
+- win_count: N
+- decisive_win_count: N
+- avg_win_rounds: N
+- tiebreaker_count: N
+- navigation_death_rate: X%
+- navigation_status: "HEALTHY" | "CONCERNING" | "BROKEN"
+- key_patterns: [list of observations]
+```
+
+### bc-cumulative-stats returns (on update):
+```
+STATS_JSON: {"total_iterations": N, "total_games": N, "total_wins": W, "total_losses": L, "win_rate": X.X, "this_iteration_wins": X}
+```
+*Note: Cumulative stats are for user visibility only, not used in bot decision-making.*
+
+### bc-general returns:
+- prioritized_recommendations: [list]
+- rationale: string
+
+### bc-planner returns:
+- changes_made: [list of descriptions]
+- files_modified: [list]
+- compilation_status: "SUCCESS" | "FAILED"
 
 ## Setup Phase (Do This Once)
 
@@ -115,186 +152,207 @@ rm -f summaries/*.md
 ```
 
 ### Step 5: Initialize Cumulative Stats
-Create or preserve cumulative stats file. **Do NOT reset this file** - it tracks progress across training runs:
-```bash
-# Only create if doesn't exist (preserves cumulative data)
-if [ ! -f src/{BOT_NAME}/cumulative-stats.json ]; then
-  cat > src/{BOT_NAME}/cumulative-stats.json << 'EOF'
-{
-  "bot": "{BOT_NAME}",
-  "total_iterations": 0,
-  "total_games": 0,
-  "maps": {
-    "shrine": { "wins": 0, "losses": 0, "avg_rounds": 0 },
-    "Barrier": { "wins": 0, "losses": 0, "avg_rounds": 0 },
-    "Bullseye": { "wins": 0, "losses": 0, "avg_rounds": 0 },
-    "Lanes": { "wins": 0, "losses": 0, "avg_rounds": 0 },
-    "Blitzkrieg": { "wins": 0, "losses": 0, "avg_rounds": 0 }
-  },
-  "history": []
-}
-EOF
-fi
-```
+Use the **Task tool** to invoke bc-cumulative-stats:
+- **description**: "Initialize cumulative stats"
+- **prompt**: "Initialize cumulative stats for bot '{BOT_NAME}'. --bot={BOT_NAME} --action=init"
+- **subagent_type**: "bc-cumulative-stats"
 
 ## Iteration Workflow
 
 For each iteration (1 to {ITERATIONS}):
 
-### Step 0: Read Logs and Cumulative Stats
-Read both files for context:
-- `src/{BOT_NAME}/battle-log.md` - Previous iteration learnings
-- `src/{BOT_NAME}/cumulative-stats.json` - Cumulative win/loss record per map
+### Step 1: Read Battle Log
 
-Report current cumulative standing:
-```
-📊 Cumulative Stats (before this iteration):
-- Total iterations: N
-- Per-map record: shrine W-L, Barrier W-L, Bullseye W-L, Lanes W-L, Blitzkrieg W-L
-- Overall win rate: X%
+Read battle log for previous iteration learnings:
+```bash
+cat src/{BOT_NAME}/battle-log.md
 ```
 
-### Step 1: Invoke bc-runner Subagent
-Use the **Task tool** with these parameters:
+This provides context on:
+- What strategies were tried before
+- What worked vs what failed
+- Approaches to avoid repeating
+
+### Step 2: Run Games (bc-runner)
+
+Use the **Task tool**:
 - **description**: "Run battlecode games"
 - **prompt**: "Run games for bot '{BOT_NAME}' vs '{OPPONENT}'. Execute all 5 maps in parallel and capture results."
 - **subagent_type**: "bc-runner"
 
-### Step 2: Invoke bc-results Subagent
-Use the **Task tool** with these parameters:
+### Step 3: Analyze Results (bc-results)
+
+Use the **Task tool**:
 - **description**: "Analyze game results"
-- **prompt**: "Analyze game results for bot '{BOT_NAME}'. Read summaries and produce victory assessment, navigation status, and patterns."
+- **prompt**: "Analyze game results for bot '{BOT_NAME}'. Read summaries and produce victory assessment, navigation status, and patterns. Return structured RESULTS_DATA."
 - **subagent_type**: "bc-results"
 
-Classify each outcome:
+**Capture return as `RESULTS`** - will be passed to subsequent steps.
+
+Outcome classifications:
 - **DECISIVE_WIN**: Elimination or 1000 VP in ≤1500 rounds (GOOD)
 - **SLOW_WIN**: Won but took >1500 rounds (PROBLEM)
 - **TIEBREAKER_WIN**: Won at round 3000 (FAILURE)
 - **TIEBREAKER_LOSS**: Lost at round 3000 (FAILURE)
 - **DECISIVE_LOSS**: Eliminated or opponent hit 1000 VP in ≤1500 rounds
 
-### Step 2.5: Update Cumulative Stats
-After bc-results returns, update `src/{BOT_NAME}/cumulative-stats.json`:
+### Step 4: Update Cumulative Stats (bc-cumulative-stats)
 
-1. Read current stats file
-2. Increment `total_iterations` by 1
-3. Add 5 to `total_games`
-4. For each map result from bc-results:
-   - Increment `maps[map].wins` or `maps[map].losses`
-   - Update `maps[map].avg_rounds` (rolling average for wins)
-5. Append to `history` array:
-   ```json
-   {
-     "iteration": N,
-     "timestamp": "ISO-8601",
-     "results": { "shrine": "WIN/LOSS", "Barrier": "WIN/LOSS", ... },
-     "wins": X,
-     "avg_win_rounds": Y
-   }
-   ```
-6. Write updated stats back to file
+Use the **Task tool**:
+- **description**: "Update cumulative stats"
+- **prompt**: "Update cumulative stats for bot '{BOT_NAME}'. --bot={BOT_NAME} --action=update --results={RESULTS.per_map_results as JSON}"
+- **subagent_type**: "bc-cumulative-stats"
 
-**Example update script:**
-```bash
-# Use jq to update stats (or manually parse/update JSON)
-# After this iteration: 3 wins, 2 losses, avg win rounds = 1200
-```
+**Capture return as `UPDATED_STATS`**
 
-### Step 3: Check Goals
+### Step 5: Check Goals
+
 - If iteration ≥ {ITERATIONS}: Report final results and stop
-- Otherwise: Continue to Step 4
+- Otherwise: Continue to Step 6
 
-### Step 4: Invoke bc-general Subagent
-Use the **Task tool** with these parameters:
+### Step 6: Get Strategy (bc-general)
+
+Use the **Task tool**:
 - **description**: "Get coordinated strategy"
-- **prompt**: "Provide coordinated strategy for bot '{BOT_NAME}' vs '{OPPONENT}'. Given: [bc-results summary]. Consult all unit specialists and return prioritized recommendations."
+- **prompt**: "Provide coordinated strategy for bot '{BOT_NAME}' vs '{OPPONENT}'.
+
+Analysis from bc-results:
+- Win count: {RESULTS.win_count}/5
+- Decisive wins: {RESULTS.decisive_win_count}/5
+- Navigation status: {RESULTS.navigation_status}
+- Key patterns: {RESULTS.key_patterns}
+
+Consult all unit specialists and return prioritized recommendations."
 - **subagent_type**: "bc-general"
 
-**Note:** `bc-general` has `task: allow` permission and will automatically invoke the unit specialists (`bc-archon`, `bc-gardener`, `bc-soldier`, etc.) as subagents. You receive the synthesized strategy - no need to call each specialist yourself.
+**Capture return as `STRATEGY`**
 
-### Step 5: Invoke bc-planner Subagent
-Use the **Task tool** with these parameters:
+**Note:** `bc-general` has `task: allow` permission and will automatically invoke the unit specialists.
+
+### Step 7: Plan and Implement (bc-planner)
+
+Use the **Task tool**:
 - **description**: "Plan and implement improvements"
-- **prompt**: "Plan code improvements for bot '{BOT_NAME}'. Given: [bc-results output], [bc-general strategy]. Design 1-3 concrete changes, then delegate to bc-coder for implementation."
+- **prompt**: "Plan code improvements for bot '{BOT_NAME}'.
+
+Analysis from bc-results:
+- Wins: {RESULTS.win_count}/5
+- Decisive wins: {RESULTS.decisive_win_count}/5
+- Navigation: {RESULTS.navigation_status} ({RESULTS.navigation_death_rate}% death rate)
+- Patterns: {RESULTS.key_patterns}
+
+Strategy from bc-general:
+{STRATEGY.prioritized_recommendations}
+
+Design 1-3 concrete changes, then delegate to bc-coder for implementation. Verify compilation succeeds."
 - **subagent_type**: "bc-planner"
 
-**Note:** `bc-planner` has `task: allow` permission and will automatically invoke `bc-coder` to implement the changes. You receive the completed implementation - no need to call bc-coder separately.
+**Capture return as `CHANGES`**
 
-### Step 6: Clean Summaries
+**Note:** `bc-planner` has `task: allow` permission and will automatically invoke `bc-coder`.
+
+### Step 8: Verify Compilation
+
+If `CHANGES.compilation_status` is "FAILED", attempt fix:
+```bash
+./gradlew compileJava 2>&1 | head -30
+```
+If still broken, revert changes or invoke bc-coder to fix.
+
+### Step 9: Clean Summaries
 ```bash
 rm -f summaries/*.md
 ```
 
-### Step 7: Update Battle Log
+### Step 10: Update Battle Log
+
 Append iteration results to `src/{BOT_NAME}/battle-log.md`:
 
-```
-## Iteration [N]
+```markdown
+## Iteration {N}
 
 ### Results
-- Decisive Wins: X/5 (elimination or 1000 VP in ≤1500 rounds)
-- Per-map outcomes: shrine=TYPE, Barrier=TYPE, Bullseye=TYPE, Lanes=TYPE, Blitzkrieg=TYPE
-- Avg rounds (for wins): N
-- Tiebreaker games: X (FAILURES)
+- Wins: {RESULTS.win_count}/5
+- Decisive Wins: {RESULTS.decisive_win_count}/5 (elimination or 1000 VP in ≤1500 rounds)
+- Per-map outcomes: shrine={type}, Barrier={type}, Bullseye={type}, Lanes={type}, Blitzkrieg={type}
+- Avg rounds (for wins): {RESULTS.avg_win_rounds}
+- Tiebreaker games: {RESULTS.tiebreaker_count} (FAILURES)
 
 ### Navigation Assessment
-- Death rate: X%
-- Status: HEALTHY/CONCERNING/BROKEN
+- Death rate: {RESULTS.navigation_death_rate}%
+- Status: {RESULTS.navigation_status}
 
 ### Changes Made
-1. [Change 1]
-2. [Change 2]
+{CHANGES.changes_made as numbered list}
 
 ### What Worked / What Failed
-- [Insights for next iteration]
+- [Insights based on comparison to previous iteration]
 
 ---
 ```
 
-### Step 8: Report Status
+### Step 11: Report Status
+
 Report both iteration and cumulative progress:
 
 ```
 ═══════════════════════════════════════════════════════════════
-📍 ITERATION {N}/{ITERATIONS} COMPLETE
+ITERATION {N}/{ITERATIONS} COMPLETE
 ═══════════════════════════════════════════════════════════════
 
 ## This Iteration
-- Wins: X/5
-- Avg win rounds: Y
-- Tiebreaker games: X (failures)
-- Navigation: HEALTHY/CONCERNING/BROKEN
-- Changes: [summary]
+- Wins: {RESULTS.win_count}/5
+- Decisive Wins: {RESULTS.decisive_win_count}/5
+- Avg win rounds: {RESULTS.avg_win_rounds}
+- Tiebreaker games: {RESULTS.tiebreaker_count} (failures)
+- Navigation: {RESULTS.navigation_status}
+- Changes: {CHANGES.changes_made summary}
 
 ## Cumulative Progress (All Time)
-- Total iterations: N
-- Total games: N×5
-- Overall win rate: X% (W wins / L losses)
+- Total iterations: {UPDATED_STATS.total_iterations}
+- Total games: {UPDATED_STATS.total_games}
+- Overall win rate: {UPDATED_STATS.win_rate}% ({UPDATED_STATS.total_wins}W-{UPDATED_STATS.total_losses}L)
 
 ## Per-Map Cumulative Record
-| Map        | Wins | Losses | Win Rate | Avg Rounds |
-|------------|------|--------|----------|------------|
-| shrine     |   W  |   L    |    X%    |     N      |
-| Barrier    |   W  |   L    |    X%    |     N      |
-| Bullseye   |   W  |   L    |    X%    |     N      |
-| Lanes      |   W  |   L    |    X%    |     N      |
-| Blitzkrieg |   W  |   L    |    X%    |     N      |
+| Map        | Wins | Losses | Win Rate |
+|------------|------|--------|----------|
+| shrine     |  W   |   L    |    X%    |
+| Barrier    |  W   |   L    |    X%    |
+| Bullseye   |  W   |   L    |    X%    |
+| Lanes      |  W   |   L    |    X%    |
+| Blitzkrieg |  W   |   L    |    X%    |
 
-## Trend
-- Last 3 iterations win rates: [X%, Y%, Z%]
-- Direction: IMPROVING / STABLE / DECLINING
 ═══════════════════════════════════════════════════════════════
 ```
 
 Then continue to next iteration.
 
+## Error Handling
+
+### Compilation Failure
+If bc-planner reports compilation failure:
+1. Read the error output
+2. Invoke bc-coder directly to fix: "Fix compilation error in src/{BOT_NAME}/: {error message}"
+3. If still failing after 2 attempts, revert changes and log the failure
+
+### Subagent Timeout
+If a subagent doesn't respond:
+1. Log the timeout in battle-log.md
+2. Skip to next iteration (don't block entire training run)
+
+### Missing Files
+If summaries/*.md are missing after bc-runner:
+1. Check if games actually ran
+2. Re-invoke bc-runner if needed
+
 ## Key Principles
 
 1. **Use Task tool** - Pass description, prompt, and subagent_type
-2. **Wait for results** - Each Task call returns the subagent's output
-3. **Synthesize** - Combine outputs into actionable insights
-4. **Decisive victories only** - Elimination or 1000 VP in ≤1500 rounds. Tiebreakers are failures.
-5. **Preserve learnings** - Battle log maintains cross-iteration memory
-6. **Track cumulative progress** - Update cumulative-stats.json every iteration; never reset it
-7. **Holistic improvement** - Fixes should help across multiple maps, not just one
-8. **No tiebreaker optimization** - Never optimize for tree count, bullet count, or other tiebreaker metrics
+2. **Capture outputs** - Store each subagent's return in named variables (RESULTS, STRATEGY, CHANGES)
+3. **Pass data forward** - Include captured data in subsequent prompts explicitly
+4. **Verify compilation** - Always check compilation after code changes
+5. **Decisive victories only** - Elimination or 1000 VP in ≤1500 rounds. Tiebreakers are failures.
+6. **Preserve learnings** - Battle log maintains cross-iteration memory
+7. **Track cumulative progress** - Use bc-cumulative-stats every iteration
+8. **Holistic improvement** - Fixes should help across multiple maps, not just one
+9. **No tiebreaker optimization** - Never optimize for tree count, bullet count, or other tiebreaker metrics

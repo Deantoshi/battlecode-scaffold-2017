@@ -95,6 +95,8 @@ Note which maps have worst engagement (typically tree-heavy: Bullseye, Barrier, 
 
 ## Output Format
 
+**IMPORTANT:** You MUST include both human-readable analysis AND the structured RESULTS_DATA block at the end. The orchestrator (bc-manager) parses the RESULTS_DATA section.
+
 ```
 === BATTLECODE ANALYSIS ===
 
@@ -141,7 +143,18 @@ Note which maps have worst engagement (typically tree-heavy: Bullseye, Barrier, 
 2. [secondary priority]
 3. [tertiary priority]
 
+=== RESULTS_DATA (STRUCTURED - DO NOT MODIFY FORMAT) ===
+per_map_results: {"shrine": {"result": "WIN", "type": "DECISIVE_WIN", "rounds": 1234}, "Barrier": {"result": "LOSS", "type": "DECISIVE_LOSS", "rounds": 987}, "Bullseye": {"result": "WIN", "type": "SLOW_WIN", "rounds": 2100}, "Lanes": {"result": "LOSS", "type": "TIEBREAKER_LOSS", "rounds": 3000}, "Blitzkrieg": {"result": "WIN", "type": "DECISIVE_WIN", "rounds": 1100}}
+win_count: 3
+decisive_win_count: 2
+avg_win_rounds: 1478
+tiebreaker_count: 1
+navigation_death_rate: 45%
+navigation_status: CONCERNING
+key_patterns: ["Pattern 1", "Pattern 2", "Pattern 3"]
+=== END RESULTS_DATA ===
+
 === END ANALYSIS ===
 ```
 
-Pass this analysis to bc-planner for strategic planning.
+**The RESULTS_DATA block is REQUIRED.** Replace the example values with actual data from your analysis. This structured data is parsed by bc-manager to pass to subsequent subagents.
