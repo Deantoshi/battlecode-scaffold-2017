@@ -41,6 +41,6 @@ public strictfp class Utils {
         return closest;
     }
     public static Direction[] getDirections() {
-        return new Direction[]{Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST};
+        return new Direction[]{Direction.NORTH, new Direction((float)(Math.PI/4)), Direction.EAST, new Direction((float)(3*Math.PI/4)), Direction.SOUTH, new Direction((float)(5*Math.PI/4)), Direction.WEST, new Direction((float)(7*Math.PI/4))};
     }
 }

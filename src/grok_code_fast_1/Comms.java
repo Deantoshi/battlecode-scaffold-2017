@@ -27,4 +27,36 @@ public strictfp class Comms {
     public static MapLocation getEnemyArchonLocation() throws GameActionException {
         return readLocation(2, 3);
     }
+
+    public static void broadcastEnemyLocation(MapLocation loc) throws GameActionException {
+        broadcastLocation(9, 10, loc);
+    }
+
+    public static MapLocation getEnemyLocation() throws GameActionException {
+        return readLocation(9, 10);
+    }
+
+    public static void broadcastSafeArea(MapLocation loc) throws GameActionException {
+        broadcastLocation(11, 12, loc);
+    }
+
+    public static MapLocation getSafeArea() throws GameActionException {
+        return readLocation(11, 12);
+    }
+
+    public static void broadcastFocusTarget(MapLocation loc) throws GameActionException {
+        broadcastLocation(13, 14, loc);
+    }
+
+    public static MapLocation getFocusTarget() throws GameActionException {
+        return readLocation(13, 14);
+    }
+
+    public static MapLocation getTreeCluster() throws GameActionException {
+        return readLocation(5, 6);
+    }
+
+    public static MapLocation getMapEdge() throws GameActionException {
+        return readLocation(7, 8);
+    }
 }

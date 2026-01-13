@@ -26,25 +26,35 @@ public strictfp class Soldier {
             RobotInfo target = findTarget();
             // Try to shoot the target
             tryShoot(target);
+if (enemies.length > 0 && !rc.hasMoved()) {
+    Nav.moveToward(target.location);
+}
         }
         // Bullet evasion before movement
         BulletInfo[] bullets = rc.senseNearbyBullets();
-        Direction safeDir = null;
-        for (Direction dir : Utils.getDirections()) {
-            boolean safe = true;
-            for (BulletInfo bullet : bullets) {
-                if (rc.getLocation().add(dir, rc.getType().strideRadius).distanceTo(bullet.location) < 3.0f) {
-                    safe = false;
-                    break;
+        if (bullets.length > 0 && !rc.hasMoved()) {
+            Direction bestDir = null;
+            float bestDist = Float.MAX_VALUE;
+            for (Direction dir : Utils.getDirections()) {
+                MapLocation nextLoc = rc.getLocation().add(dir, rc.getType().strideRadius);
+                boolean safe = true;
+                for (BulletInfo bullet : bullets) {
+                    if (bullet.getLocation().add(bullet.getDir(), bullet.getSpeed()).distanceTo(nextLoc) < rc.getType().bodyRadius + 0.1f) {
+                        safe = false;
+                        break;
+                    }
+                }
+                if (safe) {
+                    float distToTarget = (enemies.length > 0) ? nextLoc.distanceTo(enemies[0].location) : 0;
+                    if (bestDir == null || distToTarget < bestDist) {
+                        bestDir = dir;
+                        bestDist = distToTarget;
+                    }
                 }
             }
-            if (safe) {
-                safeDir = dir;
-                break;
+            if (bestDir != null) {
+                Nav.tryMove(bestDir);
             }
-        }
-        if (safeDir != null && !rc.hasMoved()) {
-            Nav.tryMove(safeDir);
         } else if (!rc.hasMoved()) {
             MapLocation enemyLoc = Comms.getEnemyArchonLocation();
             if (enemyLoc != null) {

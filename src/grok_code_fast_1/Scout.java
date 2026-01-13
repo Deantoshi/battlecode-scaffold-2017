@@ -4,6 +4,12 @@ import battlecode.common.*;
 public strictfp class Scout {
     static RobotController rc;
 
+    // Spiral exploration variables
+    static int spiralStep = 0;
+    static Direction spiralDir = Direction.NORTH;
+    static int stepsInDir = 1;
+    static int stepsTaken = 0;
+
     public static void run(RobotController rc) throws GameActionException {
         Scout.rc = rc;
         Nav.init(rc);
@@ -22,6 +28,10 @@ public strictfp class Scout {
 
     static void doTurn() throws GameActionException {
         tryShakeTree();
+
+        // Broadcast map intel
+        broadcastMapIntel();
+
         RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
         for (RobotInfo enemy : enemies) {
             reportEnemy(enemy);
@@ -30,8 +40,23 @@ public strictfp class Scout {
                 return;
             }
         }
+
         if (!rc.hasMoved()) {
-            Nav.tryMove(Nav.randomDirection());
+            // Spiral exploration
+            if (stepsTaken >= stepsInDir) {
+                spiralDir = spiralDir.rotateRightDegrees(90);
+                stepsTaken = 0;
+                if (spiralStep % 2 == 1) {
+                    stepsInDir++;
+                }
+                spiralStep++;
+            }
+            if (Nav.tryMove(spiralDir)) {
+                stepsTaken++;
+            } else {
+                // Blocked, try different direction
+                Nav.tryMove(spiralDir.rotateLeftDegrees(45));
+            }
         }
     }
 
@@ -50,6 +75,22 @@ public strictfp class Scout {
         if (enemy.type == RobotType.ARCHON) {
             Comms.broadcastLocation(2, 3, enemy.location);
             rc.broadcast(4, 1); // Enemy spotted flag
+        }
+    }
+
+    static void broadcastMapIntel() throws GameActionException {
+        // Broadcast tree clusters (simplified: broadcast location of dense tree areas)
+        TreeInfo[] trees = rc.senseNearbyTrees(5.0f, Team.NEUTRAL);
+        if (trees.length > 5) {
+            MapLocation treeCenter = rc.getLocation(); // Approximate center
+            Comms.broadcastLocation(5, 6, treeCenter);
+        }
+
+        // Broadcast map edges if near boundary (simplified: if location is extreme)
+        // Note: Map dimensions not directly accessible, using approximation
+        if (rc.getLocation().x < 5 || rc.getLocation().x > 95 ||
+            rc.getLocation().y < 5 || rc.getLocation().y > 95) {
+            Comms.broadcastLocation(7, 8, rc.getLocation());
         }
     }
 }

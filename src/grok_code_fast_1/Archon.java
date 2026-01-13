@@ -36,14 +36,17 @@ public strictfp class Archon {
             }
         }
         
-        // Hire gardeners every 5 turns if bullets >= 50
-        if (turnCounter % 5 == 0 && rc.getTeamBullets() >= 50) {
+        int hireInterval = 3;
+        if (turnCounter % hireInterval == 0 && rc.getTeamBullets() >= 50) {
             tryHireGardener();
         }
 
         // Donate excess bullets starting from round 300
-        if (rc.getTeamBullets() > 100 && rc.getRoundNum() < 1500) {
-            rc.donate(rc.getTeamBullets() - 10);
+        if (rc.getRoundNum() >= 200 && rc.getTeamBullets() > 100) {
+            int donateAmount = Math.min((int)(rc.getTeamBullets() - 50), 10);
+            if (donateAmount > 0) {
+                rc.donate(donateAmount);
+            }
         }
         
         // If no action taken, move randomly using Nav.tryMove(Nav.randomDirection())
