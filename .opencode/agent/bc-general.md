@@ -58,59 +58,31 @@ Invoke these via the **Task tool**:
 ### Step 1: Review Context
 Review the provided battle results, battle log highlights, and strategic goal.
 
-### Step 2: Consult Unit Specialists
+### Step 2: Consult Specialists (Batch 1 of 2)
 
-Invoke each unit specialist via the **Task tool**:
+**Invoke these 4 subagents IN PARALLEL using multiple Task tool calls in a single message:**
 
-#### Step 2.1: Invoke bc-archon
-Use the **Task tool** with:
-- **description**: "Archon strategy"
-- **prompt**: "[battle results], [strategic goal]. Focus on survival and spawning priorities."
-- **subagent_type**: "bc-archon"
+| Subagent | Description | Prompt Focus |
+|----------|-------------|--------------|
+| `bc-archon` | "Archon strategy" | "[battle results], [strategic goal]. Focus on survival and spawning priorities." |
+| `bc-gardener` | "Gardener strategy" | "[battle results], [strategic goal]. Focus on economy and tree-farm layout." |
+| `bc-soldier` | "Soldier strategy" | "[battle results], [strategic goal]. Focus on micro and targeting." |
+| `bc-lumberjack` | "Lumberjack strategy" | "[battle results], [strategic goal]. Focus on clearing and melee pressure." |
 
-#### Step 2.2: Invoke bc-gardener
-Use the **Task tool** with:
-- **description**: "Gardener strategy"
-- **prompt**: "[battle results], [strategic goal]. Focus on economy and tree-farm layout."
-- **subagent_type**: "bc-gardener"
+**WAIT for all 4 subagents to complete before proceeding to Step 3.**
 
-#### Step 2.3: Invoke bc-soldier
-Use the **Task tool** with:
-- **description**: "Soldier strategy"
-- **prompt**: "[battle results], [strategic goal]. Focus on micro and targeting."
-- **subagent_type**: "bc-soldier"
+### Step 3: Consult Specialists (Batch 2 of 2)
 
-#### Step 2.4: Invoke bc-lumberjack
-Use the **Task tool** with:
-- **description**: "Lumberjack strategy"
-- **prompt**: "[battle results], [strategic goal]. Focus on clearing and melee pressure."
-- **subagent_type**: "bc-lumberjack"
+**Invoke these 4 subagents IN PARALLEL using multiple Task tool calls in a single message:**
 
-#### Step 2.5: Invoke bc-scout
-Use the **Task tool** with:
-- **description**: "Scout strategy"
-- **prompt**: "[battle results], [strategic goal]. Focus on recon and harassment."
-- **subagent_type**: "bc-scout"
+| Subagent | Description | Prompt Focus |
+|----------|-------------|--------------|
+| `bc-scout` | "Scout strategy" | "[battle results], [strategic goal]. Focus on recon and harassment." |
+| `bc-tank` | "Tank strategy" | "[battle results], [strategic goal]. Focus on siege and late-game combat." |
+| `bc-exploration` | "Exploration strategy" | "[battle results], [strategic goal]. Focus on map intel and sharing." |
+| `bc-economy` | "Economy strategy" | "[battle results], [strategic goal]. Focus on bullet economy and VP timing." |
 
-#### Step 2.6: Invoke bc-tank
-Use the **Task tool** with:
-- **description**: "Tank strategy"
-- **prompt**: "[battle results], [strategic goal]. Focus on siege and late-game combat."
-- **subagent_type**: "bc-tank"
-
-### Step 3: Consult Support Specialists
-
-#### Step 3.1: Invoke bc-exploration
-Use the **Task tool** with:
-- **description**: "Exploration strategy"
-- **prompt**: "[battle results], [strategic goal]. Focus on map intel and sharing."
-- **subagent_type**: "bc-exploration"
-
-#### Step 3.2: Invoke bc-economy
-Use the **Task tool** with:
-- **description**: "Economy strategy"
-- **prompt**: "[battle results], [strategic goal]. Focus on bullet economy and VP timing."
-- **subagent_type**: "bc-economy"
+**WAIT for all 4 subagents to complete before proceeding to Step 4.**
 
 ### Step 4: Synthesize Strategy
 
