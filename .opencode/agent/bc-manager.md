@@ -114,13 +114,45 @@ EOF
 rm -f summaries/*.md
 ```
 
+### Step 5: Initialize Cumulative Stats
+Create or preserve cumulative stats file. **Do NOT reset this file** - it tracks progress across training runs:
+```bash
+# Only create if doesn't exist (preserves cumulative data)
+if [ ! -f src/{BOT_NAME}/cumulative-stats.json ]; then
+  cat > src/{BOT_NAME}/cumulative-stats.json << 'EOF'
+{
+  "bot": "{BOT_NAME}",
+  "total_iterations": 0,
+  "total_games": 0,
+  "maps": {
+    "shrine": { "wins": 0, "losses": 0, "avg_rounds": 0 },
+    "Barrier": { "wins": 0, "losses": 0, "avg_rounds": 0 },
+    "Bullseye": { "wins": 0, "losses": 0, "avg_rounds": 0 },
+    "Lanes": { "wins": 0, "losses": 0, "avg_rounds": 0 },
+    "Blitzkrieg": { "wins": 0, "losses": 0, "avg_rounds": 0 }
+  },
+  "history": []
+}
+EOF
+fi
+```
+
 ## Iteration Workflow
 
 For each iteration (1 to {ITERATIONS}):
 
-### Step 0: Read Battle Log
-Read `src/{BOT_NAME}/battle-log.md` for previous iteration learnings.
-Skip if first iteration.
+### Step 0: Read Logs and Cumulative Stats
+Read both files for context:
+- `src/{BOT_NAME}/battle-log.md` - Previous iteration learnings
+- `src/{BOT_NAME}/cumulative-stats.json` - Cumulative win/loss record per map
+
+Report current cumulative standing:
+```
+📊 Cumulative Stats (before this iteration):
+- Total iterations: N
+- Per-map record: shrine W-L, Barrier W-L, Bullseye W-L, Lanes W-L, Blitzkrieg W-L
+- Overall win rate: X%
+```
 
 ### Step 1: Invoke bc-runner Subagent
 Use the **Task tool** with these parameters:
@@ -140,6 +172,33 @@ Classify each outcome:
 - **TIEBREAKER_WIN**: Won at round 3000 (FAILURE)
 - **TIEBREAKER_LOSS**: Lost at round 3000 (FAILURE)
 - **DECISIVE_LOSS**: Eliminated or opponent hit 1000 VP in ≤1500 rounds
+
+### Step 2.5: Update Cumulative Stats
+After bc-results returns, update `src/{BOT_NAME}/cumulative-stats.json`:
+
+1. Read current stats file
+2. Increment `total_iterations` by 1
+3. Add 5 to `total_games`
+4. For each map result from bc-results:
+   - Increment `maps[map].wins` or `maps[map].losses`
+   - Update `maps[map].avg_rounds` (rolling average for wins)
+5. Append to `history` array:
+   ```json
+   {
+     "iteration": N,
+     "timestamp": "ISO-8601",
+     "results": { "shrine": "WIN/LOSS", "Barrier": "WIN/LOSS", ... },
+     "wins": X,
+     "avg_win_rounds": Y
+   }
+   ```
+6. Write updated stats back to file
+
+**Example update script:**
+```bash
+# Use jq to update stats (or manually parse/update JSON)
+# After this iteration: 3 wins, 2 losses, avg win rounds = 1200
+```
 
 ### Step 3: Check Goals
 - If iteration ≥ {ITERATIONS}: Report final results and stop
@@ -193,12 +252,39 @@ Append iteration results to `src/{BOT_NAME}/battle-log.md`:
 ```
 
 ### Step 8: Report Status
-Report:
-- Iteration X/{ITERATIONS}
-- Decisive wins: X/5
-- Tiebreaker games: X
-- Navigation status: HEALTHY/CONCERNING/BROKEN
-- Changes made: [summary]
+Report both iteration and cumulative progress:
+
+```
+═══════════════════════════════════════════════════════════════
+📍 ITERATION {N}/{ITERATIONS} COMPLETE
+═══════════════════════════════════════════════════════════════
+
+## This Iteration
+- Wins: X/5
+- Avg win rounds: Y
+- Tiebreaker games: X (failures)
+- Navigation: HEALTHY/CONCERNING/BROKEN
+- Changes: [summary]
+
+## Cumulative Progress (All Time)
+- Total iterations: N
+- Total games: N×5
+- Overall win rate: X% (W wins / L losses)
+
+## Per-Map Cumulative Record
+| Map        | Wins | Losses | Win Rate | Avg Rounds |
+|------------|------|--------|----------|------------|
+| shrine     |   W  |   L    |    X%    |     N      |
+| Barrier    |   W  |   L    |    X%    |     N      |
+| Bullseye   |   W  |   L    |    X%    |     N      |
+| Lanes      |   W  |   L    |    X%    |     N      |
+| Blitzkrieg |   W  |   L    |    X%    |     N      |
+
+## Trend
+- Last 3 iterations win rates: [X%, Y%, Z%]
+- Direction: IMPROVING / STABLE / DECLINING
+═══════════════════════════════════════════════════════════════
+```
 
 Then continue to next iteration.
 
@@ -209,5 +295,6 @@ Then continue to next iteration.
 3. **Synthesize** - Combine outputs into actionable insights
 4. **Decisive victories only** - Elimination or 1000 VP in ≤1500 rounds. Tiebreakers are failures.
 5. **Preserve learnings** - Battle log maintains cross-iteration memory
-6. **Holistic improvement** - Fixes should help across multiple maps, not just one
-7. **No tiebreaker optimization** - Never optimize for tree count, bullet count, or other tiebreaker metrics
+6. **Track cumulative progress** - Update cumulative-stats.json every iteration; never reset it
+7. **Holistic improvement** - Fixes should help across multiple maps, not just one
+8. **No tiebreaker optimization** - Never optimize for tree count, bullet count, or other tiebreaker metrics
