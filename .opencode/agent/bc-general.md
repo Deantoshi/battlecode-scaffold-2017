@@ -44,9 +44,9 @@ You are the Battlecode General agent. Your role is to produce a coordinated, cro
 
 Review the provided battle results, battle log highlights, and strategic goal.
 
-### Step 2: Consult Combat Specialists (Batch 1 of 2)
+### Step 2: Consult Base Specialists (Batch 1 of 4)
 
-**Invoke these 4 subagents IN PARALLEL using multiple Task tool calls in a single message:**
+**Invoke these 2 subagents IN PARALLEL using multiple Task tool calls in a single message:**
 
 Use the **Task tool** (bc-archon):
 - **description**: "Archon strategy"
@@ -58,6 +58,12 @@ Use the **Task tool** (bc-gardener):
 - **prompt**: "[battle results], [strategic goal]. Focus on economy and tree-farm layout."
 - **subagent_type**: "bc-gardener"
 
+**WAIT for both subagents to complete before proceeding to Step 3.**
+
+### Step 3: Consult Ground Combat Specialists (Batch 2 of 4)
+
+**Invoke these 2 subagents IN PARALLEL using multiple Task tool calls in a single message:**
+
 Use the **Task tool** (bc-soldier):
 - **description**: "Soldier strategy"
 - **prompt**: "[battle results], [strategic goal]. Focus on micro and targeting."
@@ -68,11 +74,11 @@ Use the **Task tool** (bc-lumberjack):
 - **prompt**: "[battle results], [strategic goal]. Focus on clearing and melee pressure."
 - **subagent_type**: "bc-lumberjack"
 
-**WAIT for all 4 subagents to complete before proceeding to Step 3.**
+**WAIT for both subagents to complete before proceeding to Step 4.**
 
-### Step 3: Consult Support Specialists (Batch 2 of 2)
+### Step 4: Consult Special Combat Specialists (Batch 3 of 4)
 
-**Invoke these 4 subagents IN PARALLEL using multiple Task tool calls in a single message:**
+**Invoke these 2 subagents IN PARALLEL using multiple Task tool calls in a single message:**
 
 Use the **Task tool** (bc-scout):
 - **description**: "Scout strategy"
@@ -84,6 +90,12 @@ Use the **Task tool** (bc-tank):
 - **prompt**: "[battle results], [strategic goal]. Focus on siege and late-game combat."
 - **subagent_type**: "bc-tank"
 
+**WAIT for both subagents to complete before proceeding to Step 5.**
+
+### Step 5: Consult Strategy Specialists (Batch 4 of 4)
+
+**Invoke these 2 subagents IN PARALLEL using multiple Task tool calls in a single message:**
+
 Use the **Task tool** (bc-exploration):
 - **description**: "Exploration strategy"
 - **prompt**: "[battle results], [strategic goal]. Focus on map intel and sharing."
@@ -94,9 +106,9 @@ Use the **Task tool** (bc-economy):
 - **prompt**: "[battle results], [strategic goal]. Focus on bullet economy and VP timing."
 - **subagent_type**: "bc-economy"
 
-**WAIT for all 4 subagents to complete before proceeding to Step 4.**
+**WAIT for both subagents to complete before proceeding to Step 6.**
 
-### Step 4: Synthesize Strategy
+### Step 6: Synthesize Strategy
 
 Combine all specialist outputs into a coordinated strategy:
 
