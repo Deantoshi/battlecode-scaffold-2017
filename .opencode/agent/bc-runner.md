@@ -102,47 +102,7 @@ ls -t summaries/*.md 2>/dev/null || echo "WARNING: No summary files found!"
 
 **If a map still fails after 2 retries**, report it as a failed map in the output and continue with available results.
 
-### Step 4: Read All Summaries
-
-List and read all summaries generated:
-
-```bash
-ls -t summaries/*.md
-```
-
-Then read each summary file to extract results.
-
-### Step 5: Output Structured Results
-
-For each map, output:
-
-```
-=== GAME RESULT: {MAP} ===
-TeamA: {name}
-TeamB: {name}
-Winner: {A or B} ({team name})
-Round: {winning round}
-Reason: {destruction/timeout/VP}
-
-Units Created (A): {count}
-Units Created (B): {count}
-Deaths (A): {count}
-Deaths (B): {count}
-=== END {MAP} ===
-```
-
-Then provide a summary:
-```
-=== OVERALL RESULTS ===
-{TEAM_A} wins: X/5
-{TEAM_B} wins: Y/5
-Average rounds: N
-Maps won by A: [list]
-Maps won by B: [list]
-=== END OVERALL ===
-```
-
-### Step 6: Cleanup Gradle Daemons
+### Step 4: Cleanup Gradle Daemons
 
 After all results are collected, stop the Gradle daemons to free memory:
 
