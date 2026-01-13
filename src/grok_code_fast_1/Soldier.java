@@ -24,6 +24,9 @@ public strictfp class Soldier {
         RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
         if (enemies.length > 0) {
             RobotInfo target = findTarget();
+            // Try to shoot the target
+            tryShoot(target);
+        }
         // Bullet evasion before movement
         BulletInfo[] bullets = rc.senseNearbyBullets();
         Direction safeDir = null;
@@ -50,8 +53,7 @@ public strictfp class Soldier {
                 Nav.tryMove(Nav.randomDirection());
             }
         }
-            Nav.tryMove(Nav.randomDirection());
-        }
+        // Removed the unconditional Nav.tryMove(Nav.randomDirection());
     }
 
     static RobotInfo findTarget() throws GameActionException {

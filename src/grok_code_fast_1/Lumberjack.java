@@ -25,7 +25,7 @@ public strictfp class Lumberjack {
             // Already struck
         } else if (tryChopTree()) {
             // Chopped
-        } else {
+        } else if (!rc.hasMoved()) {
             RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
             if (enemies.length > 0) {
                 RobotInfo target = null;
@@ -38,9 +38,31 @@ public strictfp class Lumberjack {
                 if (target == null) {
                     target = Utils.findClosestEnemy(rc, enemies);
                 }
-                Nav.moveToward(target.location);
+                if (!Nav.moveToward(target.location)) {
+                    // If blocking, try chopping nearby trees
+                    TreeInfo[] blockingTrees = rc.senseNearbyTrees(rc.getType().bodyRadius + rc.getType().strideRadius + 1.0f, Team.NEUTRAL);
+                    for (TreeInfo tree : blockingTrees) {
+                        if (rc.canChop(tree.ID)) {
+                            rc.chop(tree.ID);
+                            break; // Chop one per turn
+                        }
+                    }
+                    // Retry movement after chopping
+                    Nav.moveToward(target.location);
+                }
             } else {
-                Nav.tryMove(Nav.randomDirection());
+                if (!Nav.tryMove(Nav.randomDirection())) {
+                    // If blocking, try chopping nearby trees
+                    TreeInfo[] blockingTrees = rc.senseNearbyTrees(rc.getType().bodyRadius + rc.getType().strideRadius + 1.0f, Team.NEUTRAL);
+                    for (TreeInfo tree : blockingTrees) {
+                        if (rc.canChop(tree.ID)) {
+                            rc.chop(tree.ID);
+                            break; // Chop one per turn
+                        }
+                    }
+                    // Retry movement after chopping
+                    Nav.tryMove(Nav.randomDirection());
+                }
             }
         }
     }

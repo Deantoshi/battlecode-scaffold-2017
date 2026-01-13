@@ -9,46 +9,96 @@ public strictfp class Nav {
     }
 
     public static boolean tryMove(Direction dir) throws GameActionException {
-        if (rc.canMove(dir)) {
-            rc.move(dir);
-            return true;
-        }
-        // Sense trees in the direction to avoid clusters
-        TreeInfo[] trees = rc.senseNearbyTrees(rc.getType().bodyRadius + 1.0f);
-        for (TreeInfo tree : trees) {
-            Direction toTree = rc.getLocation().directionTo(tree.location);
-            if (Math.abs(dir.degreesBetween(toTree)) < 45) {
-                // Avoid directions with trees nearby
-                continue;
+        // For tanks, allow movement through trees since they can break them
+        if (rc.getType() == RobotType.TANK) {
+            if (rc.canMove(dir)) {
+                rc.move(dir);
+                return true;
+            } else {
+                // Try to move anyway, as tanks can damage trees on collision
+                try {
+                    rc.move(dir);
+                    return true;
+                } catch (GameActionException e) {
+                    // Can't move in this direction
+                }
+            }
+        } else {
+            if (rc.canMove(dir)) {
+                rc.move(dir);
+                return true;
             }
         }
-        // Try wider rotations for better tree avoidance
+
+        // Sense trees in the direction to avoid clusters (non-tanks)
+        if (rc.getType() != RobotType.TANK) {
+            TreeInfo[] trees = rc.senseNearbyTrees(rc.getType().bodyRadius + rc.getType().strideRadius + 1.0f);
+            for (TreeInfo tree : trees) {
+                Direction toTree = rc.getLocation().directionTo(tree.location);
+                if (Math.abs(dir.degreesBetween(toTree)) < 60) {
+                    // Avoid directions with trees nearby
+                    return false; // Don't try alternatives if trees in way, just return false
+                }
+            }
+        }
+
+        // Try wider rotations
         for (int i = 1; i <= 4; i++) {
             Direction left = dir.rotateLeftDegrees(45 * i);
-            boolean leftClear = true;
-            for (TreeInfo tree : trees) {
-                Direction toTree = rc.getLocation().directionTo(tree.location);
-                if (Math.abs(left.degreesBetween(toTree)) < 45) {
-                    leftClear = false;
-                    break;
+            if (rc.getType() == RobotType.TANK) {
+                if (rc.canMove(left)) {
+                    rc.move(left);
+                    return true;
+                } else {
+                    try {
+                        rc.move(left);
+                        return true;
+                    } catch (GameActionException e) {
+                        // Can't move left
+                    }
                 }
-            }
-            if (leftClear && rc.canMove(left)) {
-                rc.move(left);
-                return true;
+            } else {
+                boolean leftClear = true;
+                TreeInfo[] trees = rc.senseNearbyTrees(rc.getType().bodyRadius + rc.getType().strideRadius + 1.0f);
+                for (TreeInfo tree : trees) {
+                    Direction toTree = rc.getLocation().directionTo(tree.location);
+                    if (Math.abs(left.degreesBetween(toTree)) < 60) {
+                        leftClear = false;
+                        break;
+                    }
+                }
+                if (leftClear && rc.canMove(left)) {
+                    rc.move(left);
+                    return true;
+                }
             }
             Direction right = dir.rotateRightDegrees(45 * i);
-            boolean rightClear = true;
-            for (TreeInfo tree : trees) {
-                Direction toTree = rc.getLocation().directionTo(tree.location);
-                if (Math.abs(right.degreesBetween(toTree)) < 45) {
-                    rightClear = false;
-                    break;
+            if (rc.getType() == RobotType.TANK) {
+                if (rc.canMove(right)) {
+                    rc.move(right);
+                    return true;
+                } else {
+                    try {
+                        rc.move(right);
+                        return true;
+                    } catch (GameActionException e) {
+                        // Can't move right
+                    }
                 }
-            }
-            if (rightClear && rc.canMove(right)) {
-                rc.move(right);
-                return true;
+            } else {
+                boolean rightClear = true;
+                TreeInfo[] trees = rc.senseNearbyTrees(rc.getType().bodyRadius + rc.getType().strideRadius + 1.0f);
+                for (TreeInfo tree : trees) {
+                    Direction toTree = rc.getLocation().directionTo(tree.location);
+                    if (Math.abs(right.degreesBetween(toTree)) < 60) {
+                        rightClear = false;
+                        break;
+                    }
+                }
+                if (rightClear && rc.canMove(right)) {
+                    rc.move(right);
+                    return true;
+                }
             }
         }
         return false;

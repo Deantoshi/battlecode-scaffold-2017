@@ -45,11 +45,13 @@ public strictfp class Tank {
                 }
             }
         }
-        MapLocation enemyLoc = Comms.getEnemyArchonLocation();
-        if (enemyLoc != null) {
-            Nav.moveToward(enemyLoc);
-        } else {
-            Nav.tryMove(Nav.randomDirection());
+        if (!rc.hasMoved()) {
+            MapLocation enemyLoc = Comms.getEnemyArchonLocation();
+            if (enemyLoc != null) {
+                Nav.moveToward(enemyLoc);
+            } else {
+                Nav.tryMove(Nav.randomDirection());
+            }
         }
     }
 }

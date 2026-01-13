@@ -25,12 +25,14 @@ public strictfp class Scout {
         RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
         for (RobotInfo enemy : enemies) {
             reportEnemy(enemy);
-            if (enemy.type == RobotType.GARDENER) {
+            if (enemy.type == RobotType.GARDENER && !rc.hasMoved()) {
                 Nav.moveToward(enemy.location);
                 return;
             }
         }
-        Nav.tryMove(Nav.randomDirection());
+        if (!rc.hasMoved()) {
+            Nav.tryMove(Nav.randomDirection());
+        }
     }
 
     static boolean tryShakeTree() throws GameActionException {

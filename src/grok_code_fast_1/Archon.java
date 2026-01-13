@@ -28,7 +28,7 @@ public strictfp class Archon {
 
         // Check for nearby enemies - if any, move away from closest
         RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
-        if (enemies.length > 0) {
+        if (enemies.length > 0 && !rc.hasMoved()) {
             RobotInfo closest = Utils.findClosestEnemy(rc, enemies);
             if (closest != null) {
                 Direction away = rc.getLocation().directionTo(closest.location).opposite();
@@ -42,16 +42,14 @@ public strictfp class Archon {
         }
 
         // Donate excess bullets starting from round 300
-        if (rc.getRoundNum() > 300 && rc.getTeamBullets() > 300) {
-            float bulletsToDonate = rc.getTeamBullets() - 200; // Keep 200 for operations
-            int vpToGain = (int)(bulletsToDonate / rc.getVictoryPointCost());
-            if (vpToGain > 0 && rc.getTeamVictoryPoints() + vpToGain < 1000) { // Avoid over-donating
-                rc.donate(bulletsToDonate);
-            }
+        if (rc.getTeamBullets() > 100 && rc.getRoundNum() < 1500) {
+            rc.donate(rc.getTeamBullets() - 10);
         }
         
         // If no action taken, move randomly using Nav.tryMove(Nav.randomDirection())
-        Nav.tryMove(Nav.randomDirection());
+        if (!rc.hasMoved()) {
+            Nav.tryMove(Nav.randomDirection());
+        }
     }
 
     static boolean tryHireGardener() throws GameActionException {

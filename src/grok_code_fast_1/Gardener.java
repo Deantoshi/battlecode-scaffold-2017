@@ -24,12 +24,14 @@ public strictfp class Gardener {
 
     static void doTurn() throws GameActionException {
         waterLowestHealthTree();
-        if (treesPlanted < 2) {
+        if (treesPlanted < 6) {
             tryPlantTree();
         } else {
             tryBuildUnit();
         }
-        Nav.tryMove(Nav.randomDirection());
+        if (!rc.hasMoved()) {
+            Nav.tryMove(Nav.randomDirection());
+        }
     }
 
     static void waterLowestHealthTree() throws GameActionException {
