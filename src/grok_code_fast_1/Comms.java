@@ -64,5 +64,58 @@ public strictfp class Comms {
         return readLocation(7, 8);
     }
 
+    public static void broadcastChokepoint(MapLocation loc) throws GameActionException {
+        broadcastLocation(15, 16, loc);
+    }
 
+    public static MapLocation getChokepoint() throws GameActionException {
+        return readLocation(15, 16);
+    }
+
+    public static void broadcastProductionPriority(int priority) throws GameActionException { // 0=lumberjack, 1=soldier
+        rc.broadcast(17, priority);
+    }
+
+    public static int getProductionPriority() throws GameActionException {
+        return rc.readBroadcast(17);
+    }
+
+    public static void broadcastQuadrantEnemies(int quadrant, int count) throws GameActionException { // Quadrant 0-3
+        rc.broadcast(18 + quadrant, count);
+    }
+
+    public static int getQuadrantEnemies(int quadrant) throws GameActionException {
+        return rc.readBroadcast(18 + quadrant);
+    }
+
+    public static void broadcastTreeDensity(int density) throws GameActionException {
+        rc.broadcast(22, density);
+    }
+
+    public static void broadcastEnemyThreats(int count) throws GameActionException {
+        rc.broadcast(23, count);
+    }
+
+    public static void broadcastUnitCount(int count) throws GameActionException {
+        rc.broadcast(24, count);
+    }
+
+    public static int getUnitCount() throws GameActionException {
+        return rc.readBroadcast(24);
+    }
+
+    public static void broadcastRallyPoint(MapLocation loc) throws GameActionException {
+        broadcastLocation(25, 26, loc);
+    }
+
+    public static MapLocation getRallyPoint() throws GameActionException {
+        return readLocation(25, 26);
+    }
+
+    public static void broadcastTreePlantingThreshold(int threshold) throws GameActionException {
+        rc.broadcast(27, threshold);
+    }
+    public static int getTreePlantingThreshold() throws GameActionException {
+        return rc.readBroadcast(27);
+    }
 }

@@ -21,6 +21,16 @@ public strictfp class Tank {
     }
 
     static void doTurn() throws GameActionException {
+        // Proactive tree clearing for navigation
+        if (!rc.hasMoved()) {
+            TreeInfo[] blockingTrees = rc.senseNearbyTrees(rc.getType().bodyRadius + rc.getType().strideRadius + 2.0f, Team.NEUTRAL);
+            for (TreeInfo tree : blockingTrees) {
+                if (rc.canChop(tree.ID)) {
+                    rc.chop(tree.ID);
+                    return; // Chop instead of move
+                }
+            }
+        }
         RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
         if (enemies.length > 0) {
             RobotInfo target = Utils.findLowestHealthTarget(enemies);
@@ -37,15 +47,26 @@ public strictfp class Tank {
                     }
                 }
                 if (safe) {
-                    if (rc.canFirePentadShot()) {
-                        rc.firePentadShot(dir);
-                    } else if (rc.canFireTriadShot()) {
-                        rc.fireTriadShot(dir);
-                    } else if (rc.canFireSingleShot()) {
-                        rc.fireSingleShot(dir);
+                    if (enemies.length > 2) {
+                        if (rc.canFirePentadShot()) {
+                            rc.firePentadShot(dir);
+                        }
+                    } else {
+                        if (rc.canFireTriadShot()) {
+                            rc.fireTriadShot(dir);
+                        } else if (rc.canFireSingleShot()) {
+                            rc.fireSingleShot(dir);
+                        }
                     }
                 }
             }
+        }
+        // Coordinated pushes via Comms
+        MapLocation pushTarget = Comms.getFocusTarget();
+        if (pushTarget != null) {
+            Nav.moveToward(pushTarget);
+        } else {
+            // Existing logic
         }
         if (!rc.hasMoved()) {
             if (enemies.length > 3) {

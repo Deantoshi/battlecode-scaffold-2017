@@ -10,6 +10,7 @@ public strictfp class Nav {
     static float bugStartDistSq = 0;
     static int bugSteps = 0;
     static final int MAX_BUG_STEPS = 100;
+    static Direction lastBugTurn = null;
 
     // Zigzag variables
     static int zigzagCount = 0;
@@ -20,26 +21,19 @@ public strictfp class Nav {
     }
 
     public static boolean tryMove(Direction dir) throws GameActionException {
-        // For tanks, allow movement through trees
+        // For tanks, only move if canMove is true
         if (rc.getType() == RobotType.TANK) {
             if (rc.canMove(dir)) {
                 rc.move(dir);
                 return true;
-            } else {
-                try {
-                    rc.move(dir);
-                    return true;
-                } catch (GameActionException e) {
-                    // Can't move
-                }
             }
         } else {
             // For tree avoidance
-            TreeInfo[] trees = rc.senseNearbyTrees(7.0f);
+            TreeInfo[] trees = rc.senseNearbyTrees(4.0f);
             boolean clear = true;
             for (TreeInfo tree : trees) {
                 Direction toTree = rc.getLocation().directionTo(tree.location);
-                if (Math.abs(dir.degreesBetween(toTree)) < 45) {
+                if (Math.abs(dir.degreesBetween(toTree)) < 90) {
                     clear = false;
                     break;
                 }
@@ -49,27 +43,20 @@ public strictfp class Nav {
                 return true;
             }
         }
-        // Try rotations
-        for (int i = 1; i <= 4; i++) {
-            Direction left = dir.rotateLeftDegrees(45 * i);
+        // Try rotations - increase to 90 degrees for better open-area coverage
+        for (int i = 1; i <= 8; i++) {  // Changed from 4 to 8 for finer steps
+            Direction left = dir.rotateLeftDegrees(22.5f * i);  // Finer rotation
             if (rc.getType() == RobotType.TANK) {
                 if (rc.canMove(left)) {
                     rc.move(left);
                     return true;
-                } else {
-                    try {
-                        rc.move(left);
-                        return true;
-                    } catch (GameActionException e) {
-                        // Can't move
-                    }
                 }
             } else {
-                TreeInfo[] trees = rc.senseNearbyTrees(7.0f);
+                TreeInfo[] trees = rc.senseNearbyTrees(4.0f);
                 boolean clear = true;
                 for (TreeInfo tree : trees) {
                     Direction toTree = rc.getLocation().directionTo(tree.location);
-                    if (Math.abs(left.degreesBetween(toTree)) < 45) {
+                    if (Math.abs(left.degreesBetween(toTree)) < 90) {
                         clear = false;
                         break;
                     }
@@ -79,25 +66,18 @@ public strictfp class Nav {
                     return true;
                 }
             }
-            Direction right = dir.rotateRightDegrees(45 * i);
+            Direction right = dir.rotateRightDegrees(22.5f * i);  // Finer rotation
             if (rc.getType() == RobotType.TANK) {
                 if (rc.canMove(right)) {
                     rc.move(right);
                     return true;
-                } else {
-                    try {
-                        rc.move(right);
-                        return true;
-                    } catch (GameActionException e) {
-                        // Can't move
-                    }
                 }
             } else {
-                TreeInfo[] trees = rc.senseNearbyTrees(7.0f);
+                TreeInfo[] trees = rc.senseNearbyTrees(4.0f);
                 boolean clear = true;
                 for (TreeInfo tree : trees) {
                     Direction toTree = rc.getLocation().directionTo(tree.location);
-                    if (Math.abs(right.degreesBetween(toTree)) < 45) {
+                    if (Math.abs(right.degreesBetween(toTree)) < 90) {
                         clear = false;
                         break;
                     }
@@ -118,24 +98,31 @@ public strictfp class Nav {
         float distSq = rc.getLocation().distanceSquaredTo(target);
 
         // Check map density
-        TreeInfo[] nearbyTrees = rc.senseNearbyTrees(5.0f);
-        BulletInfo[] nearbyBullets = rc.senseNearbyBullets(5.0f);
-        boolean sparseArea = nearbyTrees.length + nearbyBullets.length < 3;
+        TreeInfo[] nearbyTrees = rc.senseNearbyTrees(10.0f);
+        boolean denseArea = nearbyTrees.length > 5;
 
         if (!bugTracing) {
-            // Try direct move first
-            if (tryMove(dir)) return true;
-            if (sparseArea) {
-                // In sparse areas, try wider direct angles
-                for (int i = 1; i <= 2; i++) {
-                    if (tryMove(dir.rotateLeftDegrees(45 * i))) return true;
-                    if (tryMove(dir.rotateRightDegrees(45 * i))) return true;
+            // Check map density for mode selection
+            boolean openMap = nearbyTrees.length < 3;
+
+            if (openMap) {
+                // Direct LOS movement on open maps
+                if (tryMove(dir)) return true;
+                // Wider angles for open exploration
+                for (int i = 1; i <= 4; i++) {
+                    if (tryMove(dir.rotateLeftDegrees(30 * i))) return true;
+                    if (tryMove(dir.rotateRightDegrees(30 * i))) return true;
                 }
+                // Spiral scouting if direct fails
+                spiralScout(target);
+                return true;
+            } else {
+                // Dense areas: use improved Bug
+                if (tryMove(dir)) return true;
+                bugTracing = true;
+                bugDir = dir;
+                bugStartDistSq = distSq;
             }
-            // Start bug navigation
-            bugTracing = true;
-            bugDir = dir;
-            bugStartDistSq = distSq;
         } else {
             // Continue bug navigation
             if (distSq < bugStartDistSq) {
@@ -144,56 +131,40 @@ public strictfp class Nav {
                 bugSteps = 0;
                 return moveToward(target);
             }
-            // Follow obstacle with alternating turns
-            Direction left = bugDir.rotateLeftDegrees(90);
-            Direction right = bugDir.rotateRightDegrees(90);
-            if (bugSteps % 2 == 0) {
-                if (tryMove(left)) {
-                    bugDir = left;
-                    bugSteps++;
-                    return true;
-                } else if (tryMove(right)) {
-                    bugDir = right;
-                    bugSteps++;
-                    return true;
+            // Simplified alternating turns
+            Direction left = bugDir.rotateLeftDegrees(45);
+            Direction right = bugDir.rotateRightDegrees(45);
+            if (tryMove(left)) {
+                if (lastBugTurn == left) {
+                    bugTracing = false;
+                    bugSteps = 0;
+                    return moveToward(target);
                 }
-            } else {
-                if (tryMove(right)) {
-                    bugDir = right;
-                    bugSteps++;
-                    return true;
-                } else if (tryMove(left)) {
-                    bugDir = left;
-                    bugSteps++;
-                    return true;
+                bugDir = left;
+                lastBugTurn = left;
+                bugSteps++;
+                return true;
+            } else if (tryMove(right)) {
+                if (lastBugTurn == right) {
+                    bugTracing = false;
+                    bugSteps = 0;
+                    return moveToward(target);
                 }
+                bugDir = right;
+                lastBugTurn = right;
+                bugSteps++;
+                return true;
             }
-            // Stuck, rotate bug direction or reset if max steps reached
             if (bugSteps >= MAX_BUG_STEPS) {
-                // Check for edge: if location is near boundary and bugDir is towards it
-                MapLocation loc = rc.getLocation();
-                if ((loc.x < 5 && bugDir.radians > Math.PI) || (loc.x > 95 && bugDir.radians < Math.PI) ||
-                    (loc.y < 5 && (bugDir.radians > Math.PI/2 && bugDir.radians < 3*Math.PI/2)) ||
-                    (loc.y > 95 && (bugDir.radians < Math.PI/2 || bugDir.radians > 3*Math.PI/2))) {
-                    // At edge, reset away from edge
-                    bugTracing = false;
-                    bugSteps = 0;
-                    Direction awayFromEdge = bugDir.opposite();
-                    tryMove(awayFromEdge);
-                    return false;
-                } else {
-                    bugTracing = false;
-                    bugSteps = 0;
-                    return tryMove(randomDirection());
-                }
+                bugTracing = false;
+                bugSteps = 0;
+                return tryMove(randomDirection());
             }
-            bugDir = bugDir.rotateLeftDegrees(45);
-            bugSteps++;
         }
         if (!rc.hasMoved()) {
             // Add zigzag when stuck
             if (zigzagCount > 5) {
-                Direction zigDir = lastZigzagDir == null ? Nav.randomDirection() : lastZigzagDir.rotateLeftDegrees(60);
+                Direction zigDir = lastZigzagDir == null ? randomDirection() : lastZigzagDir.rotateLeftDegrees(60);
                 if (tryMove(zigDir)) {
                     lastZigzagDir = zigDir;
                     zigzagCount = 0;
@@ -204,10 +175,34 @@ public strictfp class Nav {
                 zigzagCount++;
             }
         }
+        // Lumberjack-specific clearing if stuck and is lumberjack
+        if (rc.getType() == RobotType.LUMBERJACK && denseArea && !rc.hasMoved()) {
+            TreeInfo[] blockingTrees = rc.senseNearbyTrees(rc.getType().bodyRadius + rc.getType().strideRadius + 2.0f, Team.NEUTRAL);
+            for (TreeInfo tree : blockingTrees) {
+                if (rc.canChop(tree.ID)) {
+                    rc.chop(tree.ID);
+                    return false; // Don't move this turn, chop instead
+                }
+            }
+        }
         return false;
     }
 
     public static Direction randomDirection() {
         return new Direction((float)(Math.random() * 2 * Math.PI + (Math.random() - 0.5) * 0.5)); // Add small bias
+    }
+
+    static boolean spiralScout(MapLocation target) throws GameActionException {
+        Direction spiralDir = rc.getLocation().directionTo(target);
+        for (int radius = 1; radius <= 5; radius++) {
+            for (int angle = 0; angle < 360; angle += 45) {
+                Direction checkDir = spiralDir.rotateLeftDegrees(angle);
+                MapLocation checkLoc = rc.getLocation().add(checkDir, radius * rc.getType().strideRadius);
+                if (rc.canSenseLocation(checkLoc) && !rc.isLocationOccupiedByTree(checkLoc)) {
+                    if (tryMove(checkDir)) return true;
+                }
+            }
+        }
+        return false;
     }
 }

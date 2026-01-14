@@ -26,12 +26,19 @@ public strictfp class Soldier {
             Comms.broadcastEnemyLocation(enemies[0].location);
             RobotInfo target = findTarget();
             tryShoot(target, enemies);
-            // Kiting: If health low, move away instead of toward
-            if (rc.getHealth() < rc.getType().maxHealth * 0.3 && !rc.hasMoved()) {
-                Direction away = rc.getLocation().directionTo(target.location).opposite();
-                Nav.tryMove(away);
-            } else if (!rc.hasMoved()) {
+            // Aggressive pursuit: always move toward unless critically low health
+            if (rc.getHealth() >= 20 && !rc.hasMoved()) {
                 Nav.moveToward(target.location);
+            }
+        }
+        // In doTurn, after enemy check, before movement
+        if (!rc.hasMoved()) {
+            RobotInfo[] allies = rc.senseNearbyRobots(5.0f, rc.getTeam());
+            if (allies.length > 3) { // Too clustered
+                MapLocation allyCentroid = Utils.calculateCentroid(allies);
+                Direction away = rc.getLocation().directionTo(allyCentroid).opposite();
+                Nav.tryMove(away);
+                return; // Prioritize spacing
             }
         }
         // Enhanced bullet evasion
@@ -60,15 +67,20 @@ public strictfp class Soldier {
                 Nav.tryMove(bestDir);
             }
         } else if (!rc.hasMoved()) {
-            MapLocation rallyPoint = Comms.getEnemyLocation();
-            if (rallyPoint != null) {
-                Nav.moveToward(rallyPoint);
+            MapLocation rally = Comms.getRallyPoint();
+            if (rally != null) {
+                Nav.moveToward(rally);
             } else {
-                MapLocation enemyLoc = Comms.getEnemyArchonLocation();
+                MapLocation enemyLoc = Comms.getEnemyLocation();
                 if (enemyLoc != null) {
                     Nav.moveToward(enemyLoc);
                 } else {
-                    Nav.tryMove(Nav.randomDirection());
+                    MapLocation enemyArchonLoc = Comms.getEnemyArchonLocation();
+                    if (enemyArchonLoc != null) {
+                        Nav.moveToward(enemyArchonLoc);
+                    } else {
+                        Nav.tryMove(Nav.randomDirection());
+                    }
                 }
             }
         }
@@ -76,17 +88,38 @@ public strictfp class Soldier {
 
     static RobotInfo findTarget() throws GameActionException {
         RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
+        // Prioritize lowest health for focus fire
+        RobotInfo lowestHealth = Utils.findLowestHealthTarget(enemies);
+        if (lowestHealth != null) {
+            return lowestHealth;
+        }
+        // Fallback to type priorities if tie
+        for (RobotInfo enemy : enemies) {
+            if (enemy.type == RobotType.TANK) {
+                return enemy;
+            }
+        }
         for (RobotInfo enemy : enemies) {
             if (enemy.type == RobotType.ARCHON) {
                 return enemy;
             }
         }
         for (RobotInfo enemy : enemies) {
-            if (enemy.type == RobotType.TANK) {
+            if (enemy.type == RobotType.GARDENER) {
                 return enemy;
             }
         }
-        return Utils.findLowestHealthTarget(enemies);
+        for (RobotInfo enemy : enemies) {
+            if (enemy.type == RobotType.SOLDIER) {
+                return enemy;
+            }
+        }
+        for (RobotInfo enemy : enemies) {
+            if (enemy.type == RobotType.SCOUT) {
+                return enemy;
+            }
+        }
+        return null;
     }
 
     static boolean tryShoot(RobotInfo target, RobotInfo[] enemies) throws GameActionException {
@@ -101,6 +134,13 @@ public strictfp class Soldier {
                 return false;
             }
         }
+        if (target != null && (target.type == RobotType.TANK || enemies.length >= 2)) {
+            if (rc.canFireTriadShot()) {
+                rc.fireTriadShot(dir);
+                return true;
+            }
+        }
+        // Existing pentad for >2, single otherwise
         // Adaptive: Use pentad if multiple enemies nearby
         if (enemies.length > 2 && rc.canFirePentadShot()) {
             rc.firePentadShot(dir);

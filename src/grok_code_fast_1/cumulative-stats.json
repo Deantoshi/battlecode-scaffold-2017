@@ -1,14 +1,14 @@
 {
   "bot": "grok_code_fast_1",
-  "total_iterations": 20,
-  "total_games": 100,
-  "total_wins": 47,
-  "total_losses": 53,
+  "total_iterations": 35,
+  "total_games": 175,
+  "total_wins": 95,
+  "total_losses": 80,
   "maps": {
-    "Shrine": { "wins": 9, "losses": 11 },
-    "Barrier": { "wins": 10, "losses": 10 },
-    "Bullseye": { "wins": 12, "losses": 8 },
-    "Lanes": { "wins": 11, "losses": 9 },
-    "Blitzkrieg": { "wins": 5, "losses": 15 }
+    "Shrine": { "wins": 17, "losses": 18 },
+    "Barrier": { "wins": 18, "losses": 17 },
+    "Bullseye": { "wins": 21, "losses": 14 },
+    "Lanes": { "wins": 21, "losses": 14 },
+    "Blitzkrieg": { "wins": 18, "losses": 17 }
   }
 }

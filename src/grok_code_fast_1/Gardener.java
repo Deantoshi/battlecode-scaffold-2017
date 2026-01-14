@@ -25,8 +25,8 @@ public strictfp class Gardener {
 
     static void doTurn() throws GameActionException {
         waterLowestHealthTree();
-        // Alternate: plant tree every other turn or when no units to build
-        if (treesPlanted < 3 || rc.getTeamBullets() < 50) {
+        // Increase tree limits and add scouts
+        if (treesPlanted < 20 || rc.getTeamBullets() < 50) {  // Changed from 10 to 20
             if (tryPlantTree()) {
                 treesPlanted++;
             }
@@ -34,9 +34,16 @@ public strictfp class Gardener {
             tryBuildUnit();
         }
         if (!rc.hasMoved()) {
-            // Move away from archon and other gardeners for spacing
-            Direction away = rc.getLocation().directionTo(Comms.readLocation(0,1)).opposite();
-            Nav.tryMove(away);
+            // Sense nearby robots for spacing
+            RobotInfo[] nearbyRobots = rc.senseNearbyRobots(5.0f, rc.getTeam());
+            if (nearbyRobots.length > 1) { // More than self
+                Direction away = rc.getLocation().directionTo(nearbyRobots[0].location).opposite();
+                Nav.tryMove(away);
+            } else {
+                // Existing away from archon
+                Direction away = rc.getLocation().directionTo(Comms.readLocation(0,1)).opposite();
+                Nav.tryMove(away);
+            }
         }
     }
 
@@ -56,12 +63,19 @@ public strictfp class Gardener {
     }
 
     static boolean tryBuildUnit() throws GameActionException {
+        int priority = Comms.getProductionPriority(); // Read from broadcast
         RobotType toBuild;
-        int cycle = buildCount % 4;
-        if (cycle == 0) toBuild = RobotType.SOLDIER;
-        else if (cycle == 1) toBuild = RobotType.SCOUT;
-        else if (cycle == 2) toBuild = RobotType.LUMBERJACK;
-        else toBuild = RobotType.TANK;
+        int turnCount = rc.getRoundNum();
+        if (turnCount > 1000 && priority == 3) {
+            toBuild = RobotType.TANK;
+        } else if (priority == 0) {
+            toBuild = RobotType.LUMBERJACK;
+        } else if (priority == 2) {
+            toBuild = RobotType.SCOUT;
+        } else {
+            // Default to soldiers for priority 1 or unknown
+            toBuild = RobotType.SOLDIER;
+        }
         if (rc.canBuildRobot(toBuild, buildDirection)) {
             rc.buildRobot(toBuild, buildDirection);
             buildCount++;
@@ -74,8 +88,13 @@ public strictfp class Gardener {
         Direction[] dirs = Utils.getDirections();
         for (Direction dir : dirs) {
             if (rc.canPlantTree(dir)) {
-                rc.plantTree(dir);
-                return true;
+                // Improve tree spacing
+                MapLocation plantLoc = rc.getLocation().add(dir, rc.getType().bodyRadius + GameConstants.BULLET_TREE_RADIUS);
+                TreeInfo[] nearbyTrees = rc.senseNearbyTrees(plantLoc, 4.0f, null);  // Check all teams for spacing
+                if (nearbyTrees.length == 0) {  // Ensure at least 4.0f spacing
+                    rc.plantTree(dir);
+                    return true;
+                }
             }
         }
         return false;

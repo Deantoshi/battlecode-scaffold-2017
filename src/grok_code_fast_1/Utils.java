@@ -40,6 +40,16 @@ public strictfp class Utils {
         }
         return closest;
     }
+    public static MapLocation calculateCentroid(RobotInfo[] robots) {
+        if (robots.length == 0) return null;
+        float x = 0, y = 0;
+        for (RobotInfo r : robots) {
+            x += r.location.x;
+            y += r.location.y;
+        }
+        return new MapLocation(x / robots.length, y / robots.length);
+    }
+
     public static Direction[] getDirections() {
         return new Direction[]{Direction.NORTH, new Direction((float)(Math.PI/4)), Direction.EAST, new Direction((float)(3*Math.PI/4)), Direction.SOUTH, new Direction((float)(5*Math.PI/4)), Direction.WEST, new Direction((float)(7*Math.PI/4))};
     }

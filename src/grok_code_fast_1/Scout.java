@@ -4,11 +4,13 @@ import battlecode.common.*;
 public strictfp class Scout {
     static RobotController rc;
 
-    // Spiral exploration variables
-    static int spiralStep = 0;
-    static Direction spiralDir = Direction.NORTH;
-    static int stepsInDir = 1;
-    static int stepsTaken = 0;
+    // Quadrant patrols variables
+    static int currentQuadrant = 0;
+    static MapLocation[] quadrantCenters = {new MapLocation(20,20), new MapLocation(30,80), new MapLocation(80,80), new MapLocation(80,20), new MapLocation(50,50)};  // Added center
+    static int maxQuadrants = 5;
+
+    // Directed sweeps variables
+    static MapLocation archonLoc = null;
 
     public static void run(RobotController rc) throws GameActionException {
         Scout.rc = rc;
@@ -45,36 +47,53 @@ public strictfp class Scout {
             }
         }
 
-        // Add shooting
+        // Prioritize shooting gardeners/archons
         for (RobotInfo enemy : enemies) {
-            if (enemy.type != RobotType.ARCHON && enemy.type != RobotType.TANK && rc.canFireSingleShot()) {
+            if ((enemy.type == RobotType.GARDENER || enemy.type == RobotType.ARCHON) && rc.canFireSingleShot()) {
                 Direction dir = rc.getLocation().directionTo(enemy.location);
                 rc.fireSingleShot(dir);
-                break; // One shot per turn
+                break;  // Prioritize these
+            }
+        }
+        // Then shoot others if no priority targets
+        for (RobotInfo enemy : enemies) {
+            if (rc.canFireSingleShot()) {
+                Direction dir = rc.getLocation().directionTo(enemy.location);
+                rc.fireSingleShot(dir);
+                break;
             }
         }
 
         if (!rc.hasMoved()) {
-            // Spiral exploration
-            if (stepsTaken >= stepsInDir) {
-                spiralDir = spiralDir.rotateRightDegrees(90);
-                stepsTaken = 0;
-                if (spiralStep % 2 == 1) {
-                    stepsInDir++;
+            if (enemies.length == 0) {
+                // Replace quadrant patrol with dynamic sweeps
+                MapLocation archonLoc = Comms.readLocation(0, 1); // Friendly archon
+                MapLocation enemyLoc = Comms.getEnemyArchonLocation();
+                if (archonLoc != null && enemyLoc != null) {
+                    float baseDist = archonLoc.distanceTo(enemyLoc);
+                    float currentDist = archonLoc.distanceTo(rc.getLocation());
+                    int spiralTurns = (int)(currentDist / 5.0f); // More systematic
+                    Direction toEnemy = archonLoc.directionTo(enemyLoc);
+                    Direction spiralDir = toEnemy.rotateLeftDegrees(spiralTurns * 45.0f); // Consistent 45-degree steps
+                    Nav.tryMove(spiralDir);
+                } else {
+                    Nav.tryMove(Nav.randomDirection()); // Fallback
                 }
-                spiralStep++;
-            }
-            if (Nav.tryMove(spiralDir)) {
-                stepsTaken++;
             } else {
-                // Blocked, try different direction
-                Nav.tryMove(spiralDir.rotateLeftDegrees(45));
+                // Expanded harassment: shoot more units
+                for (RobotInfo enemy : enemies) {
+                    if (rc.canFireSingleShot()) {
+                        Direction dir = rc.getLocation().directionTo(enemy.location);
+                        rc.fireSingleShot(dir);
+                        break;
+                    }
+                }
             }
         }
     }
 
     static boolean tryShakeTree() throws GameActionException {
-        TreeInfo[] trees = rc.senseNearbyTrees(2.0f, Team.NEUTRAL);
+        TreeInfo[] trees = rc.senseNearbyTrees(3.0f, Team.NEUTRAL);  // Increased from 2.0f to 3.0f
         for (TreeInfo tree : trees) {
             if (tree.containedBullets > 0 && rc.canShake(tree.ID)) {
                 rc.shake(tree.ID);
@@ -103,11 +122,10 @@ public strictfp class Scout {
             Comms.broadcastLocation(5, 6, treeCenter);
         }
 
-        // Broadcast map edges if near boundary (simplified: if location is extreme)
-        // Note: Map dimensions not directly accessible, using approximation
-        if (rc.getLocation().x < 5 || rc.getLocation().x > 95 ||
-            rc.getLocation().y < 5 || rc.getLocation().y > 95) {
-            Comms.broadcastLocation(7, 8, rc.getLocation());
+        // Broadcast map edges if near boundary (enhanced: check multiple points)
+        MapLocation loc = rc.getLocation();
+        if (loc.x < 10 || loc.x > 90 || loc.y < 10 || loc.y > 90) {
+            Comms.broadcastLocation(7, 8, loc);
         }
     }
 }
