@@ -329,13 +329,41 @@ Use the **Task tool**:
 - **description**: "Get coordinated strategy"
 - **prompt**: "Provide coordinated strategy for bot '{BOT_NAME}' vs '{OPPONENT}'.
 
-Analysis from bc-results:
+## Battle Results Analysis (from bc-results)
+
+### Victory Summary
 - Win count: {RESULTS.win_count}/5
 - Decisive wins: {RESULTS.decisive_win_count}/5
-- Navigation status: {RESULTS.navigation_status}
-- Key patterns: {RESULTS.key_patterns}
+- Slow wins: {RESULTS.slow_win_count}/5
+- Tiebreaker games: {RESULTS.tiebreaker_count}/5 (FAILURES)
+- Average win rounds: {RESULTS.avg_win_rounds}
 
-Consult all unit specialists and return prioritized recommendations."
+### Per-Map Results
+{RESULTS.per_map_results}
+
+### Economy Analysis
+- Economy verdict: {RESULTS.economy_verdict}
+- Average economy ratio: {RESULTS.avg_economy_ratio}
+
+### Combat Analysis
+- Average survival rate: {RESULTS.avg_survival_rate}
+- Navigation status: {RESULTS.navigation_status}
+
+### Unit Composition (what we built)
+{RESULTS.unit_composition}
+
+### Turning Points Summary
+{RESULTS.turning_points_summary}
+
+### Key Patterns Identified
+{RESULTS.key_patterns}
+
+### Recommended Focus Areas (from bc-results)
+{RESULTS.recommended_focus}
+
+---
+
+Consult all unit specialists with this data and return prioritized recommendations for achieving decisive victory."
 - **subagent_type**: "bc-general"
 
 **Capture return as `STRATEGY`**

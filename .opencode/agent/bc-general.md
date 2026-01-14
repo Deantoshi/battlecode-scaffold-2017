@@ -42,11 +42,50 @@ You are the Battlecode General agent. Your role is to produce a coordinated, cro
 
 You will receive a `--bot={BOT_NAME}` argument. **Pass this to ALL specialist subagents** so they know which folder to read code from (`src/{BOT_NAME}/`).
 
+## Input Data Format
+
+You will receive structured battle results from bc-results including:
+
+```
+## Battle Results Analysis (from bc-results)
+
+### Victory Summary
+- Win count, decisive wins, slow wins, tiebreaker count
+- Average win rounds
+
+### Per-Map Results
+{map_name: {result, type, rounds, victory_type}}
+
+### Economy Analysis
+- Economy verdict: ADVANTAGE|EVEN|DISADVANTAGE
+- Average economy ratio (>1.2 = advantage, <0.8 = disadvantage)
+
+### Combat Analysis
+- Average survival rate (% of units surviving)
+- Navigation status
+
+### Unit Composition
+{gardener, soldier, lumberjack, tank, scout, tree counts}
+
+### Turning Points Summary
+{heavy_losses_a, heavy_losses_b, economy_shifts, vp_starts_round_avg}
+
+### Key Patterns & Recommended Focus
+[List of patterns and focus areas identified by bc-results]
+```
+
+**IMPORTANT: Pass this structured data to each specialist so they can make informed recommendations.**
+
 ## Workflow
 
 ### Step 1: Review Context
 
-Review the provided battle results, battle log highlights, and strategic goal. Note the `{BOT_NAME}` from the arguments.
+Review the provided battle results. Extract key data points relevant to each specialist:
+- **For bc-archon/bc-gardener**: Economy verdict, unit composition, economy ratio
+- **For bc-soldier/bc-lumberjack/bc-tank**: Survival rate, heavy losses events, per-map results
+- **For bc-scout**: Per-map results, turning points
+- **For bc-exploration**: Navigation status, per-map results (which maps struggled)
+- **For bc-economy**: Economy verdict, economy ratio, VP timing from turning points
 
 ### Step 2: Consult Base Specialists (Batch 1 of 5)
 
@@ -55,13 +94,33 @@ Review the provided battle results, battle log highlights, and strategic goal. N
 
 Use the **Task tool** (bc-archon):
 - **description**: "Archon strategy"
-- **prompt**: "--bot={BOT_NAME}. Battle results: [battle results]. Strategic goal: [strategic goal]. Read the bot's Archon code in src/{BOT_NAME}/ and provide strategic recommendations. Focus on WHAT should change and WHY, not the actual code."
+- **prompt**: "--bot={BOT_NAME}.
+
+**Battle Results:**
+- Wins: {win_count}/5, Decisive: {decisive_win_count}/5
+- Economy: {economy_verdict} (ratio: {avg_economy_ratio})
+- Unit composition: {unit_composition}
+- Per-map: {per_map_results}
+
+**Strategic Goal:** Achieve decisive victory (elimination or 1000 VP) within 1500 rounds.
+
+Read the bot's Archon code in src/{BOT_NAME}/ and provide strategic recommendations. Focus on WHAT should change and WHY, not the actual code."
 - **subagent_type**: "bc-archon"
 - **timeout**: 120000
 
 Use the **Task tool** (bc-gardener):
 - **description**: "Gardener strategy"
-- **prompt**: "--bot={BOT_NAME}. Battle results: [battle results]. Strategic goal: [strategic goal]. Read the bot's Gardener code in src/{BOT_NAME}/ and provide strategic recommendations. Focus on WHAT should change and WHY, not the actual code."
+- **prompt**: "--bot={BOT_NAME}.
+
+**Battle Results:**
+- Wins: {win_count}/5, Decisive: {decisive_win_count}/5
+- Economy: {economy_verdict} (ratio: {avg_economy_ratio})
+- Unit composition: {unit_composition}
+- Trees planted vs opponent
+
+**Strategic Goal:** Achieve decisive victory (elimination or 1000 VP) within 1500 rounds.
+
+Read the bot's Gardener code in src/{BOT_NAME}/ and provide strategic recommendations. Focus on WHAT should change and WHY, not the actual code."
 - **subagent_type**: "bc-gardener"
 - **timeout**: 120000
 
@@ -75,13 +134,33 @@ Use the **Task tool** (bc-gardener):
 
 Use the **Task tool** (bc-soldier):
 - **description**: "Soldier strategy"
-- **prompt**: "--bot={BOT_NAME}. Battle results: [battle results]. Strategic goal: [strategic goal]. Read the bot's Soldier code in src/{BOT_NAME}/ and provide strategic recommendations. Focus on WHAT should change and WHY, not the actual code."
+- **prompt**: "--bot={BOT_NAME}.
+
+**Battle Results:**
+- Wins: {win_count}/5, Decisive: {decisive_win_count}/5
+- Survival rate: {avg_survival_rate}
+- Heavy losses events: Team A: {heavy_losses_a}, Team B: {heavy_losses_b}
+- Per-map: {per_map_results}
+
+**Strategic Goal:** Achieve decisive victory (elimination or 1000 VP) within 1500 rounds.
+
+Read the bot's Soldier code in src/{BOT_NAME}/ and provide strategic recommendations. Focus on WHAT should change and WHY, not the actual code."
 - **subagent_type**: "bc-soldier"
 - **timeout**: 120000
 
 Use the **Task tool** (bc-lumberjack):
 - **description**: "Lumberjack strategy"
-- **prompt**: "--bot={BOT_NAME}. Battle results: [battle results]. Strategic goal: [strategic goal]. Read the bot's Lumberjack code in src/{BOT_NAME}/ and provide strategic recommendations. Focus on WHAT should change and WHY, not the actual code."
+- **prompt**: "--bot={BOT_NAME}.
+
+**Battle Results:**
+- Wins: {win_count}/5, Decisive: {decisive_win_count}/5
+- Survival rate: {avg_survival_rate}
+- Heavy losses events: Team A: {heavy_losses_a}, Team B: {heavy_losses_b}
+- Per-map: {per_map_results}
+
+**Strategic Goal:** Achieve decisive victory (elimination or 1000 VP) within 1500 rounds.
+
+Read the bot's Lumberjack code in src/{BOT_NAME}/ and provide strategic recommendations. Focus on WHAT should change and WHY, not the actual code."
 - **subagent_type**: "bc-lumberjack"
 - **timeout**: 120000
 
@@ -95,13 +174,33 @@ Use the **Task tool** (bc-lumberjack):
 
 Use the **Task tool** (bc-scout):
 - **description**: "Scout strategy"
-- **prompt**: "--bot={BOT_NAME}. Battle results: [battle results]. Strategic goal: [strategic goal]. Read the bot's Scout code in src/{BOT_NAME}/ and provide strategic recommendations. Focus on WHAT should change and WHY, not the actual code."
+- **prompt**: "--bot={BOT_NAME}.
+
+**Battle Results:**
+- Wins: {win_count}/5, Decisive: {decisive_win_count}/5
+- Per-map: {per_map_results}
+- Turning points: {turning_points_summary}
+- Unit composition: {unit_composition}
+
+**Strategic Goal:** Achieve decisive victory (elimination or 1000 VP) within 1500 rounds.
+
+Read the bot's Scout code in src/{BOT_NAME}/ and provide strategic recommendations. Focus on WHAT should change and WHY, not the actual code."
 - **subagent_type**: "bc-scout"
 - **timeout**: 120000
 
 Use the **Task tool** (bc-tank):
 - **description**: "Tank strategy"
-- **prompt**: "--bot={BOT_NAME}. Battle results: [battle results]. Strategic goal: [strategic goal]. Read the bot's Tank code in src/{BOT_NAME}/ and provide strategic recommendations. Focus on WHAT should change and WHY, not the actual code."
+- **prompt**: "--bot={BOT_NAME}.
+
+**Battle Results:**
+- Wins: {win_count}/5, Decisive: {decisive_win_count}/5
+- Survival rate: {avg_survival_rate}
+- Average win rounds: {avg_win_rounds}
+- Per-map: {per_map_results}
+
+**Strategic Goal:** Achieve decisive victory (elimination or 1000 VP) within 1500 rounds.
+
+Read the bot's Tank code in src/{BOT_NAME}/ and provide strategic recommendations. Focus on WHAT should change and WHY, not the actual code."
 - **subagent_type**: "bc-tank"
 - **timeout**: 120000
 
@@ -115,13 +214,34 @@ Use the **Task tool** (bc-tank):
 
 Use the **Task tool** (bc-exploration):
 - **description**: "Exploration strategy"
-- **prompt**: "--bot={BOT_NAME}. Battle results: [battle results]. Strategic goal: [strategic goal]. Read the bot's Nav/exploration code in src/{BOT_NAME}/ and provide strategic recommendations. Focus on WHAT should change and WHY, not the actual code."
+- **prompt**: "--bot={BOT_NAME}.
+
+**Battle Results:**
+- Wins: {win_count}/5, Decisive: {decisive_win_count}/5
+- Navigation status: {navigation_status}
+- Per-map: {per_map_results}
+- Key patterns: {key_patterns}
+
+**Strategic Goal:** Achieve decisive victory (elimination or 1000 VP) within 1500 rounds.
+
+Read the bot's Nav/exploration code in src/{BOT_NAME}/ and provide strategic recommendations. Focus on WHAT should change and WHY, not the actual code."
 - **subagent_type**: "bc-exploration"
 - **timeout**: 120000
 
 Use the **Task tool** (bc-economy):
 - **description**: "Economy strategy"
-- **prompt**: "--bot={BOT_NAME}. Battle results: [battle results]. Strategic goal: [strategic goal]. Read the bot's economy code in src/{BOT_NAME}/ and provide strategic recommendations. Focus on WHAT should change and WHY, not the actual code."
+- **prompt**: "--bot={BOT_NAME}.
+
+**Battle Results:**
+- Wins: {win_count}/5, Decisive: {decisive_win_count}/5
+- Economy: {economy_verdict} (ratio: {avg_economy_ratio})
+- Turning points (VP timing): {turning_points_summary}
+- Average win rounds: {avg_win_rounds}
+- Tiebreaker games: {tiebreaker_count}
+
+**Strategic Goal:** Achieve decisive victory (elimination or 1000 VP) within 1500 rounds.
+
+Read the bot's economy code in src/{BOT_NAME}/ and provide strategic recommendations. Focus on WHAT should change and WHY, not the actual code."
 - **subagent_type**: "bc-economy"
 - **timeout**: 120000
 
