@@ -137,16 +137,12 @@ CHANGES_DATA:
 
 ## Setup Phase (First Iteration Only)
 
-Check if this is the first iteration by looking for the state file:
+Always start fresh by deleting any existing state file:
 
 ```bash
 STATE_FILE=/tmp/bc-manager-state-{BOT_NAME}.json
-if [ -f "$STATE_FILE" ]; then
-  cat "$STATE_FILE"
-else
-  rm -f "$STATE_FILE"
-  echo "FIRST_RUN"
-fi
+rm -f "$STATE_FILE"
+echo "FIRST_RUN"
 ```
 
 ### If FIRST_RUN, do setup:
@@ -156,12 +152,12 @@ Check if `src/{BOT_NAME}/RobotPlayer.java` exists.
 - If not, copy from `src/examplefuncsplayer/`
 
 #### Step 2: Setup copy_bot (If Using Default Opponent)
-Only create copy_bot if it doesn't exist:
+Always delete and recreate copy_bot to ensure it matches the current bot:
 ```bash
-ls src/copy_bot/RobotPlayer.java 2>/dev/null
-```
-If missing, create it:
-```bash
+# Delete existing copy_bot
+rm -rf src/copy_bot/
+
+# Recreate from current bot source
 mkdir -p src/copy_bot/
 for file in src/{BOT_NAME}/*.java; do
   filename=$(basename "$file")
