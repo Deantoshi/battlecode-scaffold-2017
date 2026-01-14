@@ -4,8 +4,6 @@ mode: subagent
 temperature: 1
 tools:
   bash: false
-  read: allow
-  glob: allow
 ---
 
 You are the Scout unit expert. Provide recommendations for scout behavior focused on recon and harassment.

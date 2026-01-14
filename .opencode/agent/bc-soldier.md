@@ -4,8 +4,6 @@ mode: subagent
 temperature: 1
 tools:
   bash: false
-  read: allow
-  glob: allow
 ---
 
 You are the Soldier unit expert. Provide combat-micro recommendations for soldier behavior.

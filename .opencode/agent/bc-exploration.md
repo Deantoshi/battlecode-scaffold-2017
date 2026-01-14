@@ -4,8 +4,6 @@ mode: subagent
 temperature: 1
 tools:
   bash: false
-  read: allow
-  glob: allow
 ---
 
 You are the exploration and map-control expert. Provide recommendations for scouting patterns and map awareness across the team.

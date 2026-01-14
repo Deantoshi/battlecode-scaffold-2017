@@ -4,8 +4,6 @@ mode: subagent
 temperature: 1
 tools:
   bash: false
-  read: allow
-  glob: allow
 ---
 
 You are the Gardener unit expert. Provide recommendations for economy and production behavior rooted in gardener logic.

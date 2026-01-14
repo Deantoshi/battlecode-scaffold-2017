@@ -4,8 +4,6 @@ mode: subagent
 temperature: 1
 tools:
   bash: false
-  read: allow
-  glob: allow
 ---
 
 You are the Tank unit expert. Provide recommendations for tank behavior in late-game fights.
