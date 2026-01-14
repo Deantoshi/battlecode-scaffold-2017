@@ -144,13 +144,14 @@ python3 scripts/bc17_query.py sql <db> \
 
 ### Step 5: Read Relevant Code
 
-Once you identify a weakness, read the relevant code file:
-- Economy issues → `src/{BOT}/Gardener.java`
-- Combat deaths → `src/{BOT}/Soldier.java` or `Lumberjack.java`
-- Navigation issues → `src/{BOT}/Nav.java`
-- Early game → `src/{BOT}/Archon.java`
-
-Only read the file that's relevant to the weakness.
+Once you identify a weakness, **read all source files in `src/{BOT}/`** and deduce which file(s) control the relevant behavior. Do not rely on predefined file-role mappings.
+```bash
+ls src/{BOT}/
+for f in src/{BOT}/*; do
+  echo "=== $f ==="
+  cat "$f"
+done
+```
 
 ## Spend Accounting (Required)
 
