@@ -122,21 +122,48 @@ Only read the file that's relevant to the weakness.
 
 ## Output Format
 
-Return your analysis as:
+Return your analysis with **1-5 issues** to fix (use your judgment):
+
+- **1-2 issues**: When there's a clear dominant problem
+- **3 issues**: Standard case with multiple areas to improve
+- **4-5 issues**: When many small fixes are needed
 
 ```
 ANALYSIS_DATA:
-- weakness: "<one sentence description of the #1 problem>"
-- evidence: "<specific data from queries that proves this>"
-- affected_file: "<which Java file needs to change>"
-- suggested_fix: "<concrete suggestion for what to change>"
-- confidence: "HIGH" | "MEDIUM" | "LOW"
+issue_count: <1-5>
+
+ISSUE_1:
+- weakness: "<one sentence description>"
+- evidence: "<specific data from queries>"
+- affected_file: "<which Java file to change>"
+- suggested_fix: "<concrete suggestion>"
+
+ISSUE_2: (if issue_count >= 2)
+- weakness: "..."
+- evidence: "..."
+- affected_file: "..."
+- suggested_fix: "..."
+
+ISSUE_3: (if issue_count >= 3)
+...
+
+ISSUE_4: (if issue_count >= 4)
+...
+
+ISSUE_5: (if issue_count == 5)
+...
 
 QUERY_LOG:
 1. <query run> → <key finding>
 2. <query run> → <key finding>
 ...
 ```
+
+**Guidelines for issue count:**
+- If one problem is causing 80%+ of losses → focus on 1-2 issues
+- If multiple moderate problems → 3 issues
+- If bot is close to winning but needs polish → 4-5 small fixes
+- **Quality over quantity** - don't pad with weak issues
 
 ## Example Analysis
 
@@ -168,22 +195,37 @@ Round 300-500: Lost 8 soldiers
 Round 600: Lost archon
 
 ANALYSIS_DATA:
+issue_count: 3
+
+ISSUE_1:
 - weakness: "Soldiers dying in early combat before economy established"
 - evidence: "15 soldier deaths, 8 in rounds 300-500. Enemy had 25x our economy at end."
 - affected_file: "src/my_bot/Soldier.java"
 - suggested_fix: "Add retreat logic when health < 50% or when outnumbered"
-- confidence: HIGH
+
+ISSUE_2:
+- weakness: "Low tree production limiting bullet income"
+- evidence: "Only 3 trees planted by round 500, enemy had 12. Economy gap widened after R600."
+- affected_file: "src/my_bot/Gardener.java"
+- suggested_fix: "Prioritize planting trees before building combat units"
+
+ISSUE_3:
+- weakness: "Archon not moving away from danger"
+- evidence: "Archon took 150 damage in rounds 400-600, stayed in same location"
+- affected_file: "src/my_bot/Archon.java"
+- suggested_fix: "Add flee logic when enemies detected within range 7"
 
 QUERY_LOG:
 1. summary → Lost with 200 vs 5000 bullets
 2. events --type=death → 15 soldier deaths
 3. sql deaths by round → Most deaths in rounds 300-500
+4. economy → Tree income gap after R600
 ```
 
 ## Key Rules
 
 1. **Always start with summary** - Get the big picture first
 2. **Query, don't assume** - Use data to identify problems
-3. **One weakness** - Focus on the most impactful issue
+3. **1-5 issues** - Choose count based on what you find
 4. **Be specific** - Include round numbers, counts, percentages
-5. **Read minimal code** - Only the file relevant to the weakness
+5. **Quality over quantity** - Don't pad with weak issues just to hit a number

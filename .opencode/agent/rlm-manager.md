@@ -119,17 +119,19 @@ Return: WEAKNESS, EVIDENCE, SUGGESTED_FIX"
 ### Step 3: Improve (rlm-improver)
 
 Use the **Task tool**:
-- **description**: "Implement improvement"
-- **prompt**: "Improve bot '{BOT_NAME}' based on analysis:
+- **description**: "Implement improvements"
+- **prompt**: "Improve bot '{BOT_NAME}' based on analysis.
 
-Weakness: {ANALYSIS.weakness}
-Evidence: {ANALYSIS.evidence}
-Suggested Fix: {ANALYSIS.suggested_fix}
+Number of issues to fix: {ANALYSIS.issue_count}
 
-Make ONE targeted code change. Verify compilation."
+{ANALYSIS}
+
+Implement ALL issues listed above (1-5 changes). Verify compilation after all changes."
 - **subagent_type**: "rlm-improver"
 
 **Capture as `CHANGES`**
+
+**Note:** Pass the entire ANALYSIS block - rlm-improver will parse the issues.
 
 ### Step 4: Verify & Report
 
@@ -142,9 +144,11 @@ Report:
 ═══════════════════════════════════════════════════════
 ITERATION {N}/{MAX} COMPLETE
 ═══════════════════════════════════════════════════════
-Weakness Found: {ANALYSIS.weakness}
-Change Made: {CHANGES.description}
-Compilation: {SUCCESS/FAILED}
+Issues Fixed ({ANALYSIS.issue_count}):
+{For each CHANGE in CHANGES: "N. weakness → description"}
+
+Files Modified: {CHANGES.total_files_modified}
+Compilation: {CHANGES.compilation_status}
 ═══════════════════════════════════════════════════════
 ```
 
@@ -177,6 +181,6 @@ Run `/bc-manager --bot {BOT_NAME}` for full evaluation.
 ## Key Principles
 
 1. **Query, don't load** - Use bc17_query.py to access match data
-2. **One change per iteration** - Small, focused improvements
+2. **1-5 changes per iteration** - Analyst chooses based on findings
 3. **Fast feedback** - 3 maps, quick iterations
 4. **Simple loop** - Run → Analyze → Improve → Repeat
