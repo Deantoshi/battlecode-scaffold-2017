@@ -28,7 +28,6 @@
 *   **Role:** Mobile base. Hires Gardeners.
 *   **Stats:** High HP, cannot attack.
 *   **Key Actions:** `rc.hireGardener(Direction dir)`.
-*   **Strategy:** Hide, spread out to avoid AoE, hire gardeners safely.
 
 ### **Gardener** (Builder/Worker)
 *   **Role:** Economy & Production.
@@ -37,13 +36,11 @@
     *   `rc.plantTree(Direction dir)`: Creates Bullet Tree.
     *   `rc.water(treeID)`: Heals trees (essential for Bullet Trees).
     *   `rc.buildRobot(RobotType type, Direction dir)`: Builds Soldier, Tank, Scout, Lumberjack.
-*   **Strategy:** Find open space. Build a "farm" (hexagonal packing of trees with space for the gardener in the center). Don't block your own movement.
 
 ### **Soldier** (Main Combat)
 *   **Role:** Ranged DPS.
 *   **Stats:** Balanced HP, damage, and range.
 *   **Key Actions:** `rc.fireSingleShot(dir)`, `rc.fireTriadShot(dir)`, `rc.firePentadShot(dir)`.
-*   **Strategy:** Kite enemies (move back while shooting). Micro-manage movement to dodge bullets.
 
 ### **Lumberjack** (Melee/Utility)
 *   **Role:** Tree clearing & Area-of-Effect (AoE) damage.
@@ -51,18 +48,15 @@
 *   **Key Actions:**
     *   `rc.chop(treeID)`: Destroys trees.
     *   `rc.strike()`: Deals damage to ALL units (friend or foe) within radius 2.
-*   **Strategy:** Clear Neutral Trees to make space for Gardeners. Rush Archons/Gardeners (melee deals high damage).
 
 ### **Scout** (Recon/Harass)
 *   **Role:** Vision & Harassment.
 *   **Stats:** Very fast, huge vision radius, extremely low HP.
 *   **Key Actions:** `rc.shake(id)`.
-*   **Strategy:** Find enemy Gardener farms and shoot them from safe range. Shake neutral trees for early game economy. Report enemy positions via Broadcast.
 
 ### **Tank** (Heavy Combat)
 *   **Role:** Siege unit.
 *   **Stats:** High HP, High Damage, expensive.
-*   **Strategy:** Late-game steamroller. Body slams destroy trees.
 
 ## 5. Key API Methods (`RobotController rc`)
 
@@ -166,19 +160,23 @@ src/<yourbotpackage>/
 2.  **Combat Micro:**
     *   **Dodging:** Before moving, check `rc.senseNearbyBullets()`. If a bullet will hit the robot next turn, move perpendicular to its path.
     *   **Targeting:** Focus fire on the enemy with the lowest HP (use `robotInfo.health`).
-3.  **Macro Strategy:**
-    *   **Early Game:** Archons hire 1 Gardener. Gardener builds 1 Scout (for bullets/scouting) then Lumberjacks (to clear space).
-    *   **Mid Game:** Gardeners settle in open areas and plant trees (leave 1 spot open to build units).
-    *   **Late Game:** Spam Soldiers/Tanks. Donate excess bullets to VP if victory is near or bullet cap is reached.
-4.  **Gardener Logic (Crucial):**
+3.  **Gardener Logic (Crucial):**
     *   Gardeners must not block their own build direction.
     *   Pattern: Build trees in a circle around the gardener.
     *   **Watering:** Always prioritize `rc.water()` on the tree with lowest health within range.
 
-## 9. Common Pitfalls to Avoid
-*   **Friendly Fire:** `rc.strike()` hits allies. `rc.fire...()` hits allies if they are in the line of fire. Check line of sight before shooting.
-*   **Bytecode Limit:** Avoid heavy loops (like pathfinding across the whole map) in a single turn.
-*   **Stuck Units:** Gardeners often trap themselves with trees. Ensure they keep a "door" open or leave space to move.
+## 9. Engine References (Under the Hood)
+*   `engine/battlecode/common/`: Bot-facing types and constants (e.g., `RobotType`, `GameConstants`, `MapLocation`, `Direction`).
+*   `engine/battlecode/world/`: Core simulation (robots, bullets, trees, collisions, `RobotControllerImpl`).
+    *   `engine/battlecode/world/GameWorld.java`: Main simulation loop and world state updates.
+    *   `engine/battlecode/world/RobotControllerImpl.java`: Actual implementation behind the `RobotController` API.
+    *   `engine/battlecode/world/InternalRobot.java`: Per-robot state and turn execution.
+    *   `engine/battlecode/world/InternalBullet.java`: Bullet movement and collision handling.
+    *   `engine/battlecode/world/InternalTree.java`: Tree state, growth, and interactions.
+*   `engine/battlecode/server/`: Match orchestration, round loop, win conditions, logging.
+    *   `engine/battlecode/server/GameRunner.java`: Match lifecycle and round progression.
+*   `engine/battlecode/schema/`: Serialized match state and replay data.
+*   `engine/battlecode/doc/`: Engine notes and documentation (if present).
 
 ## 10. Example "Smart" Move Helper
 ```java
