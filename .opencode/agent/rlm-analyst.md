@@ -1,7 +1,7 @@
 ---
 description: RLM Analyst - Query-based analysis, identifies 1-5 issues to fix
 mode: subagent
-temperature: 0
+temperature: 1
 tools:
   bash: true
   read: true
@@ -35,6 +35,10 @@ Each iteration targets **at least 3 wins** (out of 5 maps) with an **average of 
 
 When evaluating wins within 1500 rounds, note that this only happens by **eliminating all enemies** or **reaching 1000 victory points**. Use summaries/events to confirm the win condition if needed.
 
+## Issue Prioritization (Required)
+
+Explicitly choose issues/updates that are **most likely to improve the objective** (>=3 wins and <=1500 avg win rounds). If multiple candidates exist, select and rank the ones with the highest expected impact on win rate or time-to-win, and ignore lower-impact ideas.
+
 ## Query Tool Reference
 
 ```bash
@@ -49,6 +53,10 @@ python3 scripts/bc17_query.py economy <match.db> --round=500
 python3 scripts/bc17_query.py events <match.db> --type=spawn
 python3 scripts/bc17_query.py events <match.db> --type=death
 python3 scripts/bc17_query.py events <match.db> --type=death --team=A
+
+# Engine spend logs (from replay logs, if available)
+python3 scripts/bc17_query.py events <match.db> --type=donate
+python3 scripts/bc17_query.py events <match.db> --type=shoot
 
 # Unit stats
 python3 scripts/bc17_query.py units <match.db>
@@ -70,6 +78,14 @@ python3 scripts/bc17_query.py sql <match.db> "SELECT * FROM events WHERE team='A
 ```bash
 cat TECHNICAL_DOCS.md
 ```
+
+### Step 0.5: Extract Spend Logs (Required)
+If the replay was generated with the modified engine logging, ensure spend events are available:
+```bash
+python3 scripts/bc17_query.py events <match.db> --type=donate
+python3 scripts/bc17_query.py events <match.db> --type=shoot
+```
+If these return zero but the match is known to include donations or shots, rerun and re-extract the match.
 
 ### Step 1: Find Database Files
 ```bash
@@ -135,6 +151,12 @@ Once you identify a weakness, read the relevant code file:
 - Early game → `src/{BOT}/Archon.java`
 
 Only read the file that's relevant to the weakness.
+
+## Spend Accounting (Required)
+
+Always include a short spend accounting section in your analysis:
+- report total donations and total shot costs from `events --type=donate` and `events --type=shoot`
+- if those are zero but bullets still drop, call out the likely missing log coverage
 
 ## Output Format
 

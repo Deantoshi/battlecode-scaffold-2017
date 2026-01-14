@@ -12,7 +12,7 @@ Usage:
     # Query commands (work on extracted database)
     python3 bc17_query.py summary <match.db>
     python3 bc17_query.py rounds <match.db> <start> <end>
-    python3 bc17_query.py events <match.db> [--type=spawn|death|vp] [--team=A|B] [--round=N]
+    python3 bc17_query.py events <match.db> [--type=spawn|death|vp|action|donate|shoot] [--team=A|B] [--round=N]
     python3 bc17_query.py units <match.db> [--round=N] [--type=SOLDIER|GARDENER|...]
     python3 bc17_query.py economy <match.db> [--round=N]
     python3 bc17_query.py search <match.db> <query>
@@ -37,7 +37,13 @@ from typing import Dict, List, Tuple, Optional, Any
 
 # Import the parser from bc17_summary.py
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from bc17_summary import BC17Parser, BODY_TYPES, UNIT_COSTS, COMBAT_UNITS
+from bc17_summary import BC17Parser, BODY_TYPES, UNIT_COSTS, COMBAT_UNITS, ACTION_TYPES
+
+ACTION_COSTS = {
+    'FIRE': 1,
+    'FIRE_TRIAD': 4,
+    'FIRE_PENTAD': 6,
+}
 
 
 class BC17Database:
@@ -159,6 +165,50 @@ class BC17Database:
                 (log['round'], log['team'], log['type'], log['id'], log['message'])
             )
 
+        # Parse engine spend logs for full accounting (donate/shoot)
+        donate_re = re.compile(r"^donate bullets=([0-9.]+) vp_gain=([0-9]+) vp_cost=([0-9.]+)$")
+        shoot_re = re.compile(r"^shoot type=([a-z]+) cost=([0-9.]+) bullets_before=([0-9.]+) bullets_after=([0-9.]+)$")
+
+        for log in logs:
+            msg = (log.get('message') or "").strip()
+            if not msg:
+                continue
+
+            m = donate_re.match(msg)
+            if m:
+                bullets = float(m.group(1))
+                vp_gain = int(m.group(2))
+                vp_cost = float(m.group(3))
+                self.conn.execute(
+                    "INSERT INTO events (round_id, event_type, team, robot_id, body_type, details) VALUES (?, ?, ?, ?, ?, ?)",
+                    (log['round'], 'donate', log['team'], log['id'], 'DONATE',
+                     json.dumps({
+                         'bullets': bullets,
+                         'vp_gain': vp_gain,
+                         'vp_cost': vp_cost,
+                         'robot_type': log.get('type')
+                     }))
+                )
+                continue
+
+            m = shoot_re.match(msg)
+            if m:
+                shot_type = m.group(1)
+                cost = float(m.group(2))
+                before = float(m.group(3))
+                after = float(m.group(4))
+                self.conn.execute(
+                    "INSERT INTO events (round_id, event_type, team, robot_id, body_type, details) VALUES (?, ?, ?, ?, ?, ?)",
+                    (log['round'], 'shoot', log['team'], log['id'], 'SHOOT',
+                     json.dumps({
+                         'shot_type': shot_type,
+                         'cost': cost,
+                         'bullets_before': before,
+                         'bullets_after': after,
+                         'robot_type': log.get('type')
+                     }))
+                )
+
         # Now parse round-by-round data
         parser.parse_game_wrapper()
 
@@ -199,6 +249,22 @@ class BC17Database:
                         (round_data.round_id, 'death', team, robot_id, type_name,
                          json.dumps({'lifespan': lifespan, 'spawn_round': spawn_round}))
                     )
+
+            # Track actions (FIRE/PLANT/etc.)
+            for robot_id, action_type, target_id in round_data.actions:
+                action_name = ACTION_TYPES.get(action_type, f'UNKNOWN_{action_type}')
+                team = None
+                if robot_id in robot_registry:
+                    team = robot_registry[robot_id][0]
+
+                details = {'target_id': target_id}
+                if action_name in ACTION_COSTS:
+                    details['cost'] = ACTION_COSTS[action_name]
+
+                self.conn.execute(
+                    "INSERT INTO events (round_id, event_type, team, robot_id, body_type, details) VALUES (?, ?, ?, ?, ?, ?)",
+                    (round_data.round_id, 'action', team, robot_id, action_name, json.dumps(details))
+                )
 
             # Track VP changes
             for team_idx, team in enumerate(['A', 'B']):
@@ -557,7 +623,7 @@ def main():
 
     elif cmd == 'events':
         if len(sys.argv) < 3:
-            print("Usage: bc17_query.py events <match.db> [--type=X] [--team=X] [--round=N]")
+            print("Usage: bc17_query.py events <match.db> [--type=spawn|death|vp|action|donate|shoot] [--team=A|B] [--round=N]")
             sys.exit(1)
         # Parse optional args
         event_type = team = round_id = None

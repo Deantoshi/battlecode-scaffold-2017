@@ -53,6 +53,22 @@ BODY_TYPES = {
     9: 'NONE'
 }
 
+# Action type constants (from Action enum)
+ACTION_TYPES = {
+    0: 'FIRE',
+    1: 'FIRE_TRIAD',
+    2: 'FIRE_PENTAD',
+    3: 'CHOP',
+    4: 'SHAKE_TREE',
+    5: 'PLANT_TREE',
+    6: 'WATER_TREE',
+    7: 'SPAWN_UNIT',
+    8: 'DIE_EXCEPTION',
+    9: 'DIE_SUICIDE',
+    10: 'DIE_KILLED',
+    11: 'LUMBERJACK_STRIKE',
+}
+
 # Unit costs in bullets (from game constants)
 UNIT_COSTS = {
     'ARCHON': 0,       # Can't be built
@@ -174,6 +190,7 @@ class RoundData:
         self.spawned_units = {0: defaultdict(int), 1: defaultdict(int)}  # team -> {type: count}
         self.spawned_robot_info = []  # List of (robot_id, team, type) tuples
         self.died_ids = []  # List of robot IDs that died this round
+        self.actions = []  # List of (robot_id, action_type, target_id) tuples
         self.logs = ""
 
 
@@ -392,6 +409,7 @@ class BC17Parser:
             # 3: movedIDs, 4: movedLocs, 5: spawnedBodies
             # 6: spawnedBullets, 7: healthChangedIDs, 8: healthChangeLevels
             # 9: diedIDs, 10: diedBulletIDs
+            # 11: actionIDs, 12: actions, 13: actionTargets
             # ...
             # 21: logs, 22: roundID
 
@@ -430,6 +448,38 @@ class BC17Parser:
                 for i in range(num_died):
                     robot_id = self.reader.read_int32(died_start + i * 4)
                     round_data.died_ids.append(robot_id)
+
+            # Get actions (field 11-13) - robot IDs, action types, action targets
+            action_ids_offset = self.reader.get_field_offset(table_pos, 11)
+            actions_offset = self.reader.get_field_offset(table_pos, 12)
+            action_targets_offset = self.reader.get_field_offset(table_pos, 13)
+            if actions_offset > 0:
+                num_actions = self.reader.get_vector_length(actions_offset)
+                actions_start = self.reader.get_vector_start(actions_offset)
+
+                action_ids_start = 0
+                num_ids = 0
+                if action_ids_offset > 0:
+                    num_ids = self.reader.get_vector_length(action_ids_offset)
+                    action_ids_start = self.reader.get_vector_start(action_ids_offset)
+
+                action_targets_start = 0
+                num_targets = 0
+                if action_targets_offset > 0:
+                    num_targets = self.reader.get_vector_length(action_targets_offset)
+                    action_targets_start = self.reader.get_vector_start(action_targets_offset)
+
+                count = num_actions
+                if num_ids:
+                    count = min(count, num_ids)
+                if num_targets:
+                    count = min(count, num_targets)
+
+                for i in range(count):
+                    robot_id = self.reader.read_int32(action_ids_start + i * 4) if action_ids_start else 0
+                    action_type = self.reader.read_byte(actions_start + i)
+                    target_id = self.reader.read_int32(action_targets_start + i * 4) if action_targets_start else 0
+                    round_data.actions.append((robot_id, action_type, target_id))
 
             return round_data
 
