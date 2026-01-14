@@ -358,7 +358,7 @@ Specialist insights:
 
 **IMPORTANT:** Read the actual code files in src/{BOT_NAME}/ to understand current implementation before planning changes. The specialist insights above tell you WHAT should change and WHY - you must determine HOW to implement it by reading the code.
 
-Design 1-5 concrete changes with specific code modifications. Return the plan for bc-coder to implement."
+Design 5 concrete changes with specific code modifications. Return the plan for bc-coder to implement."
 - **subagent_type**: "bc-planner"
 
 **Capture return as `PLAN`**

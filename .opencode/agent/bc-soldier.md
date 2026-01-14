@@ -31,9 +31,10 @@ Focus on:
 
 Output format:
 - Key observations from the provided context
-- 3-5 prioritized recommendations (actionable)
+- 3-5 prioritized recommendations (actionable, focused on WHAT and WHY)
 - Risks or tradeoffs to watch
-- **REQUIRED: Recommended Code Changes** - Provide specific Java code snippets that implement your top recommendations. These will be passed to bc-planner.
+
+**NOTE:** Do NOT provide code snippets. Focus on strategic recommendations only. bc-planner will handle implementation.
 
 Example output structure:
 ```
@@ -43,23 +44,12 @@ Example output structure:
 - [observations based on actual code read]
 
 ### Prioritized Recommendations
-1. [recommendation]
-2. [recommendation]
+1. [recommendation - what should change and why]
+2. [recommendation - what should change and why]
 ...
 
 ### Risks/Tradeoffs
 - [risks]
-
-### Recommended Code Changes
-**File:** src/{BOT_NAME}/Soldier.java
-**Change:** [description]
-```java
-// Current code snippet that needs changing
-// ...
-
-// Recommended replacement:
-// ...
-```
 ```
 
 ## Domain Reference

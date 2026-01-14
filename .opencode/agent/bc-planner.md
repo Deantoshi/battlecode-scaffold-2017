@@ -65,26 +65,27 @@ Parse the Arguments section for:
 
 You will receive:
 1. **Analysis from bc-results** - Battle outcomes, navigation status, patterns
-2. **Strategy from bc-general** - Prioritized recommendations with **SELECTED CODE CHANGES**
+2. **Strategy from bc-general** - Prioritized recommendations and specialist insights
 
-**IMPORTANT:** bc-general provides pre-approved code changes from unit specialists (bc-archon, bc-gardener, bc-soldier, etc.). These specialists have already read the bot's code and designed specific improvements. **Use their code as the primary basis for your plan.**
+bc-general provides strategic recommendations from unit specialists (bc-archon, bc-gardener, bc-soldier, etc.) describing WHAT should change and WHY. **You must read the actual code and design the implementation.**
 
-### Step 1: Review Specialist Code Changes (PRIORITY)
+### Step 1: Review Specialist Recommendations
 
-bc-general's output includes a **"SELECTED CODE CHANGES FOR BC-PLANNER"** section containing:
-- 1-3 high-priority code changes from specialists
-- Full Java code snippets ready for implementation
-- Rationale for why each change was selected
+bc-general's output includes:
+- Prioritized recommendations (ranked by impact)
+- Specialist insights (what each unit expert recommends)
 
-**Start by reviewing these pre-designed changes.** They are based on actual code analysis by specialists.
+These tell you WHAT to change and WHY - you determine HOW.
 
-### Step 2: Read Current Bot Code (for context)
+### Step 2: Read Current Bot Code
 
-Read the bot's source files to verify specialist recommendations and understand context:
+Read the bot's source files to understand current implementation:
 ```
 src/{BOT_NAME}/RobotPlayer.java
 src/{BOT_NAME}/*.java (any other files)
 ```
+
+**You must read the code to design proper implementations based on specialist recommendations.**
 
 ### Step 3: Read Battle Log
 
@@ -93,27 +94,24 @@ Check `src/{BOT_NAME}/battle-log.md` for:
 - What worked vs failed
 - Approaches to AVOID repeating
 
-**Cross-reference with specialist recommendations to avoid repeating failed approaches.**
+### Step 4: Design Changes
 
-### Step 4: Prioritize and Refine Changes
+Based on analysis and specialist recommendations:
+1. Prioritize changes that have the biggest impact on win rate
+2. Help across multiple map types (not just one)
+3. Don't break existing functionality
+4. Are achievable in a single iteration
 
-Based on analysis and specialist code:
-1. **Use specialist code changes as the foundation** - They've already analyzed the bot
-2. Have biggest impact on win rate
-3. Help across multiple map types (not just one)
-4. Don't break existing functionality
-5. Are achievable in a single iteration
+**If navigation is BROKEN**: Pathfinding MUST be priority #1.
 
-**If navigation is BROKEN**: Pathfinding MUST be priority #1, even if specialists suggest other changes.
-
-### Step 5: Design 1-3 Changes
+### Step 5: Design 1-5 Changes
 
 For each change, specify:
 - **File**: Which file to modify
-- **Source**: "From bc-{specialist}" or "Original" (if you designed it)
+- **Based on**: Which specialist recommendation inspired this (if applicable)
 - **Current behavior**: What it does now
 - **New behavior**: What it should do
-- **Implementation**: Use specialist code when available, or provide your own
+- **Implementation**: Full code to implement
 - **Expected impact**: Why this helps
 
 ## Strategy Categories
@@ -152,22 +150,19 @@ For each change, specify:
 - Previous attempts: [summary]
 - Approaches to avoid: [list]
 
-## Specialist Code Used
-- bc-archon: [Used/Not used] - [reason]
-- bc-gardener: [Used/Not used] - [reason]
-- bc-soldier: [Used/Not used] - [reason]
-- etc.
+## Specialist Recommendations Applied
+- [Which specialist insights are being addressed in this plan]
 
 ## Changes to Implement
 
 ### Change 1: [Title]
 - **File**: src/{BOT_NAME}/[file].java
-- **Source**: From bc-{specialist} / Original
+- **Based on**: bc-{specialist} recommendation / Original analysis
 - **Current**: [what it does now]
 - **New**: [what it should do]
 - **Code**:
   ```java
-  // Implementation - use specialist code when available
+  // Full implementation
   ```
 - **Impact**: [why this helps]
 
@@ -183,7 +178,7 @@ For each change, specify:
 
 ## Constraints
 
-- **Maximum 3 changes per iteration** (focus beats breadth)
+- **Maximum 5 changes per iteration** (focus beats breadth)
 - Each change must be testable/observable
 - Prefer incremental improvements over rewrites
 - Always preserve working code paths
