@@ -25,6 +25,12 @@ From the RLM paper: "Long prompts should not be fed into the neural network dire
 
 **You have access to match databases via bc17_query.py. Use it.**
 
+## Objective
+
+Each iteration targets **at least 3 wins** (out of 5 maps) with an **average of <= 1500 rounds for those wins**. Use summaries to compute wins and the average rounds for wins, then focus issues on closing the gap to this objective.
+
+When evaluating wins within 1500 rounds, note that this only happens by **eliminating all enemies** or **reaching 1000 victory points**. Use summaries/events to confirm the win condition if needed.
+
 ## Query Tool Reference
 
 ```bash
@@ -73,6 +79,7 @@ Note:
 - Total rounds (>1500 = slow, <1000 = good)
 - Total spawns/deaths
 - Final bullet counts
+ - Track total wins and average rounds for wins to evaluate the objective (>=3 wins, <=1500 avg rounds)
 
 ### Step 3: Identify Pattern
 
@@ -129,6 +136,12 @@ Return your analysis with **1-5 issues** to fix (use your judgment):
 - **4-5 issues**: When many small fixes are needed
 
 ```
+OBJECTIVE_STATUS:
+- wins: <integer 0-5>
+- avg_win_rounds: <integer>
+- meets_objective: <yes|no>
+- win_condition: <elimination|1000_vp|mixed|unknown>
+
 ANALYSIS_DATA:
 issue_count: <1-5>
 
