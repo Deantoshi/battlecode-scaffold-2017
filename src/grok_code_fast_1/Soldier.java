@@ -25,13 +25,16 @@ public strictfp class Soldier {
         if (enemies.length > 0) {
             Comms.broadcastEnemyLocation(enemies[0].location);
             RobotInfo target = findTarget();
-            // Try to shoot the target
-            tryShoot(target);
-            if (enemies.length > 0 && !rc.hasMoved()) {
+            tryShoot(target, enemies);
+            // Kiting: If health low, move away instead of toward
+            if (rc.getHealth() < rc.getType().maxHealth * 0.3 && !rc.hasMoved()) {
+                Direction away = rc.getLocation().directionTo(target.location).opposite();
+                Nav.tryMove(away);
+            } else if (!rc.hasMoved()) {
                 Nav.moveToward(target.location);
             }
         }
-        // Bullet evasion before movement
+        // Enhanced bullet evasion
         BulletInfo[] bullets = rc.senseNearbyBullets();
         if (bullets.length > 0 && !rc.hasMoved()) {
             Direction bestDir = null;
@@ -69,31 +72,41 @@ public strictfp class Soldier {
                 }
             }
         }
-        // Removed the unconditional Nav.tryMove(Nav.randomDirection());
     }
 
     static RobotInfo findTarget() throws GameActionException {
         RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
+        for (RobotInfo enemy : enemies) {
+            if (enemy.type == RobotType.ARCHON) {
+                return enemy;
+            }
+        }
+        for (RobotInfo enemy : enemies) {
+            if (enemy.type == RobotType.TANK) {
+                return enemy;
+            }
+        }
         return Utils.findLowestHealthTarget(enemies);
     }
 
-    static boolean tryShoot(RobotInfo target) throws GameActionException {
+    static boolean tryShoot(RobotInfo target, RobotInfo[] enemies) throws GameActionException {
         if (target == null) return false;
         Direction dir = rc.getLocation().directionTo(target.location);
-        // Check for friendly fire
         RobotInfo[] allies = rc.senseNearbyRobots(rc.getType().sensorRadius, rc.getTeam());
         for (RobotInfo ally : allies) {
             Direction toAlly = rc.getLocation().directionTo(ally.location);
             float dist = rc.getLocation().distanceTo(ally.location);
             float distToTarget = rc.getLocation().distanceTo(target.location);
             if (dist < distToTarget && Math.abs(dir.degreesBetween(toAlly)) < 15) {
-                return false; // Ally in the way
+                return false;
             }
         }
-        if (rc.canFireSingleShot()) {
+        // Adaptive: Use pentad if multiple enemies nearby
+        if (enemies.length > 2 && rc.canFirePentadShot()) {
+            rc.firePentadShot(dir);
+        } else if (rc.canFireSingleShot()) {
             rc.fireSingleShot(dir);
-            return true;
         }
-        return false;
+        return true;
     }
 }

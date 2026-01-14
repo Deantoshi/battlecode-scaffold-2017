@@ -37,7 +37,9 @@ public strictfp class Tank {
                     }
                 }
                 if (safe) {
-                    if (enemies.length >= 3 && rc.canFireTriadShot()) {
+                    if (rc.canFirePentadShot()) {
+                        rc.firePentadShot(dir);
+                    } else if (rc.canFireTriadShot()) {
                         rc.fireTriadShot(dir);
                     } else if (rc.canFireSingleShot()) {
                         rc.fireSingleShot(dir);
@@ -46,11 +48,17 @@ public strictfp class Tank {
             }
         }
         if (!rc.hasMoved()) {
-            MapLocation enemyLoc = Comms.getEnemyArchonLocation();
-            if (enemyLoc != null) {
-                Nav.moveToward(enemyLoc);
+            if (enemies.length > 3) {
+                // Prioritize cluster
+                MapLocation clusterCenter = Utils.findClosestEnemy(rc, enemies).location;
+                Nav.moveToward(clusterCenter);
             } else {
-                Nav.tryMove(Nav.randomDirection());
+                MapLocation enemyLoc = Comms.getEnemyArchonLocation();
+                if (enemyLoc != null) {
+                    Nav.moveToward(enemyLoc);
+                } else {
+                    Nav.tryMove(Nav.randomDirection());
+                }
             }
         }
     }

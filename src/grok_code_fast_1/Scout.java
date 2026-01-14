@@ -35,9 +35,22 @@ public strictfp class Scout {
         RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
         for (RobotInfo enemy : enemies) {
             reportEnemy(enemy);
-            if (enemy.type == RobotType.GARDENER && !rc.hasMoved()) {
+            if ((enemy.type == RobotType.GARDENER || enemy.type == RobotType.ARCHON) && !rc.hasMoved()) {
                 Nav.moveToward(enemy.location);
                 return;
+            } else if (enemy.type != RobotType.ARCHON && enemy.type != RobotType.GARDENER && rc.getHealth() > 20 && !rc.hasMoved()) {
+                // Harass other units if safe
+                Direction harassDir = rc.getLocation().directionTo(enemy.location);
+                Nav.tryMove(harassDir);
+            }
+        }
+
+        // Add shooting
+        for (RobotInfo enemy : enemies) {
+            if (enemy.type != RobotType.ARCHON && enemy.type != RobotType.TANK && rc.canFireSingleShot()) {
+                Direction dir = rc.getLocation().directionTo(enemy.location);
+                rc.fireSingleShot(dir);
+                break; // One shot per turn
             }
         }
 
@@ -74,7 +87,11 @@ public strictfp class Scout {
     static void reportEnemy(RobotInfo enemy) throws GameActionException {
         if (enemy.type == RobotType.ARCHON) {
             Comms.broadcastLocation(2, 3, enemy.location);
-            rc.broadcast(4, 1); // Enemy spotted flag
+            rc.broadcast(4, 1);
+        } else if (enemy.type == RobotType.GARDENER) {
+            Comms.broadcastLocation(9, 10, enemy.location); // New channels for gardeners
+        } else {
+            Comms.broadcastLocation(15, 16, enemy.location); // General enemies
         }
     }
 

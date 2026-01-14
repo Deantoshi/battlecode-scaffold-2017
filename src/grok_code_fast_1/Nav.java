@@ -9,7 +9,7 @@ public strictfp class Nav {
     static boolean bugTracing = false;
     static float bugStartDistSq = 0;
     static int bugSteps = 0;
-    static final int MAX_BUG_STEPS = 20;
+    static final int MAX_BUG_STEPS = 100;
 
     // Zigzag variables
     static int zigzagCount = 0;
@@ -20,80 +20,62 @@ public strictfp class Nav {
     }
 
     public static boolean tryMove(Direction dir) throws GameActionException {
-        TreeInfo[] trees = rc.senseNearbyTrees(7.0f);
-        // Check for tree clusters
-        if (trees.length > 5 && rc.getType() != RobotType.TANK) {
-            // Calculate cluster center
-            float sumX = 0, sumY = 0;
-            for (TreeInfo tree : trees) {
-                sumX += tree.location.x;
-                sumY += tree.location.y;
-            }
-            MapLocation clusterCenter = new MapLocation(sumX / trees.length, sumY / trees.length);
-            Comms.broadcastLocation(17, 18, clusterCenter); // Use channels 17-18 for cluster
-            // Try to move around cluster if direct path is blocked
-            if (!rc.canMove(dir)) {
-                Direction awayFromCluster = rc.getLocation().directionTo(clusterCenter).opposite();
-                if (rc.canMove(awayFromCluster)) {
-                    rc.move(awayFromCluster);
-                    if (trees.length > 3) Comms.broadcastLocation(15, 16, rc.getLocation());
-                    return true;
-                }
-            }
-        }
-        // For tanks, allow movement through trees since they can break them
+        // For tanks, allow movement through trees
         if (rc.getType() == RobotType.TANK) {
             if (rc.canMove(dir)) {
                 rc.move(dir);
-                if (trees.length > 3) Comms.broadcastLocation(15, 16, rc.getLocation());
                 return true;
             } else {
-                // Try to move anyway, as tanks can damage trees on collision
                 try {
                     rc.move(dir);
-                    if (trees.length > 3) Comms.broadcastLocation(15, 16, rc.getLocation());
                     return true;
                 } catch (GameActionException e) {
                     // Can't move
                 }
             }
         } else {
-            if (rc.canMove(dir)) {
+            // For tree avoidance
+            TreeInfo[] trees = rc.senseNearbyTrees(7.0f);
+            boolean clear = true;
+            for (TreeInfo tree : trees) {
+                Direction toTree = rc.getLocation().directionTo(tree.location);
+                if (Math.abs(dir.degreesBetween(toTree)) < 45) {
+                    clear = false;
+                    break;
+                }
+            }
+            if (clear && rc.canMove(dir)) {
                 rc.move(dir);
-                if (trees.length > 3) Comms.broadcastLocation(15, 16, rc.getLocation());
                 return true;
             }
         }
-
-        // Try wider rotations
+        // Try rotations
         for (int i = 1; i <= 4; i++) {
             Direction left = dir.rotateLeftDegrees(45 * i);
             if (rc.getType() == RobotType.TANK) {
                 if (rc.canMove(left)) {
                     rc.move(left);
-                    if (trees.length > 3) Comms.broadcastLocation(15, 16, rc.getLocation());
                     return true;
                 } else {
                     try {
                         rc.move(left);
-                        if (trees.length > 3) Comms.broadcastLocation(15, 16, rc.getLocation());
                         return true;
                     } catch (GameActionException e) {
-                        // Can't move left
+                        // Can't move
                     }
                 }
             } else {
-                boolean leftClear = true;
+                TreeInfo[] trees = rc.senseNearbyTrees(7.0f);
+                boolean clear = true;
                 for (TreeInfo tree : trees) {
                     Direction toTree = rc.getLocation().directionTo(tree.location);
                     if (Math.abs(left.degreesBetween(toTree)) < 45) {
-                        leftClear = false;
+                        clear = false;
                         break;
                     }
                 }
-                if (leftClear && rc.canMove(left)) {
+                if (clear && rc.canMove(left)) {
                     rc.move(left);
-                    if (trees.length > 3) Comms.broadcastLocation(15, 16, rc.getLocation());
                     return true;
                 }
             }
@@ -101,29 +83,27 @@ public strictfp class Nav {
             if (rc.getType() == RobotType.TANK) {
                 if (rc.canMove(right)) {
                     rc.move(right);
-                    if (trees.length > 3) Comms.broadcastLocation(15, 16, rc.getLocation());
                     return true;
                 } else {
                     try {
                         rc.move(right);
-                        if (trees.length > 3) Comms.broadcastLocation(15, 16, rc.getLocation());
                         return true;
                     } catch (GameActionException e) {
-                        // Can't move right
+                        // Can't move
                     }
                 }
             } else {
-                boolean rightClear = true;
+                TreeInfo[] trees = rc.senseNearbyTrees(7.0f);
+                boolean clear = true;
                 for (TreeInfo tree : trees) {
                     Direction toTree = rc.getLocation().directionTo(tree.location);
                     if (Math.abs(right.degreesBetween(toTree)) < 45) {
-                        rightClear = false;
+                        clear = false;
                         break;
                     }
                 }
-                if (rightClear && rc.canMove(right)) {
+                if (clear && rc.canMove(right)) {
                     rc.move(right);
-                    if (trees.length > 3) Comms.broadcastLocation(15, 16, rc.getLocation());
                     return true;
                 }
             }
@@ -190,9 +170,22 @@ public strictfp class Nav {
             }
             // Stuck, rotate bug direction or reset if max steps reached
             if (bugSteps >= MAX_BUG_STEPS) {
-                bugTracing = false;
-                bugSteps = 0;
-                return tryMove(randomDirection()); // Random reset
+                // Check for edge: if location is near boundary and bugDir is towards it
+                MapLocation loc = rc.getLocation();
+                if ((loc.x < 5 && bugDir.radians > Math.PI) || (loc.x > 95 && bugDir.radians < Math.PI) ||
+                    (loc.y < 5 && (bugDir.radians > Math.PI/2 && bugDir.radians < 3*Math.PI/2)) ||
+                    (loc.y > 95 && (bugDir.radians < Math.PI/2 || bugDir.radians > 3*Math.PI/2))) {
+                    // At edge, reset away from edge
+                    bugTracing = false;
+                    bugSteps = 0;
+                    Direction awayFromEdge = bugDir.opposite();
+                    tryMove(awayFromEdge);
+                    return false;
+                } else {
+                    bugTracing = false;
+                    bugSteps = 0;
+                    return tryMove(randomDirection());
+                }
             }
             bugDir = bugDir.rotateLeftDegrees(45);
             bugSteps++;
