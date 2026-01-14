@@ -51,10 +51,10 @@ For each iteration:
 │  ./gradlew runWithSummary + extract to database     │
 ├─────────────────────────────────────────────────────┤
 │  STEP 2: ANALYZE (rlm-analyst)                      │
-│  Query database for patterns, weaknesses           │
+│  Query database, identify top 1-5 issues           │
 ├─────────────────────────────────────────────────────┤
 │  STEP 3: IMPROVE (rlm-improver)                     │
-│  Make ONE targeted code change                     │
+│  Implement all identified fixes (1-5 changes)      │
 └─────────────────────────────────────────────────────┘
 ```
 

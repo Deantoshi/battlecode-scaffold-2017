@@ -1,5 +1,5 @@
 ---
-description: RLM Improver - Makes targeted code changes based on analysis
+description: RLM Improver - Implements 1-5 code changes based on analyst findings
 mode: subagent
 temperature: 0
 tools:
