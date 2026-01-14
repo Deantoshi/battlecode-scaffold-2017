@@ -36,7 +36,36 @@ Read `.opencode/context/battlecode-mechanics.md` for game mechanics reference if
 **Java 8 only.** No var keyword, modules, Records, or Java 9+ features.
 
 ### Tooling Constraints
-**Do not use `edit` or `write` tools.** Use bash commands to modify files.
+
+**CRITICAL: You MUST write code manually. Do NOT use automated text manipulation tools.**
+
+| FORBIDDEN Tools | Why |
+|-----------------|-----|
+| `sed` | Fragile, breaks on edge cases |
+| `awk` | Same issues as sed |
+| `perl -i` | Text manipulation is error-prone |
+| `edit` tool | Not available to you |
+| `write` tool | Not available to you |
+
+**REQUIRED Approach: Write complete files using heredoc:**
+```bash
+cat > src/{BOT_NAME}/FileName.java << 'EOF'
+package {BOT_NAME};
+
+// Your complete, manually written Java code here
+// Write the ENTIRE file content - do not try to patch or modify
+
+public class FileName {
+    // ... full implementation
+}
+EOF
+```
+
+**Why this matters:**
+- sed/awk fail silently or corrupt code with special characters
+- Heredoc gives you full control and visibility
+- You can verify the exact code being written
+- Compilation errors are easier to debug when you wrote the code explicitly
 
 ## Arguments
 
@@ -126,3 +155,5 @@ compilation_status: SUCCESS
 2. **Implement everything** - Don't skip changes from the plan
 3. **Verify before completing** - Must compile successfully
 4. **Stay in scope** - Only modify files in `src/{BOT_NAME}/`
+5. **NEVER use sed/awk/perl** - Write complete files manually with heredoc
+6. **Write full file contents** - Don't patch; rewrite the entire file when modifying
