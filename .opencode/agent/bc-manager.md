@@ -253,26 +253,14 @@ MAX_ITER=$(echo $STATE | jq -r '.max_iterations')
 echo "Starting iteration $NEW_ITER (max: $MAX_ITER)"
 ```
 
-### Step 2: Read Battle Log
-
-Read battle log for previous iteration learnings:
-```bash
-cat src/{BOT_NAME}/battle-log.md
-```
-
-This provides context on:
-- What strategies were tried before
-- What worked vs what failed
-- Approaches to avoid repeating
-
-### Step 3: Run Games (bc-runner)
+### Step 2: Run Games (bc-runner)
 
 Use the **Task tool**:
 - **description**: "Run battlecode games"
 - **prompt**: "Run games for bot '{BOT_NAME}' vs '{OPPONENT}'. Execute all 5 maps in parallel and capture results."
 - **subagent_type**: "bc-runner"
 
-### Step 4: Analyze Results (bc-results)
+### Step 3: Analyze Results (bc-results)
 
 Use the **Task tool**:
 - **description**: "Analyze game results"
@@ -288,7 +276,7 @@ Outcome classifications:
 - **TIEBREAKER_LOSS**: Lost at round 3000 (FAILURE)
 - **DECISIVE_LOSS**: Eliminated or opponent hit 1000 VP in ≤1500 rounds
 
-### Step 5: Update Cumulative Stats (bc-cumulative-stats)
+### Step 4: Update Cumulative Stats (bc-cumulative-stats)
 
 Use the **Task tool**:
 - **description**: "Update cumulative stats"
@@ -297,7 +285,7 @@ Use the **Task tool**:
 
 **Capture return as `UPDATED_STATS`**
 
-### Step 6: Check Completion Conditions
+### Step 5: Check Completion Conditions
 
 **CRITICAL: Check these conditions BEFORE planning improvements.**
 
@@ -333,9 +321,9 @@ Bot is performing well with decisive victories!
 <promise>BC-Manager training complete</promise>
 ```
 
-**If neither condition met, continue to Step 7.**
+**If neither condition met, continue to Step 6.**
 
-### Step 7: Get Strategy (bc-general)
+### Step 6: Get Strategy (bc-general)
 
 Use the **Task tool**:
 - **description**: "Get coordinated strategy"
@@ -354,7 +342,7 @@ Consult all unit specialists and return prioritized recommendations."
 
 **Note:** `bc-general` has `task: allow` permission and will automatically invoke the unit specialists.
 
-### Step 8: Plan Improvements (bc-planner)
+### Step 7: Plan Improvements (bc-planner)
 
 Use the **Task tool**:
 - **description**: "Plan code improvements"
@@ -379,7 +367,7 @@ Design 5 concrete changes with specific code modifications. Return the plan for 
 
 **Capture return as `PLAN`**
 
-### Step 9: Implement Changes (bc-coder)
+### Step 8: Implement Changes (bc-coder)
 
 Use the **Task tool**:
 - **description**: "Implement planned changes"
@@ -392,7 +380,7 @@ Apply all changes and verify compilation succeeds."
 
 **Capture return as `CHANGES`**
 
-### Step 10: Verify Compilation
+### Step 9: Verify Compilation
 
 If `CHANGES.compilation_status` is "FAILED", attempt fix:
 ```bash
@@ -400,12 +388,12 @@ If `CHANGES.compilation_status` is "FAILED", attempt fix:
 ```
 If still broken, revert changes or invoke bc-coder to fix.
 
-### Step 11: Clean Summaries
+### Step 10: Clean Summaries
 ```bash
 rm -f summaries/*.md
 ```
 
-### Step 12: Update Battle Log
+### Step 11: Update Battle Log
 
 Append iteration results to `src/{BOT_NAME}/battle-log.md`:
 
@@ -432,7 +420,7 @@ Append iteration results to `src/{BOT_NAME}/battle-log.md`:
 ---
 ```
 
-### Step 13: Report Status
+### Step 12: Report Status
 
 Report both iteration and cumulative progress:
 
