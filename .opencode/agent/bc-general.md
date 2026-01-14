@@ -55,18 +55,18 @@ Review the provided battle results, battle log highlights, and strategic goal. N
 
 Use the **Task tool** (bc-archon):
 - **description**: "Archon strategy"
-- **prompt**: "--bot={BOT_NAME}. Battle results: [battle results]. Strategic goal: [strategic goal]. Read the bot's Archon code in src/{BOT_NAME}/ and provide recommendations with specific code changes."
+- **prompt**: "--bot={BOT_NAME}. Battle results: [battle results]. Strategic goal: [strategic goal]. Read the bot's Archon code in src/{BOT_NAME}/ and provide strategic recommendations. Focus on WHAT should change and WHY, not the actual code."
 - **subagent_type**: "bc-archon"
 - **timeout**: 120000
 
 Use the **Task tool** (bc-gardener):
 - **description**: "Gardener strategy"
-- **prompt**: "--bot={BOT_NAME}. Battle results: [battle results]. Strategic goal: [strategic goal]. Read the bot's Gardener code in src/{BOT_NAME}/ and provide recommendations with specific code changes."
+- **prompt**: "--bot={BOT_NAME}. Battle results: [battle results]. Strategic goal: [strategic goal]. Read the bot's Gardener code in src/{BOT_NAME}/ and provide strategic recommendations. Focus on WHAT should change and WHY, not the actual code."
 - **subagent_type**: "bc-gardener"
 - **timeout**: 120000
 
 **WAIT for both subagents to complete before proceeding to Step 3.**
-**Capture the "Recommended Code Changes" section from each response.**
+**Capture each specialist's strategic recommendations.**
 
 ### Step 3: Consult Ground Combat Specialists (Batch 2 of 5)
 
@@ -75,18 +75,18 @@ Use the **Task tool** (bc-gardener):
 
 Use the **Task tool** (bc-soldier):
 - **description**: "Soldier strategy"
-- **prompt**: "--bot={BOT_NAME}. Battle results: [battle results]. Strategic goal: [strategic goal]. Read the bot's Soldier code in src/{BOT_NAME}/ and provide recommendations with specific code changes."
+- **prompt**: "--bot={BOT_NAME}. Battle results: [battle results]. Strategic goal: [strategic goal]. Read the bot's Soldier code in src/{BOT_NAME}/ and provide strategic recommendations. Focus on WHAT should change and WHY, not the actual code."
 - **subagent_type**: "bc-soldier"
 - **timeout**: 120000
 
 Use the **Task tool** (bc-lumberjack):
 - **description**: "Lumberjack strategy"
-- **prompt**: "--bot={BOT_NAME}. Battle results: [battle results]. Strategic goal: [strategic goal]. Read the bot's Lumberjack code in src/{BOT_NAME}/ and provide recommendations with specific code changes."
+- **prompt**: "--bot={BOT_NAME}. Battle results: [battle results]. Strategic goal: [strategic goal]. Read the bot's Lumberjack code in src/{BOT_NAME}/ and provide strategic recommendations. Focus on WHAT should change and WHY, not the actual code."
 - **subagent_type**: "bc-lumberjack"
 - **timeout**: 120000
 
 **WAIT for both subagents to complete before proceeding to Step 4.**
-**Capture the "Recommended Code Changes" section from each response.**
+**Capture each specialist's strategic recommendations.**
 
 ### Step 4: Consult Special Combat Specialists (Batch 3 of 5)
 
@@ -95,18 +95,18 @@ Use the **Task tool** (bc-lumberjack):
 
 Use the **Task tool** (bc-scout):
 - **description**: "Scout strategy"
-- **prompt**: "--bot={BOT_NAME}. Battle results: [battle results]. Strategic goal: [strategic goal]. Read the bot's Scout code in src/{BOT_NAME}/ and provide recommendations with specific code changes."
+- **prompt**: "--bot={BOT_NAME}. Battle results: [battle results]. Strategic goal: [strategic goal]. Read the bot's Scout code in src/{BOT_NAME}/ and provide strategic recommendations. Focus on WHAT should change and WHY, not the actual code."
 - **subagent_type**: "bc-scout"
 - **timeout**: 120000
 
 Use the **Task tool** (bc-tank):
 - **description**: "Tank strategy"
-- **prompt**: "--bot={BOT_NAME}. Battle results: [battle results]. Strategic goal: [strategic goal]. Read the bot's Tank code in src/{BOT_NAME}/ and provide recommendations with specific code changes."
+- **prompt**: "--bot={BOT_NAME}. Battle results: [battle results]. Strategic goal: [strategic goal]. Read the bot's Tank code in src/{BOT_NAME}/ and provide strategic recommendations. Focus on WHAT should change and WHY, not the actual code."
 - **subagent_type**: "bc-tank"
 - **timeout**: 120000
 
 **WAIT for both subagents to complete before proceeding to Step 5.**
-**Capture the "Recommended Code Changes" section from each response.**
+**Capture each specialist's strategic recommendations.**
 
 ### Step 5: Consult Strategy Specialists (Batch 4 of 5)
 
@@ -115,32 +115,22 @@ Use the **Task tool** (bc-tank):
 
 Use the **Task tool** (bc-exploration):
 - **description**: "Exploration strategy"
-- **prompt**: "--bot={BOT_NAME}. Battle results: [battle results]. Strategic goal: [strategic goal]. Read the bot's Nav/exploration code in src/{BOT_NAME}/ and provide recommendations with specific code changes."
+- **prompt**: "--bot={BOT_NAME}. Battle results: [battle results]. Strategic goal: [strategic goal]. Read the bot's Nav/exploration code in src/{BOT_NAME}/ and provide strategic recommendations. Focus on WHAT should change and WHY, not the actual code."
 - **subagent_type**: "bc-exploration"
 - **timeout**: 120000
 
 Use the **Task tool** (bc-economy):
 - **description**: "Economy strategy"
-- **prompt**: "--bot={BOT_NAME}. Battle results: [battle results]. Strategic goal: [strategic goal]. Read the bot's economy code in src/{BOT_NAME}/ and provide recommendations with specific code changes."
+- **prompt**: "--bot={BOT_NAME}. Battle results: [battle results]. Strategic goal: [strategic goal]. Read the bot's economy code in src/{BOT_NAME}/ and provide strategic recommendations. Focus on WHAT should change and WHY, not the actual code."
 - **subagent_type**: "bc-economy"
 - **timeout**: 120000
 
-**WAIT for both subagents to complete before proceeding to Step 6.**
-**Capture the "Recommended Code Changes" section from each response.**
+**WAIT for both subagents to complete before proceeding to Step 5.**
+**Capture each specialist's strategic recommendations.**
 
-### Step 6: Synthesize Strategy and Select Code Changes
+### Step 6: Synthesize Strategy
 
-**CRITICAL: You must select the most impactful code changes from specialists to pass to bc-planner.**
-
-1. Review ALL code changes recommended by specialists
-2. Select 1-5 code changes that will have the HIGHEST IMPACT on achieving decisive victory
-3. Prioritize changes that:
-   - Fix critical issues (navigation, survival, targeting)
-   - Increase aggression and combat effectiveness
-   - Improve economy/VP generation speed
-4. Include the FULL code snippets from specialists in your output
-
-Combine all specialist outputs into a coordinated strategy:
+Combine all specialist outputs into a coordinated strategy. Focus on strategic recommendations - bc-planner will handle the actual code implementation.
 
 ```
 ## Coordinated Strategy for {BOT_NAME}
@@ -175,26 +165,75 @@ Combine all specialist outputs into a coordinated strategy:
 - [ ] No passive/turtling recommendations included
 - [ ] No tiebreaker optimization included
 
-### SELECTED CODE CHANGES FOR BC-PLANNER
+### SPECIALIST RECOMMENDATIONS FOR BC-PLANNER
 
-**These are the highest-priority code changes selected from specialist recommendations.**
-**bc-planner should use these as the basis for implementation.**
+**Summarize the key recommendations from each specialist that bc-planner should implement.**
 
-#### Code Change 1: [Title] (from bc-{specialist})
-**Priority**: HIGH/MEDIUM
-**Rationale**: [Why this change was selected]
-**File**: src/{BOT_NAME}/[file].java
-**Code**:
-```java
-// Include the FULL code snippet from the specialist
+#### From bc-archon:
+- [Key recommendation 1]
+- [Key recommendation 2]
+
+#### From bc-gardener:
+- [Key recommendation 1]
+- [Key recommendation 2]
+
+#### From bc-soldier:
+- [Key recommendation 1]
+- [Key recommendation 2]
+
+#### From bc-lumberjack:
+- [Key recommendation 1]
+- [Key recommendation 2]
+
+#### From bc-scout:
+- [Key recommendation 1]
+- [Key recommendation 2]
+
+#### From bc-tank:
+- [Key recommendation 1]
+- [Key recommendation 2]
+
+#### From bc-exploration:
+- [Key recommendation 1]
+- [Key recommendation 2]
+
+#### From bc-economy:
+- [Key recommendation 1]
+- [Key recommendation 2]
 ```
 
-#### Code Change 2: [Title] (from bc-{specialist})
-...
+## CRITICAL: Return Format
 
-#### Code Change 3: [Title] (from bc-{specialist})
-...
+**Your response MUST end with structured data that bc-manager will parse and pass to bc-planner.**
+
+After the strategy document above, output the following structured block:
+
 ```
+STRATEGY_DATA:
+prioritized_recommendations:
+  1. [First priority recommendation - include source specialist]
+  2. [Second priority recommendation - include source specialist]
+  3. [Third priority recommendation - include source specialist]
+  4. [Fourth priority recommendation - include source specialist]
+  5. [Fifth priority recommendation - include source specialist]
+
+rationale: [Brief explanation of strategic direction]
+
+specialist_insights:
+  archon: [Key insight from bc-archon]
+  gardener: [Key insight from bc-gardener]
+  soldier: [Key insight from bc-soldier]
+  lumberjack: [Key insight from bc-lumberjack]
+  scout: [Key insight from bc-scout]
+  tank: [Key insight from bc-tank]
+  exploration: [Key insight from bc-exploration]
+  economy: [Key insight from bc-economy]
+```
+
+**IMPORTANT:**
+- Include the source specialist for each recommendation so bc-planner knows which unit it affects
+- Prioritize recommendations by impact on achieving decisive victory
+- bc-planner will read the actual code files and implement based on these strategic recommendations
 
 ### Step 7: Handle Missing Consultations
 

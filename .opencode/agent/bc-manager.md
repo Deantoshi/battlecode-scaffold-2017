@@ -111,12 +111,17 @@ RESULTS_DATA:
 ### bc-cumulative-stats returns (on update):
 ```
 STATS_JSON: {"total_iterations": N, "total_games": N, "total_wins": W, "total_losses": L, "win_rate": X.X, "this_iteration_wins": X}
-```
+``` 
 *Note: Cumulative stats are for user visibility only, not used in bot decision-making.*
 
 ### bc-general returns:
-- prioritized_recommendations: [list]
+```
+STRATEGY_DATA:
+- prioritized_recommendations: [list of 1-5 strategic priorities with source specialists]
 - rationale: string
+- specialist_insights: {archon, gardener, soldier, lumberjack, scout, tank, exploration, economy}
+```
+*Note: bc-general provides strategic recommendations, not code. bc-planner reads the actual code files and implements changes.*
 
 ### bc-planner returns:
 - Complete improvement plan with code changes to implement
@@ -348,7 +353,12 @@ Analysis from bc-results:
 Strategy from bc-general:
 {STRATEGY.prioritized_recommendations}
 
-Design 1-3 concrete changes. Return the plan for bc-coder to implement."
+Specialist insights:
+{STRATEGY.specialist_insights}
+
+**IMPORTANT:** Read the actual code files in src/{BOT_NAME}/ to understand current implementation before planning changes. The specialist insights above tell you WHAT should change and WHY - you must determine HOW to implement it by reading the code.
+
+Design 1-5 concrete changes with specific code modifications. Return the plan for bc-coder to implement."
 - **subagent_type**: "bc-planner"
 
 **Capture return as `PLAN`**
