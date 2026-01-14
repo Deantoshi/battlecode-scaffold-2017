@@ -181,7 +181,7 @@ Changes made:
 2. {iteration 2 change}
 ...
 
-Run `/bc-manager --bot {BOT_NAME}` for full evaluation.
+If objective is not met, re-run `/rlm --bot {BOT_NAME}` (defaults to 5 iterations) or increase `--iterations`.
 ═══════════════════════════════════════════════════════
 ```
 
@@ -189,5 +189,5 @@ Run `/bc-manager --bot {BOT_NAME}` for full evaluation.
 
 1. **Query, don't load** - Use bc17_query.py to access match data
 2. **1-5 changes per iteration** - Analyst chooses based on findings
-3. **Fast feedback** - 3 maps, quick iterations
+3. **Fast feedback** - 5 maps, quick iterations
 4. **Simple loop** - Run → Analyze → Improve → Repeat
