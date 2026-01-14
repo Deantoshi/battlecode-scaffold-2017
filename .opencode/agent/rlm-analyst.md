@@ -25,6 +25,10 @@ From the RLM paper: "Long prompts should not be fed into the neural network dire
 
 **You have access to match databases via bc17_query.py. Use it.**
 
+## Local Context (Required)
+
+Before analyzing matches, **read `TECHNICAL_DOCS.md`** to refresh mechanics, API details, and engine references. Use it only as context; do not paste large chunks into your output. If you need under-the-hood verification, follow the engine references listed in `TECHNICAL_DOCS.md`.
+
 ## Objective
 
 Each iteration targets **at least 3 wins** (out of 5 maps) with an **average of <= 1500 rounds for those wins**. Use summaries to compute wins and the average rounds for wins, then focus issues on closing the gap to this objective.
@@ -61,6 +65,11 @@ python3 scripts/bc17_query.py sql <match.db> "SELECT * FROM events WHERE team='A
 ```
 
 ## Analysis Workflow
+
+### Step 0: Read Local Docs
+```bash
+cat TECHNICAL_DOCS.md
+```
 
 ### Step 1: Find Database Files
 ```bash
