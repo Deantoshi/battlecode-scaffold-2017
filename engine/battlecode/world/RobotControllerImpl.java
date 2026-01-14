@@ -5,6 +5,8 @@ import static battlecode.common.GameActionExceptionType.*;
 import battlecode.instrumenter.RobotDeathException;
 import battlecode.schema.Action;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -739,6 +741,7 @@ public final strictfp class RobotControllerImpl implements RobotController {
 
         this.robot.incrementAttackCount();
 
+        logShot("single", GameConstants.SINGLE_SHOT_COST);
         gameWorld.getTeamInfo().adjustBulletSupply(getTeam(), -GameConstants.SINGLE_SHOT_COST);
         fireBulletSpread(dir, 1, 0);
     }
@@ -755,6 +758,7 @@ public final strictfp class RobotControllerImpl implements RobotController {
 
         this.robot.incrementAttackCount();
 
+        logShot("triad", GameConstants.TRIAD_SHOT_COST);
         gameWorld.getTeamInfo().adjustBulletSupply(getTeam(), -GameConstants.TRIAD_SHOT_COST);
         fireBulletSpread(dir, 3, GameConstants.TRIAD_SPREAD_DEGREES);
     }
@@ -771,6 +775,7 @@ public final strictfp class RobotControllerImpl implements RobotController {
 
         this.robot.incrementAttackCount();
 
+        logShot("pentad", GameConstants.PENTAD_SHOT_COST);
         gameWorld.getTeamInfo().adjustBulletSupply(getTeam(), -GameConstants.PENTAD_SHOT_COST);
         fireBulletSpread(dir, 5, GameConstants.PENTAD_SPREAD_DEGREES);
     }
@@ -1178,9 +1183,32 @@ public final strictfp class RobotControllerImpl implements RobotController {
         assertNonNegative(bullets);
         assertHaveBulletCosts(bullets);
         int gainedVictorPoints = (int)Math.floor(bullets / getVictoryPointCost());
+        logDonation(bullets, gainedVictorPoints);
         gameWorld.getTeamInfo().adjustBulletSupply(getTeam(), -bullets);
         gameWorld.getTeamInfo().adjustVictoryPoints(getTeam(), gainedVictorPoints);
         gameWorld.setWinnerIfVictoryPoints();
+    }
+
+    private void logDonation(float bullets, int gainedVictoryPoints) {
+        String msg = "[" + getTeam() + ":" + getType() + "#" + getID() + "@" + getRoundNum() + "] " +
+                "donate bullets=" + bullets + " vp_gain=" + gainedVictoryPoints + " vp_cost=" + getVictoryPointCost();
+        try {
+            gameWorld.getMatchMaker().getOut().write((msg + "\n").getBytes(StandardCharsets.UTF_8));
+        } catch (IOException ignored) {
+            // Best-effort logging; ignore failures to avoid breaking matches.
+        }
+    }
+
+    private void logShot(String shotType, float cost) {
+        float before = getTeamBullets();
+        float after = before - cost;
+        String msg = "[" + getTeam() + ":" + getType() + "#" + getID() + "@" + getRoundNum() + "] " +
+                "shoot type=" + shotType + " cost=" + cost + " bullets_before=" + before + " bullets_after=" + after;
+        try {
+            gameWorld.getMatchMaker().getOut().write((msg + "\n").getBytes(StandardCharsets.UTF_8));
+        } catch (IOException ignored) {
+            // Best-effort logging; ignore failures to avoid breaking matches.
+        }
     }
 
     @Override
