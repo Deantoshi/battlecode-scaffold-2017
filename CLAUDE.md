@@ -15,7 +15,7 @@ battlecode-scaffold-2017/
 
 ## Prerequisites
 
-- Java 8: `export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64`
+- Java 8
 - Node.js (for client)
 
 ## Commands

@@ -44,7 +44,6 @@ summaries/summary_{TEAM_A}-vs-{TEAM_B}-on-{MAP}_{TIMESTAMP}.md
 Run this single bash command to execute all 5 maps simultaneously:
 
 ```bash
-export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64 && \
 ./gradlew runWithSummary -PteamA={TEAM_A} -PteamB={TEAM_B} -Pmaps=Shrine 2>&1 &
 ./gradlew runWithSummary -PteamA={TEAM_A} -PteamB={TEAM_B} -Pmaps=Barrier 2>&1 &
 ./gradlew runWithSummary -PteamA={TEAM_A} -PteamB={TEAM_B} -Pmaps=Bullseye 2>&1 &
@@ -78,7 +77,6 @@ done
 For each map, retry individually (up to 2 retries per map):
 
 ```bash
-export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
 
 retry_map() {
   local map=$1

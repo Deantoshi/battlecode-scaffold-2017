@@ -22,7 +22,6 @@ You are the Battlecode Init Model Builder agent. Your role is to **orchestrate**
 
 ### Java Version
 **This project uses Java 8. All code MUST be Java 8 compatible.**
-- Use `export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64` before any gradle commands
 - Do NOT use Java 9+ features (var keyword, modules, etc.)
 
 ### Tooling Constraints
@@ -115,7 +114,7 @@ The coder will:
 Run the compilation:
 
 ```bash
-export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64 && ./gradlew compileJava
+./gradlew compileJava
 ```
 
 #### If compilation fails:
@@ -131,7 +130,7 @@ export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64 && ./gradlew compileJava
 Once compiled, run a test match against examplefuncsplayer:
 
 ```bash
-export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64 && ./gradlew runWithSummary -PteamA={BOT_NAME} -PteamB=examplefuncsplayer -Pmaps=Bullseye
+./gradlew runWithSummary -PteamA={BOT_NAME} -PteamB=examplefuncsplayer -Pmaps=Bullseye
 ```
 
 Capture the match output to report results.

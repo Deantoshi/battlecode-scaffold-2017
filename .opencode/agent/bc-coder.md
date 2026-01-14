@@ -78,7 +78,7 @@ For each change in the plan:
 ### Step 4: Verify Compilation
 
 ```bash
-export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64 && ./gradlew compileJava
+./gradlew compileJava
 ```
 
 If compilation fails:

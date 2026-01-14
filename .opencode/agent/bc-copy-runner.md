@@ -63,7 +63,7 @@ done
 1. List the files in `src/copy_bot/` to confirm all were copied
 2. Verify compilation:
    ```bash
-   export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64 && ./gradlew compileJava
+   ./gradlew compileJava
    ```
 3. Report success with count of files copied
 

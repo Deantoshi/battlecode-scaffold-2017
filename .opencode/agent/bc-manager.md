@@ -137,11 +137,12 @@ CHANGES_DATA:
 
 ## Setup Phase (First Iteration Only)
 
-Always start fresh by deleting any existing state file:
+Always start fresh by deleting any existing state file and battle log:
 
 ```bash
 STATE_FILE=/tmp/bc-manager-state-{BOT_NAME}.json
 rm -f "$STATE_FILE"
+rm -f src/{BOT_NAME}/battle-log.md
 echo "FIRST_RUN"
 ```
 
@@ -151,7 +152,26 @@ echo "FIRST_RUN"
 Check if `src/{BOT_NAME}/RobotPlayer.java` exists.
 - If not, copy from `src/examplefuncsplayer/`
 
-#### Step 2: Setup copy_bot (If Using Default Opponent)
+#### Step 2: Compile Bot and Fix Errors
+Compile the bot to ensure it builds successfully before proceeding:
+```bash
+./gradlew compileJava 2>&1
+```
+
+**If compilation fails:**
+Use the **Task tool** to invoke bc-coder to fix compilation errors:
+- **description**: "Fix compilation errors"
+- **prompt**: "Fix compilation errors for bot '{BOT_NAME}'. The bot failed to compile. Read the error output, identify the issues, and fix them. Ensure compilation succeeds before returning."
+- **subagent_type**: "bc-coder"
+
+Re-compile after bc-coder returns to verify the fix:
+```bash
+./gradlew compileJava 2>&1
+```
+
+If still failing after 2 bc-coder attempts, abort with error message.
+
+#### Step 3: Setup copy_bot (If Using Default Opponent)
 Always delete and recreate copy_bot to ensure it matches the current bot:
 ```bash
 # Delete existing copy_bot
@@ -165,7 +185,7 @@ for file in src/{BOT_NAME}/*.java; do
 done
 ```
 
-#### Step 3: Initialize Battle Log
+#### Step 4: Initialize Battle Log
 Create fresh battle log for this training run:
 ```bash
 rm -f src/{BOT_NAME}/battle-log.md
@@ -180,23 +200,23 @@ The agent reads this at the start of each iteration to learn from past attempts.
 EOF
 ```
 
-#### Step 4: Clean Old Summaries
+#### Step 5: Clean Old Summaries
 ```bash
 rm -f summaries/*.md
 ```
 
-#### Step 5: Initialize Cumulative Stats
+#### Step 6: Initialize Cumulative Stats
 Use the **Task tool** to invoke bc-cumulative-stats:
 - **description**: "Initialize cumulative stats"
 - **prompt**: "Initialize cumulative stats for bot '{BOT_NAME}'. --bot={BOT_NAME} --action=init"
 - **subagent_type**: "bc-cumulative-stats"
 
-#### Step 6: Initialize State File
+#### Step 7: Initialize State File
 ```bash
 echo '{"iteration": 0, "bot": "{BOT_NAME}", "max_iterations": {MAX_ITERATIONS}}' > /tmp/bc-manager-state-{BOT_NAME}.json
 ```
 
-#### Step 7: Start Ralph Loop
+#### Step 8: Start Ralph Loop
 Use the `ralph_loop` tool:
 - **prompt**: The full prompt for one iteration (see "Single Iteration Workflow" below)
 - **max_iterations**: 0 (unlimited - we handle our own termination)
