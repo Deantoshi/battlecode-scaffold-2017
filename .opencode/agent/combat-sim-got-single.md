@@ -15,7 +15,7 @@ You orchestrate and execute a **Graph of Thought (GoT)** approach to improve Bat
 
 ## Objective
 
-Win the combat simulation on **at least 3 out of 5 maps** with an **average of <= 500 rounds** for those wins.
+Win the combat simulation on **50%+ of the map(s) from the arguments** with an **average of <= 500 rounds** for those wins.
 
 ## IMPORTANT: Identity Announcement
 
@@ -29,7 +29,6 @@ Win the combat simulation on **at least 3 out of 5 maps** with an **average of <
 Parse for:
 - `--bot NAME` - **REQUIRED**: Bot folder name in `src/NAME/`
 - `--opponent NAME` - Opponent bot (default: `examplefuncsplayer`)
-- `--iterations N` - Number of GoT iterations (default: `3`)
 - `--maps MAPS` - Comma-separated maps (default: `Shrine,Barrier,Bullseye,Lanes,Blitzkrieg`)
 - `--unit TYPE` - Unit type (default: `Soldier`)
 
@@ -128,14 +127,25 @@ Read the code:
 cat src/{BOT_NAME}/{UNIT}.java | head -200
 ```
 
-Query the data:
+Query the data (execute ALL of these queries):
 ```bash
-# Shot events
+# Shot events - sample
 python3 scripts/bc17_query.py events matches/{BOT_NAME}-combat-*.db --type=shoot --limit 50
 
 # Shot counts by team
 python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
 SELECT team, COUNT(*) as shots FROM events WHERE event_type='shoot' GROUP BY team"
+
+# First shot timing by team
+python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
+SELECT team, MIN(round_id) as first_shot FROM events WHERE event_type='shoot' GROUP BY team"
+
+# Robot deaths by team
+python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
+SELECT team, body_type, COUNT(*) as deaths FROM robots WHERE death_round IS NOT NULL GROUP BY team, body_type"
+
+# Kill events
+python3 scripts/bc17_query.py events matches/{BOT_NAME}-combat-*.db --type=kill --limit 20
 ```
 
 **Output HYPOTHESIS_A:**
@@ -163,13 +173,25 @@ Read the code:
 cat src/{BOT_NAME}/Nav.java
 ```
 
-Query the data:
+Query the data (execute ALL of these queries):
 ```bash
-# Unit positions over time
+# Unit quadrant counts over time
 python3 scripts/bc17_query.py unit-positions "matches/{BOT_NAME}-combat-*.db"
 
-# Search for movement patterns
+# Search for movement issues
 python3 scripts/bc17_query.py search matches/{BOT_NAME}-combat-*.db "stuck"
+
+# Move events by team
+python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
+SELECT team, COUNT(*) as moves FROM events WHERE event_type='move' GROUP BY team"
+
+# Robot spawn/death counts by team
+python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
+SELECT team, COUNT(*) as spawned FROM robots WHERE spawn_round IS NOT NULL GROUP BY team"
+
+# Robots alive over time
+python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
+SELECT round_id, team, COUNT(*) as alive FROM robots WHERE spawn_round <= round_id AND (death_round IS NULL OR death_round > round_id) GROUP BY round_id, team"
 ```
 
 **Output HYPOTHESIS_B:**
@@ -395,22 +417,20 @@ else:
 ### If REJECT:
 1. Revert changes (use SYNTHESIS.rollback)
 2. Log the failed attempt
-3. Continue to next iteration
 
 ### If ACCEPT:
 1. Keep changes
 2. Update combat log
-3. Continue or finish
 
 ---
 
-## Iteration Report
+## Execution Report
 
-After each iteration, output:
+After completing all phases, output:
 
 ```
 ═══════════════════════════════════════════════════════════════════════════════
-GOT ITERATION {N}/{MAX} COMPLETE (Single Agent)
+GOT EXECUTION COMPLETE (Single Agent)
 ═══════════════════════════════════════════════════════════════════════════════
 
 PHASE 1 - Divergent Analysis:
@@ -435,8 +455,8 @@ PHASE 4 - Implementation:
   Compilation: {status}
 
 PHASE 5 - Validation:
-  Baseline: {BASELINE.wins}/5 wins
-  After:    {VALIDATION.wins}/5 wins
+  Baseline: {BASELINE.wins}/{num_maps} wins
+  After:    {VALIDATION.wins}/{num_maps} wins
   Delta:    {+/-N}
 
 PHASE 6 - Decision: {ACCEPT|REJECT}
@@ -451,7 +471,7 @@ PHASE 6 - Decision: {ACCEPT|REJECT}
 Append to `src/{BOT_NAME}/COMBAT_LOG_GOT.md`:
 
 ```markdown
-## GoT Iteration {N} (Single Agent)
+## GoT Execution - {DATE}
 **Decision:** {ACCEPT|REJECT}
 
 ### Hypotheses
@@ -479,29 +499,6 @@ Keep .bc17 replays.
 
 ---
 
-## Final Report
-
-After all iterations:
-
-```
-═══════════════════════════════════════════════════════════════════════════════
-GRAPH OF THOUGHT COMPLETE (Single Agent)
-═══════════════════════════════════════════════════════════════════════════════
-Bot: {BOT_NAME}
-Iterations: {N}
-
-Hypotheses Explored: {3 * N}
-Solutions Considered: {6 * N}
-Changes Accepted: {count}
-Changes Rejected: {count}
-
-Final: {wins}/5 wins | avg {rounds}r
-Improvement: {baseline} → {final}
-═══════════════════════════════════════════════════════════════════════════════
-```
-
----
-
 ## Key Principles
 
 1. **Sequential but independent** - Analyze targeting, movement, timing separately
@@ -509,3 +506,22 @@ Improvement: {baseline} → {final}
 3. **Compatibility-aware** - Never combine conflicting changes
 4. **Validation-gated** - Must improve or maintain to keep changes
 5. **Self-contained** - No sub-agents, all phases in one execution
+
+---
+
+## Completion Signal (Ralph Loop Integration)
+
+After Phase 6, check if the objective is met:
+
+```
+avg_win_rounds = average rounds for winning maps
+if VALIDATION.wins >= ceil(num_maps / 2) AND avg_win_rounds <= 500:
+    # Objective met! Signal completion
+    Output: <promise>OBJECTIVE_MET</promise>
+```
+
+**IMPORTANT:** Only output `<promise>OBJECTIVE_MET</promise>` when BOTH conditions are true:
+- You have **won 50% or more** of the maps (e.g., 3/5, 2/3, 1/1)
+- The **average rounds for those wins is <= 500**
+
+This signals the Ralph loop to stop iterating. If the objective is NOT met, simply end your response without the promise tag - the loop will automatically run another iteration.
