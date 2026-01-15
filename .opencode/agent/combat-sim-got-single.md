@@ -60,6 +60,19 @@ if [ ! -f "src/{BOT_NAME}/RobotPlayer.java" ]; then
 fi
 ```
 
+### 0.1.5 Read Combat History
+Read the existing combat battle log to understand previous experiments and their outcomes. This provides historical context for analysis phases.
+
+```bash
+if [ -f "src/{BOT_NAME}/COMBAT_LOG_GOT.md" ]; then
+  echo "=== READING COMBAT HISTORY ==="
+  cat "src/{BOT_NAME}/COMBAT_LOG_GOT.md"
+  echo "=== END COMBAT HISTORY ==="
+else
+  echo "No previous combat history found - starting fresh"
+fi
+```
+
 ### 0.2 Compile
 ```bash
 ./gradlew compileJava 2>&1 | tail -20
