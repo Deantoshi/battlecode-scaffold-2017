@@ -26,6 +26,14 @@ public strictfp class Lumberjack {
         } else if (tryChopTree()) {
             // Chopped
         } else if (!rc.hasMoved()) {
+            // Clustering check
+            RobotInfo[] allies = rc.senseNearbyRobots(5.0f, rc.getTeam());
+            if (allies.length > 5) {
+                MapLocation allyCentroid = Utils.calculateCentroid(allies);
+                Direction away = rc.getLocation().directionTo(allyCentroid).opposite();
+                Nav.tryMove(away);
+                return;
+            }
             RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
             if (enemies.length > 0) {
                 RobotInfo target = null;
@@ -66,6 +74,15 @@ public strictfp class Lumberjack {
                     Nav.moveToward(target.location);
                 }
             } else {
+                // Prioritize tree defense if enemy lumberjacks detected
+                if (Comms.isLumberjackDetected()) {
+                    MapLocation defendLoc = Comms.getTreeCluster();
+                    if (defendLoc == null) defendLoc = Comms.readLocation(0, 1); // friendly archon
+                    if (defendLoc != null) {
+                        Nav.moveToward(defendLoc);
+                        return;
+                    }
+                }
                 // Explore aggressively with clearing
                 TreeInfo[] blockingTrees = rc.senseNearbyTrees(rc.getType().bodyRadius + rc.getType().strideRadius + 6.0f, Team.NEUTRAL);  // Increased range
                 if (blockingTrees.length > 0) {
@@ -76,13 +93,15 @@ public strictfp class Lumberjack {
                         }
                     }
                 }
-                MapLocation rally = Comms.getRallyPoint();
-                if (rally != null) {
-                    Nav.moveToward(rally);
+                // If enemy detected, move to enemy archon to chop trees
+                MapLocation enemyArchon = Comms.getEnemyArchonLocation();
+                if (enemyArchon != null) {
+                    Nav.moveToward(enemyArchon);
                 } else {
-                    MapLocation enemyArchon = Comms.getEnemyArchonLocation();
-                    if (enemyArchon != null) {
-                        Nav.moveToward(enemyArchon);
+                    // Else, rally
+                    MapLocation rally = Comms.getRallyPoint();
+                    if (rally != null) {
+                        Nav.moveToward(rally);
                     } else {
                         // Move toward predicted enemy base or center
                         MapLocation friendlyArchon = Comms.readLocation(0, 1);
