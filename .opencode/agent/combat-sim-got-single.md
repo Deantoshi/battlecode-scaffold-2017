@@ -210,9 +210,6 @@ SELECT team, COUNT(*) as actions FROM events WHERE event_type='action' GROUP BY 
 python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
 SELECT team, COUNT(*) as spawned FROM robots WHERE spawn_round IS NOT NULL GROUP BY team"
 
-# Units lost from snapshots
-python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
-SELECT MAX(team_a_units_lost) as a_lost, MAX(team_b_units_lost) as b_lost FROM snapshots"
 ```
 
 **Output HYPOTHESIS_B:**
@@ -242,15 +239,6 @@ SELECT team, MIN(round_id) as first_shot FROM events WHERE event_type='shoot' GR
 # Last shot timing by team
 python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
 SELECT team, MAX(round_id) as last_shot FROM events WHERE event_type='shoot' GROUP BY team"
-
-# Shooting rate by phase
-python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
-SELECT CASE WHEN round_id<500 THEN 'early' WHEN round_id<1500 THEN 'mid' ELSE 'late' END as phase,
-team, COUNT(*) as shots FROM events WHERE event_type='shoot' GROUP BY phase, team"
-
-# Shoot events by round range
-python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
-SELECT team, COUNT(*) as shots FROM events WHERE event_type='shoot' AND round_id BETWEEN 330 AND 360 GROUP BY team"
 ```
 
 **Output HYPOTHESIS_C:**
