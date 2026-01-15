@@ -15,6 +15,7 @@ Usage:
     python3 bc17_query.py events <match.db> [--type=spawn|death|vp|action|donate|shoot] [--team=A|B] [--round=N]
     python3 bc17_query.py units <match.db> [--round=N] [--type=SOLDIER|GARDENER|...]
     python3 bc17_query.py unit-positions <match.db> [--round=N] [--team=A|B] [--include-trees]
+        # Note: only units that moved <=10 distance since last snapshot are returned
     python3 bc17_query.py economy <match.db> [--round=N]
     python3 bc17_query.py search <match.db> <query>
     python3 bc17_query.py sql <match.db> "<SQL query>"
@@ -520,7 +521,7 @@ def cmd_units(db_path: str, round_id: int = None, body_type: str = None):
 
 
 def cmd_unit_positions(db_path: str, round_id: int = None, team: str = 'A', include_trees: bool = False):
-    """Query unit positions from snapshot rounds."""
+    """Query unit positions from snapshot rounds (<=10 distance since last snapshot)."""
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
 
@@ -560,9 +561,9 @@ def cmd_unit_positions(db_path: str, round_id: int = None, team: str = 'A', incl
         return
 
     if snapshot_round is not None:
-        print(f"Unit positions at round {snapshot_round} (Team {team}):")
+        print(f"Unit positions (<=10 distance since last snapshot) at round {snapshot_round} (Team {team}):")
     else:
-        print(f"Unit positions (Team {team}):")
+        print(f"Unit positions (<=10 distance since last snapshot) (Team {team}):")
 
     current_round = None
     for row in rows:

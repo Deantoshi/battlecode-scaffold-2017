@@ -83,3 +83,30 @@
 - Archon.java: Modified Archon priority logic to set lumberjack priority to 0 if any enemy units detected via Comms, and reduced scout production early by lowering scout priority → balance unit production
 **Outcome:** WORSE - Avg rounds increased by 331 from 2378 to 2709; changes may not have taken effect or need further tuning
 ---
+## Iteration 1
+**Results:** 5/5 wins | avg 2709r | ΔN/A | →
+**Maps:** Shrine:W(2999,timeout) | Barrier:W(2505,vp) | Bullseye:W(2952,vp) | Lanes:W(2507,vp) | Blitzkrieg:W(2581,vp)
+**Units & Trees (totals across all maps):**
+| Type       | Produced |     Lost | Surviving |
+|------------|----------|----------|-----------|
+| Archon     |        0 |        0 |         0 |
+| Gardener   |      120 |       14 |       106 |
+| Soldier    |       48 |       12 |        36 |
+| Lumberjack |        0 |        0 |         0 |
+| Scout      |      210 |       52 |       158 |
+| Tank       |        0 |        0 |         0 |
+| Trees      |      136 |        0 |       136 |
+| **TOTAL**  |      650 |      164 |       486 |
+
+**Economy (totals across all maps):**
+| Metric    |     Bullets |
+|-----------|-------------|
+| Generated |        4419 |
+| Spent     |           0 |
+| Net       | +      4419 |
+
+**Weakness Found:** Late start of VP donations leading to slow wins averaging 2709 rounds (donations begin at round 1001, VP gains start round 1200)
+**Changes Made:**
+- Archon.java: Changed donation condition from 'turnCounter > 1000' to 'turnCounter > 600 && rc.getTeamBullets() > vpCost * 2' → start VP donations earlier while preserving bullet reserves
+**Outcome:** N/A - first iteration, no previous to compare
+---

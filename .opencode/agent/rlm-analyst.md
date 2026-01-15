@@ -70,7 +70,7 @@ python3 scripts/bc17_query.py events <match.db> --type=shoot
 python3 scripts/bc17_query.py units <match.db>
 python3 scripts/bc17_query.py units <match.db> --round=500
 
-# Unit positions (snapshots every 200 rounds)
+# Unit positions (stuck units, <=10 distance since last snapshot)
 python3 scripts/bc17_query.py unit-positions <match.db> --team=A
 
 # Specific round range
@@ -220,7 +220,7 @@ MAP_RESULTS: (for battle log)
 - Lanes: <W|L> | <rounds> | <elim|vp|timeout>
 - Blitzkrieg: <W|L> | <rounds> | <elim|vp|timeout>
 
-ALLY_POSITIONS: (all snapshots, Team A)
+ALLY_POSITIONS: (all snapshots, Team A, units moved <=10 since last snapshot)
 Format template (compact, copy/paste friendly):
 ```
 ALLY_POSITIONS:

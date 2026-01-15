@@ -300,6 +300,8 @@ class BC17Parser:
             units_alive = {0: defaultdict(int), 1: defaultdict(int)}
             # Track robot positions: robot_id -> (team_idx, body_type, x, y)
             robot_positions = {}
+            # Track positions at last snapshot for movement threshold checks
+            last_snapshot_positions = {}
 
             def capture_positions(snapshot: GameSnapshot):
                 snapshot.team_a_unit_positions = []
@@ -307,12 +309,22 @@ class BC17Parser:
                 for robot_id, (team_idx, body_type, x, y) in robot_positions.items():
                     if x is None or y is None:
                         continue
-                    type_name = BODY_TYPES.get(body_type, f'UNKNOWN_{body_type}')
-                    entry = {'id': robot_id, 'type': type_name, 'x': x, 'y': y}
-                    if team_idx == 0:
-                        snapshot.team_a_unit_positions.append(entry)
-                    elif team_idx == 1:
-                        snapshot.team_b_unit_positions.append(entry)
+                    prev = last_snapshot_positions.get(robot_id)
+                    if prev is None:
+                        continue
+                    _, _, prev_x, prev_y = prev
+                    dx = x - prev_x
+                    dy = y - prev_y
+                    if (dx * dx + dy * dy) <= 100.0:
+                        type_name = BODY_TYPES.get(body_type, f'UNKNOWN_{body_type}')
+                        entry = {'id': robot_id, 'type': type_name, 'x': x, 'y': y}
+                        if team_idx == 0:
+                            snapshot.team_a_unit_positions.append(entry)
+                        elif team_idx == 1:
+                            snapshot.team_b_unit_positions.append(entry)
+
+                last_snapshot_positions.clear()
+                last_snapshot_positions.update(robot_positions)
 
             for i in range(num_events):
                 # Each event is an offset to EventWrapper table
