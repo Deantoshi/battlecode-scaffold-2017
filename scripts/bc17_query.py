@@ -17,6 +17,7 @@ Usage:
     python3 bc17_query.py unit-positions <match.db> [--round=N] [--team=A|B] [--include-trees]
     python3 bc17_query.py unit-positions "matches/*.db" [--round=N] [--team=A|B] [--include-trees]
         # Note: returns quadrant counts for units that stayed in the same quadrant since last snapshot (likely stuck)
+        #       with a glob it outputs a single table with a Map column
     python3 bc17_query.py economy <match.db> [--round=N]
     python3 bc17_query.py search <match.db> <query>
     python3 bc17_query.py sql <match.db> "<SQL query>"
@@ -523,6 +524,25 @@ def cmd_units(db_path: str, round_id: int = None, body_type: str = None):
     conn.close()
 
 
+def print_ascii_table(headers: List[str], rows: List[List[str]]):
+    if not headers:
+        return
+    widths = [len(h) for h in headers]
+    for row in rows:
+        for i, cell in enumerate(row):
+            widths[i] = max(widths[i], len(cell))
+
+    def line(ch: str = '-'):
+        return '+' + '+'.join(ch * (w + 2) for w in widths) + '+'
+
+    print(line('-'))
+    print('| ' + ' | '.join(headers[i].ljust(widths[i]) for i in range(len(headers))) + ' |')
+    print(line('-'))
+    for row in rows:
+        print('| ' + ' | '.join(row[i].ljust(widths[i]) for i in range(len(headers))) + ' |')
+    print(line('-'))
+
+
 def cmd_unit_positions(db_path: str, round_id: int = None, team: str = 'A', include_trees: bool = False):
     """Query unit quadrant counts from snapshot rounds (same quadrant, likely stuck)."""
     if glob.has_magic(db_path):
@@ -534,18 +554,31 @@ def cmd_unit_positions(db_path: str, round_id: int = None, team: str = 'A', incl
         print("No match databases found.")
         return
 
-    for idx, path in enumerate(db_paths):
+    filters = ["team = ?"]
+    base_params = [team]
+    if not include_trees:
+        filters.append("body_type != 'TREE_BULLET'")
+    base_where = " AND ".join(filters)
+
+    quadrants = ['NW', 'NE', 'SW', 'SE']
+    unit_types = ['ARCHON', 'GARDENER', 'LUMBERJACK', 'SOLDIER', 'TANK', 'SCOUT']
+    if include_trees:
+        unit_types.append('TREE_BULLET')
+
+    rows = []
+    missing_snapshots = 0
+    for path in db_paths:
         conn = sqlite3.connect(path)
         conn.row_factory = sqlite3.Row
 
-        filters = ["team = ?"]
-        params = [team]
-        if not include_trees:
-            filters.append("body_type != 'TREE_BULLET'")
-        where_clause = " AND ".join(filters)
+        map_name = os.path.basename(path)
+        row = conn.execute("SELECT value FROM metadata WHERE key='map_name'").fetchone()
+        if row and row['value']:
+            map_name = row['value']
 
-        snapshot_round = None
         snapshot_rounds = []
+        params = list(base_params)
+        where_clause = base_where
         if round_id is not None:
             row = conn.execute(
                 "SELECT MAX(round_id) AS round_id FROM snapshots WHERE round_id <= ?",
@@ -553,7 +586,7 @@ def cmd_unit_positions(db_path: str, round_id: int = None, team: str = 'A', incl
             ).fetchone()
             snapshot_round = row['round_id'] if row else None
             if snapshot_round is None:
-                print(f"No snapshot found for Team {team} at or before round {round_id} in {path}.")
+                missing_snapshots += 1
                 conn.close()
                 continue
             snapshot_rounds = [snapshot_round]
@@ -565,7 +598,7 @@ def cmd_unit_positions(db_path: str, round_id: int = None, team: str = 'A', incl
                 for row in conn.execute("SELECT round_id FROM snapshots ORDER BY round_id").fetchall()
             ]
 
-        rows = conn.execute(
+        rows_data = conn.execute(
             f"""
             SELECT round_id, quadrant, body_type, count
             FROM unit_quadrants
@@ -575,51 +608,36 @@ def cmd_unit_positions(db_path: str, round_id: int = None, team: str = 'A', incl
             params
         ).fetchall()
 
-        map_name = None
-        row = conn.execute("SELECT value FROM metadata WHERE key='map_name'").fetchone()
-        if row:
-            map_name = row['value']
-
-        if idx > 0:
-            print()
-        if len(db_paths) > 1:
-            label = os.path.basename(path)
-            if map_name:
-                print(f"=== {label} (map {map_name}) ===")
-            else:
-                print(f"=== {label} ===")
-
-        if snapshot_round is not None:
-            print(f"Unit quadrant counts (same quadrant since last snapshot; likely stuck) at round {snapshot_round} (Team {team}):")
-        else:
-            print(f"Unit quadrant counts (same quadrant since last snapshot; likely stuck) (Team {team}):")
-
-        if not rows and not snapshot_rounds:
-            print("No unit quadrant snapshots found.")
-            conn.close()
-            continue
-
-        quadrants = ['NW', 'NE', 'SW', 'SE']
         by_round = {}
-        for row in rows:
+        for row in rows_data:
             round_key = row['round_id']
             by_round.setdefault(round_key, {}).setdefault(row['quadrant'], {})[row['body_type']] = row['count']
 
-        rounds_to_print = snapshot_rounds if snapshot_rounds else sorted(by_round.keys())
-        for ridx, round_key in enumerate(rounds_to_print):
-            if ridx > 0:
-                print()
-            parts = []
+        for round_key in snapshot_rounds:
             for quadrant in quadrants:
-                entries = by_round.get(round_key, {}).get(quadrant)
-                if not entries:
-                    parts.append(f"{quadrant}{{-}}")
-                    continue
-                unit_parts = [f"{body_type}={entries[body_type]}" for body_type in sorted(entries.keys())]
-                parts.append(f"{quadrant}{{{' '.join(unit_parts)}}}")
-            print(f"R{round_key}: {' '.join(parts)}")
+                entries = by_round.get(round_key, {}).get(quadrant, {})
+                row = [map_name, str(round_key), quadrant]
+                for unit_type in unit_types:
+                    row.append(str(entries.get(unit_type, 0)))
+                rows.append((map_name, round_key, quadrants.index(quadrant), row))
 
         conn.close()
+
+    if not rows:
+        print("No unit quadrant snapshots found.")
+        return
+
+    if round_id is not None:
+        print(f"Unit quadrant counts (same quadrant since last snapshot; likely stuck) near R{round_id} (Team {team}), by map:")
+    else:
+        print(f"Unit quadrant counts (same quadrant since last snapshot; likely stuck) (Team {team}), by map:")
+    if missing_snapshots:
+        print(f"Note: {missing_snapshots} match(es) had no snapshot at or before the requested round.")
+
+    rows.sort(key=lambda r: (r[0], r[1], r[2]))
+    table_rows = [row[-1] for row in rows]
+    headers = ['Map', 'Round', 'Quadrant'] + unit_types
+    print_ascii_table(headers, table_rows)
 
 
 def cmd_economy(db_path: str, round_id: int = None):
@@ -936,7 +954,7 @@ def main():
 
     elif cmd == 'unit-positions':
         if len(sys.argv) < 3:
-            print("Usage: bc17_query.py unit-positions <match.db> [--round=N] [--team=A|B] [--include-trees]")
+            print("Usage: bc17_query.py unit-positions <match.db|glob> [--round=N] [--team=A|B] [--include-trees]")
             sys.exit(1)
         round_id = None
         team = 'A'

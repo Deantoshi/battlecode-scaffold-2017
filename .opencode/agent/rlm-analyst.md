@@ -141,7 +141,7 @@ Note:
 
 ### Step 2.5: Capture Ally Quadrant Snapshots (MANDATORY)
 
-For all maps in one pass:
+For all maps in one pass (aggregate table):
 ```bash
 python3 scripts/bc17_query.py unit-positions "matches/*.db" --team=A
 ```
@@ -220,17 +220,23 @@ MAP_RESULTS: (for battle log)
 - Lanes: <W|L> | <rounds> | <elim|vp|timeout>
 - Blitzkrieg: <W|L> | <rounds> | <elim|vp|timeout>
 
-ALLY_POSITIONS: (all snapshots, Team A, likely stuck units by quadrant)
+ALLY_POSITIONS: (all snapshots, Team A, likely stuck units by quadrant; by map)
 Format template (compact, copy/paste friendly):
 ```
 ALLY_POSITIONS:
-- match: <db_name> (map <map_name>)
-  - R200: NW{ARCHON=1 GARDENER=2} NE{-} SW{SOLDIER=1} SE{-}
-  - R400: NW{ARCHON=1} NE{TANK=1} SW{-} SE{-}
+- aggregated table (by map):
+  +-------+-------+----------+--------+----------+------------+---------+------+-------+
+  | Map   | Round | Quadrant | ARCHON | GARDENER | LUMBERJACK | SOLDIER | TANK | SCOUT |
+  +-------+-------+----------+--------+----------+------------+---------+------+-------+
+  | Shrine| 200   | NW       | 1      | 2        | 0          | 0       | 0    | 0     |
+  | Shrine| 200   | NE       | 0      | 0        | 0          | 1       | 0    | 0     |
+  | Shrine| 200   | SW       | 0      | 0        | 0          | 0       | 0    | 0     |
+  | Shrine| 200   | SE       | 0      | 0        | 0          | 0       | 0    | 0     |
+  +-------+-------+----------+--------+----------+------------+---------+------+-------+
 ```
 Notes:
-- Use one line per snapshot round.
-- If there are many units, keep the line but don't wrap; truncate only if absolutely necessary and mark with `...`.
+- Keep a single table; each row is map+round+quadrant.
+- If the table is long, truncate rows only if absolutely necessary and mark with `...`.
 
 HISTORY_CONTEXT: (from battle log)
 - prev_iteration_wins: <integer, or "N/A" if first>
