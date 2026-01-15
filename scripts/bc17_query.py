@@ -15,7 +15,8 @@ Usage:
     python3 bc17_query.py events <match.db> [--type=spawn|death|vp|action|donate|shoot] [--team=A|B] [--round=N]
     python3 bc17_query.py units <match.db> [--round=N] [--type=SOLDIER|GARDENER|...]
     python3 bc17_query.py unit-positions <match.db> [--round=N] [--team=A|B] [--include-trees]
-        # Note: only units that moved <=10 distance since last snapshot are returned
+    python3 bc17_query.py unit-positions "matches/*.db" [--round=N] [--team=A|B] [--include-trees]
+        # Note: returns quadrant counts for units that stayed in the same quadrant since last snapshot (likely stuck)
     python3 bc17_query.py economy <match.db> [--round=N]
     python3 bc17_query.py search <match.db> <query>
     python3 bc17_query.py sql <match.db> "<SQL query>"
@@ -38,6 +39,7 @@ import sys
 import os
 import json
 import re
+import glob
 from collections import defaultdict
 from typing import Dict, List, Tuple, Optional, Any
 
@@ -134,15 +136,14 @@ class BC17Database:
                 team_b_units_lost INTEGER
             );
 
-            -- Unit positions captured at snapshot rounds
-            CREATE TABLE IF NOT EXISTS unit_positions (
+            -- Unit quadrant counts captured at snapshot rounds
+            CREATE TABLE IF NOT EXISTS unit_quadrants (
                 round_id INTEGER,
                 team TEXT,
-                robot_id INTEGER,
+                quadrant TEXT,
                 body_type TEXT,
-                x REAL,
-                y REAL,
-                PRIMARY KEY (round_id, robot_id)
+                count INTEGER,
+                PRIMARY KEY (round_id, team, quadrant, body_type)
             );
 
             -- Create indexes for fast querying
@@ -153,8 +154,8 @@ class BC17Database:
             CREATE INDEX IF NOT EXISTS idx_logs_team ON logs(team);
             CREATE INDEX IF NOT EXISTS idx_robots_team ON robots(team);
             CREATE INDEX IF NOT EXISTS idx_robots_type ON robots(body_type);
-            CREATE INDEX IF NOT EXISTS idx_unit_positions_round ON unit_positions(round_id);
-            CREATE INDEX IF NOT EXISTS idx_unit_positions_team ON unit_positions(team);
+            CREATE INDEX IF NOT EXISTS idx_unit_quadrants_round ON unit_quadrants(round_id);
+            CREATE INDEX IF NOT EXISTS idx_unit_quadrants_team ON unit_quadrants(team);
         """)
         self.conn.commit()
 
@@ -335,18 +336,20 @@ class BC17Database:
                 snapshot.team_a_units_lost, snapshot.team_b_units_lost
             ))
 
-        # Store unit positions for snapshot rounds
+        # Store unit quadrant counts for snapshot rounds
         for snapshot in parser.snapshots:
-            for unit in snapshot.team_a_unit_positions:
-                self.conn.execute(
-                    "INSERT OR REPLACE INTO unit_positions (round_id, team, robot_id, body_type, x, y) VALUES (?, ?, ?, ?, ?, ?)",
-                    (snapshot.round, 'A', unit['id'], unit['type'], unit['x'], unit['y'])
-                )
-            for unit in snapshot.team_b_unit_positions:
-                self.conn.execute(
-                    "INSERT OR REPLACE INTO unit_positions (round_id, team, robot_id, body_type, x, y) VALUES (?, ?, ?, ?, ?, ?)",
-                    (snapshot.round, 'B', unit['id'], unit['type'], unit['x'], unit['y'])
-                )
+            for quadrant, counts in snapshot.team_a_unit_quadrants.items():
+                for body_type, count in counts.items():
+                    self.conn.execute(
+                        "INSERT OR REPLACE INTO unit_quadrants (round_id, team, quadrant, body_type, count) VALUES (?, ?, ?, ?, ?)",
+                        (snapshot.round, 'A', quadrant, body_type, count)
+                    )
+            for quadrant, counts in snapshot.team_b_unit_quadrants.items():
+                for body_type, count in counts.items():
+                    self.conn.execute(
+                        "INSERT OR REPLACE INTO unit_quadrants (round_id, team, quadrant, body_type, count) VALUES (?, ?, ?, ?, ?)",
+                        (snapshot.round, 'B', quadrant, body_type, count)
+                    )
 
         self.conn.commit()
         return len(parser.rounds)
@@ -425,7 +428,7 @@ def cmd_summary(db_path: str):
     print(f"  Team A: {dict(units_a)}")
     print(f"  Team B: {dict(units_b)}")
     print()
-    print("Available queries: rounds, events, units, unit-positions, economy, search, sql")
+    print("Available queries: rounds, events, units, unit-positions (quadrant counts, likely stuck), economy, search, sql")
 
     conn.close()
 
@@ -521,60 +524,102 @@ def cmd_units(db_path: str, round_id: int = None, body_type: str = None):
 
 
 def cmd_unit_positions(db_path: str, round_id: int = None, team: str = 'A', include_trees: bool = False):
-    """Query unit positions from snapshot rounds (<=10 distance since last snapshot)."""
-    conn = sqlite3.connect(db_path)
-    conn.row_factory = sqlite3.Row
+    """Query unit quadrant counts from snapshot rounds (same quadrant, likely stuck)."""
+    if glob.has_magic(db_path):
+        db_paths = sorted(glob.glob(db_path))
+    else:
+        db_paths = [db_path]
 
-    filters = ["team = ?"]
-    params = [team]
-    if not include_trees:
-        filters.append("body_type != 'TREE_BULLET'")
-    where_clause = " AND ".join(filters)
-
-    snapshot_round = None
-    if round_id is not None:
-        row = conn.execute(
-            f"SELECT MAX(round_id) AS round_id FROM unit_positions WHERE {where_clause} AND round_id <= ?",
-            params + [round_id]
-        ).fetchone()
-        snapshot_round = row['round_id'] if row else None
-        if snapshot_round is None:
-            print(f"No unit position snapshot found for Team {team} at or before round {round_id}.")
-            conn.close()
-            return
-        where_clause = f"{where_clause} AND round_id = ?"
-        params = params + [snapshot_round]
-
-    rows = conn.execute(
-        f"""
-        SELECT round_id, robot_id, body_type, x, y
-        FROM unit_positions
-        WHERE {where_clause}
-        ORDER BY round_id, body_type, robot_id
-        """,
-        params
-    ).fetchall()
-
-    if not rows:
-        print("No unit position snapshots found.")
-        conn.close()
+    if not db_paths:
+        print("No match databases found.")
         return
 
-    if snapshot_round is not None:
-        print(f"Unit positions (<=10 distance since last snapshot) at round {snapshot_round} (Team {team}):")
-    else:
-        print(f"Unit positions (<=10 distance since last snapshot) (Team {team}):")
+    for idx, path in enumerate(db_paths):
+        conn = sqlite3.connect(path)
+        conn.row_factory = sqlite3.Row
 
-    current_round = None
-    for row in rows:
-        if row['round_id'] != current_round:
-            if current_round is not None:
+        filters = ["team = ?"]
+        params = [team]
+        if not include_trees:
+            filters.append("body_type != 'TREE_BULLET'")
+        where_clause = " AND ".join(filters)
+
+        snapshot_round = None
+        snapshot_rounds = []
+        if round_id is not None:
+            row = conn.execute(
+                "SELECT MAX(round_id) AS round_id FROM snapshots WHERE round_id <= ?",
+                (round_id,)
+            ).fetchone()
+            snapshot_round = row['round_id'] if row else None
+            if snapshot_round is None:
+                print(f"No snapshot found for Team {team} at or before round {round_id} in {path}.")
+                conn.close()
+                continue
+            snapshot_rounds = [snapshot_round]
+            where_clause = f"{where_clause} AND round_id = ?"
+            params = params + [snapshot_round]
+        else:
+            snapshot_rounds = [
+                row['round_id']
+                for row in conn.execute("SELECT round_id FROM snapshots ORDER BY round_id").fetchall()
+            ]
+
+        rows = conn.execute(
+            f"""
+            SELECT round_id, quadrant, body_type, count
+            FROM unit_quadrants
+            WHERE {where_clause}
+            ORDER BY round_id, quadrant, body_type
+            """,
+            params
+        ).fetchall()
+
+        map_name = None
+        row = conn.execute("SELECT value FROM metadata WHERE key='map_name'").fetchone()
+        if row:
+            map_name = row['value']
+
+        if idx > 0:
+            print()
+        if len(db_paths) > 1:
+            label = os.path.basename(path)
+            if map_name:
+                print(f"=== {label} (map {map_name}) ===")
+            else:
+                print(f"=== {label} ===")
+
+        if snapshot_round is not None:
+            print(f"Unit quadrant counts (same quadrant since last snapshot; likely stuck) at round {snapshot_round} (Team {team}):")
+        else:
+            print(f"Unit quadrant counts (same quadrant since last snapshot; likely stuck) (Team {team}):")
+
+        if not rows and not snapshot_rounds:
+            print("No unit quadrant snapshots found.")
+            conn.close()
+            continue
+
+        quadrants = ['NW', 'NE', 'SW', 'SE']
+        by_round = {}
+        for row in rows:
+            round_key = row['round_id']
+            by_round.setdefault(round_key, {}).setdefault(row['quadrant'], {})[row['body_type']] = row['count']
+
+        rounds_to_print = snapshot_rounds if snapshot_rounds else sorted(by_round.keys())
+        for ridx, round_key in enumerate(rounds_to_print):
+            if ridx > 0:
                 print()
-            current_round = row['round_id']
-            print(f"Round {current_round}")
-        print(f"  {row['body_type']}#{row['robot_id']} @ ({row['x']:.1f}, {row['y']:.1f})")
+            parts = []
+            for quadrant in quadrants:
+                entries = by_round.get(round_key, {}).get(quadrant)
+                if not entries:
+                    parts.append(f"{quadrant}{{-}}")
+                    continue
+                unit_parts = [f"{body_type}={entries[body_type]}" for body_type in sorted(entries.keys())]
+                parts.append(f"{quadrant}{{{' '.join(unit_parts)}}}")
+            print(f"R{round_key}: {' '.join(parts)}")
 
-    conn.close()
+        conn.close()
 
 
 def cmd_economy(db_path: str, round_id: int = None):

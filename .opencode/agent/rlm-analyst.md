@@ -70,8 +70,8 @@ python3 scripts/bc17_query.py events <match.db> --type=shoot
 python3 scripts/bc17_query.py units <match.db>
 python3 scripts/bc17_query.py units <match.db> --round=500
 
-# Unit positions (stuck units, <=10 distance since last snapshot)
-python3 scripts/bc17_query.py unit-positions <match.db> --team=A
+# Unit positions (likely stuck units by quadrant, same quadrant since last snapshot)
+python3 scripts/bc17_query.py unit-positions "matches/*.db" --team=A
 
 # Specific round range
 python3 scripts/bc17_query.py rounds <match.db> 400 600
@@ -139,14 +139,14 @@ Note:
 - Final bullet counts
  - Track total wins and average rounds for wins to evaluate the objective (>=3 wins, <=1500 avg rounds)
 
-### Step 2.5: Capture Ally Position Snapshots (MANDATORY)
+### Step 2.5: Capture Ally Quadrant Snapshots (MANDATORY)
 
-For each database:
+For all maps in one pass:
 ```bash
-python3 scripts/bc17_query.py unit-positions matches/{name}.db --team=A
+python3 scripts/bc17_query.py unit-positions "matches/*.db" --team=A
 ```
 
-**MANDATORY:** Always include all snapshots in your analysis output.
+**MANDATORY:** Always include all snapshots in your analysis output and explicitly state that these units are likely stuck (same quadrant across snapshots).
 If no positions are returned, explicitly note this as a blocker in ANALYSIS and stop.
 
 ### Step 3: Identify Pattern
@@ -220,13 +220,13 @@ MAP_RESULTS: (for battle log)
 - Lanes: <W|L> | <rounds> | <elim|vp|timeout>
 - Blitzkrieg: <W|L> | <rounds> | <elim|vp|timeout>
 
-ALLY_POSITIONS: (all snapshots, Team A, units moved <=10 since last snapshot)
+ALLY_POSITIONS: (all snapshots, Team A, likely stuck units by quadrant)
 Format template (compact, copy/paste friendly):
 ```
 ALLY_POSITIONS:
-- match: <db_name>
-  - R200: ARCHON#3@(21.4,47.8) GARDENER#12@(24.1,44.6) SOLDIER#31@(30.2,39.9)
-  - R400: ARCHON#3@(22.0,46.9) GARDENER#12@(25.3,43.8) TANK#55@(29.8,40.2)
+- match: <db_name> (map <map_name>)
+  - R200: NW{ARCHON=1 GARDENER=2} NE{-} SW{SOLDIER=1} SE{-}
+  - R400: NW{ARCHON=1} NE{TANK=1} SW{-} SE{-}
 ```
 Notes:
 - Use one line per snapshot round.

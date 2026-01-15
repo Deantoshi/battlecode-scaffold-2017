@@ -241,9 +241,9 @@ class GameSnapshot:
         # VP tracking for donation calculation
         self.team_a_vp_prev = 0
         self.team_b_vp_prev = 0
-        # Unit positions captured at snapshot rounds
-        self.team_a_unit_positions = []
-        self.team_b_unit_positions = []
+        # Unit quadrant counts captured at snapshot rounds
+        self.team_a_unit_quadrants = defaultdict(lambda: defaultdict(int))
+        self.team_b_unit_quadrants = defaultdict(lambda: defaultdict(int))
 
 
 class BC17Parser:
@@ -257,6 +257,8 @@ class BC17Parser:
         self.snapshots: List[GameSnapshot] = []
         self.total_rounds = 0
         self.winner = None
+        self.map_min = None
+        self.map_max = None
 
     def load(self) -> bool:
         """Load and decompress the .bc17 file."""
@@ -283,6 +285,15 @@ class BC17Parser:
             # 1: matchHeaders (vector of int)
             # 2: matchFooters (vector of int)
 
+            match_headers_offset = self.reader.get_field_offset(root_pos, 1)
+            if match_headers_offset > 0:
+                num_headers = self.reader.get_vector_length(match_headers_offset)
+                headers_start = self.reader.get_vector_start(match_headers_offset)
+                if num_headers > 0:
+                    header_ptr = headers_start
+                    header_offset = self.reader.get_indirect(header_ptr)
+                    self.parse_match_header(header_offset)
+
             events_offset = self.reader.get_field_offset(root_pos, 0)
             if events_offset <= 0:
                 return False
@@ -304,24 +315,46 @@ class BC17Parser:
             last_snapshot_positions = {}
 
             def capture_positions(snapshot: GameSnapshot):
-                snapshot.team_a_unit_positions = []
-                snapshot.team_b_unit_positions = []
-                for robot_id, (team_idx, body_type, x, y) in robot_positions.items():
-                    if x is None or y is None:
-                        continue
-                    prev = last_snapshot_positions.get(robot_id)
-                    if prev is None:
-                        continue
-                    _, _, prev_x, prev_y = prev
-                    dx = x - prev_x
-                    dy = y - prev_y
-                    if (dx * dx + dy * dy) <= 100.0:
-                        type_name = BODY_TYPES.get(body_type, f'UNKNOWN_{body_type}')
-                        entry = {'id': robot_id, 'type': type_name, 'x': x, 'y': y}
-                        if team_idx == 0:
-                            snapshot.team_a_unit_positions.append(entry)
-                        elif team_idx == 1:
-                            snapshot.team_b_unit_positions.append(entry)
+                snapshot.team_a_unit_quadrants = defaultdict(lambda: defaultdict(int))
+                snapshot.team_b_unit_quadrants = defaultdict(lambda: defaultdict(int))
+                if robot_positions:
+                    if self.map_min and self.map_max:
+                        min_x, min_y = self.map_min
+                        max_x, max_y = self.map_max
+                    else:
+                        xs = [pos[2] for pos in robot_positions.values() if pos[2] is not None]
+                        ys = [pos[3] for pos in robot_positions.values() if pos[3] is not None]
+                        if xs and ys:
+                            min_x, max_x = min(xs), max(xs)
+                            min_y, max_y = min(ys), max(ys)
+                        else:
+                            min_x = max_x = min_y = max_y = None
+
+                    if min_x is not None and max_x is not None:
+                        mid_x = (min_x + max_x) / 2.0
+                        mid_y = (min_y + max_y) / 2.0
+
+                        def quadrant_for(x: float, y: float) -> str:
+                            if x < mid_x:
+                                return 'SW' if y < mid_y else 'NW'
+                            return 'SE' if y < mid_y else 'NE'
+
+                        for robot_id, (team_idx, body_type, x, y) in robot_positions.items():
+                            if x is None or y is None:
+                                continue
+                            prev = last_snapshot_positions.get(robot_id)
+                            if prev is None:
+                                continue
+                            _, _, prev_x, prev_y = prev
+                            prev_quad = quadrant_for(prev_x, prev_y)
+                            curr_quad = quadrant_for(x, y)
+                            if prev_quad != curr_quad:
+                                continue
+                            type_name = BODY_TYPES.get(body_type, f'UNKNOWN_{body_type}')
+                            if team_idx == 0:
+                                snapshot.team_a_unit_quadrants[curr_quad][type_name] += 1
+                            elif team_idx == 1:
+                                snapshot.team_b_unit_quadrants[curr_quad][type_name] += 1
 
                 last_snapshot_positions.clear()
                 last_snapshot_positions.update(robot_positions)
@@ -625,6 +658,31 @@ class BC17Parser:
         except Exception:
             pass
 
+    def parse_match_header(self, table_pos: int):
+        """Parse MatchHeader to get map bounds."""
+        if table_pos <= 0:
+            return
+
+        try:
+            map_offset = self.reader.get_field_offset(table_pos, 0)
+            if map_offset <= 0:
+                return
+            map_table = self.reader.get_indirect(map_offset)
+            if map_table <= 0:
+                return
+
+            min_corner_offset = self.reader.get_field_offset(map_table, 1)
+            max_corner_offset = self.reader.get_field_offset(map_table, 2)
+            if min_corner_offset > 0 and max_corner_offset > 0:
+                min_x = self.reader.read_float(min_corner_offset)
+                min_y = self.reader.read_float(min_corner_offset + 4)
+                max_x = self.reader.read_float(max_corner_offset)
+                max_y = self.reader.read_float(max_corner_offset + 4)
+                self.map_min = (min_x, min_y)
+                self.map_max = (max_x, max_y)
+        except Exception:
+            pass
+
     def parse_match_footer(self, table_pos: int):
         """Parse MatchFooter for winner and total rounds."""
         if table_pos <= 0:
@@ -719,6 +777,9 @@ class BC17Parser:
             metadata['total_rounds'] = self.total_rounds
         elif self.rounds:
             metadata['total_rounds'] = max(r.round_id for r in self.rounds)
+        if self.map_min and self.map_max:
+            metadata['map_min'] = list(self.map_min)
+            metadata['map_max'] = list(self.map_max)
 
         return {
             'metadata': metadata,

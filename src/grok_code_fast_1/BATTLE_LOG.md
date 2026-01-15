@@ -83,7 +83,7 @@
 - Archon.java: Modified Archon priority logic to set lumberjack priority to 0 if any enemy units detected via Comms, and reduced scout production early by lowering scout priority → balance unit production
 **Outcome:** WORSE - Avg rounds increased by 331 from 2378 to 2709; changes may not have taken effect or need further tuning
 ---
-## Iteration 1
+## Iteration 4
 **Results:** 5/5 wins | avg 2709r | ΔN/A | →
 **Maps:** Shrine:W(2999,timeout) | Barrier:W(2505,vp) | Bullseye:W(2952,vp) | Lanes:W(2507,vp) | Blitzkrieg:W(2581,vp)
 **Units & Trees (totals across all maps):**
@@ -109,4 +109,34 @@
 **Changes Made:**
 - Archon.java: Changed donation condition from 'turnCounter > 1000' to 'turnCounter > 600 && rc.getTeamBullets() > vpCost * 2' → start VP donations earlier while preserving bullet reserves
 **Outcome:** N/A - first iteration, no previous to compare
+---
+## Iteration 5
+**Results:** 5/5 wins | avg 2613r | Δ-96 | ↑
+**Maps:** Shrine:W(2999,timeout) | Barrier:W(2310,vp) | Bullseye:W(2999,timeout) | Lanes:W(2070,vp) | Blitzkrieg:W(2679,vp)
+**Units & Trees (totals across all maps):**
+| Type       | Produced |     Lost | Surviving |
+|------------|----------|----------|-----------|
+| Archon     |        0 |        0 |         0 |
+| Gardener   |       96 |        6 |        90 |
+| Soldier    |       48 |       18 |        30 |
+| Lumberjack |        0 |        0 |         0 |
+| Scout      |       74 |        4 |        70 |
+| Tank       |        0 |        0 |         0 |
+| Trees      |      118 |        0 |       118 |
+| **TOTAL**  |      454 |      100 |       354 |
+
+**Economy (totals across all maps):**
+| Metric    |     Bullets |
+|-----------|-------------|
+| Generated |        3586 |
+| Spent     |           0 |
+| Net       | +      3586 |
+
+**Weakness Found:** Insufficient lumberjack production for tree protection, causing enemy lumberjacks to chop trees and reduce bullet income, leading to slow VP on maps like Shrine (468 VP at 2999 rounds) and Bullseye (951 VP at 2999 rounds) (evidence: Shrine economy shows generation dropping from 722 at R200 to 536 at end; enemy produced 22 lumberjacks vs our 0; Bulletseye enemy 16 lumberjacks vs our 0; scouts (2-8 produced) die before broadcasting detection (only 2 scouts on Shrine))
+**Changes Made:**
+- Gardener.java: Removed scout build code after turn 500 to revert previous change and reduce scout production → revert regression
+- Gardener.java: Added early lumberjack build if turnCount < 300 and no lumberjacks built yet, with Comms tracking → ensure early tree defense
+- Scout.java: Added retreat logic for scouts when low health or outnumbered by lumberjacks/soldiers → improve scout survival for detection
+- Archon.java: Modified Archon priority to build lumberjacks periodically or when enemies detected globally → proactive lumberjack production
+**Outcome:** BETTER - Avg rounds decreased by 96 from 2709 to 2613; lumberjack changes should protect economy and accelerate VP gains
 ---
