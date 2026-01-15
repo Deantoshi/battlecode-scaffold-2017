@@ -525,10 +525,12 @@ PHASE 6 - Decision: {ACCEPT|REJECT}
 
 ## Combat Log Update
 
+**IMPORTANT: NEVER reduce the size of the battlelog. Always append, never delete content.**
+
 Append to `src/{BOT_NAME}/COMBAT_LOG_GOT.md`:
 
 ```markdown
-## GoT Execution - {DATE}
+## GoT Execution - {UNIX_TIMESTAMP}
 **Decision:** {ACCEPT|REJECT}
 
 ### Hypotheses
@@ -538,8 +540,41 @@ Append to `src/{BOT_NAME}/COMBAT_LOG_GOT.md`:
 | Movement | {desc} | {}/5 |
 | Timing | {desc} | {}/5 |
 
-### Selected: {solutions}
-### Changes: {descriptions}
+### Summary Reasoning
+{Summary explanation of why the selected solutions were chosen based on data analysis and scoring}
+
+### Code Changes
+
+**{SYNTHESIS.changes[0].solution_id}: {SYNTHESIS.changes[0].description}**
+**File:** {SYNTHESIS.changes[0].file}
+```java
+{SYNTHESIS.changes[0].old_code}
+```
+→
+```java
+{SYNTHESIS.changes[0].new_code}
+```
+
+**{SYNTHESIS.changes[1].solution_id}: {SYNTHESIS.changes[1].description}**
+**File:** {SYNTHESIS.changes[1].file}
+```java
+{SYNTHESIS.changes[1].old_code}
+```
+→
+```java
+{SYNTHESIS.changes[1].new_code}
+```
+
+**{SYNTHESIS.changes[2].solution_id}: {SYNTHESIS.changes[2].description}**
+**File:** {SYNTHESIS.changes[2].file}
+```java
+{SYNTHESIS.changes[2].old_code}
+```
+→
+```java
+{SYNTHESIS.changes[2].new_code}
+```
+
 ### Results: {baseline} → {validation}
 ---
 ```
