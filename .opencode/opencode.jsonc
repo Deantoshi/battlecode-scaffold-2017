@@ -1,0 +1,13 @@
+{
+  "tools": {
+    "bc_init": false,
+    "bc_run_game": false,
+    "bc_check_goal": false,
+    "bc_status": false,
+    "ralph_loop": false,
+    "bc_reset": false,
+    "ralph_status": false,
+    "cancel_ralph": false
+  },
+  "$schema": "https://opencode.ai/config.json"
+}
