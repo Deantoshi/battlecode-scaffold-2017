@@ -174,13 +174,9 @@ python3 scripts/bc17_query.py sql <db> \
 
 ### Step 5: Read Relevant Code
 
-Once you identify a weakness, **read all source files in `src/{BOT}/`** and deduce which file(s) control the relevant behavior. Do not rely on predefined file-role mappings.
+Once you identify a weakness, **read all Java source files in `src/{BOT}/`** and deduce which file(s) control the relevant behavior. Do not rely on predefined file-role mappings.
 ```bash
-ls src/{BOT}/
-for f in src/{BOT}/*; do
-  echo "=== $f ==="
-  cat "$f"
-done
+for f in src/{BOT}/*.java; do echo "=== $f ==="; cat "$f"; done
 ```
 
 ## Spend Accounting (Required)

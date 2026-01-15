@@ -64,6 +64,12 @@ For each iteration:
 └─────────────────────────────────────────────────────┘
 ```
 
+## Battle Log Location
+
+The battle log is stored at: **`src/{BOT_NAME}/BATTLE_LOG.md`**
+
+This file persists across runs and tracks iteration history for the analyst to reference.
+
 ## Setup Phase (First Run Only)
 
 ### 1. Validate Bot Exists
@@ -98,15 +104,12 @@ fi
 ```
 
 ### 5. Trim Battle Log (Keep Last 10 from Previous Run)
-At the start of each new run, trim the battle log to keep only the last 10 iteration entries from previous runs. This preserves rolling context while preventing unbounded growth.
+At the start of each new run, trim the battle log to keep only the last 10 iteration entries from previous runs. Iterations are renumbered to start from 1. This preserves rolling context while preventing unbounded growth.
 
 ```bash
-# Count "## Iteration" blocks and keep only the last 10
+# Count "## Iteration" blocks, keep only the last 10, and renumber starting from 1
 BATTLE_LOG="src/{BOT_NAME}/BATTLE_LOG.md"
 if [ -f "$BATTLE_LOG" ]; then
-  # Extract header (lines before first "## Iteration")
-  # Keep only last 10 iteration blocks
-  # New iterations from this run will be appended without limit
   python3 -c "
 import re
 with open('$BATTLE_LOG', 'r') as f:
@@ -123,11 +126,17 @@ for i in range(1, len(parts), 2):
 # Keep only last 10
 if len(iterations) > 10:
     iterations = iterations[-10:]
+# Renumber iterations starting from 1
+renumbered = []
+for idx, entry in enumerate(iterations, 1):
+    renumbered.append(re.sub(r'## Iteration \d+', f'## Iteration {idx}', entry, count=1))
 with open('$BATTLE_LOG', 'w') as f:
-    f.write(header + ''.join(iterations))
+    f.write(header + ''.join(renumbered))
 "
 fi
 ```
+
+**Note:** After trimming, the current run's iterations continue numbering from where the trimmed log left off (e.g., if 10 entries remain after trim, the first new iteration is 11).
 
 ## Iteration Workflow
 
@@ -218,6 +227,12 @@ Append a **structured entry** to the battle log using this format:
 ## Iteration {N}
 **Results:** {WINS}/5 wins | avg {AVG_ROUNDS}r | Δ{CHANGE_FROM_PREV} | {TREND}
 **Maps:** {MAP1}:{W/L}({rounds},{win_cond}) | {MAP2}:{W/L}(...) | ...
+**Units (totals across all maps):**
+- Produced: {ARCHON}A {GARDENER}G {SOLDIER}S {LUMBERJACK}L {SCOUT}Sc {TANK}T | Total: {TOTAL_PRODUCED}
+- Died: {ARCHON}A {GARDENER}G {SOLDIER}S {LUMBERJACK}L {SCOUT}Sc {TANK}T | Total: {TOTAL_DIED}
+- Trees: {PLANTED} planted, {DESTROYED} destroyed, {NET} net
+**Economy (totals across all maps):**
+- Bullets: {GENERATED} generated, {SPENT} spent, {NET} net
 **Weakness Found:** {ANALYSIS.ISSUE_1.weakness} (evidence: {brief evidence})
 **Changes Made:**
 - {FILE1}: {what changed} → {why/expected effect}
@@ -229,6 +244,7 @@ Append a **structured entry** to the battle log using this format:
 **Field explanations:**
 - `TREND`: ↑ improving, ↓ regressing, → stable
 - `win_cond`: `elim` (elimination) or `vp` (victory points) or `timeout`
+- Unit abbreviations: A=Archon, G=Gardener, S=Soldier, L=Lumberjack, Sc=Scout, T=Tank
 - Keep weakness/evidence to ~50 chars max
 - Keep each change line to ~60 chars max
 
@@ -237,6 +253,12 @@ Append a **structured entry** to the battle log using this format:
 ## Iteration 3
 **Results:** 2/5 wins | avg 1823r | Δ-1 | ↓
 **Maps:** Shrine:W(1205,elim) | Barrier:L(2400,timeout) | Bullseye:L(1800,elim) | Lanes:W(1650,vp) | Blitz:L(2100,elim)
+**Units (totals across all maps):**
+- Produced: 5A 12G 45S 8L 0Sc 3T | Total: 73
+- Died: 2A 8G 38S 6L 0Sc 2T | Total: 56
+- Trees: 24 planted, 18 destroyed, +6 net
+**Economy (totals across all maps):**
+- Bullets: 4500 generated, 3800 spent, +700 net
 **Weakness Found:** Soldiers dying early to focused fire (15 deaths by r500)
 **Changes Made:**
 - Soldier.java: added retreat at <30% HP → reduce early deaths
