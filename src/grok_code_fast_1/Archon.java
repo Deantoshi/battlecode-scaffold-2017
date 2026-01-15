@@ -30,16 +30,15 @@ public strictfp class Archon {
 
         // Check for nearby enemies - if any, move away from closest, considering multiple threats
         RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
+        RobotInfo[] ownRobots = rc.senseNearbyRobots(-1, rc.getTeam());
         Comms.broadcastTreeDensity(rc.senseNearbyTrees(10.0f).length); // New method in Comms
         if (enemies.length > 0) {
             Comms.broadcastEnemyThreats(enemies.length); // New method in Comms
         }
         // Dynamic production broadcasts
         int priority;
-        if (turnCounter < 400) {  // Extended from 300 to 400 for more soldiers early
+        if (turnCounter < 600) {
             priority = 1;  // Soldiers
-        } else if (turnCounter < 600) {
-            priority = 2;  // Scouts for exploration
         } else if (turnCounter > 1000) {
             priority = 3;  // Tanks for late-game sieges
         } else {
@@ -48,7 +47,7 @@ public strictfp class Archon {
             if (nearbyTrees.length > 5 || enemiesForPriority.length > 2) {
                 priority = 0;  // Lumberjacks for clearing/harassment
             } else {
-                priority = 2;  // Scouts
+                priority = 0;  // Lumberjacks
             }
         }
         Comms.broadcastProductionPriority(priority);
@@ -72,7 +71,7 @@ public strictfp class Archon {
                 Direction awayDense = denseDir.opposite();
                 Nav.tryMove(awayDense);
             }
-            return; // Skip hiring in dense areas
+        
         } else if (nearbyTrees.length >= 3 && nearbyTrees.length <= 5) {
             // Moderately dense: hire lumberjacks for clearing
             maxGardeners = 6;  // Further reduced to 6 in moderately dense areas
@@ -89,9 +88,9 @@ public strictfp class Archon {
 
         // Accelerate VP Donations
         int unitCount = Comms.getUnitCount();
-        if ((unitCount >= 20 || turnCounter >= 600) && rc.getTeamBullets() > 50) {
-            int donateAmount = (int)(rc.getTeamBullets() - 50);
-            rc.donate(donateAmount);
+        float vpCost = rc.getVictoryPointCost();
+        if ((unitCount >= 30 && turnCounter >= 800) && rc.getTeamBullets() >= vpCost + 50) {
+            rc.donate(vpCost);
         }
 
         if (!rc.hasMoved()) {
@@ -99,8 +98,10 @@ public strictfp class Archon {
             MapLocation enemyArchon = Comms.getEnemyArchonLocation();
             if (enemyArchon != null) {
                 Comms.broadcastRallyPoint(enemyArchon);
-                Direction toEnemy = rc.getLocation().directionTo(enemyArchon);
-                Nav.tryMove(toEnemy);
+                if (enemies.length == 0 && ownRobots.length >= 5) {
+                    Direction toEnemy = rc.getLocation().directionTo(enemyArchon);
+                    Nav.tryMove(toEnemy);
+                }
             } else {
                 // Fallback to center
                 MapLocation center = new MapLocation(50.0f, 50.0f);

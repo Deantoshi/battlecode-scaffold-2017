@@ -85,6 +85,50 @@ If compilation fails, report error and stop.
 rm -f summaries/*.md matches/*.db
 ```
 
+### 4. Initialize Battle Log
+```bash
+BATTLE_LOG="src/{BOT_NAME}/BATTLE_LOG.md"
+if [ ! -f "$BATTLE_LOG" ]; then
+cat > "$BATTLE_LOG" << 'EOF'
+# Battle Log for {BOT_NAME}
+# Rolling log of iteration history. Each entry ~300-400 chars.
+# Used by analyst to track trends and avoid repeated mistakes.
+EOF
+fi
+```
+
+### 5. Trim Battle Log (Keep Last 10 from Previous Run)
+At the start of each new run, trim the battle log to keep only the last 10 iteration entries from previous runs. This preserves rolling context while preventing unbounded growth.
+
+```bash
+# Count "## Iteration" blocks and keep only the last 10
+BATTLE_LOG="src/{BOT_NAME}/BATTLE_LOG.md"
+if [ -f "$BATTLE_LOG" ]; then
+  # Extract header (lines before first "## Iteration")
+  # Keep only last 10 iteration blocks
+  # New iterations from this run will be appended without limit
+  python3 -c "
+import re
+with open('$BATTLE_LOG', 'r') as f:
+    content = f.read()
+# Split into header and iterations
+parts = re.split(r'(## Iteration \d+)', content)
+header = parts[0]
+iterations = []
+for i in range(1, len(parts), 2):
+    if i+1 < len(parts):
+        iterations.append(parts[i] + parts[i+1])
+    else:
+        iterations.append(parts[i])
+# Keep only last 10
+if len(iterations) > 10:
+    iterations = iterations[-10:]
+with open('$BATTLE_LOG', 'w') as f:
+    f.write(header + ''.join(iterations))
+"
+fi
+```
+
 ## Iteration Workflow
 
 ### Step 1: Run Matches
@@ -109,12 +153,19 @@ done
 
 Use the **Task tool**:
 - **description**: "Analyze match results"
-- **prompt**: "Analyze matches for bot '{BOT_NAME}' vs '{OPPONENT}'.
+- **prompt**: "Analyze matches for bot '{BOT_NAME}' vs '{OPPONENT}'. This is iteration {N}.
+
+**FIRST: Read battle log for context on previous iterations:**
+```bash
+cat src/{BOT_NAME}/BATTLE_LOG.md
+```
 
 Use the bc17_query.py tool to investigate:
 1. Get summaries: `python3 scripts/bc17_query.py summary <db>`
 2. Check events: `python3 scripts/bc17_query.py events <db> --type=death`
 3. Check economy: `python3 scripts/bc17_query.py economy <db>`
+
+**IMPORTANT:** Check if current results are WORSE than previous iteration. If wins decreased or avg_rounds increased significantly, note this as a REGRESSION and recommend reverting recent changes.
 
 Identify the #1 weakness that caused losses or slow wins.
 Return: WEAKNESS, EVIDENCE, SUGGESTED_FIX"
@@ -159,10 +210,48 @@ Objective Status: wins={ANALYSIS.OBJECTIVE_STATUS.wins}, avg_win_rounds={ANALYSI
 ═══════════════════════════════════════════════════════
 ```
 
-### Step 5: Clean Up
+### Step 5: Update Battle Log
+
+Append a **structured entry** to the battle log using this format:
+
+```
+## Iteration {N}
+**Results:** {WINS}/5 wins | avg {AVG_ROUNDS}r | Δ{CHANGE_FROM_PREV} | {TREND}
+**Maps:** {MAP1}:{W/L}({rounds},{win_cond}) | {MAP2}:{W/L}(...) | ...
+**Weakness Found:** {ANALYSIS.ISSUE_1.weakness} (evidence: {brief evidence})
+**Changes Made:**
+- {FILE1}: {what changed} → {why/expected effect}
+- {FILE2}: {what changed} → {why/expected effect}
+**Outcome:** {BETTER|WORSE|SAME} - {one sentence on whether changes helped}
+---
+```
+
+**Field explanations:**
+- `TREND`: ↑ improving, ↓ regressing, → stable
+- `win_cond`: `elim` (elimination) or `vp` (victory points) or `timeout`
+- Keep weakness/evidence to ~50 chars max
+- Keep each change line to ~60 chars max
+
+**Example entry:**
+```
+## Iteration 3
+**Results:** 2/5 wins | avg 1823r | Δ-1 | ↓
+**Maps:** Shrine:W(1205,elim) | Barrier:L(2400,timeout) | Bullseye:L(1800,elim) | Lanes:W(1650,vp) | Blitz:L(2100,elim)
+**Weakness Found:** Soldiers dying early to focused fire (15 deaths by r500)
+**Changes Made:**
+- Soldier.java: added retreat at <30% HP → reduce early deaths
+- Gardener.java: plant trees before r200 → faster economy
+**Outcome:** WORSE - retreat caused soldiers to disengage too early, lost map control
+---
+```
+
+**Note:** All iterations in the current run are logged without limit. Trimming to the last 10 entries only happens at the start of a new run (see Setup Phase step 5).
+
+### Step 6: Clean Up
 ```bash
 rm -f summaries/*.md matches/*.db
 ```
+**NOTE:** Do NOT delete BATTLE_LOG.md - it persists across runs.
 
 Then continue to next iteration.
 

@@ -33,7 +33,15 @@ Before analyzing matches, **read `TECHNICAL_DOCS.md`** to refresh mechanics, API
 
 Each iteration targets **at least 3 wins** (out of 5 maps) with an **average of <= 1500 rounds for those wins**. Use summaries to compute wins and the average rounds for wins, then focus issues on closing the gap to this objective.
 
-When evaluating wins within 1500 rounds, note that this only happens by **eliminating all enemies** or **reaching 1000 victory points**. Use summaries/events to confirm the win condition if needed.
+> **⚠️ CRITICAL: WIN CONDITIONS ⚠️**
+>
+> There are ONLY TWO ways to win a match in under 1500 rounds:
+> 1. **ELIMINATION** - Destroy ALL enemy units (Archons, Gardeners, Soldiers, etc.)
+> 2. **VICTORY POINTS** - Reach exactly **1000 VP** (via bullet donations: 10 bullets = 1 VP after round 1)
+>
+> **There is NO other win condition.** Matches that don't meet either condition run to 3000 rounds (timeout), and the team with more VP wins. A "fast win" REQUIRES one of these two outcomes.
+>
+> When analyzing slow wins or losses, ALWAYS check: Are we pursuing elimination or VP? If neither, we CANNOT win quickly.
 
 ## Issue Prioritization (Required)
 
@@ -78,6 +86,28 @@ python3 scripts/bc17_query.py sql <match.db> "SELECT * FROM events WHERE team='A
 ```bash
 cat TECHNICAL_DOCS.md
 ```
+
+### Step 0.1: Read Battle Log (CRITICAL)
+```bash
+cat src/{BOT}/BATTLE_LOG.md
+```
+
+**Extract from battle log:**
+1. **Trend**: Are wins increasing (↑), decreasing (↓), or stable (→)?
+2. **Recent changes**: What was tried in last 2-3 iterations? Did they help?
+3. **Patterns**: Which maps consistently win/lose? Which weaknesses keep recurring?
+4. **Failed attempts**: What fixes were tried but made things WORSE? (check "Outcome: WORSE" entries)
+
+**CRITICAL - Avoid Repeating Mistakes:**
+- If a change was marked "WORSE" in a previous iteration, do NOT suggest similar changes
+- If the same weakness appears multiple iterations in a row, the previous fix didn't work - try a DIFFERENT approach
+- If wins are declining (↓ trend), prioritize reverting recent changes over adding new ones
+
+**Regression Detection:**
+If current results are WORSE than previous iteration (fewer wins OR higher avg rounds):
+- Flag as `REGRESSION_DETECTED: true`
+- Identify which recent change likely caused regression (check previous iteration's changes)
+- Recommend reverting that specific change BEFORE making new ones
 
 ### Step 0.5: Extract Spend Logs (Required)
 If the replay was generated with the modified engine logging, ensure spend events are available:
@@ -172,7 +202,25 @@ OBJECTIVE_STATUS:
 - wins: <integer 0-5>
 - avg_win_rounds: <integer>
 - meets_objective: <yes|no>
-- win_condition: <elimination|1000_vp|mixed|unknown>
+- trend: <↑|↓|→> (compared to previous iterations)
+
+MAP_RESULTS: (for battle log)
+- Shrine: <W|L> | <rounds> | <elim|vp|timeout>
+- Barrier: <W|L> | <rounds> | <elim|vp|timeout>
+- Bullseye: <W|L> | <rounds> | <elim|vp|timeout>
+- Lanes: <W|L> | <rounds> | <elim|vp|timeout>
+- Blitzkrieg: <W|L> | <rounds> | <elim|vp|timeout>
+
+HISTORY_CONTEXT: (from battle log)
+- prev_iteration_wins: <integer, or "N/A" if first>
+- prev_iteration_changes: "<brief summary of what was changed>"
+- recurring_weakness: "<if same issue appeared before, note it>"
+- failed_approaches: "<approaches tried before that made things worse>"
+
+REGRESSION_INFO: (only if wins decreased or avg_rounds increased significantly)
+- regression_detected: <true|false>
+- likely_cause: "<which recent change caused the regression>"
+- recommendation: "REVERT: <specific change to undo>" or "MODIFY: <how to fix>"
 
 ANALYSIS_DATA:
 issue_count: <1-5>
@@ -274,3 +322,6 @@ QUERY_LOG:
 3. **1-5 issues** - Choose count based on what you find
 4. **Be specific** - Include round numbers, counts, percentages
 5. **Quality over quantity** - Don't pad with weak issues just to hit a number
+6. **Learn from history** - Never suggest a fix that was marked "WORSE" in battle log
+7. **Different approach for recurring issues** - If same weakness appears 2+ iterations, previous fix failed; suggest fundamentally different approach
+8. **Revert before adding** - If in regression (↓ trend), prioritize undoing recent changes over adding new complexity

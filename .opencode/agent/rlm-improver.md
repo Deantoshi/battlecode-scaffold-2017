@@ -46,7 +46,16 @@ ISSUE_3: (if issue_count >= 3)
 
 **Implement ALL issues listed** - check `issue_count` to know how many.
 
+**If REGRESSION_INFO is present with a REVERT recommendation**, handle the revert FIRST before implementing new issues.
+
 ## Workflow
+
+### Step 0: Check for Regression Revert
+If the analysis includes `REGRESSION_INFO` with `recommendation: "REVERT: ..."`:
+1. Read the affected file
+2. Identify and REMOVE the code that was added in the previous iteration
+3. Use `git diff HEAD~1 -- <file>` if needed to see what was changed
+4. Then proceed to implement the new issues
 
 ### Step 1: List All Files to Modify
 
@@ -77,47 +86,21 @@ For each ISSUE_N (where N = 1 to issue_count):
 3. Fix the syntax/import error
 4. Re-compile until successful
 
-### Common Fix Patterns
+### Implementation Rules (CRITICAL)
 
-**For unit deaths (Soldier.java, Lumberjack.java):**
-```java
-// Add retreat logic
-if (rc.getHealth() < rc.getType().maxHealth * 0.3) {
-    Direction toSafety = rc.getLocation().directionTo(archonLoc);
-    tryMove(toSafety);
-    return;
-}
-```
+1. **Read the ENTIRE affected file first** - understand existing logic before changing anything
+2. **Check for existing similar logic** - if the file already has retreat/targeting/etc code, MODIFY it rather than adding duplicate logic
+3. **Remove conflicting code** - if your change conflicts with existing logic, remove the old code
+4. **Prefer deletion over addition** - if code is broken, removing it is often better than patching around it
+5. **One behavior per concern** - don't add a second retreat check if one exists; fix the existing one
+6. **Verify no duplication** - before adding any logic, grep the file for similar patterns
 
-**For economy issues (Gardener.java):**
-```java
-// Prioritize trees early game
-if (rc.getTreeCount() < 3 && rc.getRoundNum() < 200) {
-    plantTree();
-    return;
-}
-```
+### Anti-Patterns to Avoid
 
-**For archon survival (Archon.java):**
-```java
-// Flee from enemies
-RobotInfo[] enemies = rc.senseNearbyRobots(7, enemy);
-if (enemies.length > 0) {
-    Direction away = enemies[0].location.directionTo(rc.getLocation());
-    tryMove(away);
-}
-```
-
-**For targeting (Soldier.java):**
-```java
-// Prioritize low-health targets
-RobotInfo weakest = null;
-for (RobotInfo enemy : enemies) {
-    if (weakest == null || enemy.health < weakest.health) {
-        weakest = enemy;
-    }
-}
-```
+- Adding a new health check when one already exists at a different threshold
+- Adding movement logic that conflicts with existing movement in the same method
+- Wrapping broken code in more conditions instead of fixing the root cause
+- Adding early returns that skip important existing logic
 
 ## Output Format
 
