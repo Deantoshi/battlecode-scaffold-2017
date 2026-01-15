@@ -407,9 +407,6 @@ done
 
 ### 5.3 Validation Queries (execute ALL)
 ```bash
-# Get shot counts by team
-python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
-SELECT team, COUNT(*) as shots FROM events WHERE event_type='shoot' GROUP BY team"
 
 # Get total rounds
 python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
