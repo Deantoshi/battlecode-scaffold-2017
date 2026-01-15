@@ -28,19 +28,33 @@ public strictfp class Nav {
                 return true;
             }
         } else {
-            // For tree avoidance
-            TreeInfo[] trees = rc.senseNearbyTrees(4.0f);
-            boolean clear = true;
-            for (TreeInfo tree : trees) {
-                Direction toTree = rc.getLocation().directionTo(tree.location);
-                if (Math.abs(dir.degreesBetween(toTree)) < 90) {
-                    clear = false;
-                    break;
+            boolean avoidTrees = true;
+            if (rc.getType() == RobotType.SOLDIER) {
+                RobotInfo[] enemies = rc.senseNearbyRobots(10.0f, rc.getTeam().opponent());
+                if (enemies.length > 0) {
+                    avoidTrees = false;
                 }
             }
-            if (clear && rc.canMove(dir)) {
-                rc.move(dir);
-                return true;
+            if (!avoidTrees) {
+                if (rc.canMove(dir)) {
+                    rc.move(dir);
+                    return true;
+                }
+            } else {
+                // For tree avoidance
+                TreeInfo[] trees = rc.senseNearbyTrees(4.0f);
+                boolean clear = true;
+                for (TreeInfo tree : trees) {
+                    Direction toTree = rc.getLocation().directionTo(tree.location);
+                    if (Math.abs(dir.degreesBetween(toTree)) < 90) {
+                        clear = false;
+                        break;
+                    }
+                }
+                if (clear && rc.canMove(dir)) {
+                    rc.move(dir);
+                    return true;
+                }
             }
         }
         // Try rotations - increase to 90 degrees for better open-area coverage
@@ -52,18 +66,32 @@ public strictfp class Nav {
                     return true;
                 }
             } else {
-                TreeInfo[] trees = rc.senseNearbyTrees(4.0f);
-                boolean clear = true;
-                for (TreeInfo tree : trees) {
-                    Direction toTree = rc.getLocation().directionTo(tree.location);
-                    if (Math.abs(left.degreesBetween(toTree)) < 90) {
-                        clear = false;
-                        break;
+                boolean avoidTrees = true;
+                if (rc.getType() == RobotType.SOLDIER) {
+                    RobotInfo[] enemies = rc.senseNearbyRobots(10.0f, rc.getTeam().opponent());
+                    if (enemies.length > 0) {
+                        avoidTrees = false;
                     }
                 }
-                if (clear && rc.canMove(left)) {
-                    rc.move(left);
-                    return true;
+                if (!avoidTrees) {
+                    if (rc.canMove(left)) {
+                        rc.move(left);
+                        return true;
+                    }
+                } else {
+                    TreeInfo[] trees = rc.senseNearbyTrees(4.0f);
+                    boolean clear = true;
+                    for (TreeInfo tree : trees) {
+                        Direction toTree = rc.getLocation().directionTo(tree.location);
+                        if (Math.abs(left.degreesBetween(toTree)) < 90) {
+                            clear = false;
+                            break;
+                        }
+                    }
+                    if (clear && rc.canMove(left)) {
+                        rc.move(left);
+                        return true;
+                    }
                 }
             }
             Direction right = dir.rotateRightDegrees(22.5f * i);  // Finer rotation
@@ -73,18 +101,32 @@ public strictfp class Nav {
                     return true;
                 }
             } else {
-                TreeInfo[] trees = rc.senseNearbyTrees(4.0f);
-                boolean clear = true;
-                for (TreeInfo tree : trees) {
-                    Direction toTree = rc.getLocation().directionTo(tree.location);
-                    if (Math.abs(right.degreesBetween(toTree)) < 90) {
-                        clear = false;
-                        break;
+                boolean avoidTrees = true;
+                if (rc.getType() == RobotType.SOLDIER) {
+                    RobotInfo[] enemies = rc.senseNearbyRobots(10.0f, rc.getTeam().opponent());
+                    if (enemies.length > 0) {
+                        avoidTrees = false;
                     }
                 }
-                if (clear && rc.canMove(right)) {
-                    rc.move(right);
-                    return true;
+                if (!avoidTrees) {
+                    if (rc.canMove(right)) {
+                        rc.move(right);
+                        return true;
+                    }
+                } else {
+                    TreeInfo[] trees = rc.senseNearbyTrees(4.0f);
+                    boolean clear = true;
+                    for (TreeInfo tree : trees) {
+                        Direction toTree = rc.getLocation().directionTo(tree.location);
+                        if (Math.abs(right.degreesBetween(toTree)) < 90) {
+                            clear = false;
+                            break;
+                        }
+                    }
+                    if (clear && rc.canMove(right)) {
+                        rc.move(right);
+                        return true;
+                    }
                 }
             }
         }

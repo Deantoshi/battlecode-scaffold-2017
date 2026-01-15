@@ -1,8 +1,12 @@
 package grok_code_fast_1;
 import battlecode.common.*;
+import java.util.*;
 
 public strictfp class Soldier {
     static RobotController rc;
+    static Map<Integer, MapLocation> prevEnemyLocations = new HashMap<>();
+    static Map<Integer, Direction> enemyVelocities = new HashMap<>();
+    static Map<Integer, Float> enemySpeeds = new HashMap<>();
 
     public static void run(RobotController rc) throws GameActionException {
         Soldier.rc = rc;
@@ -22,6 +26,17 @@ public strictfp class Soldier {
 
     static void doTurn() throws GameActionException {
         RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
+        for (RobotInfo enemy : enemies) {
+            int id = enemy.ID;
+            if (prevEnemyLocations.containsKey(id)) {
+                MapLocation prev = prevEnemyLocations.get(id);
+                Direction velDir = prev.directionTo(enemy.location);
+                float distMoved = prev.distanceTo(enemy.location);
+                enemyVelocities.put(id, velDir);
+                enemySpeeds.put(id, distMoved);
+            }
+            prevEnemyLocations.put(id, enemy.location);
+        }
         if (enemies.length > 0) {
             Comms.broadcastEnemyLocation(enemies[0].location);
             RobotInfo target = findTarget();
@@ -67,22 +82,22 @@ public strictfp class Soldier {
                 Nav.tryMove(bestDir);
             }
         } else if (!rc.hasMoved()) {
-            MapLocation rally = Comms.getRallyPoint();
-            if (rally != null) {
-                Nav.moveToward(rally);
+            MapLocation enemyArchonLoc = Comms.getEnemyArchonLocation();
+            if (enemyArchonLoc != null) {
+                Nav.moveToward(enemyArchonLoc);
             } else {
-                MapLocation enemyLoc = Comms.getEnemyLocation();
-                if (enemyLoc != null) {
-                    Nav.moveToward(enemyLoc);
-            } else {
-                MapLocation enemyArchonLoc = Comms.getEnemyArchonLocation();
-                if (enemyArchonLoc != null) {
-                    Nav.moveToward(enemyArchonLoc);
+                MapLocation rally = Comms.getRallyPoint();
+                if (rally != null) {
+                    Nav.moveToward(rally);
                 } else {
-                    MapLocation center = new MapLocation(50.0f, 50.0f);
-                    Nav.moveToward(center);
+                    MapLocation enemyLoc = Comms.getEnemyLocation();
+                    if (enemyLoc != null) {
+                        Nav.moveToward(enemyLoc);
+                    } else {
+                        MapLocation center = new MapLocation(50.0f, 50.0f);
+                        Nav.moveToward(center);
+                    }
                 }
-            }
             }
         }
     }
@@ -101,17 +116,17 @@ public strictfp class Soldier {
             }
         }
         for (RobotInfo enemy : enemies) {
+            if (enemy.type == RobotType.SOLDIER) {
+                return enemy;
+            }
+        }
+        for (RobotInfo enemy : enemies) {
             if (enemy.type == RobotType.ARCHON) {
                 return enemy;
             }
         }
         for (RobotInfo enemy : enemies) {
             if (enemy.type == RobotType.GARDENER) {
-                return enemy;
-            }
-        }
-        for (RobotInfo enemy : enemies) {
-            if (enemy.type == RobotType.SOLDIER) {
                 return enemy;
             }
         }
@@ -124,6 +139,46 @@ public strictfp class Soldier {
     }
 
     static void tryShoot(RobotInfo target, RobotInfo[] enemies) throws GameActionException {
-        if (target != null && rc.canFireSingleShot()) rc.fireSingleShot(rc.getLocation().directionTo(target.location));
+        if (target == null || !rc.canFireSingleShot()) return;
+        MapLocation aimLocation = target.location;
+        int id = target.ID;
+        if (enemyVelocities.containsKey(id)) {
+            Direction velDir = enemyVelocities.get(id);
+            float speed = enemySpeeds.get(id);
+            float bulletSpeed = 3.0f;
+            float dist = rc.getLocation().distanceTo(target.location);
+            float time = dist / bulletSpeed;
+            MapLocation predicted = target.location.add(velDir, speed * time);
+            aimLocation = predicted;
+        }
+        if (hasLineOfSight(rc.getLocation(), aimLocation)) {
+            rc.fireSingleShot(rc.getLocation().directionTo(aimLocation));
+        }
+    }
+
+    private static boolean hasLineOfSight(MapLocation start, MapLocation end) throws GameActionException {
+        TreeInfo[] trees = rc.senseNearbyTrees(-1);
+        for (TreeInfo tree : trees) {
+            if (intersectsLineSegmentCircle(start, end, tree.location, tree.radius)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean intersectsLineSegmentCircle(MapLocation start, MapLocation end, MapLocation center, float radius) {
+        float dx = end.x - start.x;
+        float dy = end.y - start.y;
+        float fx = center.x - start.x;
+        float fy = center.y - start.y;
+        float l2 = dx * dx + dy * dy;
+        if (l2 == 0) {
+            return start.distanceTo(center) <= radius;
+        }
+        float t = Math.max(0, Math.min(1, (fx * dx + fy * dy) / l2));
+        float cx = start.x + t * dx;
+        float cy = start.y + t * dy;
+        float distSq = (cx - center.x) * (cx - center.x) + (cy - center.y) * (cy - center.y);
+        return distSq <= radius * radius;
     }
 }
