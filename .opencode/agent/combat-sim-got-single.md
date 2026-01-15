@@ -124,6 +124,17 @@ SELECT team, COUNT(*) as alive FROM robots WHERE death_round IS NULL GROUP BY te
 # Get final unit counts from snapshots
 python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
 SELECT team_a_units_lost, team_b_units_lost FROM snapshots WHERE round_id=(SELECT MAX(round_id) FROM snapshots)"
+
+# Get kill/death stats by team
+python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
+SELECT r.team,
+  SUM(CASE WHEN r.death_round IS NOT NULL THEN 1 ELSE 0 END) as deaths,
+  (SELECT COUNT(*) FROM events e WHERE e.event_type='shoot' AND e.team=r.team) as shots_fired
+FROM robots r GROUP BY r.team"
+
+# Get first shot timing by team
+python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
+SELECT team, MIN(round_id) as first_shot_round FROM events WHERE event_type='shoot' GROUP BY team"
 ```
 
 ### 0.8 Parse Results
@@ -134,6 +145,10 @@ Store as:
 BASELINE = {
   wins: N,
   losses: N,
+  total_rounds: N,
+  survivors: {team_a: N, team_b: N},
+  deaths: {team_a: N, team_b: N},
+  first_shot: {team_a: N, team_b: N},
   map_results: { MapName: {winner, rounds}, ... }
 }
 ```
@@ -427,7 +442,7 @@ done
 
 ### 5.3 Validation Queries (execute ALL)
 ```bash
- # Get shot counts by team
+# Get shot counts by team
 python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
 SELECT team, COUNT(*) as shots FROM events WHERE event_type='shoot' GROUP BY team"
 
@@ -435,13 +450,24 @@ SELECT team, COUNT(*) as shots FROM events WHERE event_type='shoot' GROUP BY tea
 python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
 SELECT MAX(round_id) as total_rounds FROM rounds"
 
- # Get robots alive at end
+# Get robots alive at end (survivors)
 python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
-SELECT team, COUNT(*) as alive FROM robots WHERE death_round IS NULL GROUP BY team"
+SELECT team, COUNT(*) as survivors FROM robots WHERE death_round IS NULL GROUP BY team"
 
 # Get final unit counts from snapshots
 python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
 SELECT team_a_units_lost, team_b_units_lost FROM snapshots WHERE round_id=(SELECT MAX(round_id) FROM snapshots)"
+
+# Get kill/death stats by team
+python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
+SELECT r.team,
+  SUM(CASE WHEN r.death_round IS NOT NULL THEN 1 ELSE 0 END) as deaths,
+  (SELECT COUNT(*) FROM events e WHERE e.event_type='shoot' AND e.team=r.team) as shots_fired
+FROM robots r GROUP BY r.team"
+
+# Get first shot timing by team
+python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
+SELECT team, MIN(round_id) as first_shot_round FROM events WHERE event_type='shoot' GROUP BY team"
 ```
 
 **Output:**
@@ -449,6 +475,10 @@ SELECT team_a_units_lost, team_b_units_lost FROM snapshots WHERE round_id=(SELEC
 VALIDATION = {
   wins: N,
   losses: N,
+  total_rounds: N,
+  survivors: {team_a: N, team_b: N},
+  deaths: {team_a: N, team_b: N},
+  first_shot: {team_a: N, team_b: N},
   map_results: { ... }
 }
 ```
@@ -457,27 +487,66 @@ VALIDATION = {
 
 ## PHASE 6: Accept/Reject
 
-Compare BASELINE vs VALIDATION:
+Compare BASELINE vs VALIDATION using a **delta scoring system** that captures trending improvements.
+
+### 6.1 Calculate Deltas
+
+For each metric, calculate: `VALIDATION.metric - BASELINE.metric`
+
+| Metric | Formula | What It Measures |
+|--------|---------|------------------|
+| win_delta | validation_wins - baseline_wins | Ultimate goal |
+| round_delta | baseline_rounds - validation_rounds | Efficiency (positive = faster) |
+| kill_ratio_delta | (enemy_deaths/our_deaths)_new - (enemy_deaths/our_deaths)_old | Combat effectiveness |
+| first_shot_delta | baseline_first_shot - validation_first_shot | Aggression (positive = earlier) |
+| survivors_delta | validation_survivors - baseline_survivors | Decisive victories |
+
+### 6.2 Calculate Weighted Score
 
 ```
-if VALIDATION.wins > BASELINE.wins:
-    DECISION = ACCEPT ("Improved from X to Y wins")
-elif VALIDATION.wins == BASELINE.wins:
-    if avg_rounds_improved:
-        DECISION = ACCEPT ("Same wins but faster")
-    else:
-        DECISION = ACCEPT_TENTATIVE ("No regression")
+DELTA_SCORE = (
+    (win_delta × 100) +           # +100 per additional win
+    (round_delta × 0.5) +         # +0.5 per round faster
+    (kill_ratio_delta × 20) +     # +20 per 0.1 K/D improvement
+    (first_shot_delta × 2) +      # +2 per round earlier first shot
+    (survivors_delta × 10)        # +10 per additional survivor
+)
+```
+
+### 6.3 Decision Thresholds
+
+```
+if DELTA_SCORE >= 50:
+    DECISION = ACCEPT ("Strong improvement: +{DELTA_SCORE}")
+elif DELTA_SCORE >= 10:
+    DECISION = ACCEPT ("Positive trend: +{DELTA_SCORE}")
+elif DELTA_SCORE >= -5:
+    DECISION = ACCEPT_TENTATIVE ("Neutral, no regression: {DELTA_SCORE}")
+elif DELTA_SCORE >= -20:
+    DECISION = REJECT_SOFT ("Minor regression: {DELTA_SCORE}, logged for analysis")
 else:
-    DECISION = REJECT ("Regression from X to Y wins")
+    DECISION = REJECT ("Significant regression: {DELTA_SCORE}, reverting")
 ```
 
-### If REJECT:
-1. Revert changes (use SYNTHESIS.rollback)
-2. Log the failed attempt
+### 6.4 Example Scenarios
 
-### If ACCEPT:
+| Scenario | Calculation | Score | Decision |
+|----------|-------------|-------|----------|
+| Lost map but 200 rounds faster, +0.4 K/D | -100 + 100 + 80 | +80 | ACCEPT |
+| Same wins, 50 rounds slower, -0.2 K/D | 0 - 25 - 40 | -65 | REJECT |
+| Won extra map, 300 rounds slower | +100 - 150 | -50 | REJECT |
+| Same wins, 100 rounds faster, +2 survivors | 0 + 50 + 20 | +70 | ACCEPT |
+
+### 6.5 Actions
+
+**If REJECT or REJECT_SOFT:**
+1. Revert changes (use SYNTHESIS.rollback)
+2. Log the failed attempt with DELTA_SCORE breakdown
+
+**If ACCEPT or ACCEPT_TENTATIVE:**
 1. Keep changes
-2. Update combat log
+2. Update combat log with DELTA_SCORE breakdown
+3. Note: Goal is still ≤500 rounds for wins - continue iterating if not met
 
 ---
 
@@ -512,11 +581,23 @@ PHASE 4 - Implementation:
   Compilation: {status}
 
 PHASE 5 - Validation:
-  Baseline: {BASELINE.wins}/{num_maps} wins
-  After:    {VALIDATION.wins}/{num_maps} wins
-  Delta:    {+/-N}
+  Baseline: {BASELINE.wins}/{num_maps} wins, {BASELINE.total_rounds} rounds
+  After:    {VALIDATION.wins}/{num_maps} wins, {VALIDATION.total_rounds} rounds
 
-PHASE 6 - Decision: {ACCEPT|REJECT}
+PHASE 6 - Delta Score Breakdown:
+  ┌──────────────────┬──────────┬────────┬─────────────┐
+  │ Metric           │ Baseline │ After  │ Contribution│
+  ├──────────────────┼──────────┼────────┼─────────────┤
+  │ Wins             │ {N}      │ {N}    │ {+/-N×100}  │
+  │ Rounds           │ {N}      │ {N}    │ {+/-N×0.5}  │
+  │ Kill Ratio       │ {N}      │ {N}    │ {+/-N×20}   │
+  │ First Shot       │ {N}      │ {N}    │ {+/-N×2}    │
+  │ Survivors        │ {N}      │ {N}    │ {+/-N×10}   │
+  └──────────────────┴──────────┴────────┴─────────────┘
+  DELTA_SCORE: {total}
+
+  Decision: {ACCEPT|ACCEPT_TENTATIVE|REJECT_SOFT|REJECT}
+  Reason: {explanation}
 
 ═══════════════════════════════════════════════════════════════════════════════
 ```
@@ -587,7 +668,16 @@ Append to `src/{BOT_NAME}/COMBAT_LOG_GOT.md`:
 {SYNTHESIS.changes[2].new_code}
 ```
 
-### Results: {baseline} → {validation}
+### Results
+| Metric | Baseline | After | Delta |
+|--------|----------|-------|-------|
+| Wins | {N} | {N} | {+/-N} |
+| Rounds | {N} | {N} | {+/-N} |
+| Kill Ratio | {N} | {N} | {+/-N} |
+| First Shot | {N} | {N} | {+/-N} |
+| Survivors | {N} | {N} | {+/-N} |
+
+**DELTA_SCORE: {total}** → {ACCEPT|REJECT}
 ---
 ```
 
