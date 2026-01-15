@@ -234,8 +234,8 @@ This outputs pre-formatted stats that can be copied directly into the battle log
 ## Iteration {N}
 **Results:** {WINS}/5 wins | avg {AVG_ROUNDS}r | Δ{CHANGE_FROM_PREV} | {TREND}
 **Maps:** {MAP1}:{W/L}({rounds},{win_cond}) | {MAP2}:{W/L}(...) | ...
-**Units (totals across all maps):**
-| Unit       | Produced |     Died | Surviving |
+**Units & Trees (totals across all maps):**
+| Type       | Produced |     Lost | Surviving |
 |------------|----------|----------|-----------|
 | Archon     |        X |        X |         X |
 | Gardener   |        X |        X |         X |
@@ -243,14 +243,8 @@ This outputs pre-formatted stats that can be copied directly into the battle log
 | Lumberjack |        X |        X |         X |
 | Scout      |        X |        X |         X |
 | Tank       |        X |        X |         X |
+| Trees      |        X |        X |         X |
 | **TOTAL**  |        X |        X |         X |
-
-**Trees (totals across all maps):**
-| Metric    |    Value |
-|-----------|----------|
-| Planted   |        X |
-| Destroyed |        X |
-| Net       |       +X |
 
 **Economy (totals across all maps):**
 | Metric    |     Bullets |
@@ -279,8 +273,8 @@ This outputs pre-formatted stats that can be copied directly into the battle log
 ## Iteration 3
 **Results:** 2/5 wins | avg 1823r | Δ-1 | ↓
 **Maps:** Shrine:W(1205,elim) | Barrier:L(2400,timeout) | Bullseye:L(1800,elim) | Lanes:W(1650,vp) | Blitz:L(2100,elim)
-**Units (totals across all maps):**
-| Unit       | Produced |     Died | Surviving |
+**Units & Trees (totals across all maps):**
+| Type       | Produced |     Lost | Surviving |
 |------------|----------|----------|-----------|
 | Archon     |        5 |        2 |         3 |
 | Gardener   |       12 |        8 |         4 |
@@ -288,14 +282,8 @@ This outputs pre-formatted stats that can be copied directly into the battle log
 | Lumberjack |        8 |        6 |         2 |
 | Scout      |        0 |        0 |         0 |
 | Tank       |        3 |        2 |         1 |
-| **TOTAL**  |       73 |       56 |        17 |
-
-**Trees (totals across all maps):**
-| Metric    |    Value |
-|-----------|----------|
-| Planted   |       24 |
-| Destroyed |       18 |
-| Net       |       +6 |
+| Trees      |       24 |       18 |         6 |
+| **TOTAL**  |       97 |       74 |        23 |
 
 **Economy (totals across all maps):**
 | Metric    |     Bullets |
