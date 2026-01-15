@@ -527,6 +527,15 @@ PHASE 6 - Decision: {ACCEPT|REJECT}
 
 **IMPORTANT: NEVER reduce the size of the battlelog. Always append, never delete content.**
 
+### Check Combat Log Existence
+
+```bash
+if [ ! -f "src/{BOT_NAME}/COMBAT_LOG_GOT.md" ]; then
+  echo "ERROR: COMBAT_LOG_GOT.md does not exist. Cannot append."
+  exit 1
+fi
+```
+
 Append to `src/{BOT_NAME}/COMBAT_LOG_GOT.md`:
 
 ```markdown
