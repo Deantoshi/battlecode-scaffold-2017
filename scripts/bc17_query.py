@@ -18,11 +18,15 @@ Usage:
     python3 bc17_query.py search <match.db> <query>
     python3 bc17_query.py sql <match.db> "<SQL query>"
 
+    # Aggregate stats for battle log (across multiple matches)
+    python3 bc17_query.py battlelog-stats "matches/*.db" [--team=A|B]
+
 This enables RLM-style interaction where the LLM can:
 1. Get a summary without seeing all data
 2. Drill down into specific rounds/events
 3. Search for patterns across the match
 4. Run arbitrary SQL for complex queries
+5. Generate pre-formatted battle log stats with battlelog-stats
 """
 
 import sqlite3
@@ -591,6 +595,125 @@ def cmd_sql(db_path: str, query: str):
     conn.close()
 
 
+def cmd_battlelog_stats(db_pattern: str, team: str = 'A'):
+    """
+    Aggregate stats across all matches for battle log.
+
+    Usage: bc17_query.py battlelog-stats "matches/*.db" [--team=A|B]
+
+    Outputs pre-formatted stats for the battle log entry.
+    """
+    import glob as glob_module
+
+    db_files = glob_module.glob(db_pattern)
+    if not db_files:
+        print(f"No database files found matching: {db_pattern}")
+        return
+
+    # Aggregated stats
+    units_produced = defaultdict(int)
+    units_died = defaultdict(int)
+    trees_planted = 0
+    trees_destroyed = 0
+    bullets_generated = 0.0
+    bullets_spent = 0.0
+
+    for db_path in db_files:
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
+
+        # Units produced (spawns) for our team
+        rows = conn.execute("""
+            SELECT body_type, COUNT(*) as count
+            FROM events
+            WHERE event_type='spawn' AND team=?
+            GROUP BY body_type
+        """, (team,)).fetchall()
+        for row in rows:
+            body_type = row['body_type']
+            if body_type and body_type != 'TREE':
+                units_produced[body_type] += row['count']
+
+        # Units died for our team
+        rows = conn.execute("""
+            SELECT body_type, COUNT(*) as count
+            FROM events
+            WHERE event_type='death' AND team=?
+            GROUP BY body_type
+        """, (team,)).fetchall()
+        for row in rows:
+            body_type = row['body_type']
+            if body_type and body_type != 'TREE':
+                units_died[body_type] += row['count']
+
+        # Trees: count PLANT actions (our team planting) and tree deaths
+        # Trees planted = PLANT actions by our team
+        plant_count = conn.execute("""
+            SELECT COUNT(*) as count
+            FROM events
+            WHERE event_type='action' AND body_type='PLANT_TREE' AND team=?
+        """, (team,)).fetchone()['count']
+        trees_planted += plant_count
+
+        # Trees destroyed = tree deaths (trees don't have a team, count all)
+        # Actually trees spawned by gardeners belong to that team
+        tree_deaths = conn.execute("""
+            SELECT COUNT(*) as count
+            FROM events
+            WHERE event_type='death' AND body_type='TREE'
+        """).fetchone()['count']
+        trees_destroyed += tree_deaths
+
+        # Economy from final snapshot
+        final_snapshot = conn.execute("""
+            SELECT * FROM snapshots ORDER BY round_id DESC LIMIT 1
+        """).fetchone()
+
+        if final_snapshot:
+            if team == 'A':
+                bullets_generated += final_snapshot['team_a_bullets_generated'] or 0
+                bullets_spent += final_snapshot['team_a_bullets_spent'] or 0
+            else:
+                bullets_generated += final_snapshot['team_b_bullets_generated'] or 0
+                bullets_spent += final_snapshot['team_b_bullets_spent'] or 0
+
+        conn.close()
+
+    # Calculate totals
+    total_produced = sum(units_produced.values())
+    total_died = sum(units_died.values())
+    trees_net = trees_planted - trees_destroyed
+    bullets_net = bullets_generated - bullets_spent
+
+    # Format output in battle log format
+    # Unit abbreviations: A=Archon, G=Gardener, S=Soldier, L=Lumberjack, Sc=Scout, T=Tank
+    unit_order = ['ARCHON', 'GARDENER', 'SOLDIER', 'LUMBERJACK', 'SCOUT', 'TANK']
+    abbrev = {'ARCHON': 'A', 'GARDENER': 'G', 'SOLDIER': 'S', 'LUMBERJACK': 'L', 'SCOUT': 'Sc', 'TANK': 'T'}
+
+    produced_str = ' '.join(f"{units_produced.get(u, 0)}{abbrev[u]}" for u in unit_order)
+    died_str = ' '.join(f"{units_died.get(u, 0)}{abbrev[u]}" for u in unit_order)
+
+    net_sign = '+' if trees_net >= 0 else ''
+    bullets_net_sign = '+' if bullets_net >= 0 else ''
+
+    print("=" * 60)
+    print(f"BATTLE LOG STATS (Team {team}, {len(db_files)} matches)")
+    print("=" * 60)
+    print()
+    print("**Units (totals across all maps):**")
+    print(f"- Produced: {produced_str} | Total: {total_produced}")
+    print(f"- Died: {died_str} | Total: {total_died}")
+    print(f"- Trees: {trees_planted} planted, {trees_destroyed} destroyed, {net_sign}{trees_net} net")
+    print("**Economy (totals across all maps):**")
+    print(f"- Bullets: {int(bullets_generated)} generated, {int(bullets_spent)} spent, {bullets_net_sign}{int(bullets_net)} net")
+    print()
+    print("--- Copy-paste ready format ---")
+    print(f"- Produced: {produced_str} | Total: {total_produced}")
+    print(f"- Died: {died_str} | Total: {total_died}")
+    print(f"- Trees: {trees_planted} planted, {trees_destroyed} destroyed, {net_sign}{trees_net} net")
+    print(f"- Bullets: {int(bullets_generated)} generated, {int(bullets_spent)} spent, {bullets_net_sign}{int(bullets_net)} net")
+
+
 def print_usage():
     print(__doc__)
 
@@ -669,6 +792,16 @@ def main():
             print("Usage: bc17_query.py sql <match.db> \"<SQL query>\"")
             sys.exit(1)
         cmd_sql(sys.argv[2], sys.argv[3])
+
+    elif cmd == 'battlelog-stats':
+        if len(sys.argv) < 3:
+            print("Usage: bc17_query.py battlelog-stats \"matches/*.db\" [--team=A|B]")
+            sys.exit(1)
+        team = 'A'
+        for arg in sys.argv[3:]:
+            if arg.startswith('--team='):
+                team = arg.split('=')[1]
+        cmd_battlelog_stats(sys.argv[2], team)
 
     else:
         print(f"Unknown command: {cmd}")

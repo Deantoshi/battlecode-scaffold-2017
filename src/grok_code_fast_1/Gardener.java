@@ -26,11 +26,15 @@ public strictfp class Gardener {
     static void doTurn() throws GameActionException {
         waterLowestHealthTree();
         // Increase tree limits and add scouts
-        if (treesPlanted < 3 && rc.getTeamBullets() >= 50) {
+        if (treesPlanted < 1 && rc.getTeamBullets() >= 50) {
             if (tryPlantTree()) {
                 treesPlanted++;
             }
         } else if (rc.getTeamBullets() >= 60) {
+            tryBuildUnit();
+        }
+        // Fallback: if round >200 and no units built, force build soldier
+        if (rc.getRoundNum() > 200 && buildCount == 0) {
             tryBuildUnit();
         }
         if (!rc.hasMoved()) {
@@ -70,8 +74,6 @@ public strictfp class Gardener {
             toBuild = RobotType.TANK;
         } else if (priority == 0) {
             toBuild = RobotType.LUMBERJACK;
-        } else if (priority == 2) {
-            toBuild = RobotType.SCOUT;
         } else {
             // Default to soldiers for priority 1 or unknown
             toBuild = RobotType.SOLDIER;
@@ -89,7 +91,7 @@ public strictfp class Gardener {
             }
         }
         // Fallback to cheaper alternatives
-        RobotType[] fallbacks = {RobotType.LUMBERJACK, RobotType.SCOUT};
+        RobotType[] fallbacks = {RobotType.LUMBERJACK};
         for (RobotType fallback : fallbacks) {
             if (fallback != toBuild) {
                 for (Direction dir : dirs) {

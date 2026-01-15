@@ -45,9 +45,9 @@ public strictfp class Archon {
             TreeInfo[] nearbyTrees = rc.senseNearbyTrees(10.0f);
             RobotInfo[] enemiesForPriority = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
             if (nearbyTrees.length > 5 || enemiesForPriority.length > 2) {
-                priority = 0;  // Lumberjacks for clearing/harassment
+                priority = 1;  // Soldiers for clearing/harassment
             } else {
-                priority = 0;  // Lumberjacks
+                priority = 1;  // Soldiers
             }
         }
         Comms.broadcastProductionPriority(priority);
@@ -60,7 +60,7 @@ public strictfp class Archon {
         }
 
         // Hire up to 10 gardeners early if bullets sufficient, prefer safe directions
-        int maxGardeners = 8;  // Reduced from 10 to 8
+        int maxGardeners = 10;  // Focus on tree-planting gardeners first before combat units
         // Check density
         TreeInfo[] nearbyTrees = rc.senseNearbyTrees(10.0f);
         if (nearbyTrees.length > 5) {
@@ -89,7 +89,7 @@ public strictfp class Archon {
         // Accelerate VP Donations
         int unitCount = Comms.getUnitCount();
         float vpCost = rc.getVictoryPointCost();
-        if ((unitCount >= 30 && turnCounter >= 800) && rc.getTeamBullets() >= vpCost + 50) {
+        if (unitCount >= 20 && rc.getTeamBullets() >= vpCost + 50) {
             rc.donate(vpCost);
         }
 

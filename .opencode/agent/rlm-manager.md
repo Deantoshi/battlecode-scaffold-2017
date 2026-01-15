@@ -221,7 +221,14 @@ Objective Status: wins={ANALYSIS.OBJECTIVE_STATUS.wins}, avg_win_rounds={ANALYSI
 
 ### Step 5: Update Battle Log
 
-Append a **structured entry** to the battle log using this format:
+**First, generate the unit and economy stats using the query tool:**
+```bash
+python3 scripts/bc17_query.py battlelog-stats "matches/*.db" --team=A
+```
+
+This outputs pre-formatted stats that can be copied directly into the battle log entry.
+
+**Then append a structured entry** to the battle log using this format:
 
 ```
 ## Iteration {N}
