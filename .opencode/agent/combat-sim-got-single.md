@@ -172,9 +172,6 @@ SELECT team, COUNT(*) as shots FROM events WHERE event_type='shoot' GROUP BY tea
 python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
 SELECT team, MIN(round_id) as first_shot FROM events WHERE event_type='shoot' GROUP BY team"
 
- # Robot deaths by team
-python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
-SELECT team, body_type, COUNT(*) as deaths FROM robots WHERE death_round IS NOT NULL GROUP BY team, body_type"
 ```
 
 **Output HYPOTHESIS_A:**
@@ -254,10 +251,6 @@ team, COUNT(*) as shots FROM events WHERE event_type='shoot' GROUP BY phase, tea
 # Shoot events by round range
 python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
 SELECT team, COUNT(*) as shots FROM events WHERE event_type='shoot' AND round_id BETWEEN 330 AND 360 GROUP BY team"
-
- # Death rounds by team
-python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
-SELECT team, AVG(death_round) as avg_death_round FROM robots WHERE death_round IS NOT NULL GROUP BY team"
 ```
 
 **Output HYPOTHESIS_C:**
