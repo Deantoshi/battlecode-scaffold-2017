@@ -253,12 +253,6 @@ SELECT team, MIN(round_id) as first_shot FROM events WHERE event_type='shoot' GR
 python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
 SELECT team, MAX(round_id) as last_shot FROM events WHERE event_type='shoot' GROUP BY team"
 
-# Resource levels over time (early game)
-python3 scripts/bc17_query.py rounds matches/{BOT_NAME}-combat-*.db 1 50
-
-# Resource levels over time (mid game)
-python3 scripts/bc17_query.py rounds matches/{BOT_NAME}-combat-*.db 500 550
-
 # Shooting rate by phase
 python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
 SELECT CASE WHEN round_id<500 THEN 'early' WHEN round_id<1500 THEN 'mid' ELSE 'late' END as phase,
