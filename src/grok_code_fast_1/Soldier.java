@@ -26,8 +26,8 @@ public strictfp class Soldier {
             Comms.broadcastEnemyLocation(enemies[0].location);
             RobotInfo target = findTarget();
             tryShoot(target, enemies);
-            // Aggressive pursuit: always move toward unless critically low health
-            if (rc.getHealth() >= 20 && !rc.hasMoved()) {
+            // Aggressive pursuit: always move toward nearest enemy
+            if (!rc.hasMoved()) {
                 Nav.moveToward(target.location);
             }
         }
@@ -50,7 +50,7 @@ public strictfp class Soldier {
                 MapLocation nextLoc = rc.getLocation().add(dir, rc.getType().strideRadius);
                 boolean safe = true;
                 for (BulletInfo bullet : bullets) {
-                    if (bullet.getLocation().add(bullet.getDir(), bullet.getSpeed()).distanceTo(nextLoc) < rc.getType().bodyRadius + 0.1f) {
+                    if (bullet.getLocation().add(bullet.getDir(), bullet.getSpeed()).distanceTo(nextLoc) < rc.getType().bodyRadius + 0.5f) {
                         safe = false;
                         break;
                     }

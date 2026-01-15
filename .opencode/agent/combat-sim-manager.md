@@ -35,12 +35,18 @@ Parse for:
 - `--opponent NAME` - Opponent bot (default: `examplefuncsplayer`)
 - `--iterations N` - Number of iterations (default: `5`)
 - `--maps MAPS` - Comma-separated maps (default: `Shrine,Barrier,Bullseye,Lanes,Blitzkrieg`)
+- `--unit TYPE` - Unit type to test (default: `Soldier`). Options: `Soldier`, `Tank`, `Scout`, `Lumberjack`
 
 **Example:**
 ```
 /combat-sim --bot my_bot --iterations 3
-/combat-sim --bot my_bot --opponent enemy_bot --maps Shrine,Barrier
+/combat-sim --bot my_bot --unit Tank --iterations 3
+/combat-sim --bot my_bot --opponent enemy_bot --unit Scout --maps Shrine,Barrier
 ```
+
+**Note:** The `--unit` argument determines:
+1. Which unit file to read/modify (`{UNIT}.java`)
+2. Which unit type is spawned in simulations (requires `combatSim` task to support `--unitType`)
 
 ## Combat Simulation Overview
 
@@ -140,6 +146,7 @@ done
 Use the **Task tool**:
 - **description**: "Analyze combat results"
 - **prompt**: "Analyze combat simulations for bot '{BOT_NAME}' vs '{OPPONENT}'. This is iteration {N}.
+Unit type: {UNIT} (read {UNIT}.java and Nav.java only)
 
 **FIRST: Read combat log for context on previous iterations:**
 ```bash
@@ -152,7 +159,7 @@ Use bc17_query.py to investigate combat performance:
 3. Check shots: `python3 scripts/bc17_query.py events <db> --type=shoot`
 
 Focus on:
-- Soldier survival rates
+- {UNIT} survival rates
 - Damage dealt vs received
 - Targeting priorities
 - Positioning and movement patterns
@@ -168,14 +175,17 @@ Return: WEAKNESS, EVIDENCE, SUGGESTED_FIX"
 Use the **Task tool**:
 - **description**: "Implement combat improvements"
 - **prompt**: "Improve combat for bot '{BOT_NAME}' based on analysis.
+Unit type: {UNIT}
 
 Number of issues to fix: {ANALYSIS.issue_count}
 
 {ANALYSIS}
 
-Focus ONLY on combat-related code:
-- Soldier.java (targeting, firing, movement)
-- Any shared combat utilities
+**ONLY read and modify these 2 files:**
+- {UNIT}.java (targeting, firing, combat decisions)
+- Nav.java (movement, positioning, pathfinding)
+
+Do NOT read or modify any other files.
 
 Implement ALL issues listed (1-3 changes). Verify compilation after all changes."
 - **subagent_type**: "combat-sim-improver"
