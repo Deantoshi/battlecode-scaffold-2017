@@ -212,9 +212,6 @@ Query the data:
 # Unit quadrant counts over time
 python3 scripts/bc17_query.py unit-positions "matches/{BOT_NAME}-combat-*.db"
 
-# Search for movement issues
-python3 scripts/bc17_query.py search matches/{BOT_NAME}-combat-*.db "stuck"
-
  # Action events by team
 python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
 SELECT team, COUNT(*) as actions FROM events WHERE event_type='action' GROUP BY team"
