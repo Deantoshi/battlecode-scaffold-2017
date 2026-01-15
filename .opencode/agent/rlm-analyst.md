@@ -70,7 +70,7 @@ python3 scripts/bc17_query.py events <match.db> --type=shoot
 python3 scripts/bc17_query.py units <match.db>
 python3 scripts/bc17_query.py units <match.db> --round=500
 
-# Unit positions (likely stuck units by quadrant, same quadrant since last snapshot)
+# Unit positions (likely stuck units by quadrant, snapshots every 500 rounds)
 python3 scripts/bc17_query.py unit-positions "matches/*.db" --team=A
 
 # Specific round range
@@ -139,7 +139,7 @@ Note:
 - Final bullet counts
  - Track total wins and average rounds for wins to evaluate the objective (>=3 wins, <=1500 avg rounds)
 
-### Step 2.5: Capture Ally Quadrant Snapshots (MANDATORY)
+### Step 2.5: Capture Ally Quadrant Snapshots (MANDATORY, every 500 rounds)
 
 For all maps in one pass (aggregate table):
 ```bash
@@ -221,21 +221,8 @@ MAP_RESULTS: (for battle log)
 - Blitzkrieg: <W|L> | <rounds> | <elim|vp|timeout>
 
 ALLY_POSITIONS: (all snapshots, Team A, likely stuck units by quadrant; by map)
-Format template (compact, copy/paste friendly):
-```
-ALLY_POSITIONS:
-- aggregated table (by map):
-  +-------+-------+----------+--------+----------+------------+---------+------+-------+
-  | Map   | Round | Quadrant | ARCHON | GARDENER | LUMBERJACK | SOLDIER | TANK | SCOUT |
-  +-------+-------+----------+--------+----------+------------+---------+------+-------+
-  | Shrine| 200   | NW       | 1      | 2        | 0          | 0       | 0    | 0     |
-  | Shrine| 200   | NE       | 0      | 0        | 0          | 1       | 0    | 0     |
-  | Shrine| 200   | SW       | 0      | 0        | 0          | 0       | 0    | 0     |
-  | Shrine| 200   | SE       | 0      | 0        | 0          | 0       | 0    | 0     |
-  +-------+-------+----------+--------+----------+------------+---------+------+-------+
-```
-Notes:
-- Keep a single table; each row is map+round+quadrant.
+- Include the ASCII table output from `unit-positions` exactly once.
+- Do not repeat the table elsewhere in the analysis.
 - If the table is long, truncate rows only if absolutely necessary and mark with `...`.
 
 HISTORY_CONTEXT: (from battle log)

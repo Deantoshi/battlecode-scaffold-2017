@@ -76,15 +76,26 @@ public strictfp class Lumberjack {
                         }
                     }
                 }
-                if (!Nav.tryMove(Nav.randomDirection())) {
-                    // Retry with more chopping if needed
-                    for (TreeInfo tree : blockingTrees) {
-                        if (rc.canChop(tree.ID)) {
-                            rc.chop(tree.ID);
-                            break;
+                MapLocation rally = Comms.getRallyPoint();
+                if (rally != null) {
+                    Nav.moveToward(rally);
+                } else {
+                    MapLocation enemyArchon = Comms.getEnemyArchonLocation();
+                    if (enemyArchon != null) {
+                        Nav.moveToward(enemyArchon);
+                    } else {
+                        // Move toward predicted enemy base or center
+                        MapLocation friendlyArchon = Comms.readLocation(0, 1);
+                        if (friendlyArchon != null) {
+                            float oppX = 100.0f - friendlyArchon.x;
+                            float oppY = 100.0f - friendlyArchon.y;
+                            MapLocation predicted = new MapLocation(oppX, oppY);
+                            Nav.moveToward(predicted);
+                        } else {
+                            MapLocation center = new MapLocation(50.0f, 50.0f);
+                            Nav.moveToward(center);
                         }
                     }
-                    Nav.tryMove(Nav.randomDirection());
                 }
             }
         }
@@ -122,7 +133,7 @@ public strictfp class Lumberjack {
 
     static boolean tryChopTree() throws GameActionException {
         // Prioritize enemy trees for harassment
-        TreeInfo[] enemyTrees = rc.senseNearbyTrees(2.0f, rc.getTeam().opponent());
+        TreeInfo[] enemyTrees = rc.senseNearbyTrees(rc.getType().sensorRadius, rc.getTeam().opponent());
         if (enemyTrees.length > 0) {
             if (rc.canChop(enemyTrees[0].ID)) {
                 rc.chop(enemyTrees[0].ID);

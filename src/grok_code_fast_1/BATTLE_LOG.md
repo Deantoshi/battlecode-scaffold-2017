@@ -140,3 +140,30 @@
 - Archon.java: Modified Archon priority to build lumberjacks periodically or when enemies detected globally → proactive lumberjack production
 **Outcome:** BETTER - Avg rounds decreased by 96 from 2709 to 2613; lumberjack changes should protect economy and accelerate VP gains
 ---
+## Iteration 6
+**Results:** 5/5 wins | avg 2706r | Δ0 | →
+**Maps:** Shrine:W(2999,timeout) | Barrier:W(2356,vp) | Bullseye:W(2999,timeout) | Lanes:W(2135,vp) | Blitzkrieg:W(2999,timeout)
+**Units & Trees (totals across all maps):**
+| Type       | Produced |     Lost | Surviving |
+|------------|----------|----------|-----------|
+| Archon     |        0 |        0 |         0 |
+| Gardener   |      120 |       16 |       104 |
+| Soldier    |       50 |       12 |        38 |
+| Lumberjack |       26 |        8 |        18 |
+| Scout      |        0 |        0 |         0 |
+| Tank       |        0 |        0 |         0 |
+| Trees      |      124 |        0 |       124 |
+| **TOTAL**  |      444 |      118 |       326 |
+
+**Economy (totals across all maps):**
+| Metric    |     Bullets |
+|-----------|-------------|
+| Generated |        4509 |
+| Spent     |         100 |
+| Net       | +      4409 |
+
+**Weakness Found:** Gardener prioritizes soldiers over lumberjacks early (0 lumberjacks on Bullseye/Blitzkrieg)
+**Changes Made:**
+- Gardener.java: allow lumberjacks if none exist, extend soldier threshold to 500 → early tree defense
+**Outcome:** SAME - Performance unchanged with 5 wins, avg rounds slightly increased
+---

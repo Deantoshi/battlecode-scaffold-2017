@@ -35,6 +35,15 @@ public strictfp class Scout {
         broadcastMapIntel();
 
         RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
+        // Retreat if low health or outnumbered
+        MapLocation allyArchon = Comms.readLocation(0, 1);
+        if (rc.getHealth() < 40 || (enemies.length > 2 && countLumberjacksSoldiers(enemies) > 2)) {
+            if (allyArchon != null && !rc.hasMoved()) {
+                Direction retreatDir = rc.getLocation().directionTo(allyArchon);
+                Nav.tryMove(retreatDir);
+                return;
+            }
+        }
         for (RobotInfo enemy : enemies) {
             reportEnemy(enemy);
             if ((enemy.type == RobotType.GARDENER || enemy.type == RobotType.ARCHON) && !rc.hasMoved()) {
@@ -109,6 +118,8 @@ public strictfp class Scout {
             rc.broadcast(4, 1);
         } else if (enemy.type == RobotType.GARDENER) {
             Comms.broadcastLocation(9, 10, enemy.location); // New channels for gardeners
+        } else if (enemy.type == RobotType.LUMBERJACK) {
+            Comms.broadcastLumberjackDetected();
         } else {
             Comms.broadcastLocation(15, 16, enemy.location); // General enemies
         }
@@ -127,5 +138,15 @@ public strictfp class Scout {
         if (loc.x < 10 || loc.x > 90 || loc.y < 10 || loc.y > 90) {
             Comms.broadcastLocation(7, 8, loc);
         }
+    }
+
+    static int countLumberjacksSoldiers(RobotInfo[] enemies) {
+        int count = 0;
+        for (RobotInfo enemy : enemies) {
+            if (enemy.type == RobotType.LUMBERJACK || enemy.type == RobotType.SOLDIER) {
+                count++;
+            }
+        }
+        return count;
     }
 }

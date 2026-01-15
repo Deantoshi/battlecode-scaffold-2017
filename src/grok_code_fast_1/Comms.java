@@ -118,4 +118,24 @@ public strictfp class Comms {
     public static int getTreePlantingThreshold() throws GameActionException {
         return rc.readBroadcast(27);
     }
+
+    public static void broadcastLumberjackDetected() throws GameActionException {
+        rc.broadcast(28, 1);
+    }
+
+    public static boolean isLumberjackDetected() throws GameActionException {
+        return rc.readBroadcast(28) == 1;
+    }
+
+    public static int getEnemyThreats() throws GameActionException {
+        return rc.readBroadcast(23);
+    }
+
+    public static void broadcastOurLumberjackCount(int count) throws GameActionException {
+        rc.broadcast(29, count);
+    }
+
+    public static int getOurLumberjackCount() throws GameActionException {
+        return rc.readBroadcast(29);
+    }
 }

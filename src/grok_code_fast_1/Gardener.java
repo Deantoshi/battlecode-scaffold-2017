@@ -6,6 +6,7 @@ public strictfp class Gardener {
     static int treesPlanted = 0;
     static Direction buildDirection = Direction.SOUTH;
     static int buildCount = 0;
+    static MapLocation wateringTarget = null;
 
     public static void run(RobotController rc) throws GameActionException {
         Gardener.rc = rc;
@@ -25,12 +26,32 @@ public strictfp class Gardener {
 
     static void doTurn() throws GameActionException {
         waterLowestHealthTree();
+        // Move towards tree needing water
+        if (wateringTarget == null || (rc.canSenseLocation(wateringTarget) && rc.senseTreeAtLocation(wateringTarget).health >= 50)) {
+            TreeInfo[] allTrees = rc.senseNearbyTrees(rc.getType().sensorRadius, rc.getTeam());
+            TreeInfo targetTree = null;
+            float minDist = Float.MAX_VALUE;
+            for (TreeInfo tree : allTrees) {
+                if (tree.health < 50 && rc.getLocation().distanceTo(tree.location) < minDist) {
+                    minDist = rc.getLocation().distanceTo(tree.location);
+                    targetTree = tree;
+                }
+            }
+            wateringTarget = targetTree != null ? targetTree.location : null;
+        }
+        if (wateringTarget != null && !rc.hasMoved()) {
+            Direction dirToTarget = rc.getLocation().directionTo(wateringTarget);
+            Nav.tryMove(dirToTarget);
+        }
         // Increase tree limits and add scouts
-        if (treesPlanted < 1 && rc.getTeamBullets() >= 50) {
+        while (treesPlanted < 5 && rc.getTeamBullets() >= 50) {
             if (tryPlantTree()) {
                 treesPlanted++;
+            } else {
+                break;
             }
-        } else if (rc.getTeamBullets() >= 60) {
+        }
+        if (rc.getTeamBullets() >= 60) {
             tryBuildUnit();
         }
         // Fallback: if round >200 and no units built, force build soldier
@@ -67,19 +88,37 @@ public strictfp class Gardener {
     }
 
     static boolean tryBuildUnit() throws GameActionException {
+        RobotInfo[] enemies = rc.senseNearbyRobots(10, rc.getTeam().opponent());
+        boolean lumberjackThreat = false;
+        for (RobotInfo enemy : enemies) {
+            if (enemy.type == RobotType.LUMBERJACK) {
+                lumberjackThreat = true;
+                break;
+            }
+        }
         int priority = Comms.getProductionPriority(); // Read from broadcast
-        RobotType toBuild;
         int turnCount = rc.getRoundNum();
-        if (turnCount > 1000 && priority == 3) {
-            toBuild = RobotType.TANK;
-        } else if (priority == 0) {
+        RobotType toBuild;
+        if (turnCount < 300 && Comms.getOurLumberjackCount() == 0) {
+            toBuild = RobotType.LUMBERJACK;
+        } else if (turnCount < 100) {
+            toBuild = RobotType.LUMBERJACK;
+        } else if (lumberjackThreat) {
             toBuild = RobotType.LUMBERJACK;
         } else {
-            // Default to soldiers for priority 1 or unknown
-            toBuild = RobotType.SOLDIER;
+            if (turnCount > 1000 && priority == 3) {
+                toBuild = RobotType.TANK;
+            } else if (priority == 0) {
+                toBuild = RobotType.LUMBERJACK;
+            } else if (priority == 2) {
+                toBuild = RobotType.SCOUT;
+            } else {
+                // Default to soldiers for priority 1 or unknown
+                toBuild = RobotType.SOLDIER;
+            }
         }
-        // Fallback: build soldiers early to ensure combat units
-        if (toBuild != RobotType.SOLDIER && turnCount < 400) {
+        // Fallback: build soldiers early to ensure combat units, but allow lumberjacks if none exist
+        if (toBuild != RobotType.SOLDIER && turnCount < 500 && Comms.getOurLumberjackCount() > 0) {
             toBuild = RobotType.SOLDIER;
         }
         Direction[] dirs = Utils.getDirections();
@@ -87,6 +126,9 @@ public strictfp class Gardener {
             if (rc.canBuildRobot(toBuild, dir)) {
                 rc.buildRobot(toBuild, dir);
                 buildCount++;
+                if (toBuild == RobotType.LUMBERJACK) {
+                    Comms.broadcastOurLumberjackCount(Comms.getOurLumberjackCount() + 1);
+                }
                 return true;
             }
         }
@@ -98,6 +140,9 @@ public strictfp class Gardener {
                     if (rc.canBuildRobot(fallback, dir)) {
                         rc.buildRobot(fallback, dir);
                         buildCount++;
+                        if (fallback == RobotType.LUMBERJACK) {
+                            Comms.broadcastOurLumberjackCount(Comms.getOurLumberjackCount() + 1);
+                        }
                         return true;
                     }
                 }

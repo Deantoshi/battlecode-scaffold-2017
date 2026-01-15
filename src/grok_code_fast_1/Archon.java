@@ -37,7 +37,11 @@ public strictfp class Archon {
         }
         // Dynamic production broadcasts
         int priority;
-        if (turnCounter < 600) {
+        if (turnCounter < 300 && !Comms.isEnemySpotted()) {
+            priority = 2;  // Scouts early if no enemy detected
+        } else if (turnCounter % 500 < 100 || Comms.getEnemyThreats() > 0) {
+            priority = 0;  // Lumberjacks periodically or if enemies detected globally
+        } else if (turnCounter < 800) {
             priority = 1;  // Soldiers
         } else if (turnCounter > 1000) {
             priority = 3;  // Tanks for late-game sieges
@@ -87,9 +91,8 @@ public strictfp class Archon {
         }
 
         // Accelerate VP Donations
-        int unitCount = Comms.getUnitCount();
         float vpCost = rc.getVictoryPointCost();
-        if (unitCount >= 50 && rc.getTeamBullets() >= vpCost + 20) {
+        if (turnCounter > 600 && rc.getTeamBullets() > vpCost * 3) {
             rc.donate(vpCost);
         }
 

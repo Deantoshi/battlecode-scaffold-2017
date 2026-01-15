@@ -4,7 +4,7 @@ Battlecode 2017 Match Summary Generator
 
 Parses .bc17 replay files and generates LLM-friendly summaries of matches.
 Extracts logs, game events, unit production, resources, and victory points.
-Provides snapshots every 200 rounds for game progression analysis.
+Provides snapshots every 500 rounds for game progression analysis.
 
 Features:
 - Victory condition detection (VP, elimination, tiebreaker)
@@ -456,8 +456,8 @@ class BC17Parser:
                         prev_bullets = round_data.team_bullets[:]
                         prev_vp = round_data.team_victory_points[:]
 
-                        # Save snapshot every 200 rounds
-                        if round_data.round_id % 200 == 0:
+                        # Save snapshot every 500 rounds
+                        if round_data.round_id % 500 == 0:
                             current_snapshot.round = round_data.round_id
                             # Copy current units alive to snapshot
                             for body_type, count in units_alive[0].items():
@@ -1331,7 +1331,7 @@ class MatchSummarizer:
         lines.append("- Team A starts on the left, Team B on the right")
         lines.append("")
         lines.append("**Snapshot Interpretation:**")
-        lines.append("- 'Bullets Earned' = total income in that 200-round period")
+        lines.append("- 'Bullets Earned' = total income in that 500-round period")
         lines.append("- 'Bullets Spent' = cost of units produced in that period")
         lines.append("- Higher bullet counts indicate better economy")
         lines.append("- More units produced suggests aggressive expansion")

@@ -34,7 +34,7 @@ public strictfp class Soldier {
         // In doTurn, after enemy check, before movement
         if (!rc.hasMoved()) {
             RobotInfo[] allies = rc.senseNearbyRobots(5.0f, rc.getTeam());
-            if (allies.length > 3) { // Too clustered
+            if (allies.length > 5) { // Too clustered
                 MapLocation allyCentroid = Utils.calculateCentroid(allies);
                 Direction away = rc.getLocation().directionTo(allyCentroid).opposite();
                 Nav.tryMove(away);
@@ -74,14 +74,15 @@ public strictfp class Soldier {
                 MapLocation enemyLoc = Comms.getEnemyLocation();
                 if (enemyLoc != null) {
                     Nav.moveToward(enemyLoc);
+            } else {
+                MapLocation enemyArchonLoc = Comms.getEnemyArchonLocation();
+                if (enemyArchonLoc != null) {
+                    Nav.moveToward(enemyArchonLoc);
                 } else {
-                    MapLocation enemyArchonLoc = Comms.getEnemyArchonLocation();
-                    if (enemyArchonLoc != null) {
-                        Nav.moveToward(enemyArchonLoc);
-                    } else {
-                        Nav.tryMove(Nav.randomDirection());
-                    }
+                    MapLocation center = new MapLocation(50.0f, 50.0f);
+                    Nav.moveToward(center);
                 }
+            }
             }
         }
     }
@@ -122,31 +123,7 @@ public strictfp class Soldier {
         return null;
     }
 
-    static boolean tryShoot(RobotInfo target, RobotInfo[] enemies) throws GameActionException {
-        if (target == null) return false;
-        Direction dir = rc.getLocation().directionTo(target.location);
-        RobotInfo[] allies = rc.senseNearbyRobots(rc.getType().sensorRadius, rc.getTeam());
-        for (RobotInfo ally : allies) {
-            Direction toAlly = rc.getLocation().directionTo(ally.location);
-            float dist = rc.getLocation().distanceTo(ally.location);
-            float distToTarget = rc.getLocation().distanceTo(target.location);
-            if (dist < distToTarget && Math.abs(dir.degreesBetween(toAlly)) < 5) {
-                return false;
-            }
-        }
-        if (target != null && (target.type == RobotType.TANK || enemies.length >= 2)) {
-            if (rc.canFireTriadShot()) {
-                rc.fireTriadShot(dir);
-                return true;
-            }
-        }
-        // Existing pentad for >2, single otherwise
-        // Adaptive: Use pentad if multiple enemies nearby
-        if (enemies.length > 2 && rc.canFirePentadShot()) {
-            rc.firePentadShot(dir);
-        } else if (rc.canFireSingleShot()) {
-            rc.fireSingleShot(dir);
-        }
-        return true;
+    static void tryShoot(RobotInfo target, RobotInfo[] enemies) throws GameActionException {
+        if (target != null && rc.canFireSingleShot()) rc.fireSingleShot(rc.getLocation().directionTo(target.location));
     }
 }
