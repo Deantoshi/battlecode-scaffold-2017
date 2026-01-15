@@ -454,14 +454,6 @@ SELECT team, COUNT(*) as shots FROM events WHERE event_type='shoot' GROUP BY tea
 python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
 SELECT MAX(round_id) as total_rounds FROM rounds"
 
-# Get robots alive at end (survivors)
-python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
-SELECT team, COUNT(*) as survivors FROM robots WHERE death_round IS NULL GROUP BY team"
-
-# Get final unit counts from snapshots
-python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
-SELECT team_a_units_lost, team_b_units_lost FROM snapshots WHERE round_id=(SELECT MAX(round_id) FROM snapshots)"
-
 # Get kill/death stats by team
 python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
 SELECT r.team,
