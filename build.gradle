@@ -168,6 +168,9 @@ task combatSim(type: JavaExec, dependsOn: 'build') {
         '--teamAUrl', sourceSets.main.output.classesDir,
         '--teamBUrl', sourceSets.main.output.classesDir
     ]
+    if (project.hasProperty('simMap')) {
+        simArgs += ['--map', project.property('simMap')]
+    }
     if (project.hasProperty('simSave')) {
         simArgs += ['--saveFile', project.property('simSave')]
     }
@@ -187,6 +190,9 @@ task navigationSim(type: JavaExec, dependsOn: 'build') {
         '--teamAUrl', sourceSets.main.output.classesDir,
         '--unitType', project.property('simUnit')
     ]
+    if (project.hasProperty('simMap')) {
+        simArgs += ['--map', project.property('simMap')]
+    }
     if (project.hasProperty('simSave')) {
         simArgs += ['--saveFile', project.property('simSave')]
     }
