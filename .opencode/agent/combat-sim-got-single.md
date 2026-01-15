@@ -530,9 +530,12 @@ PHASE 6 - Decision: {ACCEPT|REJECT}
 ### Check Combat Log Existence
 
 ```bash
-if [ ! -f "src/{BOT_NAME}/COMBAT_LOG_GOT.md" ]; then
-  echo "ERROR: COMBAT_LOG_GOT.md does not exist. Cannot append."
-  exit 1
+if [ -f "src/{BOT_NAME}/COMBAT_LOG_GOT.md" ]; then
+  # Read existing combat log
+  cat "src/{BOT_NAME}/COMBAT_LOG_GOT.md"
+else
+  # Create empty combat log file
+  touch "src/{BOT_NAME}/COMBAT_LOG_GOT.md"
 fi
 ```
 
