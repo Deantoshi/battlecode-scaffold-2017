@@ -15,7 +15,7 @@ You orchestrate and execute a **Graph of Thought (GoT)** approach to improve Bat
 
 ## Objective
 
-Win the combat simulation on **50%+ of the map(s) from the arguments** with an **average of <= 500 rounds** for those wins.
+**CRITICAL: Win the combat simulation on 50%+ of the map(s) from the arguments with an average of <= 500 rounds for those wins.**
 
 ## IMPORTANT: Identity Announcement
 
@@ -80,6 +80,13 @@ wait
 ```
 
 ### 0.5 Extract Data
+
+**IMPORTANT:** Delete old .db files first to ensure fresh extraction:
+```bash
+rm -f matches/{BOT_NAME}-combat-vs-{OPPONENT}*.db
+```
+
+Then extract new data:
 ```bash
 for match in matches/{BOT_NAME}-combat-vs-{OPPONENT}*.bc17; do
   python3 scripts/bc17_query.py extract "$match"
@@ -94,11 +101,7 @@ python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shr
 SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
 ```
 
-**IMPORTANT:** Before writing any SQL query for a table, first get its schema:
-```bash
-python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
-PRAGMA table_info(TABLE_NAME)"
-```
+**Available event types:** action, death, shoot, spawn (note: "move" events are recorded as "action", "kill" events do not exist)
 
 ### 0.7 Baseline Queries (execute ALL)
 ```bash
@@ -110,11 +113,11 @@ SELECT event_type, team, COUNT(*) as count FROM events GROUP BY event_type, team
 python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
 SELECT MAX(round_id) as total_rounds FROM rounds"
 
-# Get robots spawned by team (may be empty in combat sims)
+# Get robots spawned by team
 python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
 SELECT team, body_type, COUNT(*) as spawned FROM robots GROUP BY team, body_type"
 
-# Get robots alive at end (may be empty in combat sims)
+# Get robots alive at end
 python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
 SELECT team, COUNT(*) as alive FROM robots WHERE death_round IS NULL GROUP BY team"
 
@@ -143,14 +146,12 @@ Analyze the combat data from **THREE different perspectives**. Do each analysis 
 
 ### 1A: Targeting Analysis
 
-**Focus ONLY on:** Shot accuracy, target selection, prediction, overkill
-
 Read the code:
 ```bash
 cat src/{BOT_NAME}/{UNIT}.java | head -200
 ```
 
-Query the data (execute ALL of these queries):
+Query the data:
 ```bash
 # Shot events - sample
 python3 scripts/bc17_query.py events matches/{BOT_NAME}-combat-*.db --type=shoot --limit 50
@@ -163,12 +164,9 @@ SELECT team, COUNT(*) as shots FROM events WHERE event_type='shoot' GROUP BY tea
 python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
 SELECT team, MIN(round_id) as first_shot FROM events WHERE event_type='shoot' GROUP BY team"
 
-# Robot deaths by team (may be empty in combat sims)
+ # Robot deaths by team
 python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
 SELECT team, body_type, COUNT(*) as deaths FROM robots WHERE death_round IS NOT NULL GROUP BY team, body_type"
-
-# Kill events (may be empty in combat sims)
-python3 scripts/bc17_query.py events matches/{BOT_NAME}-combat-*.db --type=kill --limit 20
 ```
 
 **Output HYPOTHESIS_A:**
@@ -189,14 +187,12 @@ HYPOTHESIS_A = {
 
 ### 1B: Movement Analysis
 
-**Focus ONLY on:** Positioning, pathfinding, retreat, spacing, cover
-
 Read the code:
 ```bash
 cat src/{BOT_NAME}/Nav.java
 ```
 
-Query the data (execute ALL of these queries):
+Query the data:
 ```bash
 # Unit quadrant counts over time
 python3 scripts/bc17_query.py unit-positions "matches/{BOT_NAME}-combat-*.db"
@@ -204,9 +200,9 @@ python3 scripts/bc17_query.py unit-positions "matches/{BOT_NAME}-combat-*.db"
 # Search for movement issues
 python3 scripts/bc17_query.py search matches/{BOT_NAME}-combat-*.db "stuck"
 
-# Move events by team
+ # Action events by team
 python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
-SELECT team, COUNT(*) as moves FROM events WHERE event_type='move' GROUP BY team"
+SELECT team, COUNT(*) as actions FROM events WHERE event_type='action' GROUP BY team"
 
 # Robot spawn/death counts by team
 python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
@@ -235,9 +231,7 @@ HYPOTHESIS_B = {
 
 ### 1C: Timing Analysis
 
-**Focus ONLY on:** Engagement timing, resource pacing, initiative, death timing
-
-Query the data (execute ALL of these queries):
+Query the data:
 ```bash
 # First shot timing by team
 python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
@@ -262,7 +256,7 @@ team, COUNT(*) as shots FROM events WHERE event_type='shoot' GROUP BY phase, tea
 python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
 SELECT team, COUNT(*) as shots FROM events WHERE event_type='shoot' AND round_id BETWEEN 330 AND 360 GROUP BY team"
 
-# Death rounds by team (may be empty in combat sims)
+ # Death rounds by team
 python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
 SELECT team, AVG(death_round) as avg_death_round FROM robots WHERE death_round IS NOT NULL GROUP BY team"
 ```
@@ -418,6 +412,13 @@ wait
 ```
 
 ### 5.2 Extract & Query
+
+**IMPORTANT:** Delete old .db files first to ensure fresh extraction:
+```bash
+rm -f matches/{BOT_NAME}-combat-vs-{OPPONENT}*.db
+```
+
+Then extract new data:
 ```bash
 for match in matches/{BOT_NAME}-combat-vs-{OPPONENT}*.bc17; do
   python3 scripts/bc17_query.py extract "$match"
@@ -426,19 +427,15 @@ done
 
 ### 5.3 Validation Queries (execute ALL)
 ```bash
-# Get shot counts by team for comparison
+ # Get shot counts by team
 python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
 SELECT team, COUNT(*) as shots FROM events WHERE event_type='shoot' GROUP BY team"
-
-# Get kill counts by team (may be empty in combat sims)
-python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
-SELECT team, COUNT(*) as kills FROM events WHERE event_type='kill' GROUP BY team"
 
 # Get total rounds
 python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
 SELECT MAX(round_id) as total_rounds FROM rounds"
 
-# Get robots alive at end (may be empty in combat sims)
+ # Get robots alive at end
 python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
 SELECT team, COUNT(*) as alive FROM robots WHERE death_round IS NULL GROUP BY team"
 
@@ -555,8 +552,6 @@ Append to `src/{BOT_NAME}/COMBAT_LOG_GOT.md`:
 rm -f matches/*combat*.db
 ```
 
-Keep .bc17 replays.
-
 ---
 
 ## Key Principles
@@ -569,7 +564,7 @@ Keep .bc17 replays.
 
 ---
 
-## Completion Signal (Ralph Loop Integration)
+## Completion Signal
 
 After Phase 6, check if the objective is met:
 
@@ -580,8 +575,8 @@ if VALIDATION.wins >= ceil(num_maps / 2) AND avg_win_rounds <= 500:
     Output: <promise>OBJECTIVE_MET</promise>
 ```
 
-**IMPORTANT:** Only output `<promise>OBJECTIVE_MET</promise>` when BOTH conditions are true:
+**CRITICAL: Only output `<promise>OBJECTIVE_MET</promise>` when BOTH conditions are true:**
 - You have **won 50% or more** of the maps (e.g., 3/5, 2/3, 1/1)
 - The **average rounds for those wins is <= 500**
 
-This signals the Ralph loop to stop iterating. If the objective is NOT met, simply end your response without the promise tag - the loop will automatically run another iteration.
+If the objective is NOT met, simply end your response without the promise tag.
