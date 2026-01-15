@@ -106,14 +106,6 @@ for match in matches/{BOT_NAME}-combat-vs-{OPPONENT}*.bc17; do
 done
 ```
 
-### 0.6 List Database Tables
-
-Get the available tables:
-```bash
-python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
-SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
-```
-
 **Available event types:** action, death, shoot, spawn (note: "move" events are recorded as "action", "kill" events do not exist)
 
 ### 0.7 Baseline Queries (execute ALL)
