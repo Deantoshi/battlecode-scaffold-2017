@@ -14,6 +14,7 @@ Usage:
     python3 bc17_query.py rounds <match.db> <start> <end>
     python3 bc17_query.py events <match.db> [--type=spawn|death|vp|action|donate|shoot] [--team=A|B] [--round=N]
     python3 bc17_query.py units <match.db> [--round=N] [--type=SOLDIER|GARDENER|...]
+    python3 bc17_query.py unit-positions <match.db> [--round=N] [--team=A|B] [--include-trees]
     python3 bc17_query.py economy <match.db> [--round=N]
     python3 bc17_query.py search <match.db> <query>
     python3 bc17_query.py sql <match.db> "<SQL query>"
@@ -132,6 +133,17 @@ class BC17Database:
                 team_b_units_lost INTEGER
             );
 
+            -- Unit positions captured at snapshot rounds
+            CREATE TABLE IF NOT EXISTS unit_positions (
+                round_id INTEGER,
+                team TEXT,
+                robot_id INTEGER,
+                body_type TEXT,
+                x REAL,
+                y REAL,
+                PRIMARY KEY (round_id, robot_id)
+            );
+
             -- Create indexes for fast querying
             CREATE INDEX IF NOT EXISTS idx_events_round ON events(round_id);
             CREATE INDEX IF NOT EXISTS idx_events_type ON events(event_type);
@@ -140,6 +152,8 @@ class BC17Database:
             CREATE INDEX IF NOT EXISTS idx_logs_team ON logs(team);
             CREATE INDEX IF NOT EXISTS idx_robots_team ON robots(team);
             CREATE INDEX IF NOT EXISTS idx_robots_type ON robots(body_type);
+            CREATE INDEX IF NOT EXISTS idx_unit_positions_round ON unit_positions(round_id);
+            CREATE INDEX IF NOT EXISTS idx_unit_positions_team ON unit_positions(team);
         """)
         self.conn.commit()
 
@@ -320,6 +334,19 @@ class BC17Database:
                 snapshot.team_a_units_lost, snapshot.team_b_units_lost
             ))
 
+        # Store unit positions for snapshot rounds
+        for snapshot in parser.snapshots:
+            for unit in snapshot.team_a_unit_positions:
+                self.conn.execute(
+                    "INSERT OR REPLACE INTO unit_positions (round_id, team, robot_id, body_type, x, y) VALUES (?, ?, ?, ?, ?, ?)",
+                    (snapshot.round, 'A', unit['id'], unit['type'], unit['x'], unit['y'])
+                )
+            for unit in snapshot.team_b_unit_positions:
+                self.conn.execute(
+                    "INSERT OR REPLACE INTO unit_positions (round_id, team, robot_id, body_type, x, y) VALUES (?, ?, ?, ?, ?, ?)",
+                    (snapshot.round, 'B', unit['id'], unit['type'], unit['x'], unit['y'])
+                )
+
         self.conn.commit()
         return len(parser.rounds)
 
@@ -397,7 +424,7 @@ def cmd_summary(db_path: str):
     print(f"  Team A: {dict(units_a)}")
     print(f"  Team B: {dict(units_b)}")
     print()
-    print("Available queries: rounds, events, units, economy, search, sql")
+    print("Available queries: rounds, events, units, unit-positions, economy, search, sql")
 
     conn.close()
 
@@ -488,6 +515,63 @@ def cmd_units(db_path: str, round_id: int = None, body_type: str = None):
     print("-" * 40)
     for row in rows:
         print(f"Team {row['team']}: {row['body_type']:<12} x{row['count']}")
+
+    conn.close()
+
+
+def cmd_unit_positions(db_path: str, round_id: int = None, team: str = 'A', include_trees: bool = False):
+    """Query unit positions from snapshot rounds."""
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+
+    filters = ["team = ?"]
+    params = [team]
+    if not include_trees:
+        filters.append("body_type != 'TREE_BULLET'")
+    where_clause = " AND ".join(filters)
+
+    snapshot_round = None
+    if round_id is not None:
+        row = conn.execute(
+            f"SELECT MAX(round_id) AS round_id FROM unit_positions WHERE {where_clause} AND round_id <= ?",
+            params + [round_id]
+        ).fetchone()
+        snapshot_round = row['round_id'] if row else None
+        if snapshot_round is None:
+            print(f"No unit position snapshot found for Team {team} at or before round {round_id}.")
+            conn.close()
+            return
+        where_clause = f"{where_clause} AND round_id = ?"
+        params = params + [snapshot_round]
+
+    rows = conn.execute(
+        f"""
+        SELECT round_id, robot_id, body_type, x, y
+        FROM unit_positions
+        WHERE {where_clause}
+        ORDER BY round_id, body_type, robot_id
+        """,
+        params
+    ).fetchall()
+
+    if not rows:
+        print("No unit position snapshots found.")
+        conn.close()
+        return
+
+    if snapshot_round is not None:
+        print(f"Unit positions at round {snapshot_round} (Team {team}):")
+    else:
+        print(f"Unit positions (Team {team}):")
+
+    current_round = None
+    for row in rows:
+        if row['round_id'] != current_round:
+            if current_round is not None:
+                print()
+            current_round = row['round_id']
+            print(f"Round {current_round}")
+        print(f"  {row['body_type']}#{row['robot_id']} @ ({row['x']:.1f}, {row['y']:.1f})")
 
     conn.close()
 
@@ -803,6 +887,22 @@ def main():
             elif arg.startswith('--type='):
                 body_type = arg.split('=')[1]
         cmd_units(sys.argv[2], round_id, body_type)
+
+    elif cmd == 'unit-positions':
+        if len(sys.argv) < 3:
+            print("Usage: bc17_query.py unit-positions <match.db> [--round=N] [--team=A|B] [--include-trees]")
+            sys.exit(1)
+        round_id = None
+        team = 'A'
+        include_trees = False
+        for arg in sys.argv[3:]:
+            if arg.startswith('--round='):
+                round_id = int(arg.split('=')[1])
+            elif arg.startswith('--team='):
+                team = arg.split('=')[1]
+            elif arg == '--include-trees':
+                include_trees = True
+        cmd_unit_positions(sys.argv[2], round_id, team, include_trees)
 
     elif cmd == 'economy':
         if len(sys.argv) < 3:

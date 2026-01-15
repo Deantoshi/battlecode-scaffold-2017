@@ -180,6 +180,25 @@ class FlatBufferReader:
             return 0
         return offset + self.read_int32(offset)
 
+    def read_vec_table(self, table_pos: int) -> Tuple[List[float], List[float]]:
+        """Read VecTable data as (xs, ys) float lists."""
+        if table_pos <= 0:
+            return [], []
+        xs_offset = self.get_field_offset(table_pos, 0)
+        ys_offset = self.get_field_offset(table_pos, 1)
+
+        xs = []
+        ys = []
+        if xs_offset > 0:
+            xs_len = self.get_vector_length(xs_offset)
+            xs_start = self.get_vector_start(xs_offset)
+            xs = [self.read_float(xs_start + i * 4) for i in range(xs_len)]
+        if ys_offset > 0:
+            ys_len = self.get_vector_length(ys_offset)
+            ys_start = self.get_vector_start(ys_offset)
+            ys = [self.read_float(ys_start + i * 4) for i in range(ys_len)]
+        return xs, ys
+
 
 class RoundData:
     """Data extracted from a single round."""
@@ -189,6 +208,9 @@ class RoundData:
         self.team_victory_points = [0, 0]
         self.spawned_units = {0: defaultdict(int), 1: defaultdict(int)}  # team -> {type: count}
         self.spawned_robot_info = []  # List of (robot_id, team, type) tuples
+        self.spawned_robot_positions = []  # List of (robot_id, team, type, x, y)
+        self.moved_ids = []  # List of robot IDs that moved this round
+        self.moved_locs = []  # List of (x, y) locations for moved IDs
         self.died_ids = []  # List of robot IDs that died this round
         self.actions = []  # List of (robot_id, action_type, target_id) tuples
         self.logs = ""
@@ -219,6 +241,9 @@ class GameSnapshot:
         # VP tracking for donation calculation
         self.team_a_vp_prev = 0
         self.team_b_vp_prev = 0
+        # Unit positions captured at snapshot rounds
+        self.team_a_unit_positions = []
+        self.team_b_unit_positions = []
 
 
 class BC17Parser:
@@ -273,6 +298,21 @@ class BC17Parser:
             robot_registry = {}
             # Track cumulative units alive: {team_idx: {body_type: count}}
             units_alive = {0: defaultdict(int), 1: defaultdict(int)}
+            # Track robot positions: robot_id -> (team_idx, body_type, x, y)
+            robot_positions = {}
+
+            def capture_positions(snapshot: GameSnapshot):
+                snapshot.team_a_unit_positions = []
+                snapshot.team_b_unit_positions = []
+                for robot_id, (team_idx, body_type, x, y) in robot_positions.items():
+                    if x is None or y is None:
+                        continue
+                    type_name = BODY_TYPES.get(body_type, f'UNKNOWN_{body_type}')
+                    entry = {'id': robot_id, 'type': type_name, 'x': x, 'y': y}
+                    if team_idx == 0:
+                        snapshot.team_a_unit_positions.append(entry)
+                    elif team_idx == 1:
+                        snapshot.team_b_unit_positions.append(entry)
 
             for i in range(num_events):
                 # Each event is an offset to EventWrapper table
@@ -304,6 +344,17 @@ class BC17Parser:
                         for robot_id, team_idx, body_type in round_data.spawned_robot_info:
                             robot_registry[robot_id] = (team_idx, body_type)
                             units_alive[team_idx][body_type] += 1
+                        for robot_id, team_idx, body_type, x, y in round_data.spawned_robot_positions:
+                            robot_positions[robot_id] = (team_idx, body_type, x, y)
+
+                        # Apply movement updates
+                        for robot_id, (x, y) in zip(round_data.moved_ids, round_data.moved_locs):
+                            if robot_id in robot_positions:
+                                team_idx, body_type, _, _ = robot_positions[robot_id]
+                                robot_positions[robot_id] = (team_idx, body_type, x, y)
+                            elif robot_id in robot_registry:
+                                team_idx, body_type = robot_registry[robot_id]
+                                robot_positions[robot_id] = (team_idx, body_type, x, y)
 
                         # Process deaths
                         deaths_by_team = {0: 0, 1: 0}
@@ -313,6 +364,7 @@ class BC17Parser:
                                 units_alive[team_idx][body_type] = max(0, units_alive[team_idx][body_type] - 1)
                                 deaths_by_team[team_idx] += 1
                                 del robot_registry[robot_id]
+                                robot_positions.pop(robot_id, None)
 
                         # Calculate bullets spent on units
                         spent_a = sum(UNIT_COSTS.get(BODY_TYPES.get(t, ''), 0) * c
@@ -369,6 +421,7 @@ class BC17Parser:
                             for body_type, count in units_alive[1].items():
                                 type_name = BODY_TYPES.get(body_type, f'UNKNOWN_{body_type}')
                                 current_snapshot.team_b_units_alive[type_name] = count
+                            capture_positions(current_snapshot)
                             self.snapshots.append(current_snapshot)
                             current_snapshot = GameSnapshot(round_data.round_id)
 
@@ -386,6 +439,7 @@ class BC17Parser:
                 for body_type, count in units_alive[1].items():
                     type_name = BODY_TYPES.get(body_type, f'UNKNOWN_{body_type}')
                     current_snapshot.team_b_units_alive[type_name] = count
+                capture_positions(current_snapshot)
                 self.snapshots.append(current_snapshot)
 
             return True
@@ -439,6 +493,20 @@ class BC17Parser:
             if spawned_offset > 0:
                 spawned_table = self.reader.get_indirect(spawned_offset)
                 self.parse_spawned_bodies(spawned_table, round_data)
+
+            # Get movedIDs (field 3) and movedLocs (field 4)
+            moved_ids_offset = self.reader.get_field_offset(table_pos, 3)
+            moved_locs_offset = self.reader.get_field_offset(table_pos, 4)
+            if moved_ids_offset > 0 and moved_locs_offset > 0:
+                num_moved = self.reader.get_vector_length(moved_ids_offset)
+                moved_ids_start = self.reader.get_vector_start(moved_ids_offset)
+                moved_locs_table = self.reader.get_indirect(moved_locs_offset)
+                moved_xs, moved_ys = self.reader.read_vec_table(moved_locs_table)
+                count = min(num_moved, len(moved_xs), len(moved_ys))
+                for i in range(count):
+                    robot_id = self.reader.read_int32(moved_ids_start + i * 4)
+                    round_data.moved_ids.append(robot_id)
+                    round_data.moved_locs.append((moved_xs[i], moved_ys[i]))
 
             # Get diedIDs (field 9) - vector of ints (robot IDs that died)
             died_offset = self.reader.get_field_offset(table_pos, 9)
@@ -501,6 +569,7 @@ class BC17Parser:
             robot_ids_offset = self.reader.get_field_offset(table_pos, 0)
             team_ids_offset = self.reader.get_field_offset(table_pos, 1)
             types_offset = self.reader.get_field_offset(table_pos, 2)
+            locs_offset = self.reader.get_field_offset(table_pos, 3)
 
             if team_ids_offset <= 0 or types_offset <= 0:
                 return
@@ -513,6 +582,12 @@ class BC17Parser:
             robot_ids_start = 0
             if robot_ids_offset > 0:
                 robot_ids_start = self.reader.get_vector_start(robot_ids_offset)
+
+            locs_xs = []
+            locs_ys = []
+            if locs_offset > 0:
+                locs_table = self.reader.get_indirect(locs_offset)
+                locs_xs, locs_ys = self.reader.read_vec_table(locs_table)
 
             for i in range(num_bodies):
                 team_id = self.reader.read_byte(teams_start + i)
@@ -530,6 +605,10 @@ class BC17Parser:
                     # Store robot info for death tracking
                     if robot_id > 0:
                         round_data.spawned_robot_info.append((robot_id, team_idx, body_type))
+                        if i < len(locs_xs) and i < len(locs_ys):
+                            round_data.spawned_robot_positions.append(
+                                (robot_id, team_idx, body_type, locs_xs[i], locs_ys[i])
+                            )
 
         except Exception:
             pass
