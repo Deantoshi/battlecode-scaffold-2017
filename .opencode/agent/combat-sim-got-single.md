@@ -29,7 +29,7 @@ You orchestrate and execute a **Graph of Thought (GoT)** approach to improve Bat
 Parse for:
 - `--bot NAME` - **REQUIRED**: Bot folder name in `src/NAME/`
 - `--opponent NAME` - Opponent bot (default: `examplefuncsplayer`)
-- `--maps MAPS` - Comma-separated maps (default: `Shrine,Barrier,Bullseye,Lanes,Blitzkrieg`)
+- `--maps MAPS` - Comma-separated maps (default: `Shrine`)
 - `--unit TYPE` - Unit type (default: `Soldier`)
 
 ## Graph of Thought Flow (Single Agent)
@@ -72,7 +72,7 @@ rm -f matches/*combat*.bc17 matches/*combat*.db
 
 ### 0.4 Run Baseline Simulations
 ```bash
-for map in Shrine Barrier Bullseye Lanes Blitzkrieg; do
+for map in Shrine; do
   ./gradlew combatSim -PteamA={BOT_NAME} -PteamB={OPPONENT} -PsimMap=$map \
     -PsimSave=matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-$map.bc17 2>&1 &
 done
@@ -404,7 +404,7 @@ Re-run combat simulations to measure improvement.
 
 ### 5.1 Run Simulations
 ```bash
-for map in Shrine Barrier Bullseye Lanes Blitzkrieg; do
+for map in Shrine; do
   ./gradlew combatSim -PteamA={BOT_NAME} -PteamB={OPPONENT} -PsimMap=$map \
     -PsimSave=matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-$map.bc17 2>&1 &
 done
