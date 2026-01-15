@@ -70,6 +70,9 @@ python3 scripts/bc17_query.py events <match.db> --type=shoot
 python3 scripts/bc17_query.py units <match.db>
 python3 scripts/bc17_query.py units <match.db> --round=500
 
+# Unit positions (snapshots every 200 rounds)
+python3 scripts/bc17_query.py unit-positions <match.db> --team=A
+
 # Specific round range
 python3 scripts/bc17_query.py rounds <match.db> 400 600
 
@@ -135,6 +138,16 @@ Note:
 - Total spawns/deaths
 - Final bullet counts
  - Track total wins and average rounds for wins to evaluate the objective (>=3 wins, <=1500 avg rounds)
+
+### Step 2.5: Capture Ally Position Snapshots (MANDATORY)
+
+For each database:
+```bash
+python3 scripts/bc17_query.py unit-positions matches/{name}.db --team=A
+```
+
+**MANDATORY:** Always include all snapshots in your analysis output.
+If no positions are returned, explicitly note this as a blocker in ANALYSIS and stop.
 
 ### Step 3: Identify Pattern
 
@@ -206,6 +219,18 @@ MAP_RESULTS: (for battle log)
 - Bullseye: <W|L> | <rounds> | <elim|vp|timeout>
 - Lanes: <W|L> | <rounds> | <elim|vp|timeout>
 - Blitzkrieg: <W|L> | <rounds> | <elim|vp|timeout>
+
+ALLY_POSITIONS: (all snapshots, Team A)
+Format template (compact, copy/paste friendly):
+```
+ALLY_POSITIONS:
+- match: <db_name>
+  - R200: ARCHON#3@(21.4,47.8) GARDENER#12@(24.1,44.6) SOLDIER#31@(30.2,39.9)
+  - R400: ARCHON#3@(22.0,46.9) GARDENER#12@(25.3,43.8) TANK#55@(29.8,40.2)
+```
+Notes:
+- Use one line per snapshot round.
+- If there are many units, keep the line but don't wrap; truncate only if absolutely necessary and mark with `...`.
 
 HISTORY_CONTEXT: (from battle log)
 - prev_iteration_wins: <integer, or "N/A" if first>
