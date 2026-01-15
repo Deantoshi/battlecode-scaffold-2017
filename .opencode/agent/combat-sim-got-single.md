@@ -610,20 +610,3 @@ rm -f matches/*combat*.db
 5. **Self-contained** - No sub-agents, all phases in one execution
 
 ---
-
-## Completion Signal
-
-After Phase 6, check if the objective is met:
-
-```
-avg_win_rounds = average rounds for winning maps
-if VALIDATION.wins >= ceil(num_maps / 2) AND avg_win_rounds <= 500:
-    # Objective met! Signal completion
-    Output: <promise>OBJECTIVE_MET</promise>
-```
-
-**CRITICAL: Only output `<promise>OBJECTIVE_MET</promise>` when BOTH conditions are true:**
-- You have **won 50% or more** of the maps (e.g., 3/5, 2/3, 1/1)
-- The **average rounds for those wins is <= 500**
-
-If the objective is NOT met, simply end your response without the promise tag.
