@@ -130,7 +130,7 @@ public strictfp class Soldier {
             Direction toAlly = rc.getLocation().directionTo(ally.location);
             float dist = rc.getLocation().distanceTo(ally.location);
             float distToTarget = rc.getLocation().distanceTo(target.location);
-            if (dist < distToTarget && Math.abs(dir.degreesBetween(toAlly)) < 15) {
+            if (dist < distToTarget && Math.abs(dir.degreesBetween(toAlly)) < 5) {
                 return false;
             }
         }

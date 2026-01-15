@@ -60,7 +60,7 @@ public strictfp class Archon {
         }
 
         // Hire up to 10 gardeners early if bullets sufficient, prefer safe directions
-        int maxGardeners = 10;  // Focus on tree-planting gardeners first before combat units
+        int maxGardeners = turnCounter < 300 ? 1 : 10;  // Focus on tree-planting gardeners first before combat units
         // Check density
         TreeInfo[] nearbyTrees = rc.senseNearbyTrees(10.0f);
         if (nearbyTrees.length > 5) {
@@ -89,7 +89,7 @@ public strictfp class Archon {
         // Accelerate VP Donations
         int unitCount = Comms.getUnitCount();
         float vpCost = rc.getVictoryPointCost();
-        if (unitCount >= 20 && rc.getTeamBullets() >= vpCost + 50) {
+        if (unitCount >= 50 && rc.getTeamBullets() >= vpCost + 20) {
             rc.donate(vpCost);
         }
 

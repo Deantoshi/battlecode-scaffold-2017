@@ -685,33 +685,79 @@ def cmd_battlelog_stats(db_pattern: str, team: str = 'A'):
     trees_net = trees_planted - trees_destroyed
     bullets_net = bullets_generated - bullets_spent
 
-    # Format output in battle log format
-    # Unit abbreviations: A=Archon, G=Gardener, S=Soldier, L=Lumberjack, Sc=Scout, T=Tank
+    # Format output in battle log format - tabular with full names
     unit_order = ['ARCHON', 'GARDENER', 'SOLDIER', 'LUMBERJACK', 'SCOUT', 'TANK']
-    abbrev = {'ARCHON': 'A', 'GARDENER': 'G', 'SOLDIER': 'S', 'LUMBERJACK': 'L', 'SCOUT': 'Sc', 'TANK': 'T'}
-
-    produced_str = ' '.join(f"{units_produced.get(u, 0)}{abbrev[u]}" for u in unit_order)
-    died_str = ' '.join(f"{units_died.get(u, 0)}{abbrev[u]}" for u in unit_order)
+    unit_names = {
+        'ARCHON': 'Archon',
+        'GARDENER': 'Gardener',
+        'SOLDIER': 'Soldier',
+        'LUMBERJACK': 'Lumberjack',
+        'SCOUT': 'Scout',
+        'TANK': 'Tank'
+    }
 
     net_sign = '+' if trees_net >= 0 else ''
     bullets_net_sign = '+' if bullets_net >= 0 else ''
 
-    print("=" * 60)
+    print("=" * 70)
     print(f"BATTLE LOG STATS (Team {team}, {len(db_files)} matches)")
-    print("=" * 60)
+    print("=" * 70)
     print()
     print("**Units (totals across all maps):**")
-    print(f"- Produced: {produced_str} | Total: {total_produced}")
-    print(f"- Died: {died_str} | Total: {total_died}")
-    print(f"- Trees: {trees_planted} planted, {trees_destroyed} destroyed, {net_sign}{trees_net} net")
-    print("**Economy (totals across all maps):**")
-    print(f"- Bullets: {int(bullets_generated)} generated, {int(bullets_spent)} spent, {bullets_net_sign}{int(bullets_net)} net")
     print()
-    print("--- Copy-paste ready format ---")
-    print(f"- Produced: {produced_str} | Total: {total_produced}")
-    print(f"- Died: {died_str} | Total: {total_died}")
-    print(f"- Trees: {trees_planted} planted, {trees_destroyed} destroyed, {net_sign}{trees_net} net")
-    print(f"- Bullets: {int(bullets_generated)} generated, {int(bullets_spent)} spent, {bullets_net_sign}{int(bullets_net)} net")
+    print(f"| {'Unit':<12} | {'Produced':>10} | {'Died':>10} | {'Surviving':>10} |")
+    print(f"|{'-'*14}|{'-'*12}|{'-'*12}|{'-'*12}|")
+    for unit in unit_order:
+        produced = units_produced.get(unit, 0)
+        died = units_died.get(unit, 0)
+        surviving = produced - died
+        print(f"| {unit_names[unit]:<12} | {produced:>10} | {died:>10} | {surviving:>10} |")
+    print(f"|{'-'*14}|{'-'*12}|{'-'*12}|{'-'*12}|")
+    print(f"| {'TOTAL':<12} | {total_produced:>10} | {total_died:>10} | {total_produced - total_died:>10} |")
+    print()
+    print("**Trees (totals across all maps):**")
+    print()
+    print(f"| {'Metric':<12} | {'Value':>10} |")
+    print(f"|{'-'*14}|{'-'*12}|")
+    print(f"| {'Planted':<12} | {trees_planted:>10} |")
+    print(f"| {'Destroyed':<12} | {trees_destroyed:>10} |")
+    print(f"| {'Net':<12} | {net_sign}{trees_net:>9} |")
+    print()
+    print("**Economy (totals across all maps):**")
+    print()
+    print(f"| {'Metric':<12} | {'Bullets':>12} |")
+    print(f"|{'-'*14}|{'-'*14}|")
+    print(f"| {'Generated':<12} | {int(bullets_generated):>12} |")
+    print(f"| {'Spent':<12} | {int(bullets_spent):>12} |")
+    print(f"| {'Net':<12} | {bullets_net_sign}{int(bullets_net):>11} |")
+    print()
+    print("=" * 70)
+    print("COPY-PASTE READY FORMAT FOR BATTLE LOG")
+    print("=" * 70)
+    print()
+    print("**Units (totals across all maps):**")
+    print(f"| Unit       | Produced |     Died | Surviving |")
+    print(f"|------------|----------|----------|-----------|")
+    for unit in unit_order:
+        produced = units_produced.get(unit, 0)
+        died = units_died.get(unit, 0)
+        surviving = produced - died
+        print(f"| {unit_names[unit]:<10} | {produced:>8} | {died:>8} | {surviving:>9} |")
+    print(f"| **TOTAL**  | {total_produced:>8} | {total_died:>8} | {total_produced - total_died:>9} |")
+    print()
+    print("**Trees (totals across all maps):**")
+    print(f"| Metric    |    Value |")
+    print(f"|-----------|----------|")
+    print(f"| Planted   | {trees_planted:>8} |")
+    print(f"| Destroyed | {trees_destroyed:>8} |")
+    print(f"| Net       | {net_sign}{trees_net:>7} |")
+    print()
+    print("**Economy (totals across all maps):**")
+    print(f"| Metric    |     Bullets |")
+    print(f"|-----------|-------------|")
+    print(f"| Generated | {int(bullets_generated):>11} |")
+    print(f"| Spent     | {int(bullets_spent):>11} |")
+    print(f"| Net       | {bullets_net_sign}{int(bullets_net):>10} |")
 
 
 def print_usage():
