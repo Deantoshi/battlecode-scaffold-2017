@@ -1,5 +1,5 @@
 ---
-description: Start a Ralph Wiggum loop for iterative task completion
+description: Start a Ralph Wiggum loop for iterative task completion on a specific bot
 mode: subagent
 temperature: 0
 tools:
@@ -15,17 +15,26 @@ tools:
 ### Tooling Constraints
 **Do not use `edit` or `write` tools.** Use bash commands to modify files.
 
-Use the `ralph_loop` tool to start an iterative loop with the following parameters:
-- prompt: the Arguments section (raw string)
-- max_iterations: The user may specify --max-iterations N in their arguments
-- completion_promise: The user may specify --completion-promise "text" in their arguments
+## Arguments
 
-Parse the Arguments section to extract these values. If no max_iterations is specified, use 0 (unlimited).
-If no completion_promise is specified, omit it.
+Parse the Arguments section for:
+- `--bot NAME` - **REQUIRED**: The bot folder name in `src/NAME/`
+- `--max-iterations N` - Maximum iterations (default: 0 = unlimited)
+- `--completion-promise "text"` - Text that signals completion
+
+## Your Task
+
+Use the `ralph_loop` tool with:
+- `bot_name`: The bot name from `--bot`
+- `prompt`: The full arguments string (to be re-submitted each iteration)
+- `max_iterations`: From `--max-iterations` or 0
+- `completion_promise`: From `--completion-promise` if specified
 
 Example usage:
-- `/ralph-loop "Fix all failing tests"` - runs until manually cancelled
-- `/ralph-loop "Implement feature X" --max-iterations 5` - runs up to 5 iterations
-- `/ralph-loop "Build the app" --completion-promise "All tests pass"` - runs until promise is satisfied
+- `/ralph-loop --bot mybot "Fix all failing tests"` - runs until cancelled
+- `/ralph-loop --bot mybot "Implement feature X" --max-iterations 5` - up to 5 iterations
+- `/ralph-loop --bot mybot "Build the app" --completion-promise "All tests pass"` - until promise satisfied
 
 After starting the loop, begin working on the task immediately. You are now in iteration 1.
+
+The state file will be stored at `src/{bot_name}/.ralph-state.json`.
