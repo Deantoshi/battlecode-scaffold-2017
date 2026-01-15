@@ -220,11 +220,6 @@ MAP_RESULTS: (for battle log)
 - Lanes: <W|L> | <rounds> | <elim|vp|timeout>
 - Blitzkrieg: <W|L> | <rounds> | <elim|vp|timeout>
 
-ALLY_POSITIONS: (all snapshots, Team A, likely stuck units by quadrant; by map)
-- Include the ASCII table output from `unit-positions` exactly once.
-- Do not repeat the table elsewhere in the analysis.
-- If the table is long, truncate rows only if absolutely necessary and mark with `...`.
-
 HISTORY_CONTEXT: (from battle log)
 - prev_iteration_wins: <integer, or "N/A" if first>
 - prev_iteration_changes: "<brief summary of what was changed>"
