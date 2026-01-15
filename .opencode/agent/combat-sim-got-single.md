@@ -100,7 +100,30 @@ python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shr
 PRAGMA table_info(TABLE_NAME)"
 ```
 
-### 0.7 Parse Results
+### 0.7 Baseline Queries (execute ALL)
+```bash
+# Get key events count
+python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
+SELECT event_type, team, COUNT(*) as count FROM events GROUP BY event_type, team"
+
+# Get total rounds
+python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
+SELECT MAX(round_id) as total_rounds FROM rounds"
+
+# Get robots spawned by team (may be empty in combat sims)
+python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
+SELECT team, body_type, COUNT(*) as spawned FROM robots GROUP BY team, body_type"
+
+# Get robots alive at end (may be empty in combat sims)
+python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
+SELECT team, COUNT(*) as alive FROM robots WHERE death_round IS NULL GROUP BY team"
+
+# Get final unit counts from snapshots
+python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
+SELECT team_a_units_lost, team_b_units_lost FROM snapshots WHERE round_id=(SELECT MAX(round_id) FROM snapshots)"
+```
+
+### 0.8 Parse Results
 From console output, capture `[combat] winner=X round=N` for each map.
 
 Store as:
@@ -140,11 +163,11 @@ SELECT team, COUNT(*) as shots FROM events WHERE event_type='shoot' GROUP BY tea
 python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
 SELECT team, MIN(round_id) as first_shot FROM events WHERE event_type='shoot' GROUP BY team"
 
-# Robot deaths by team
+# Robot deaths by team (may be empty in combat sims)
 python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
 SELECT team, body_type, COUNT(*) as deaths FROM robots WHERE death_round IS NOT NULL GROUP BY team, body_type"
 
-# Kill events
+# Kill events (may be empty in combat sims)
 python3 scripts/bc17_query.py events matches/{BOT_NAME}-combat-*.db --type=kill --limit 20
 ```
 
@@ -189,9 +212,9 @@ SELECT team, COUNT(*) as moves FROM events WHERE event_type='move' GROUP BY team
 python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
 SELECT team, COUNT(*) as spawned FROM robots WHERE spawn_round IS NOT NULL GROUP BY team"
 
-# Robots alive over time
+# Units lost from snapshots
 python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
-SELECT round_id, team, COUNT(*) as alive FROM robots WHERE spawn_round <= round_id AND (death_round IS NULL OR death_round > round_id) GROUP BY round_id, team"
+SELECT MAX(team_a_units_lost) as a_lost, MAX(team_b_units_lost) as b_lost FROM snapshots"
 ```
 
 **Output HYPOTHESIS_B:**
@@ -214,20 +237,34 @@ HYPOTHESIS_B = {
 
 **Focus ONLY on:** Engagement timing, resource pacing, initiative, death timing
 
-Query the data:
+Query the data (execute ALL of these queries):
 ```bash
-# First shot timing
+# First shot timing by team
 python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
-SELECT team, MIN(round) as first_shot FROM events WHERE event_type='shoot' GROUP BY team"
+SELECT team, MIN(round_id) as first_shot FROM events WHERE event_type='shoot' GROUP BY team"
 
-# Resource over time
+# Last shot timing by team
+python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
+SELECT team, MAX(round_id) as last_shot FROM events WHERE event_type='shoot' GROUP BY team"
+
+# Resource levels over time (early game)
 python3 scripts/bc17_query.py rounds matches/{BOT_NAME}-combat-*.db 1 50
+
+# Resource levels over time (mid game)
 python3 scripts/bc17_query.py rounds matches/{BOT_NAME}-combat-*.db 500 550
 
 # Shooting rate by phase
 python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
-SELECT CASE WHEN round<500 THEN 'early' WHEN round<1500 THEN 'mid' ELSE 'late' END as phase,
+SELECT CASE WHEN round_id<500 THEN 'early' WHEN round_id<1500 THEN 'mid' ELSE 'late' END as phase,
 team, COUNT(*) as shots FROM events WHERE event_type='shoot' GROUP BY phase, team"
+
+# Shoot events by round range
+python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
+SELECT team, COUNT(*) as shots FROM events WHERE event_type='shoot' AND round_id BETWEEN 330 AND 360 GROUP BY team"
+
+# Death rounds by team (may be empty in combat sims)
+python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
+SELECT team, AVG(death_round) as avg_death_round FROM robots WHERE death_round IS NOT NULL GROUP BY team"
 ```
 
 **Output HYPOTHESIS_C:**
@@ -380,11 +417,34 @@ done
 wait
 ```
 
-### 5.2 Extract & Parse
+### 5.2 Extract & Query
 ```bash
 for match in matches/{BOT_NAME}-combat-vs-{OPPONENT}*.bc17; do
   python3 scripts/bc17_query.py extract "$match"
 done
+```
+
+### 5.3 Validation Queries (execute ALL)
+```bash
+# Get shot counts by team for comparison
+python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
+SELECT team, COUNT(*) as shots FROM events WHERE event_type='shoot' GROUP BY team"
+
+# Get kill counts by team (may be empty in combat sims)
+python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
+SELECT team, COUNT(*) as kills FROM events WHERE event_type='kill' GROUP BY team"
+
+# Get total rounds
+python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
+SELECT MAX(round_id) as total_rounds FROM rounds"
+
+# Get robots alive at end (may be empty in combat sims)
+python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
+SELECT team, COUNT(*) as alive FROM robots WHERE death_round IS NULL GROUP BY team"
+
+# Get final unit counts from snapshots
+python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
+SELECT team_a_units_lost, team_b_units_lost FROM snapshots WHERE round_id=(SELECT MAX(round_id) FROM snapshots)"
 ```
 
 **Output:**

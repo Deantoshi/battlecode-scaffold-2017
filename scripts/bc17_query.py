@@ -230,13 +230,26 @@ class BC17Database:
                      }))
                 )
 
-        # Now parse round-by-round data
-        parser.parse_game_wrapper()
+        # Note: parser.parse() already calls parse_game_wrapper() internally,
+        # so we don't need to call it again here.
 
         # Track robots
         robot_registry = {}  # robot_id -> (team, type, spawn_round)
         prev_bullets = [0.0, 0.0]
         prev_vp = [0, 0]
+
+        # Register initial bodies from map (for combat sims)
+        for robot_id, team_idx, body_type, x, y in parser.initial_bodies:
+            team = 'A' if team_idx == 0 else 'B'
+            type_name = BODY_TYPES.get(body_type, f'UNKNOWN_{body_type}')
+            robot_registry[robot_id] = (team, type_name, 0)  # spawn_round = 0
+
+            # Record spawn event at round 0
+            self.conn.execute(
+                "INSERT INTO events (round_id, event_type, team, robot_id, body_type, details) VALUES (?, ?, ?, ?, ?, ?)",
+                (0, 'spawn', team, robot_id, type_name,
+                 json.dumps({'cost': UNIT_COSTS.get(type_name, 0), 'initial': True}))
+            )
 
         for round_data in parser.rounds:
             # Store round state

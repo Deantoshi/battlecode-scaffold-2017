@@ -259,6 +259,8 @@ class BC17Parser:
         self.winner = None
         self.map_min = None
         self.map_max = None
+        # Initial bodies from map (for combat sims): [(robot_id, team_idx, body_type, x, y), ...]
+        self.initial_bodies: List[Tuple[int, int, int, float, float]] = []
 
     def load(self) -> bool:
         """Load and decompress the .bc17 file."""
@@ -285,14 +287,14 @@ class BC17Parser:
             # 1: matchHeaders (vector of int)
             # 2: matchFooters (vector of int)
 
-            match_headers_offset = self.reader.get_field_offset(root_pos, 1)
-            if match_headers_offset > 0:
-                num_headers = self.reader.get_vector_length(match_headers_offset)
-                headers_start = self.reader.get_vector_start(match_headers_offset)
-                if num_headers > 0:
-                    header_ptr = headers_start
-                    header_offset = self.reader.get_indirect(header_ptr)
-                    self.parse_match_header(header_offset)
+            # Track robot ownership: robot_id -> (team_idx, body_type)
+            robot_registry = {}
+            # Track cumulative units alive: {team_idx: {body_type: count}}
+            units_alive = {0: defaultdict(int), 1: defaultdict(int)}
+            # Track robot positions: robot_id -> (team_idx, body_type, x, y)
+            robot_positions = {}
+            # Track positions at last snapshot for movement threshold checks
+            last_snapshot_positions = {}
 
             events_offset = self.reader.get_field_offset(root_pos, 0)
             if events_offset <= 0:
@@ -304,15 +306,6 @@ class BC17Parser:
             prev_bullets = [0.0, 0.0]
             prev_vp = [0, 0]
             current_snapshot = GameSnapshot(0)
-
-            # Track robot ownership: robot_id -> (team_idx, body_type)
-            robot_registry = {}
-            # Track cumulative units alive: {team_idx: {body_type: count}}
-            units_alive = {0: defaultdict(int), 1: defaultdict(int)}
-            # Track robot positions: robot_id -> (team_idx, body_type, x, y)
-            robot_positions = {}
-            # Track positions at last snapshot for movement threshold checks
-            last_snapshot_positions = {}
 
             def capture_positions(snapshot: GameSnapshot):
                 snapshot.team_a_unit_quadrants = defaultdict(lambda: defaultdict(int))
@@ -378,7 +371,22 @@ class BC17Parser:
 
                 event_type = self.reader.read_byte(etype_offset)
 
-                if event_type == EVENT_ROUND and e_offset > 0:
+                if event_type == EVENT_MATCH_HEADER and e_offset > 0:
+                    # Parse MatchHeader to get initial bodies (for combat sims)
+                    header_table = self.reader.get_indirect(e_offset)
+                    self.initial_bodies = self.parse_match_header(header_table)
+
+                    # Register initial bodies in robot_registry and units_alive
+                    for robot_id, team_idx, body_type, x, y in self.initial_bodies:
+                        robot_registry[robot_id] = (team_idx, body_type)
+                        units_alive[team_idx][body_type] += 1
+                        robot_positions[robot_id] = (team_idx, body_type, x, y)
+
+                    # Seed last_snapshot_positions with initial positions so first
+                    # snapshot can detect units stuck since spawn (for combat sims)
+                    last_snapshot_positions.update(robot_positions)
+
+                elif event_type == EVENT_ROUND and e_offset > 0:
                     round_table = self.reader.get_indirect(e_offset)
                     round_data = self.parse_round(round_table)
 
@@ -658,18 +666,30 @@ class BC17Parser:
         except Exception:
             pass
 
-    def parse_match_header(self, table_pos: int):
-        """Parse MatchHeader to get map bounds."""
+    def parse_match_header(self, table_pos: int) -> List[Tuple[int, int, int, float, float]]:
+        """Parse MatchHeader to get map bounds and initial bodies.
+
+        Returns a list of (robot_id, team_idx, body_type, x, y) tuples for initial bodies.
+        """
+        initial_bodies = []
         if table_pos <= 0:
-            return
+            return initial_bodies
 
         try:
             map_offset = self.reader.get_field_offset(table_pos, 0)
             if map_offset <= 0:
-                return
+                return initial_bodies
             map_table = self.reader.get_indirect(map_offset)
             if map_table <= 0:
-                return
+                return initial_bodies
+
+            # GameMap fields (vtable offsets):
+            # 0: name (offset 4)
+            # 1: minCorner (offset 6)
+            # 2: maxCorner (offset 8)
+            # 3: bodies (offset 10) - SpawnedBodyTable
+            # 4: trees (offset 12) - NeutralTreeTable
+            # 5: randomSeed (offset 14)
 
             min_corner_offset = self.reader.get_field_offset(map_table, 1)
             max_corner_offset = self.reader.get_field_offset(map_table, 2)
@@ -680,8 +700,78 @@ class BC17Parser:
                 max_y = self.reader.read_float(max_corner_offset + 4)
                 self.map_min = (min_x, min_y)
                 self.map_max = (max_x, max_y)
+
+            # Parse initial bodies from map
+            bodies_offset = self.reader.get_field_offset(map_table, 3)
+            if bodies_offset > 0:
+                bodies_table = self.reader.get_indirect(bodies_offset)
+                if bodies_table > 0:
+                    initial_bodies = self.parse_initial_bodies_table(bodies_table)
+
         except Exception:
             pass
+
+        return initial_bodies
+
+    def parse_initial_bodies_table(self, table_pos: int) -> List[Tuple[int, int, int, float, float]]:
+        """Parse SpawnedBodyTable from map to get initial bodies.
+
+        Returns a list of (robot_id, team_idx, body_type, x, y) tuples.
+        """
+        bodies = []
+        if table_pos <= 0:
+            return bodies
+
+        try:
+            # SpawnedBodyTable fields:
+            # 0: robotIDs (vector of int)
+            # 1: teamIDs (vector of byte)
+            # 2: types (vector of byte - BodyType)
+            # 3: locs (VecTable)
+
+            robot_ids_offset = self.reader.get_field_offset(table_pos, 0)
+            team_ids_offset = self.reader.get_field_offset(table_pos, 1)
+            types_offset = self.reader.get_field_offset(table_pos, 2)
+            locs_offset = self.reader.get_field_offset(table_pos, 3)
+
+            if team_ids_offset <= 0 or types_offset <= 0:
+                return bodies
+
+            num_bodies = self.reader.get_vector_length(team_ids_offset)
+            teams_start = self.reader.get_vector_start(team_ids_offset)
+            types_start = self.reader.get_vector_start(types_offset)
+
+            # Get robot IDs if available
+            robot_ids_start = 0
+            if robot_ids_offset > 0:
+                robot_ids_start = self.reader.get_vector_start(robot_ids_offset)
+
+            locs_xs = []
+            locs_ys = []
+            if locs_offset > 0:
+                locs_table = self.reader.get_indirect(locs_offset)
+                locs_xs, locs_ys = self.reader.read_vec_table(locs_table)
+
+            for i in range(num_bodies):
+                team_id = self.reader.read_byte(teams_start + i)
+                body_type = self.reader.read_byte(types_start + i)
+
+                # Get robot ID if available
+                robot_id = 0
+                if robot_ids_start > 0:
+                    robot_id = self.reader.read_int32(robot_ids_start + i * 4)
+
+                # team_id: 1 = Team A, 2 = Team B (convert to 0-indexed)
+                team_idx = team_id - 1 if team_id in (1, 2) else -1
+                if team_idx >= 0 and robot_id > 0:
+                    x = locs_xs[i] if i < len(locs_xs) else 0.0
+                    y = locs_ys[i] if i < len(locs_ys) else 0.0
+                    bodies.append((robot_id, team_idx, body_type, x, y))
+
+        except Exception:
+            pass
+
+        return bodies
 
     def parse_match_footer(self, table_pos: int):
         """Parse MatchFooter for winner and total rounds."""
