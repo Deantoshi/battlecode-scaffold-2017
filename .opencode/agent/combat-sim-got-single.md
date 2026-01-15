@@ -610,7 +610,7 @@ PHASE 6 - Delta Score Breakdown:
 
 ## Combat Log Update
 
-**IMPORTANT: NEVER reduce the size of the battlelog. Always append, never delete content.**
+**CRITICAL: Reading and updating the combat battle log is essential for maintaining experiment history and informing future decisions. NEVER reduce the size of the battlelog. Always append, never delete content.**
 
 ### Check Combat Log Existence
 
