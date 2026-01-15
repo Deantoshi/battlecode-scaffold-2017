@@ -103,6 +103,9 @@ if (!project.hasProperty("teamB")) {
 if (!project.hasProperty("maps")) {
     ext.maps = "Shrine"
 }
+if (!project.hasProperty("simUnit")) {
+    ext.simUnit = "SCOUT"
+}
 
 // Task to run a headless match
 task run(type: JavaExec, dependsOn: 'build') {
@@ -149,6 +152,45 @@ task runDebug(type: JavaExec, dependsOn: 'build') {
         '-Dbc.game.maps='+project.property('maps'),
         '-Dbc.server.save-file=' + 'matches/' + project.property('teamA') + '-vs-' + project.property('teamB') + '-on-' + project.property('maps') + '.bc17'
     ]
+}
+
+// Combat simulation (5 soldiers per team on Shrine)
+task combatSim(type: JavaExec, dependsOn: 'build') {
+    description 'Runs combat simulation (5 soldiers each) on Shrine.'
+    group 'battlecode'
+
+    main = 'battlecode.sim.SimulationMain'
+    classpath = sourceSets.main.runtimeClasspath + sourceSets.engine.runtimeClasspath
+    def simArgs = [
+        'combat',
+        '--teamA', project.property('teamA'),
+        '--teamB', project.property('teamB'),
+        '--teamAUrl', sourceSets.main.output.classesDir,
+        '--teamBUrl', sourceSets.main.output.classesDir
+    ]
+    if (project.hasProperty('simSave')) {
+        simArgs += ['--saveFile', project.property('simSave')]
+    }
+    args = simArgs
+}
+
+// Navigation simulation (single unit on Bullseye)
+task navigationSim(type: JavaExec, dependsOn: 'build') {
+    description 'Runs navigation simulation (single unit) on Bullseye.'
+    group 'battlecode'
+
+    main = 'battlecode.sim.SimulationMain'
+    classpath = sourceSets.main.runtimeClasspath + sourceSets.engine.runtimeClasspath
+    def simArgs = [
+        'navigation',
+        '--teamA', project.property('teamA'),
+        '--teamAUrl', sourceSets.main.output.classesDir,
+        '--unitType', project.property('simUnit')
+    ]
+    if (project.hasProperty('simSave')) {
+        simArgs += ['--saveFile', project.property('simSave')]
+    }
+    args = simArgs
 }
 
 // List all available players
