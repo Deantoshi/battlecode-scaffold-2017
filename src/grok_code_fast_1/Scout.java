@@ -73,6 +73,17 @@ public strictfp class Scout {
             }
         }
 
+        // Clustering check
+        if (!rc.hasMoved()) {
+            RobotInfo[] allies = rc.senseNearbyRobots(5.0f, rc.getTeam());
+            if (allies.length > 5) {
+                MapLocation allyCentroid = Utils.calculateCentroid(allies);
+                Direction away = rc.getLocation().directionTo(allyCentroid).opposite();
+                Nav.tryMove(away);
+                return;
+            }
+        }
+
         if (!rc.hasMoved()) {
             if (enemies.length == 0) {
                 // Replace quadrant patrol with dynamic sweeps

@@ -2,20 +2,29 @@ package grok_code_fast_1;
 import battlecode.common.*;
 
 public strictfp class Gardener {
-    static RobotController rc;
-    static int treesPlanted = 0;
-    static Direction buildDirection = Direction.SOUTH;
-    static int buildCount = 0;
-    static MapLocation wateringTarget = null;
+    RobotController rc;
+    int treesPlanted = 0;
+    Direction buildDirection = Direction.SOUTH;
+    int buildCount = 0;
+    MapLocation wateringTarget = null;
+    MapLocation quadrantTarget = null;
 
     public static void run(RobotController rc) throws GameActionException {
-        Gardener.rc = rc;
+        Gardener g = new Gardener();
+        g.rc = rc;
+        g.treesPlanted = 0;
+        g.buildDirection = Direction.SOUTH;
+        g.buildCount = 0;
+        g.wateringTarget = null;
+        g.quadrantTarget = null;
         Nav.init(rc);
         Comms.init(rc);
+        MapLocation archonStart = rc.getInitialArchonLocations(rc.getTeam())[0];
+        g.quadrantTarget = null;
 
         while (true) {
             try {
-                doTurn();
+                g.doTurn();
             } catch (Exception e) {
                 e.printStackTrace();
             } finally {
@@ -24,7 +33,7 @@ public strictfp class Gardener {
         }
     }
 
-    static void doTurn() throws GameActionException {
+    void doTurn() throws GameActionException {
         waterLowestHealthTree();
         // Move towards tree needing water
         if (wateringTarget == null || (rc.canSenseLocation(wateringTarget) && rc.senseTreeAtLocation(wateringTarget).health >= 50)) {
@@ -59,20 +68,23 @@ public strictfp class Gardener {
             tryBuildUnit();
         }
         if (!rc.hasMoved()) {
-            // Sense nearby robots for spacing
-            RobotInfo[] nearbyRobots = rc.senseNearbyRobots(5.0f, rc.getTeam());
-            if (nearbyRobots.length > 1) { // More than self
-                Direction away = rc.getLocation().directionTo(nearbyRobots[0].location).opposite();
+            RobotInfo[] allies = rc.senseNearbyRobots(5.0f, rc.getTeam());
+            if (allies.length > 5) {
+                MapLocation allyCentroid = Utils.calculateCentroid(allies);
+                Direction away = rc.getLocation().directionTo(allyCentroid).opposite();
                 Nav.tryMove(away);
+                return;
+            }
+            MapLocation target = Comms.getEnemyArchonLocation();
+            if (target != null) {
+                Nav.moveToward(target);
             } else {
-                // Existing away from archon
-                Direction away = rc.getLocation().directionTo(Comms.readLocation(0,1)).opposite();
-                Nav.tryMove(away);
+                Nav.tryMove(Nav.randomDirection());
             }
         }
     }
 
-    static void waterLowestHealthTree() throws GameActionException {
+    void waterLowestHealthTree() throws GameActionException {
         TreeInfo[] trees = rc.senseNearbyTrees(2.0f, rc.getTeam());
         TreeInfo lowestTree = null;
         float lowestHealth = Float.MAX_VALUE;
@@ -87,39 +99,43 @@ public strictfp class Gardener {
         }
     }
 
-    static boolean tryBuildUnit() throws GameActionException {
+    boolean tryBuildUnit() throws GameActionException {
         RobotInfo[] enemies = rc.senseNearbyRobots(10, rc.getTeam().opponent());
-        boolean lumberjackThreat = false;
+        int lumberjackCount = 0;
         for (RobotInfo enemy : enemies) {
             if (enemy.type == RobotType.LUMBERJACK) {
-                lumberjackThreat = true;
-                break;
+                lumberjackCount++;
             }
         }
+        Comms.broadcastLumberjackThreat(lumberjackCount);
         int priority = Comms.getProductionPriority(); // Read from broadcast
         int turnCount = rc.getRoundNum();
         RobotType toBuild;
-        if (turnCount < 300 && Comms.getOurLumberjackCount() == 0) {
-            toBuild = RobotType.LUMBERJACK;
-        } else if (turnCount < 100) {
-            toBuild = RobotType.LUMBERJACK;
-        } else if (lumberjackThreat) {
+        // Force lumberjack production
+        int minLumberjacks = (turnCount < 500) ? 4 : 2;
+        if (Comms.getOurLumberjackCount() < minLumberjacks) {
             toBuild = RobotType.LUMBERJACK;
         } else {
-            if (turnCount > 1000 && priority == 3) {
-                toBuild = RobotType.TANK;
-            } else if (priority == 0) {
-                toBuild = RobotType.LUMBERJACK;
-            } else if (priority == 2) {
-                toBuild = RobotType.SCOUT;
-            } else {
-                // Default to soldiers for priority 1 or unknown
+            if (turnCount > 500 && lumberjackCount == 0) {
                 toBuild = RobotType.SOLDIER;
+            } else if (turnCount < 300 && Comms.getOurLumberjackCount() == 0) {
+                toBuild = RobotType.LUMBERJACK;
+            } else if (turnCount < 100) {
+                toBuild = RobotType.LUMBERJACK;
+            } else if (lumberjackCount > 0) {
+                toBuild = RobotType.LUMBERJACK;
+            } else {
+                if (turnCount > 1000 && priority == 3) {
+                    toBuild = RobotType.TANK;
+                } else if (priority == 0) {
+                    toBuild = RobotType.LUMBERJACK;
+                } else if (priority == 2) {
+                    toBuild = RobotType.SCOUT;
+                } else {
+                    // Default to soldiers for priority 1 or unknown
+                    toBuild = RobotType.SOLDIER;
+                }
             }
-        }
-        // Fallback: build soldiers early to ensure combat units, but allow lumberjacks if none exist
-        if (toBuild != RobotType.SOLDIER && turnCount < 500 && Comms.getOurLumberjackCount() > 0) {
-            toBuild = RobotType.SOLDIER;
         }
         Direction[] dirs = Utils.getDirections();
         for (Direction dir : dirs) {
@@ -151,7 +167,7 @@ public strictfp class Gardener {
         return false;
     }
 
-    static boolean tryPlantTree() throws GameActionException {
+    boolean tryPlantTree() throws GameActionException {
         Direction[] dirs = Utils.getDirections();
         for (Direction dir : dirs) {
             if (rc.canPlantTree(dir)) {

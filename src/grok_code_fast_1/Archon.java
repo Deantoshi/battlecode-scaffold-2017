@@ -90,9 +90,9 @@ public strictfp class Archon {
             }
         }
 
-        // Accelerate VP Donations
+        // Delay VP Donations
         float vpCost = rc.getVictoryPointCost();
-        if (turnCounter > 600 && rc.getTeamBullets() > vpCost * 3) {
+        if (turnCounter > 700 && rc.getTeamBullets() > vpCost * 2) {
             rc.donate(vpCost);
         }
 
