@@ -82,17 +82,17 @@ public strictfp class Soldier {
                 Nav.tryMove(bestDir);
             }
         } else if (!rc.hasMoved()) {
-            MapLocation enemyArchonLoc = Comms.getEnemyArchonLocation();
-            if (enemyArchonLoc != null) {
-                Nav.moveToward(enemyArchonLoc);
+            MapLocation enemyLoc = Comms.getEnemyLocation();
+            if (enemyLoc != null) {
+                Nav.moveToward(enemyLoc);
             } else {
-                MapLocation rally = Comms.getRallyPoint();
-                if (rally != null) {
-                    Nav.moveToward(rally);
+                MapLocation enemyArchonLoc = Comms.getEnemyArchonLocation();
+                if (enemyArchonLoc != null) {
+                    Nav.moveToward(enemyArchonLoc);
                 } else {
-                    MapLocation enemyLoc = Comms.getEnemyLocation();
-                    if (enemyLoc != null) {
-                        Nav.moveToward(enemyLoc);
+                    MapLocation rally = Comms.getRallyPoint();
+                    if (rally != null) {
+                        Nav.moveToward(rally);
                     } else {
                         MapLocation center = new MapLocation(50.0f, 50.0f);
                         Nav.moveToward(center);

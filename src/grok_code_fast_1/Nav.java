@@ -9,7 +9,7 @@ public strictfp class Nav {
     static boolean bugTracing = false;
     static float bugStartDistSq = 0;
     static int bugSteps = 0;
-    static final int MAX_BUG_STEPS = 100;
+    static final int MAX_BUG_STEPS = 25;
     static Direction lastBugTurn = null;
 
     // Zigzag variables
@@ -200,7 +200,10 @@ public strictfp class Nav {
             if (bugSteps >= MAX_BUG_STEPS) {
                 bugTracing = false;
                 bugSteps = 0;
-                return tryMove(randomDirection());
+                for (int i = 0; i < 5; i++) {
+                    if (tryMove(randomDirection())) return true;
+                }
+                return false;
             }
         }
         if (!rc.hasMoved()) {

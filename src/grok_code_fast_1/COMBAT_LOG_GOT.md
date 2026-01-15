@@ -196,3 +196,117 @@ Analysis showed targeting inefficiency with more shots but fewer kills, severe m
 
 **DELTA_SCORE: -329.5** → REJECT
 ---
+
+## GoT Execution - 1730000000
+**Decision:** ACCEPT
+
+### Hypotheses
+| Category | Weakness | Confidence |
+|----------|----------|------------|
+| Targeting | Poor targeting efficiency - 109 shots but only 1 kill vs opponent's 83 shots and 5 kills | 4/5 |
+| Movement | Units getting stuck in navigation - all 5 units lost while opponent lost only 1 | 5/5 |
+| Timing | Late engagement leading to prolonged fights - average death round A:1202, B:376 | 3/5 |
+
+### Summary Reasoning
+Analysis showed targeting inefficiency with more shots but fewer kills, severe movement issues with units stuck, and timing problems with late deaths. Selected high-scoring solutions B2, A2, C2 for implementation.
+
+### Code Changes
+
+**B2: More aggressive unsticking - reduce MAX_BUG_STEPS to 25 and try multiple random directions when stuck**
+**File:** Nav.java
+```java
+    static final int MAX_BUG_STEPS = 100;
+```
+→
+```java
+    static final int MAX_BUG_STEPS = 25;
+```
+
+**B2: More aggressive unsticking - reduce MAX_BUG_STEPS to 25 and try multiple random directions when stuck**
+**File:** Nav.java
+```java
+            if (bugSteps >= MAX_BUG_STEPS) {
+                bugTracing = false;
+                bugSteps = 0;
+                return tryMove(randomDirection());
+            }
+```
+→
+```java
+            if (bugSteps >= MAX_BUG_STEPS) {
+                bugTracing = false;
+                bugSteps = 0;
+                for (int i = 0; i < 5; i++) {
+                    if (tryMove(randomDirection())) return true;
+                }
+                return false;
+            }
+```
+
+**A2: Remove conservative damping for aggressive prediction**
+**File:** Soldier.java
+```java
+            MapLocation predicted = target.location.add(velDir, speed * time * 0.9f); // conservative damping
+```
+→
+```java
+            MapLocation predicted = target.location.add(velDir, speed * time);
+```
+
+**C2: Prioritize enemy location over rally for earlier engagement**
+**File:** Soldier.java
+```java
+        } else if (!rc.hasMoved()) {
+            MapLocation enemyArchonLoc = Comms.getEnemyArchonLocation();
+            if (enemyArchonLoc != null) {
+                Nav.moveToward(enemyArchonLoc);
+            } else {
+                MapLocation rally = Comms.getRallyPoint();
+                if (rally != null) {
+                    Nav.moveToward(rally);
+                } else {
+                    MapLocation enemyLoc = Comms.getEnemyLocation();
+                    if (enemyLoc != null) {
+                        Nav.moveToward(enemyLoc);
+                    } else {
+                        MapLocation center = new MapLocation(50.0f, 50.0f);
+                        Nav.moveToward(center);
+                    }
+                }
+            }
+        }
+```
+→
+```java
+        } else if (!rc.hasMoved()) {
+            MapLocation enemyLoc = Comms.getEnemyLocation();
+            if (enemyLoc != null) {
+                Nav.moveToward(enemyLoc);
+            } else {
+                MapLocation enemyArchonLoc = Comms.getEnemyArchonLocation();
+                if (enemyArchonLoc != null) {
+                    Nav.moveToward(enemyArchonLoc);
+                } else {
+                    MapLocation rally = Comms.getRallyPoint();
+                    if (rally != null) {
+                        Nav.moveToward(rally);
+                    } else {
+                        MapLocation center = new MapLocation(50.0f, 50.0f);
+                        Nav.moveToward(center);
+                    }
+                }
+            }
+        }
+```
+
+### Results
+| Metric | Baseline | After | Delta |
+|--------|----------|-------|-------|
+| Wins | 0 | 0 | 0 |
+| Rounds | 1421 | 451 | 970 |
+| Kill Ratio | 0.2 | 0.2 | 0 |
+| First Shot | 354 | 354 | 0 |
+| Survivors | 0 | 0 | 0 |
+
+**DELTA_SCORE: 485** → ACCEPT
+---
