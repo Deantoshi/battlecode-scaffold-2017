@@ -42,54 +42,53 @@ public strictfp class Soldier {
             RobotInfo target = findTarget();
             float dist = rc.getLocation().distanceTo(target.location);
             tryShoot(target, enemies);
-            // Defensive Kiting: always maintain distance
+            // Enhanced Defensive Kiting: maintain wider range 8-10 for survival
             if (!rc.hasMoved()) {
-                if (dist < 6.0f) {  // Keep farther away
-                    // Too close, move away
+                if (dist < 8.0f) {  // Increased min range
                     Direction awayDir = rc.getLocation().directionTo(target.location).opposite();
                     MapLocation awayLoc = rc.getLocation().add(awayDir, 4.0f);
                     Nav.moveToward(awayLoc);
-                } else if (dist > 8.0f) {
-                    // Too far, close slightly
+                } else if (dist > 10.0f) {  // Increased max range
                     Nav.moveToward(target.location);
                 } else {
-                    // Stay at optimal range, circle if possible
+                    // Stay at optimal range, circle
                     Direction circleDir = rc.getLocation().directionTo(target.location).rotateLeftDegrees(90);
                     MapLocation circleLoc = rc.getLocation().add(circleDir, 1.0f);
                     Nav.moveToward(circleLoc);
                 }
             }
         }
-        // In doTurn, after enemy check, before movement
+        // Clustering avoidance
         if (!rc.hasMoved()) {
             RobotInfo[] allies = rc.senseNearbyRobots(5.0f, rc.getTeam());
-            if (allies.length > 5) { // Too clustered
+            if (allies.length > 5) {
                 MapLocation allyCentroid = Utils.calculateCentroid(allies);
                 Direction away = rc.getLocation().directionTo(allyCentroid).opposite();
                 Nav.tryMove(away);
-                return; // Prioritize spacing
+                return;
             }
         }
-        // Enhanced bullet evasion
+        // Enhanced bullet evasion: priority over other movement
         BulletInfo[] bullets = rc.senseNearbyBullets();
         if (bullets.length > 0 && !rc.hasMoved()) {
             Direction bestDir = null;
             float bestDist = Float.MAX_VALUE;
+            float minDistToBullet = Float.MAX_VALUE;
             for (Direction dir : Utils.getDirections()) {
                 MapLocation nextLoc = rc.getLocation().add(dir, rc.getType().strideRadius);
                 boolean safe = true;
+                float closestBulletDist = Float.MAX_VALUE;
                 for (BulletInfo bullet : bullets) {
-                    if (bullet.getLocation().add(bullet.getDir(), bullet.getSpeed()).distanceTo(nextLoc) < rc.getType().bodyRadius + 0.5f) {
+                    float bulletDist = bullet.getLocation().add(bullet.getDir(), bullet.getSpeed()).distanceTo(nextLoc);
+                    if (bulletDist < rc.getType().bodyRadius + 0.5f) {
                         safe = false;
                         break;
                     }
+                    if (bulletDist < closestBulletDist) closestBulletDist = bulletDist;
                 }
-                if (safe) {
-                    float distToTarget = (enemies.length > 0) ? nextLoc.distanceTo(enemies[0].location) : 0;
-                    if (bestDir == null || distToTarget < bestDist) {
-                        bestDir = dir;
-                        bestDist = distToTarget;
-                    }
+                if (safe && closestBulletDist > minDistToBullet) {
+                    bestDir = dir;
+                    minDistToBullet = closestBulletDist;
                 }
             }
             if (bestDir != null) {
@@ -162,7 +161,7 @@ public strictfp class Soldier {
             float bulletSpeed = 3.0f;
             float dist = rc.getLocation().distanceTo(target.location);
             float time = dist / bulletSpeed;
-            MapLocation predicted = target.location.add(velDir, speed * time * 0.6f); // conservative damping
+            MapLocation predicted = target.location.add(velDir, speed * time * 0.8f); // Slightly less conservative
             aimLocation = predicted;
         }
         if (!hasLineOfSight(rc.getLocation(), aimLocation)) {
@@ -170,7 +169,7 @@ public strictfp class Soldier {
         }
         if (hasLineOfSight(rc.getLocation(), aimLocation)) {
             rc.fireSingleShot(rc.getLocation().directionTo(aimLocation));
-            // Defensive: no triad, conserve bullets for survival
+            // Defensive: no triad, conserve
         }
     }
 

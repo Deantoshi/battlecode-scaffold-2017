@@ -28,8 +28,7 @@ public strictfp class Nav {
                 return true;
             }
         } else {
-            boolean avoidTrees = true;
-            // Defensive: keep tree avoidance for cover
+            boolean avoidTrees = true; // Defensive: keep tree avoidance
             if (!avoidTrees) {
                 if (rc.canMove(dir)) {
                     rc.move(dir);
@@ -61,8 +60,7 @@ public strictfp class Nav {
                     return true;
                 }
             } else {
-                boolean avoidTrees = true;
-                // Defensive: keep tree avoidance
+                boolean avoidTrees = true; // Defensive: keep
                 if (!avoidTrees) {
                     if (rc.canMove(left)) {
                         rc.move(left);
@@ -91,8 +89,7 @@ public strictfp class Nav {
                     return true;
                 }
             } else {
-                boolean avoidTrees = true;
-                // Defensive: keep tree avoidance
+                boolean avoidTrees = true; // Defensive: keep
                 if (!avoidTrees) {
                     if (rc.canMove(right)) {
                         rc.move(right);
