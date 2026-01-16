@@ -202,9 +202,17 @@ echo "BEST_SCORE=$BEST_SCORE"
 if [ "$BEST_VARIANT" = "original" ]; then
     echo ""
     echo "The original bot performed best. No code changes needed."
-    echo "Run: ./scripts/finalize-variant.sh $BOT_NAME original"
 else
     echo ""
     echo "Variant $BEST_VARIANT performed best."
+fi
+
+# Check for --finalize flag
+if [[ "$*" == *"--finalize"* ]]; then
+    echo ""
+    echo "=== Auto-finalizing with winner: $BEST_VARIANT ==="
+    echo ""
+    ./scripts/finalize-variant.sh "$BOT_NAME" "$BEST_VARIANT"
+else
     echo "Run: ./scripts/finalize-variant.sh $BOT_NAME $BEST_VARIANT"
 fi

@@ -30,7 +30,7 @@ You create, test, and evaluate 5 variations of a Battlecode bot to find the opti
 
 Parse for:
 - `--bot NAME` - **REQUIRED**: Base bot folder name in `src/NAME/`
-- `--opponent NAME` - Opponent bot (default: `examplefuncsplayer`)
+- `--opponent NAME`
 - `--maps MAPS` - Comma-separated maps (default: `Shrine`)
 
 ---
@@ -141,17 +141,15 @@ VARIANT_DESIGNS = [
 
 ## PHASE 3: Implement Variants
 
-**CRITICAL: You MUST read each variant file BEFORE editing it. The Edit tool will fail if you attempt to edit a file you haven't read in this session. Always read the file first, then make your edits.**
-
 For each variant (v1-v5):
 
 ### 3.1 Modify Soldier.java
-1. **Read first:** `src/{BOT_NAME}_v{N}/Soldier.java`
-2. **Then edit** with the variant's targeting strategy (using `replace` tool, NOT `sed`).
+Use the `unsafe-write` tool to write the complete modified `src/{BOT_NAME}_v{N}/Soldier.java` with the variant's targeting strategy.
 
 ### 3.2 Modify Nav.java
-1. **Read first:** `src/{BOT_NAME}_v{N}/Nav.java`
-2. **Then edit** with the variant's movement strategy (using `replace` tool, NOT `sed`).
+Use the `unsafe-write` tool to write the complete modified `src/{BOT_NAME}_v{N}/Nav.java` with the variant's movement strategy.
+
+**NOTE:** The `unsafe-write` tool does NOT require reading the file first. You can write directly.
 
 ### 3.3 Verify Compilation
 ```bash
@@ -181,7 +179,9 @@ This script:
 
 **Run the helper script:**
 ```bash
-./scripts/analyze-variant-results.sh {BOT_NAME} {OPPONENT} {MAPS}
+
+# Analyze AND auto-finalize the winner (combines Phase 5 + 6)
+./scripts/analyze-variant-results.sh {BOT_NAME} {OPPONENT} {MAPS} --finalize
 ```
 
 This script:
@@ -310,19 +310,20 @@ KEY CHANGES FROM ORIGINAL:
 # Phase 1: Create variants (just run it)
 ./scripts/create-variants.sh {BOT_NAME}
 
-# Phase 2-3: Design and implement (use Edit tool)
+# Phase 2-3: Design and implement (use unsafe-write tool)
 # - Design 5 strategies based on opponent analysis
-# - Edit each variant's Soldier.java and Nav.java
+# - Write each variant's Soldier.java and Nav.java using unsafe-write
 ./gradlew compileJava 2>&1 | tail -30
 
 # Phase 4: Run matches
 ./scripts/run-variant-matches.sh {BOT_NAME} {OPPONENT} {MAPS}
 
-# Phase 5: Analyze results
-./scripts/analyze-variant-results.sh {BOT_NAME} {OPPONENT} {MAPS}
+# Phase 5+6: Analyze results AND auto-finalize winner
+./scripts/analyze-variant-results.sh {BOT_NAME} {OPPONENT} {MAPS} --finalize
 
-# Phase 6: Finalize winner
-./scripts/finalize-variant.sh {BOT_NAME} {BEST_VARIANT}
+# Or run phases separately:
+# ./scripts/analyze-variant-results.sh {BOT_NAME} {OPPONENT} {MAPS}
+# ./scripts/finalize-variant.sh {BOT_NAME} {BEST_VARIANT}
 
 # Phase 7: Validate
 ./gradlew runWithSummary -PteamA={BOT_NAME} -PteamB={OPPONENT} -Pmaps={MAPS}
@@ -332,13 +333,12 @@ KEY CHANGES FROM ORIGINAL:
 
 ## Key Principles
 
-1. **Read before edit** - CRITICAL: Always read a file before attempting to edit it. The Edit tool will fail otherwise.
-2. **Analyze opponent first** - Understand their weaknesses before designing counters
-3. **Diverse strategies** - Each variant should be meaningfully different
-4. **Data-driven selection** - Use script output, not intuition, to pick winner
-5. **Clean replacement** - Final bot replaces original with updated package names (unless original won)
-6. **Verify everything** - Compilation checks after every modification
-7. **NO SED/AWK** - Do NOT use `sed` or `awk` to modify code. Use the `replace` tool.
+1. **Analyze opponent first** - Understand their weaknesses before designing counters
+2. **Diverse strategies** - Each variant should be meaningfully different
+3. **Data-driven selection** - Use script output, not intuition, to pick winner
+4. **Clean replacement** - Final bot replaces original with updated package names (unless original won)
+5. **Verify everything** - Compilation checks after every modification
+6. **Use unsafe-write** - Use the `unsafe-write` tool to write variant files. Do NOT use `sed` or `awk`.
 
 ---
 
