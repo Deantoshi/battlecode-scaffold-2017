@@ -29,12 +29,7 @@ public strictfp class Nav {
             }
         } else {
             boolean avoidTrees = true;
-            if (rc.getType() == RobotType.SOLDIER) {
-                RobotInfo[] enemies = rc.senseNearbyRobots(10.0f, rc.getTeam().opponent());
-                if (enemies.length > 0) {
-                    avoidTrees = false;
-                }
-            }
+            // Defensive: keep tree avoidance for cover
             if (!avoidTrees) {
                 if (rc.canMove(dir)) {
                     rc.move(dir);
@@ -67,12 +62,7 @@ public strictfp class Nav {
                 }
             } else {
                 boolean avoidTrees = true;
-                if (rc.getType() == RobotType.SOLDIER) {
-                    RobotInfo[] enemies = rc.senseNearbyRobots(10.0f, rc.getTeam().opponent());
-                    if (enemies.length > 0) {
-                        avoidTrees = false;
-                    }
-                }
+                // Defensive: keep tree avoidance
                 if (!avoidTrees) {
                     if (rc.canMove(left)) {
                         rc.move(left);
@@ -102,12 +92,7 @@ public strictfp class Nav {
                 }
             } else {
                 boolean avoidTrees = true;
-                if (rc.getType() == RobotType.SOLDIER) {
-                    RobotInfo[] enemies = rc.senseNearbyRobots(10.0f, rc.getTeam().opponent());
-                    if (enemies.length > 0) {
-                        avoidTrees = false;
-                    }
-                }
+                // Defensive: keep tree avoidance
                 if (!avoidTrees) {
                     if (rc.canMove(right)) {
                         rc.move(right);

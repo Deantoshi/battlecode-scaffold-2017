@@ -42,16 +42,21 @@ public strictfp class Soldier {
             RobotInfo target = findTarget();
             float dist = rc.getLocation().distanceTo(target.location);
             tryShoot(target, enemies);
-            // Kiting: maintain optimal range
+            // Defensive Kiting: always maintain distance
             if (!rc.hasMoved()) {
-                if (dist < 5.0f) {
+                if (dist < 6.0f) {  // Keep farther away
                     // Too close, move away
                     Direction awayDir = rc.getLocation().directionTo(target.location).opposite();
-                    MapLocation awayLoc = rc.getLocation().add(awayDir, 3.0f);
+                    MapLocation awayLoc = rc.getLocation().add(awayDir, 4.0f);
                     Nav.moveToward(awayLoc);
-                } else {
-                    // Move toward
+                } else if (dist > 8.0f) {
+                    // Too far, close slightly
                     Nav.moveToward(target.location);
+                } else {
+                    // Stay at optimal range, circle if possible
+                    Direction circleDir = rc.getLocation().directionTo(target.location).rotateLeftDegrees(90);
+                    MapLocation circleLoc = rc.getLocation().add(circleDir, 1.0f);
+                    Nav.moveToward(circleLoc);
                 }
             }
         }
@@ -165,6 +170,7 @@ public strictfp class Soldier {
         }
         if (hasLineOfSight(rc.getLocation(), aimLocation)) {
             rc.fireSingleShot(rc.getLocation().directionTo(aimLocation));
+            // Defensive: no triad, conserve bullets for survival
         }
     }
 
