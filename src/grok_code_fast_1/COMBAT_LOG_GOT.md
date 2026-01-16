@@ -870,3 +870,160 @@ if (enemies.length > 0) {
 
 ---
 
+## GoT Execution - 1768530592
+**Decision:** REJECT_SOFT
+
+### Hypotheses (from Sub-Agents)
+| Category | Weakness | Confidence |
+|----------|----------|------------|
+| Map Exploration | Units remain clustered in SW quadrant for over 300 rounds, failing to explore other map areas unlike opponent who spreads to 2 quadrants | 4/5 |
+| Firing Strategy | Low kill efficiency (1.9%) due to exclusive use of single-shot firing, missing area-of-effect opportunities against close or moving targets | 5/5 |
+| Team Coordination | Units engage enemies individually without coordinated focus fire or mutual support, leading to attrition losses and low survival rates | 4/5 |
+
+### Aggregation Summary
+- **Ranked Solutions:** B2 (38), A2 (35), B1 (33), C2 (33), A1 (30), C1 (30)
+- **Selected:** B2, A2, C2
+- **Reasoning:** B2 scores highest with strong evidence and expected impact on kill efficiency through adaptive shot selection. A2 provides guaranteed quadrant exploration to address movement weaknesses. C2 adds focus fire coordination for synergistic team damage. These three are compatible, with B2-C2 synergy bonus (+5). No conflicts, manageable bytecode (mixed low/medium), and average risk 3.7 is acceptable. Conservative options A1/B1/C1 scored lower and were not needed.
+
+### Code Changes (from Synthesis-Impl)
+**B2: Implement adaptive shot selection: use triad/pentad for moving enemies, pentad for stationary close targets, enhance prediction with speed capping at bullet time**
+**File:** Soldier.java
+```java
+static void tryShoot(RobotInfo target, RobotInfo[] enemies) throws GameActionException {
+    if (target == null) return;
+    float dist = rc.getLocation().distanceTo(target.location);
+    int id = target.ID;
+    boolean moving = enemySpeeds.containsKey(id) && enemySpeeds.get(id) > 0;
+    float bulletSpeed = 3.0f; // default
+    boolean canFire = false;
+    if (moving) {
+        if (dist < 6.0f && rc.canFireTriadShot()) {
+            bulletSpeed = 2.0f;
+            canFire = true;
+        } else if (rc.canFireSingleShot()) {
+            bulletSpeed = 3.0f;
+            canFire = true;
+        }
+    } else {
+        if (dist < 3.0f && rc.canFirePentadShot()) {
+            bulletSpeed = 1.5f;
+            canFire = true;
+        } else if (rc.canFireSingleShot()) {
+            bulletSpeed = 3.0f;
+            canFire = true;
+        }
+    }
+    if (!canFire) return;
+    MapLocation aimLocation = target.location;
+    if (enemyVelocities.containsKey(id)) {
+        Direction velDir = enemyVelocities.get(id);
+        float speed = enemySpeeds.get(id);
+        float time = dist / bulletSpeed;
+        float effectiveSpeed = Math.min(speed, bulletSpeed); // B2: speed capping at bullet time
+        MapLocation predicted = target.location.add(velDir, effectiveSpeed * time);
+        aimLocation = predicted;
+    }
+    if (!hasLineOfSight(rc.getLocation(), aimLocation)) {
+        aimLocation = target.location;
+    }
+    if (hasLineOfSight(rc.getLocation(), aimLocation)) {
+        Direction dir = rc.getLocation().directionTo(aimLocation);
+        if (moving) {
+            if (dist < 6.0f && rc.canFireTriadShot()) {
+                rc.fireTriadShot(dir);
+            } else {
+                rc.fireSingleShot(dir);
+            }
+        } else {
+            if (dist < 3.0f && rc.canFirePentadShot()) {
+                rc.firePentadShot(dir);
+            } else {
+                rc.fireSingleShot(dir);
+            }
+        }
+    }
+}
+```
+
+**A2: Add quadrant rotation fallback: when random unsticking fails, direct units to rotate through all quadrants (NW->NE->SE->SW) based on robot ID**
+**File:** Nav.java
+```java
+if (bugSteps >= MAX_BUG_STEPS) {
+    bugTracing = false;
+    bugSteps = 0;
+    for (int i = 0; i < 20; i++) {
+        if (tryMove(randomDirection())) return true;
+    }
+    // A2: Quadrant rotation fallback
+    int robotId = rc.getID();
+    int quadrantIndex = (robotId % 4);
+    Direction[] quadrants = {new Direction((float)(Math.PI * 1.25)), new Direction((float)(Math.PI * 0.25)), new Direction((float)(Math.PI * 0.75)), new Direction((float)(Math.PI * 1.75))};
+    for (int i = 0; i < 4; i++) {
+        Direction quadDir = quadrants[(quadrantIndex + i) % 4];
+        if (tryMove(quadDir)) return true;
+    }
+    return false;
+}
+```
+
+**C2: Implement focus fire via broadcast: when targeting lowest health enemy, broadcast to channels 13-14, and all units read/prioritize this target over local choices**
+**File:** Soldier.java
+```java
+static RobotInfo findTarget() throws GameActionException {
+    RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
+    // C2: First check focus target
+    MapLocation focusLoc = Comms.getFocusTarget();
+    if (focusLoc != null) {
+        for (RobotInfo enemy : enemies) {
+            if (enemy.location.distanceTo(focusLoc) < 1.0f) {
+                return enemy;
+            }
+        }
+    }
+    // Prioritize lowest health for focus fire
+    RobotInfo lowestHealth = Utils.findLowestHealthTarget(enemies);
+    if (lowestHealth != null) {
+        Comms.broadcastFocusTarget(lowestHealth.location);
+        return lowestHealth;
+    }
+    // Fallback to type priorities if tie
+    for (RobotInfo enemy : enemies) {
+        if (enemy.type == RobotType.TANK) {
+            return enemy;
+        }
+    }
+    for (RobotInfo enemy : enemies) {
+        if (enemy.type == RobotType.SOLDIER) {
+            return enemy;
+        }
+    }
+    for (RobotInfo enemy : enemies) {
+        if (enemy.type == RobotType.ARCHON) {
+            return enemy;
+        }
+    }
+    for (RobotInfo enemy : enemies) {
+        if (enemy.type == RobotType.GARDENER) {
+            return enemy;
+        }
+    }
+    for (RobotInfo enemy : enemies) {
+        if (enemy.type == RobotType.SCOUT) {
+            return enemy;
+        }
+    }
+    return null;
+}
+```
+
+### Results
+| Metric | Baseline | After | Delta |
+|--------|----------|-------|-------|
+| Wins | 0 | 0 | 0 |
+| Rounds | 444 | 462 | -18 |
+| Kill Ratio | 0.4 | 0.4 | 0 |
+| First Shot | 354 | 354 | 0 |
+| Survivors | 0 | 0 | 0 |
+
+**DELTA_SCORE: -9** → REJECT_SOFT
+---

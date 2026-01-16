@@ -174,7 +174,7 @@ BASELINE_CONTEXT = {
 
 ## PHASE 1: Divergent Analysis (DELEGATE TO SUB-AGENTS)
 
-**Run all 3 analysis agents IN PARALLEL:**
+**Step 1: Run first two analysis agents IN PARALLEL:**
 
 ### Call got-analysis-map-exploration
 ```
@@ -190,6 +190,12 @@ Run: /got-analysis-firing-strategy
 Pass full BASELINE_CONTEXT as argument.
 ```
 
+**Wait for both agents to complete before proceeding.**
+
+---
+
+**Step 2: Run third analysis agent AFTER first two complete:**
+
 ### Call got-analysis-team-coordination
 ```
 Run: /got-analysis-team-coordination
@@ -197,7 +203,7 @@ Run: /got-analysis-team-coordination
 Pass full BASELINE_CONTEXT as argument.
 ```
 
-**Wait for ALL three agents to complete.**
+**Wait for agent to complete.**
 
 Each agent will return a HYPOTHESIS object in this format:
 ```
