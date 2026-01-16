@@ -54,10 +54,14 @@ This workflow uses helper scripts in `scripts/`:
 
 ### 0.1 Read Opponent Code
 
-Use the Read tool to read the opponent's source files and understand their strategy:
+**IMPORTANT: Read ONLY these 3 files. Do NOT read any other opponent files.**
+
+Use the Read tool to read the 3 specified opponent's source files and understand their strategy:
 - `src/{OPPONENT}/RobotPlayer.java` (required)
 - `src/{OPPONENT}/Soldier.java` (if exists)
 - `src/{OPPONENT}/Nav.java` (if exists)
+
+**Do NOT explore or read additional files beyond these three.**
 
 **Document the opponent's key strategies:**
 ```
