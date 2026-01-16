@@ -1,5 +1,62 @@
 # GoT Combat Log for grok_code_fast_1
 
+## GoT Execution - 1768530593
+**Decision:** ACCEPT_TENTATIVE
+
+### Hypotheses
+| Category | Weakness | Confidence |
+|----------|----------|------------|
+| Targeting | Poor targeting efficiency - 70 shots resulting in only 2 kills vs opponent's 78 shots and 5 kills | 4/5 |
+| Movement | Units stuck in SW quadrant for 200+ rounds, leading to easy targeting and all deaths | 5/5 |
+| Timing | Late engagement with first shot at round 354, same as opponent but due to stuck movement | 3/5 |
+
+### Summary Reasoning
+Analysis showed targeting inefficiency with 70 shots resulting in only 2 kills vs opponent's 78 shots and 5 kills, severe movement issues with units stuck in SW quadrant, and timing problems with late engagement. Selected high-scoring solutions B1, A1, C1 for implementation.
+
+### Code Changes
+
+**B1: Increase MAX_BUG_STEPS to 25 for more persistence in navigation**
+**File:** Nav.java
+```java
+    static final int MAX_BUG_STEPS = 10;
+```
+→
+```java
+    static final int MAX_BUG_STEPS = 25;
+```
+
+**A1: Add conservative damping to prediction for better accuracy**
+**File:** Soldier.java
+```java
+            MapLocation predicted = target.location.add(velDir, speed * time * 0.7f); // more conservative damping
+```
+→
+```java
+            MapLocation predicted = target.location.add(velDir, speed * time * 0.6f); // conservative damping
+```
+
+**C1: Reduce close distance threshold to 4 for more shooting priority**
+**File:** Soldier.java
+```java
+            boolean close = rc.getLocation().distanceTo(enemies[0].location) < 5.0f;
+```
+→
+```java
+            boolean close = rc.getLocation().distanceTo(enemies[0].location) < 4.0f;
+```
+
+### Results
+| Metric | Baseline | After | Delta |
+|--------|----------|-------|-------|
+| Wins | 0 | 0 | 0 |
+| Rounds | 462 | 482 | -20 |
+| Kill Ratio | 0.4 | 0.2 | -0.2 |
+| First Shot | 354 | 354 | 0 |
+| Survivors | 3 | 4 | 1 |
+
+**DELTA_SCORE: -4** → ACCEPT_TENTATIVE
+---
+
 ## GoT Execution - 1730000000
 **Decision:** REJECT
 
@@ -873,157 +930,365 @@ if (enemies.length > 0) {
 ## GoT Execution - 1768530592
 **Decision:** REJECT_SOFT
 
-### Hypotheses (from Sub-Agents)
+### Hypotheses
 | Category | Weakness | Confidence |
 |----------|----------|------------|
-| Map Exploration | Units remain clustered in SW quadrant for over 300 rounds, failing to explore other map areas unlike opponent who spreads to 2 quadrants | 4/5 |
-| Firing Strategy | Low kill efficiency (1.9%) due to exclusive use of single-shot firing, missing area-of-effect opportunities against close or moving targets | 5/5 |
-| Team Coordination | Units engage enemies individually without coordinated focus fire or mutual support, leading to attrition losses and low survival rates | 4/5 |
+| Targeting | Poor targeting efficiency due to exclusive single-shot use and conservative prediction | 4/5 |
+| Movement | Movement stuck in navigation, leading to attrition losses | 5/5 |
+| Timing | Delayed engagement due to movement issues | 3/5 |
 
-### Aggregation Summary
-- **Ranked Solutions:** B2 (38), A2 (35), B1 (33), C2 (33), A1 (30), C1 (30)
-- **Selected:** B2, A2, C2
-- **Reasoning:** B2 scores highest with strong evidence and expected impact on kill efficiency through adaptive shot selection. A2 provides guaranteed quadrant exploration to address movement weaknesses. C2 adds focus fire coordination for synergistic team damage. These three are compatible, with B2-C2 synergy bonus (+5). No conflicts, manageable bytecode (mixed low/medium), and average risk 3.7 is acceptable. Conservative options A1/B1/C1 scored lower and were not needed.
+### Summary Reasoning
+Analysis showed targeting inefficiency with 96 shots resulting in 5 deaths vs opponent's 136 shots and 1 death, severe movement issues with units stuck, and timing problems with late engagement. Selected high-scoring solutions B1, A1, C2 for implementation.
 
-### Code Changes (from Synthesis-Impl)
-**B2: Implement adaptive shot selection: use triad/pentad for moving enemies, pentad for stationary close targets, enhance prediction with speed capping at bullet time**
-**File:** Soldier.java
-```java
-static void tryShoot(RobotInfo target, RobotInfo[] enemies) throws GameActionException {
-    if (target == null) return;
-    float dist = rc.getLocation().distanceTo(target.location);
-    int id = target.ID;
-    boolean moving = enemySpeeds.containsKey(id) && enemySpeeds.get(id) > 0;
-    float bulletSpeed = 3.0f; // default
-    boolean canFire = false;
-    if (moving) {
-        if (dist < 6.0f && rc.canFireTriadShot()) {
-            bulletSpeed = 2.0f;
-            canFire = true;
-        } else if (rc.canFireSingleShot()) {
-            bulletSpeed = 3.0f;
-            canFire = true;
-        }
-    } else {
-        if (dist < 3.0f && rc.canFirePentadShot()) {
-            bulletSpeed = 1.5f;
-            canFire = true;
-        } else if (rc.canFireSingleShot()) {
-            bulletSpeed = 3.0f;
-            canFire = true;
-        }
-    }
-    if (!canFire) return;
-    MapLocation aimLocation = target.location;
-    if (enemyVelocities.containsKey(id)) {
-        Direction velDir = enemyVelocities.get(id);
-        float speed = enemySpeeds.get(id);
-        float time = dist / bulletSpeed;
-        float effectiveSpeed = Math.min(speed, bulletSpeed); // B2: speed capping at bullet time
-        MapLocation predicted = target.location.add(velDir, effectiveSpeed * time);
-        aimLocation = predicted;
-    }
-    if (!hasLineOfSight(rc.getLocation(), aimLocation)) {
-        aimLocation = target.location;
-    }
-    if (hasLineOfSight(rc.getLocation(), aimLocation)) {
-        Direction dir = rc.getLocation().directionTo(aimLocation);
-        if (moving) {
-            if (dist < 6.0f && rc.canFireTriadShot()) {
-                rc.fireTriadShot(dir);
-            } else {
-                rc.fireSingleShot(dir);
-            }
-        } else {
-            if (dist < 3.0f && rc.canFirePentadShot()) {
-                rc.firePentadShot(dir);
-            } else {
-                rc.fireSingleShot(dir);
-            }
-        }
-    }
-}
-```
+### Code Changes
 
-**A2: Add quadrant rotation fallback: when random unsticking fails, direct units to rotate through all quadrants (NW->NE->SE->SW) based on robot ID**
+**B1: Increase MAX_BUG_STEPS to 50 for more persistence in navigation**
 **File:** Nav.java
 ```java
-if (bugSteps >= MAX_BUG_STEPS) {
-    bugTracing = false;
-    bugSteps = 0;
-    for (int i = 0; i < 20; i++) {
-        if (tryMove(randomDirection())) return true;
-    }
-    // A2: Quadrant rotation fallback
-    int robotId = rc.getID();
-    int quadrantIndex = (robotId % 4);
-    Direction[] quadrants = {new Direction((float)(Math.PI * 1.25)), new Direction((float)(Math.PI * 0.25)), new Direction((float)(Math.PI * 0.75)), new Direction((float)(Math.PI * 1.75))};
-    for (int i = 0; i < 4; i++) {
-        Direction quadDir = quadrants[(quadrantIndex + i) % 4];
-        if (tryMove(quadDir)) return true;
-    }
-    return false;
-}
+    static final int MAX_BUG_STEPS = 25;
+```
+→
+```java
+    static final int MAX_BUG_STEPS = 50;
 ```
 
-**C2: Implement focus fire via broadcast: when targeting lowest health enemy, broadcast to channels 13-14, and all units read/prioritize this target over local choices**
+**A1: Add more conservative damping to prediction for better accuracy**
 **File:** Soldier.java
 ```java
-static RobotInfo findTarget() throws GameActionException {
-    RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
-    // C2: First check focus target
-    MapLocation focusLoc = Comms.getFocusTarget();
-    if (focusLoc != null) {
-        for (RobotInfo enemy : enemies) {
-            if (enemy.location.distanceTo(focusLoc) < 1.0f) {
-                return enemy;
+            MapLocation predicted = target.location.add(velDir, speed * time * 0.6f); // conservative damping
+```
+→
+```java
+            MapLocation predicted = target.location.add(velDir, speed * time * 0.7f); // more conservative damping
+```
+
+**C2: Remove close check to always move toward enemy**
+**File:** Soldier.java
+```java
+            boolean close = rc.getLocation().distanceTo(enemies[0].location) < 4.0f;
+            tryShoot(target, enemies);
+            // Aggressive pursuit: always move toward nearest enemy
+            if (!rc.hasMoved() && !close) {
+                Nav.moveToward(target.location);
             }
-        }
-    }
-    // Prioritize lowest health for focus fire
-    RobotInfo lowestHealth = Utils.findLowestHealthTarget(enemies);
-    if (lowestHealth != null) {
-        Comms.broadcastFocusTarget(lowestHealth.location);
-        return lowestHealth;
-    }
-    // Fallback to type priorities if tie
-    for (RobotInfo enemy : enemies) {
-        if (enemy.type == RobotType.TANK) {
-            return enemy;
-        }
-    }
-    for (RobotInfo enemy : enemies) {
-        if (enemy.type == RobotType.SOLDIER) {
-            return enemy;
-        }
-    }
-    for (RobotInfo enemy : enemies) {
-        if (enemy.type == RobotType.ARCHON) {
-            return enemy;
-        }
-    }
-    for (RobotInfo enemy : enemies) {
-        if (enemy.type == RobotType.GARDENER) {
-            return enemy;
-        }
-    }
-    for (RobotInfo enemy : enemies) {
-        if (enemy.type == RobotType.SCOUT) {
-            return enemy;
-        }
-    }
-    return null;
-}
+```
+→
+```java
+            tryShoot(target, enemies);
+            // Aggressive pursuit: always move toward nearest enemy
+            if (!rc.hasMoved()) {
+                Nav.moveToward(target.location);
+            }
 ```
 
 ### Results
 | Metric | Baseline | After | Delta |
 |--------|----------|-------|-------|
 | Wins | 0 | 0 | 0 |
-| Rounds | 444 | 462 | -18 |
-| Kill Ratio | 0.4 | 0.4 | 0 |
+| Rounds | 482 | 451 | 31 |
+| Kill Ratio | 5.0 | 2.5 | -2.5 |
 | First Shot | 354 | 354 | 0 |
 | Survivors | 0 | 0 | 0 |
 
-**DELTA_SCORE: -9** → REJECT_SOFT
+**DELTA_SCORE: -44.5** → REJECT
+
+## GoT Execution - 1768530593
+**Decision:** REJECT
+
+### Hypotheses
+| Category | Weakness | Confidence |
+|----------|----------|------------|
+| Targeting | Exclusive use of single-shot firing despite triad/pentad options, low kill efficiency (1 kill from 96 shots vs 5 from 136) | 4/5 |
+| Movement | Units stuck in SW quadrant for 200+ rounds, leading to 5 deaths vs 1 | 5/5 |
+| Timing | Late engagement at round 354 due to stuck movement | 3/5 |
+
+### Summary Reasoning
+Selected B2, A1, C2 for synergistic improvements in movement, targeting, and pursuit.
+
+### Code Changes
+
+**B2: Add quadrant rotation fallback when random unsticking fails**
+**File:** Nav.java
+```java
+            if (bugSteps >= MAX_BUG_STEPS) {
+                bugTracing = false;
+                bugSteps = 0;
+                for (int i = 0; i < 20; i++) {
+                    if (tryMove(randomDirection())) return true;
+                }
+                return false;
+            }
+```
+→
+```java
+            if (bugSteps >= MAX_BUG_STEPS) {
+                bugTracing = false;
+                bugSteps = 0;
+                for (int i = 0; i < 20; i++) {
+                    if (tryMove(randomDirection())) return true;
+                }
+                // B2: Quadrant rotation fallback
+                int robotId = rc.getID();
+                int quadrantIndex = (robotId % 4);
+                Direction[] quadrants = {new Direction((float)(Math.PI * 1.25)), new Direction((float)(Math.PI * 0.25)), new Direction((float)(Math.PI * 0.75)), new Direction((float)(Math.PI * 1.75))};
+                for (int i = 0; i < 4; i++) {
+                    Direction quadDir = quadrants[(quadrantIndex + i) % 4];
+                    if (tryMove(quadDir)) return true;
+                }
+                return false;
+            }
+```
+
+**A1: Implement adaptive shot selection: triad for moving enemies, pentad for close stationary**
+**File:** Soldier.java
+```java
+    static void tryShoot(RobotInfo target, RobotInfo[] enemies) throws GameActionException {
+        if (target == null || !rc.canFireSingleShot()) return;
+        MapLocation aimLocation = target.location;
+        int id = target.ID;
+        if (enemyVelocities.containsKey(id)) {
+            Direction velDir = enemyVelocities.get(id);
+            float speed = enemySpeeds.get(id);
+            float bulletSpeed = 3.0f;
+            float dist = rc.getLocation().distanceTo(target.location);
+            float time = dist / bulletSpeed;
+            MapLocation predicted = target.location.add(velDir, speed * time * 0.6f); // conservative damping
+            aimLocation = predicted;
+        }
+        if (!hasLineOfSight(rc.getLocation(), aimLocation)) {
+            aimLocation = target.location;
+        }
+        if (hasLineOfSight(rc.getLocation(), aimLocation)) {
+            rc.fireSingleShot(rc.getLocation().directionTo(aimLocation));
+        }
+    }
+```
+→
+```java
+    static void tryShoot(RobotInfo target, RobotInfo[] enemies) throws GameActionException {
+        if (target == null) return;
+        float dist = rc.getLocation().distanceTo(target.location);
+        int id = target.ID;
+        boolean moving = enemySpeeds.containsKey(id) && enemySpeeds.get(id) > 0;
+        float bulletSpeed = 3.0f; // default
+        boolean canFire = false;
+        if (moving) {
+            if (dist < 6.0f && rc.canFireTriadShot()) {
+                bulletSpeed = 2.0f;
+                canFire = true;
+            } else if (rc.canFireSingleShot()) {
+                bulletSpeed = 3.0f;
+                canFire = true;
+            }
+        } else {
+            if (dist < 3.0f && rc.canFirePentadShot()) {
+                bulletSpeed = 1.5f;
+                canFire = true;
+            } else if (rc.canFireSingleShot()) {
+                bulletSpeed = 3.0f;
+                canFire = true;
+            }
+        }
+        if (!canFire) return;
+        MapLocation aimLocation = target.location;
+        if (enemyVelocities.containsKey(id)) {
+            Direction velDir = enemyVelocities.get(id);
+            float speed = enemySpeeds.get(id);
+            float time = dist / bulletSpeed;
+            MapLocation predicted = target.location.add(velDir, speed * time * 0.6f);
+            aimLocation = predicted;
+        }
+        if (!hasLineOfSight(rc.getLocation(), aimLocation)) {
+            aimLocation = target.location;
+        }
+        if (hasLineOfSight(rc.getLocation(), aimLocation)) {
+            Direction dir = rc.getLocation().directionTo(aimLocation);
+            if (moving) {
+                if (dist < 6.0f && rc.canFireTriadShot()) {
+                    rc.fireTriadShot(dir);
+                } else {
+                    rc.fireSingleShot(dir);
+                }
+            } else {
+                if (dist < 3.0f && rc.canFirePentadShot()) {
+                    rc.firePentadShot(dir);
+                } else {
+                    rc.fireSingleShot(dir);
+                }
+            }
+        }
+    }
+```
+
+**C2: Remove close check to always move toward enemy**
+**File:** Soldier.java
+```java
+            // Aggressive pursuit: always move toward nearest enemy
+            if (!rc.hasMoved() && !close) {
+                Nav.moveToward(target.location);
+            }
+```
+→
+```java
+            // Aggressive pursuit: always move toward nearest enemy
+            if (!rc.hasMoved()) {
+                Nav.moveToward(target.location);
+            }
+```
+
+### Results
+| Metric | Baseline | After | Delta |
+|--------|----------|-------|-------|
+| Wins | 0 | 0 | 0 |
+| Rounds | 482 | 682 | -200 |
+| Kill Ratio | 0.2 | 0.2 | 0 |
+| First Shot | 354 | 354 | 0 |
+| Survivors | 0 | 0 | 0 |
+
+**DELTA_SCORE: -100** → REJECT
+---
+
+## GoT Execution - 1768531341
+**Decision:** REJECT
+
+### Hypotheses
+| Category | Weakness | Confidence |
+|----------|----------|------------|
+| Targeting | Poor targeting efficiency due to exclusive single-shot use and conservative prediction | 5/5 |
+| Movement | Units stuck in SW quadrant for 200+ rounds, leading to easy targeting and all deaths | 5/5 |
+| Timing | Late engagement with first shot at round 354, same as opponent but due to stuck movement | 4/5 |
+
+### Summary Reasoning
+Analysis showed targeting inefficiency with 96 shots resulting in only 1 kill vs opponent's 136 shots and 5 kills, severe movement issues with units stuck in SW quadrant, and timing problems with late engagement. Selected high-scoring solutions A1, B1, C2 for implementation.
+
+### Code Changes
+
+**A1: Implement adaptive shot selection: triad for moving enemies, pentad for close stationary**
+**File:** Soldier.java
+```java
+    static void tryShoot(RobotInfo target, RobotInfo[] enemies) throws GameActionException {
+        if (target == null || !rc.canFireSingleShot()) return;
+        MapLocation aimLocation = target.location;
+        int id = target.ID;
+        if (enemyVelocities.containsKey(id)) {
+            Direction velDir = enemyVelocities.get(id);
+            float speed = enemySpeeds.get(id);
+            float bulletSpeed = 3.0f;
+            float dist = rc.getLocation().distanceTo(target.location);
+            float time = dist / bulletSpeed;
+            MapLocation predicted = target.location.add(velDir, speed * time * 0.6f); // conservative damping
+            aimLocation = predicted;
+        }
+        if (!hasLineOfSight(rc.getLocation(), aimLocation)) {
+            aimLocation = target.location;
+        }
+        if (hasLineOfSight(rc.getLocation(), aimLocation)) {
+            rc.fireSingleShot(rc.getLocation().directionTo(aimLocation));
+        }
+    }
+```
+→
+```java
+    static void tryShoot(RobotInfo target, RobotInfo[] enemies) throws GameActionException {
+        if (target == null) return;
+        float dist = rc.getLocation().distanceTo(target.location);
+        int id = target.ID;
+        boolean moving = enemySpeeds.containsKey(id) && enemySpeeds.get(id) > 0;
+        float bulletSpeed = 3.0f; // default
+        boolean canFire = false;
+        if (moving) {
+            if (dist < 6.0f && rc.canFireTriadShot()) {
+                bulletSpeed = 2.0f;
+                canFire = true;
+            } else if (rc.canFireSingleShot()) {
+                bulletSpeed = 3.0f;
+                canFire = true;
+            }
+        } else {
+            if (dist < 3.0f && rc.canFirePentadShot()) {
+                bulletSpeed = 1.5f;
+                canFire = true;
+            } else if (rc.canFireSingleShot()) {
+                bulletSpeed = 3.0f;
+                canFire = true;
+            }
+        }
+        if (!canFire) return;
+        MapLocation aimLocation = target.location;
+        if (enemyVelocities.containsKey(id)) {
+            Direction velDir = enemyVelocities.get(id);
+            float speed = enemySpeeds.get(id);
+            float time = dist / bulletSpeed;
+            MapLocation predicted = target.location.add(velDir, speed * time * 0.6f);
+            aimLocation = predicted;
+        }
+        if (!hasLineOfSight(rc.getLocation(), aimLocation)) {
+            aimLocation = target.location;
+        }
+        if (hasLineOfSight(rc.getLocation(), aimLocation)) {
+            Direction dir = rc.getLocation().directionTo(aimLocation);
+            if (moving) {
+                if (dist < 6.0f && rc.canFireTriadShot()) {
+                    rc.fireTriadShot(dir);
+                } else {
+                    rc.fireSingleShot(dir);
+                }
+            } else {
+                if (dist < 3.0f && rc.canFirePentadShot()) {
+                    rc.firePentadShot(dir);
+                } else {
+                    rc.fireSingleShot(dir);
+                }
+            }
+        }
+    }
+```
+
+**B1: Increase MAX_BUG_STEPS to 50 for more persistence in navigation**
+**File:** Nav.java
+```java
+    static final int MAX_BUG_STEPS = 25;
+```
+→
+```java
+    static final int MAX_BUG_STEPS = 50;
+```
+
+**C2: Remove close check to always move toward enemy**
+**File:** Soldier.java
+```java
+        if (enemies.length > 0) {
+            Comms.broadcastEnemyLocation(enemies[0].location);
+            RobotInfo target = findTarget();
+            boolean close = rc.getLocation().distanceTo(enemies[0].location) < 4.0f;
+            tryShoot(target, enemies);
+            // Aggressive pursuit: always move toward nearest enemy
+            if (!rc.hasMoved() && !close) {
+                Nav.moveToward(target.location);
+            }
+        }
+```
+→
+```java
+        if (enemies.length > 0) {
+            Comms.broadcastEnemyLocation(enemies[0].location);
+            RobotInfo target = findTarget();
+            tryShoot(target, enemies);
+            // Aggressive pursuit: always move toward nearest enemy
+            if (!rc.hasMoved()) {
+                Nav.moveToward(target.location);
+            }
+        }
+```
+
+### Results
+| Metric | Baseline | After | Delta |
+|--------|----------|-------|-------|
+| Wins | 0 | 0 | 0 |
+| Rounds | 482 | 682 | -200 |
+| Kill Ratio | 0.2 | 0.2 | 0 |
+| First Shot | 354 | 354 | 0 |
+| Survivors | 0 | 0 | 0 |
+
+**DELTA_SCORE: -100** → REJECT
 ---
