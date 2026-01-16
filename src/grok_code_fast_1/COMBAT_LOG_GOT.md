@@ -102,6 +102,90 @@ Analysis showed targeting inefficiency with more shots but fewer kills, severe m
 **DELTA_SCORE: -335.5** → REJECT
 ---
 
+## GoT Execution - 1768517550
+**Decision:** ACCEPT_TENTATIVE
+
+### Hypotheses
+| Category | Weakness | Confidence |
+|----------|----------|------------|
+| Targeting | Poor targeting efficiency - 89 shots resulting in only 1 kill vs opponent's 130 shots and 5 kills | 4/5 |
+| Movement | Units stuck in SW quadrant for 200+ rounds, leading to easy targeting and all deaths | 5/5 |
+| Timing | Late engagement with first shot at round 354, same as opponent but due to stuck movement | 3/5 |
+
+### Summary Reasoning
+Analysis showed targeting inefficiency with 89 shots resulting in only 1 kill vs opponent's 130 shots and 5 kills, severe movement issues with units stuck in SW quadrant, and timing problems with late engagement. Selected high-scoring solutions A1, B2, C2 for implementation.
+
+### Code Changes
+
+**A1: Add fallback to current position if predicted location blocked**
+**File:** Soldier.java
+```java
+        if (hasLineOfSight(rc.getLocation(), aimLocation)) {
+            rc.fireSingleShot(rc.getLocation().directionTo(aimLocation));
+        }
+```
+→
+```java
+        if (!hasLineOfSight(rc.getLocation(), aimLocation)) {
+            aimLocation = target.location;
+        }
+        if (hasLineOfSight(rc.getLocation(), aimLocation)) {
+            rc.fireSingleShot(rc.getLocation().directionTo(aimLocation));
+        }
+```
+
+**B2: Reduce MAX_BUG_STEPS to 10 and try 20 random directions when stuck**
+**File:** Nav.java
+```java
+    static final int MAX_BUG_STEPS = 25;
+```
+→
+```java
+    static final int MAX_BUG_STEPS = 10;
+```
+
+**B2: Reduce MAX_BUG_STEPS to 10 and try 20 random directions when stuck**
+**File:** Nav.java
+```java
+                for (int i = 0; i < 10; i++) {
+                    if (tryMove(randomDirection())) return true;
+                }
+```
+→
+```java
+                for (int i = 0; i < 20; i++) {
+                    if (tryMove(randomDirection())) return true;
+                }
+```
+
+**C2: Always move toward enemy, even when close**
+**File:** Soldier.java
+```java
+            // Aggressive pursuit: always move toward nearest enemy
+            if (!rc.hasMoved() && !close) {
+                Nav.moveToward(target.location);
+            }
+```
+→
+```java
+            // Aggressive pursuit: always move toward nearest enemy
+            if (!rc.hasMoved()) {
+                Nav.moveToward(target.location);
+            }
+```
+
+### Results
+| Metric | Baseline | After | Delta |
+|--------|----------|-------|-------|
+| Wins | 0 | 0 | 0 |
+| Rounds | 451 | 451 | 0 |
+| Kill Ratio | 0.2 | 0.2 | 0 |
+| First Shot | 354 | 354 | 0 |
+| Survivors | 0 | 0 | 0 |
+
+**DELTA_SCORE: 0** → ACCEPT_TENTATIVE
+---
+
 ## GoT Execution - 1768514915
 **Decision:** REJECT
 
@@ -431,3 +515,358 @@ Analysis showed targeting inefficiency with more shots but fewer kills, severe m
 
 **DELTA_SCORE: 9.5** → ACCEPT_TENTATIVE
 ---
+
+## GoT Execution - 1730000003
+**Decision:** ACCEPT_TENTATIVE
+
+### Hypotheses
+| Category | Weakness | Confidence |
+|----------|----------|------------|
+| Targeting | Poor targeting efficiency - 89 shots resulting in only 1 kill vs opponent's 130 shots and 5 kills | 4/5 |
+| Movement | Units stuck in SW quadrant for 200+ rounds, leading to easy targeting and all deaths | 5/5 |
+| Timing | Late engagement due to stuck movement, first shot at round 354 | 3/5 |
+
+### Summary Reasoning
+Analysis showed targeting inefficiency with 89 shots resulting in only 1 kill vs opponent's 130 shots and 5 kills, severe movement issues with units stuck in SW quadrant, and timing problems with late engagement. Selected high-scoring solutions B1, A1, C2 for implementation.
+
+### Code Changes
+
+**B1: Increase MAX_BUG_STEPS to 50 for more persistence in navigation**
+**File:** Nav.java
+```java
+    static final int MAX_BUG_STEPS = 10;
+```
+→
+```java
+    static final int MAX_BUG_STEPS = 50;
+```
+
+**A1: Add conservative damping to prediction for better accuracy**
+**File:** Soldier.java
+```java
+            MapLocation predicted = target.location.add(velDir, speed * time);
+```
+→
+```java
+            MapLocation predicted = target.location.add(velDir, speed * time * 0.9f); // conservative damping
+```
+
+**C2: Remove close check to always move toward enemy**
+**File:** Soldier.java
+```java
+            boolean close = rc.getLocation().distanceTo(enemies[0].location) < 2.0f;
+            tryShoot(target, enemies);
+```
+→
+```java
+            tryShoot(target, enemies);
+```
+
+### Results
+| Metric | Baseline | After | Delta |
+|--------|----------|-------|-------|
+| Wins | 0 | 0 | 0 |
+| Rounds | 451 | 451 | 0 |
+| Kill Ratio | 0.2 | 0.2 | 0 |
+| First Shot | 354 | 354 | 0 |
+| Survivors | 0 | 0 | 0 |
+
+**DELTA_SCORE: 0** → ACCEPT_TENTATIVE
+---
+
+## GoT Execution - 1768527168
+**Decision:** ACCEPT_TENTATIVE
+
+### Hypotheses
+| Category | Weakness | Confidence |
+|----------|----------|------------|
+| Targeting | Poor targeting efficiency - 89 shots resulting in only 1 kill vs opponent's 130 shots and 5 kills | 4/5 |
+| Movement | Units stuck in SW quadrant for 200+ rounds, leading to easy targeting and all deaths | 5/5 |
+| Timing | Late engagement with first shot at round 354, same as opponent but due to stuck movement | 3/5 |
+
+### Summary Reasoning
+Analysis showed targeting inefficiency with more shots but fewer kills, severe movement issues with units stuck, and timing problems with late engagement. Selected high-scoring solutions B1, A1, C1 for implementation.
+
+### Code Changes
+
+**B1: Reduce MAX_BUG_STEPS to 25 for quicker unsticking**
+**File:** Nav.java
+```java
+    static final int MAX_BUG_STEPS = 50;
+```
+→
+```java
+    static final int MAX_BUG_STEPS = 25;
+```
+
+**A1: Add more conservative damping to prediction for better accuracy**
+**File:** Soldier.java
+```java
+            MapLocation predicted = target.location.add(velDir, speed * time * 0.8f); // conservative damping
+```
+→
+```java
+            MapLocation predicted = target.location.add(velDir, speed * time * 0.7f); // more conservative damping
+```
+
+**C1: Prioritize shooting over movement when enemies are close (<5 units)**
+**File:** Soldier.java
+```java
+        if (enemies.length > 0) {
+            Comms.broadcastEnemyLocation(enemies[0].location);
+            RobotInfo target = findTarget();
+            tryShoot(target, enemies);
+            // Aggressive pursuit: always move toward nearest enemy
+            if (!rc.hasMoved()) {
+                Nav.moveToward(target.location);
+            }
+        }
+```
+→
+```java
+        if (enemies.length > 0) {
+            Comms.broadcastEnemyLocation(enemies[0].location);
+            RobotInfo target = findTarget();
+            boolean close = rc.getLocation().distanceTo(enemies[0].location) < 5.0f;
+            tryShoot(target, enemies);
+            // Aggressive pursuit: always move toward nearest enemy
+            if (!rc.hasMoved() && !close) {
+                Nav.moveToward(target.location);
+            }
+        }
+```
+
+### Results
+| Metric | Baseline | After | Delta |
+|--------|----------|-------|-------|
+| Wins | 0 | 0 | 0 |
+| Rounds | 451 | 463 | -12 |
+| Kill Ratio | 0.2 | 0.4 | 0.2 |
+| First Shot | 354 | 354 | 0 |
+| Survivors | 0 | 0 | 0 |
+
+**DELTA_SCORE: -2** → ACCEPT_TENTATIVE
+---
+
+## GoT Execution - 1730000004
+**Decision:** ACCEPT_TENTATIVE
+
+### Hypotheses
+| Category | Weakness | Confidence |
+|----------|----------|------------|
+| Targeting | Poor targeting efficiency - 89 shots resulting in only 1 kill vs opponent's 130 shots and 5 kills | 4/5 |
+| Movement | Units stuck in SW quadrant for 200+ rounds, leading to easy targeting and all deaths | 5/5 |
+| Timing | Late engagement with first shot at round 354, same as opponent but due to stuck movement | 3/5 |
+
+### Summary Reasoning
+Analysis showed targeting inefficiency with 89 shots resulting in only 1 kill vs opponent's 130 shots and 5 kills, severe movement issues with units stuck in SW quadrant, and timing problems with late engagement. Selected high-scoring solutions B1, A1, C2 for implementation.
+
+### Code Changes
+
+**B1: Increase MAX_BUG_STEPS to 25 for more persistence in navigation**
+**File:** Nav.java
+```java
+    static final int MAX_BUG_STEPS = 10;
+```
+→
+```java
+    static final int MAX_BUG_STEPS = 25;
+```
+
+**A1: Add conservative damping to prediction for better accuracy**
+**File:** Soldier.java
+```java
+            MapLocation predicted = target.location.add(velDir, speed * time * 0.7f); // more conservative damping
+```
+→
+```java
+            MapLocation predicted = target.location.add(velDir, speed * time * 0.8f); // conservative damping
+```
+
+**C2: Remove close check to always move toward enemy**
+**File:** Soldier.java
+```java
+            boolean close = rc.getLocation().distanceTo(enemies[0].location) < 5.0f;
+            tryShoot(target, enemies);
+            // Aggressive pursuit: always move toward nearest enemy
+            if (!rc.hasMoved() && !close) {
+                Nav.moveToward(target.location);
+            }
+```
+→
+```java
+            tryShoot(target, enemies);
+            // Aggressive pursuit: always move toward nearest enemy
+            if (!rc.hasMoved()) {
+                Nav.moveToward(target.location);
+            }
+```
+
+### Results
+| Metric | Baseline | After | Delta |
+|--------|----------|-------|-------|
+| Wins | 0 | 0 | 0 |
+| Rounds | 451 | 451 | 0 |
+| Kill Ratio | 0.4 | 0.4 | 0 |
+| First Shot | 354 | 354 | 0 |
+| Survivors | 0 | 0 | 0 |
+
+**DELTA_SCORE: 0** → ACCEPT_TENTATIVE
+---
+
+## GoT Execution - 1730000005
+
+**Decision:** ACCEPT_TENTATIVE
+
+### Hypotheses
+
+| Category | Weakness | Confidence |
+
+|----------|----------|------------|
+
+| Targeting | Poor targeting efficiency - 89 shots resulting in only 1 kill vs opponent's 130 shots and 5 kills | 4/5 |
+
+| Movement | Units stuck in SW quadrant for 200+ rounds, leading to easy targeting and all deaths | 5/5 |
+
+| Timing | Late engagement with first shot at round 354, same as opponent but due to stuck movement | 3/5 |
+
+### Summary Reasoning
+
+Analysis showed targeting inefficiency with 89 shots resulting in only 1 kill vs opponent's 130 shots and 5 kills, severe movement issues with units stuck in SW quadrant, and timing problems with late engagement. Selected high-scoring solutions B2, A1, C1 for implementation.
+
+### Code Changes
+
+**B2: Reduce MAX_BUG_STEPS to 10 and try 20 random directions when stuck**
+
+**File:** Nav.java
+
+```java
+
+static final int MAX_BUG_STEPS = 25;
+
+```
+
+→
+
+```java
+
+static final int MAX_BUG_STEPS = 10;
+
+```
+
+**B2: Reduce MAX_BUG_STEPS to 10 and try 20 random directions when stuck**
+
+**File:** Nav.java
+
+```java
+
+for (int i = 0; i < 30; i++) {
+
+    if (tryMove(randomDirection())) return true;
+
+}
+
+```
+
+→
+
+```java
+
+for (int i = 0; i < 20; i++) {
+
+    if (tryMove(randomDirection())) return true;
+
+}
+
+```
+
+**A1: Add more conservative damping to prediction for better accuracy**
+
+**File:** Soldier.java
+
+```java
+
+MapLocation predicted = target.location.add(velDir, speed * time * 0.8f); // conservative damping
+
+```
+
+→
+
+```java
+
+MapLocation predicted = target.location.add(velDir, speed * time * 0.7f); // more conservative damping
+
+```
+
+**C1: Prioritize shooting over movement when enemies are close (<5 units)**
+
+**File:** Soldier.java
+
+```java
+
+if (enemies.length > 0) {
+
+    Comms.broadcastEnemyLocation(enemies[0].location);
+
+    RobotInfo target = findTarget();
+
+    tryShoot(target, enemies);
+
+    // Aggressive pursuit: always move toward nearest enemy
+
+    if (!rc.hasMoved()) {
+
+        Nav.moveToward(target.location);
+
+    }
+
+}
+
+```
+
+→
+
+```java
+
+if (enemies.length > 0) {
+
+    Comms.broadcastEnemyLocation(enemies[0].location);
+
+    RobotInfo target = findTarget();
+
+    boolean close = rc.getLocation().distanceTo(enemies[0].location) < 5.0f;
+
+    tryShoot(target, enemies);
+
+    // Aggressive pursuit: always move toward nearest enemy
+
+    if (!rc.hasMoved() && !close) {
+
+        Nav.moveToward(target.location);
+
+    }
+
+}
+
+```
+
+### Results
+
+| Metric | Baseline | After | Delta |
+
+|--------|----------|-------|-------|
+
+| Wins | 0 | 0 | 0 |
+
+| Rounds | 451 | 451 | 0 |
+
+| Kill Ratio | 0.2 | 0.2 | 0 |
+
+| First Shot | 354 | 354 | 0 |
+
+| Survivors | 0 | 0 | 0 |
+
+**DELTA_SCORE: 0** → ACCEPT_TENTATIVE
+
+---
+
