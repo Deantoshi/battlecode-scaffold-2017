@@ -24,8 +24,8 @@ echo ""
 # Create matches directory if needed
 mkdir -p matches
 
-# Clean old variant match files
-rm -f matches/*-variant-*.bc17 matches/*-variant-*.db 2>/dev/null || true
+# Clean old combat match files
+rm -f matches/*-combat-*.bc17 matches/*-combat-*.db 2>/dev/null || true
 
 # Convert comma-separated maps to array
 IFS=',' read -ra MAP_ARRAY <<< "$MAPS"
@@ -38,14 +38,14 @@ echo "=== Starting matches in parallel ==="
 # Run original bot
 for MAP in "${MAP_ARRAY[@]}"; do
     MAP=$(echo "$MAP" | xargs)  # trim whitespace
-    MATCH_FILE="matches/${BOT_NAME}-variant-vs-${OPPONENT}-on-${MAP}.bc17"
+    MATCH_FILE="matches/${BOT_NAME}-combat-vs-${OPPONENT}-on-${MAP}.bc17"
     echo "Starting: $BOT_NAME vs $OPPONENT on $MAP"
 
     ./gradlew combatSim \
         -PteamA="$BOT_NAME" \
         -PteamB="$OPPONENT" \
         -PsimMap="$MAP" \
-        -PsimSave="$MATCH_FILE" > "matches/${BOT_NAME}-variant-${MAP}.log" 2>&1 &
+        -PsimSave="$MATCH_FILE" > "matches/${BOT_NAME}-combat-${MAP}.log" 2>&1 &
 
     PIDS+=($!)
     JOBS+=("$BOT_NAME on $MAP")
@@ -62,14 +62,14 @@ for i in 1 2 3 4 5; do
 
     for MAP in "${MAP_ARRAY[@]}"; do
         MAP=$(echo "$MAP" | xargs)  # trim whitespace
-        MATCH_FILE="matches/${VARIANT}-variant-vs-${OPPONENT}-on-${MAP}.bc17"
+        MATCH_FILE="matches/${VARIANT}-combat-vs-${OPPONENT}-on-${MAP}.bc17"
         echo "Starting: $VARIANT vs $OPPONENT on $MAP"
 
         ./gradlew combatSim \
             -PteamA="$VARIANT" \
             -PteamB="$OPPONENT" \
             -PsimMap="$MAP" \
-            -PsimSave="$MATCH_FILE" > "matches/${VARIANT}-variant-${MAP}.log" 2>&1 &
+            -PsimSave="$MATCH_FILE" > "matches/${VARIANT}-combat-${MAP}.log" 2>&1 &
 
         PIDS+=($!)
         JOBS+=("$VARIANT on $MAP")
@@ -100,11 +100,11 @@ echo ""
 
 # List generated match files
 echo "=== Generated match files ==="
-ls -la matches/*-variant-*.bc17 2>/dev/null || echo "No match files generated"
+ls -la matches/*-combat-*.bc17 2>/dev/null || echo "No match files generated"
 
 echo ""
 echo "=== Extracting match data ==="
-for match in matches/*-variant-*.bc17; do
+for match in matches/*-combat-*.bc17; do
     if [ -f "$match" ]; then
         echo "Extracting: $match"
         python3 scripts/bc17_query.py extract "$match" 2>/dev/null || echo "  Warning: extraction failed for $match"

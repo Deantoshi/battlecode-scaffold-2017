@@ -28,8 +28,8 @@ echo ""
 analyze_match() {
     local VARIANT="$1"
     local MAP="$2"
-    local DB_FILE="matches/${VARIANT}-variant-vs-${OPPONENT}-on-${MAP}.db"
-    local LOG_FILE="matches/${VARIANT}-variant-${MAP}.log"
+    local DB_FILE="matches/${VARIANT}-combat-vs-${OPPONENT}-on-${MAP}.db"
+    local LOG_FILE="matches/${VARIANT}-combat-${MAP}.log"
 
     if [ ! -f "$DB_FILE" ]; then
         echo "SKIP|$VARIANT|$MAP|NO_DB"
