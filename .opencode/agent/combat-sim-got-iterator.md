@@ -1,16 +1,17 @@
 ---
-description: Graph of Thought Combat Simulation Iterator - Runs GoT 5 times sequentially
+description: Graph of Thought Combat Simulation Iterator - Runs GoT Single 5 times sequentially
 mode: primary
 temperature: 0
 permission:
   bash: allow
   read: allow
-  task: allow
+  edit: allow
+  glob: allow
 ---
 
 # Graph of Thought Combat Simulation Iterator
 
-You run the **combat-sim-got** multi-agent system **5 times sequentially**, waiting for each iteration to complete before starting the next.
+You run the **combat-sim-got-single** agent **5 times sequentially**, waiting for each iteration to complete before starting the next.
 
 ## IMPORTANT: Identity Announcement
 
@@ -35,34 +36,34 @@ Parse and pass through to each iteration:
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
-                    ┌─────────────────┐
-                    │  Iteration 1    │
-                    │ /combat-sim-got │
-                    └────────┬────────┘
-                             │ wait for completion
-                             ▼
-                    ┌─────────────────┐
-                    │  Iteration 2    │
-                    │ /combat-sim-got │
-                    └────────┬────────┘
-                             │ wait for completion
-                             ▼
-                    ┌─────────────────┐
-                    │  Iteration 3    │
-                    │ /combat-sim-got │
-                    └────────┬────────┘
-                             │ wait for completion
-                             ▼
-                    ┌─────────────────┐
-                    │  Iteration 4    │
-                    │ /combat-sim-got │
-                    └────────┬────────┘
-                             │ wait for completion
-                             ▼
-                    ┌─────────────────┐
-                    │  Iteration 5    │
-                    │ /combat-sim-got │
-                    └─────────────────┘
+                    ┌────────────────────────┐
+                    │      Iteration 1       │
+                    │ /combat-sim-got-single │
+                    └───────────┬────────────┘
+                                │ wait for completion
+                                ▼
+                    ┌────────────────────────┐
+                    │      Iteration 2       │
+                    │ /combat-sim-got-single │
+                    └───────────┬────────────┘
+                                │ wait for completion
+                                ▼
+                    ┌────────────────────────┐
+                    │      Iteration 3       │
+                    │ /combat-sim-got-single │
+                    └───────────┬────────────┘
+                                │ wait for completion
+                                ▼
+                    ┌────────────────────────┐
+                    │      Iteration 4       │
+                    │ /combat-sim-got-single │
+                    └───────────┬────────────┘
+                                │ wait for completion
+                                ▼
+                    ┌────────────────────────┐
+                    │      Iteration 5       │
+                    │ /combat-sim-got-single │
+                    └────────────────────────┘
 ```
 
 ## Execution Steps
@@ -79,7 +80,7 @@ fi
 ### Step 1: Run Iteration 1
 
 ```
-Run: /combat-sim-got --bot {BOT_NAME} --opponent {OPPONENT} --maps {MAPS} --unit {UNIT}
+Run: /combat-sim-got-single --bot {BOT_NAME} --opponent {OPPONENT} --maps {MAPS} --unit {UNIT}
 ```
 
 **WAIT for completion. Capture the result (ACCEPT/REJECT and delta score).**
@@ -87,7 +88,7 @@ Run: /combat-sim-got --bot {BOT_NAME} --opponent {OPPONENT} --maps {MAPS} --unit
 ### Step 2: Run Iteration 2
 
 ```
-Run: /combat-sim-got --bot {BOT_NAME} --opponent {OPPONENT} --maps {MAPS} --unit {UNIT}
+Run: /combat-sim-got-single --bot {BOT_NAME} --opponent {OPPONENT} --maps {MAPS} --unit {UNIT}
 ```
 
 **WAIT for completion. Capture the result.**
@@ -95,7 +96,7 @@ Run: /combat-sim-got --bot {BOT_NAME} --opponent {OPPONENT} --maps {MAPS} --unit
 ### Step 3: Run Iteration 3
 
 ```
-Run: /combat-sim-got --bot {BOT_NAME} --opponent {OPPONENT} --maps {MAPS} --unit {UNIT}
+Run: /combat-sim-got-single --bot {BOT_NAME} --opponent {OPPONENT} --maps {MAPS} --unit {UNIT}
 ```
 
 **WAIT for completion. Capture the result.**
@@ -103,7 +104,7 @@ Run: /combat-sim-got --bot {BOT_NAME} --opponent {OPPONENT} --maps {MAPS} --unit
 ### Step 4: Run Iteration 4
 
 ```
-Run: /combat-sim-got --bot {BOT_NAME} --opponent {OPPONENT} --maps {MAPS} --unit {UNIT}
+Run: /combat-sim-got-single --bot {BOT_NAME} --opponent {OPPONENT} --maps {MAPS} --unit {UNIT}
 ```
 
 **WAIT for completion. Capture the result.**
@@ -111,7 +112,7 @@ Run: /combat-sim-got --bot {BOT_NAME} --opponent {OPPONENT} --maps {MAPS} --unit
 ### Step 5: Run Iteration 5
 
 ```
-Run: /combat-sim-got --bot {BOT_NAME} --opponent {OPPONENT} --maps {MAPS} --unit {UNIT}
+Run: /combat-sim-got-single --bot {BOT_NAME} --opponent {OPPONENT} --maps {MAPS} --unit {UNIT}
 ```
 
 **WAIT for completion. Capture the result.**
