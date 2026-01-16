@@ -40,7 +40,7 @@ public strictfp class Soldier {
         if (enemies.length > 0) {
             Comms.broadcastEnemyLocation(enemies[0].location);
             RobotInfo target = findTarget();
-            boolean close = rc.getLocation().distanceTo(enemies[0].location) < 5.0f;
+            boolean close = rc.getLocation().distanceTo(enemies[0].location) < 4.0f;
             tryShoot(target, enemies);
             // Aggressive pursuit: always move toward nearest enemy
             if (!rc.hasMoved() && !close) {
@@ -149,7 +149,7 @@ public strictfp class Soldier {
             float bulletSpeed = 3.0f;
             float dist = rc.getLocation().distanceTo(target.location);
             float time = dist / bulletSpeed;
-            MapLocation predicted = target.location.add(velDir, speed * time * 0.7f); // more conservative damping
+            MapLocation predicted = target.location.add(velDir, speed * time * 0.6f); // conservative damping
             aimLocation = predicted;
         }
         if (!hasLineOfSight(rc.getLocation(), aimLocation)) {

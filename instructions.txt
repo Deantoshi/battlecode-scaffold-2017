@@ -1,0 +1,19 @@
+Please look at my @.opencode/agent/combat-sim-got-single.md . and my @TECHNICAL_DOCS.md . I want you to make me a new agent that    
+  does the following: 
+  1. Takes in these arguments:  --bot grok_code_fast_1 --opponent examplefuncsplayer --maps Shrine . 
+  2. Reads the RobotPlayer.java file (and Soldier.java and Nav.java files if they exist) from the opponents @src/ folder. 
+  3. Then clones the --bot arguments folder 4 more times so that there is a total of 5 of the --bot folders
+  4. Creates 5 different variants (1 for each of the 5 duplicate folders) of their Soldier.java and Nav.java files that can defeat the --opponents bot in 500 rounds or less.
+  5. Runs each of the 5 --bot variations against the --opponent bot.
+  6. Identify the bot that does the best (wins the match the quickest primarily, or kills the most enemy units secondarily) and delete the other --bot folders and rename the remaining best folder to the original --bot arguments name
+
+Please look at bash this 
+
+# Get kill/death stats by team
+python3 scripts/bc17_query.py sql matches/{BOT_NAME}-combat-vs-{OPPONENT}-on-Shrine.db "
+SELECT r.team,
+  SUM(CASE WHEN r.death_round IS NOT NULL THEN 1 ELSE 0 END) as deaths,
+  (SELECT COUNT(*) FROM events e WHERE e.event_type='shoot' AND e.team=r.team) as shots_fired
+FROM robots r GROUP BY r.team"
+
+for each of the 5 games from @bc17_query to get more insight into how the games turned out to help determine the best of the 5 canidates.

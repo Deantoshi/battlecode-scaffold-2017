@@ -9,7 +9,7 @@ public strictfp class Nav {
     static boolean bugTracing = false;
     static float bugStartDistSq = 0;
     static int bugSteps = 0;
-    static final int MAX_BUG_STEPS = 10;
+    static final int MAX_BUG_STEPS = 25;
     static Direction lastBugTurn = null;
 
     // Zigzag variables
