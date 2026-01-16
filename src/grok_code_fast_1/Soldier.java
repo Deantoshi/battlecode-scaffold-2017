@@ -40,11 +40,19 @@ public strictfp class Soldier {
         if (enemies.length > 0) {
             Comms.broadcastEnemyLocation(enemies[0].location);
             RobotInfo target = findTarget();
-            boolean close = rc.getLocation().distanceTo(enemies[0].location) < 4.0f;
+            float dist = rc.getLocation().distanceTo(target.location);
             tryShoot(target, enemies);
-            // Aggressive pursuit: always move toward nearest enemy
-            if (!rc.hasMoved() && !close) {
-                Nav.moveToward(target.location);
+            // Kiting: maintain optimal range
+            if (!rc.hasMoved()) {
+                if (dist < 5.0f) {
+                    // Too close, move away
+                    Direction awayDir = rc.getLocation().directionTo(target.location).opposite();
+                    MapLocation awayLoc = rc.getLocation().add(awayDir, 3.0f);
+                    Nav.moveToward(awayLoc);
+                } else {
+                    // Move toward
+                    Nav.moveToward(target.location);
+                }
             }
         }
         // In doTurn, after enemy check, before movement
