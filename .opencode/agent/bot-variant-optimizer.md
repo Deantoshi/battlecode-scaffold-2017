@@ -1,7 +1,7 @@
 ---
 description: Multi-Variant Bot Optimizer - Creates and tests 5 bot variations to find the best one
 mode: primary
-temperature: 0.7
+temperature: 1
 permission:
   bash: allow
   read: allow
@@ -158,13 +158,17 @@ VARIANT_DESIGNS = [
 
 ## PHASE 3: Implement Variants
 
+**CRITICAL: You MUST read each variant file BEFORE editing it. The Edit tool will fail if you attempt to edit a file you haven't read in this session. Always read the file first, then make your edits.**
+
 For each variant (v1-v5):
 
 ### 3.1 Modify Soldier.java
-Read and edit `src/{BOT_NAME}_v{N}/Soldier.java` with the variant's targeting strategy.
+1. **Read first:** `src/{BOT_NAME}_v{N}/Soldier.java`
+2. **Then edit** with the variant's targeting strategy.
 
 ### 3.2 Modify Nav.java
-Read and edit `src/{BOT_NAME}_v{N}/Nav.java` with the variant's movement strategy.
+1. **Read first:** `src/{BOT_NAME}_v{N}/Nav.java`
+2. **Then edit** with the variant's movement strategy.
 
 ### 3.3 Verify Compilation
 ```bash
@@ -177,8 +181,18 @@ Read and edit `src/{BOT_NAME}_v{N}/Nav.java` with the variant's movement strateg
 
 ## PHASE 4: Run Combat Simulations
 
-### 4.1 Run All 5 Variants Against Opponent
+### 4.1 Run Original Bot and All 5 Variants Against Opponent
 ```bash
+# Run original bot first
+for MAP in {MAPS}; do
+  ./gradlew combatSim \
+    -PteamA="{BOT_NAME}" \
+    -PteamB="{OPPONENT}" \
+    -PsimMap="$MAP" \
+    -PsimSave="matches/{BOT_NAME}-variant-vs-{OPPONENT}-on-$MAP.bc17" 2>&1 &
+done
+
+# Run all 5 variants
 for i in 1 2 3 4 5; do
   VARIANT="{BOT_NAME}_v$i"
   for MAP in {MAPS}; do
@@ -240,9 +254,18 @@ From the combat simulation output, look for:
 
 ### 5.3 Build Results Table
 
-**Collect data for each variant:**
+**Collect data for original bot and each variant:**
 ```
 RESULTS = [
+  {
+    variant: "original",
+    won: true|false,
+    rounds: N,
+    team_a_deaths: N,
+    team_b_deaths: N,  // enemy deaths = our kills
+    shots_fired: N,
+    survivors: N
+  },
   {
     variant: "v1",
     won: true|false,
@@ -283,25 +306,46 @@ BEST = variant with highest SCORE
 VARIANT PERFORMANCE RANKING
 ═══════════════════════════════════════════════════════════════════════════════
 
-┌─────────┬───────┬────────┬──────────┬──────────┬───────────┬───────┐
-│ Variant │ Won   │ Rounds │ Our Dead │ Enemy Dead│ Survivors │ SCORE │
-├─────────┼───────┼────────┼──────────┼──────────┼───────────┼───────┤
-│ v1      │ YES   │ 245    │ 2        │ 5        │ 3         │ 9820  │
-│ v3      │ YES   │ 312    │ 3        │ 5        │ 2         │ 9748  │
-│ v2      │ NO    │ 500    │ 5        │ 3        │ 0         │ 30    │
-│ ...     │       │        │          │          │           │       │
-└─────────┴───────┴────────┴──────────┴──────────┴───────────┴───────┘
+┌──────────┬───────┬────────┬──────────┬──────────┬───────────┬───────┐
+│ Variant  │ Won   │ Rounds │ Our Dead │ Enemy Dead│ Survivors │ SCORE │
+├──────────┼───────┼────────┼──────────┼──────────┼───────────┼───────┤
+│ original │ YES   │ 220    │ 1        │ 5        │ 4         │ 9855  │
+│ v1       │ YES   │ 245    │ 2        │ 5        │ 3         │ 9820  │
+│ v3       │ YES   │ 312    │ 3        │ 5        │ 2         │ 9748  │
+│ v2       │ NO    │ 500    │ 5        │ 3        │ 0         │ 30    │
+│ ...      │       │        │          │          │           │       │
+└──────────┴───────┴────────┴──────────┴──────────┴───────────┴───────┘
 
-WINNER: v1 (Aggressive Early Engagement)
+WINNER: original (Original Bot) or v1 (Aggressive Early Engagement)
 ```
 
 ---
 
 ## PHASE 7: Finalize Best Bot
 
-### 7.1 Delete Losing Variants
+### 7.1 Check If Original Is Best
+
+**If the original bot performed best, skip code updates and just clean up variants:**
+
 ```bash
-BEST="v1"  # The winning variant number
+BEST="original"  # or "v1", "v2", etc.
+
+if [ "$BEST" = "original" ]; then
+  echo "Original bot performed best - no code changes needed"
+
+  # Delete all variant folders
+  rm -rf src/{BOT_NAME}_v[1-5]
+
+  # Skip to Phase 8 (Cleanup)
+fi
+```
+
+### 7.2 Delete Losing Variants (if a variant won)
+
+**Only run this if a variant (v1-v5) performed best:**
+
+```bash
+BEST="v1"  # The winning variant number (only if not "original")
 
 # Delete all variants except the best
 for i in 1 2 3 4 5; do
@@ -311,9 +355,9 @@ for i in 1 2 3 4 5; do
 done
 ```
 
-### 7.2 Rename Best Variant to Original Name
+### 7.3 Rename Best Variant to Original Name (if a variant won)
 
-**IMPORTANT:** First backup and remove original, then rename best variant.
+**IMPORTANT:** Only run if a variant (not original) won. First backup and remove original, then rename best variant.
 
 ```bash
 BEST_NUM=1  # Just the number of the best variant
@@ -330,7 +374,7 @@ for f in src/{BOT_NAME}/*.java; do
 done
 ```
 
-### 7.3 Verify Final Bot
+### 7.4 Verify Final Bot (if a variant won)
 ```bash
 ./gradlew compileJava 2>&1 | tail -20
 
@@ -338,7 +382,7 @@ done
 grep "^package" src/{BOT_NAME}/*.java
 ```
 
-### 7.4 Run Validation Match
+### 7.5 Run Validation Match
 ```bash
 ./gradlew combatSim \
   -PteamA="{BOT_NAME}" \
@@ -380,6 +424,7 @@ OPPONENT ANALYSIS:
   - Weaknesses: {description}
 
 VARIANT STRATEGIES TESTED:
+  original: Original Bot (unchanged)
   v1: Aggressive Early Engagement
   v2: Defensive Kiting
   v3: Focus Fire Priority
@@ -387,12 +432,13 @@ VARIANT STRATEGIES TESTED:
   v5: Hybrid Adaptive
 
 RESULTS:
-┌─────────┬───────┬────────┬──────────┬──────────┬───────┐
-│ Variant │ Won   │ Rounds │ Our Dead │ Enemy Dead│ SCORE │
-├─────────┼───────┼────────┼──────────┼──────────┼───────┤
-│ {v1}    │ {Y/N} │ {N}    │ {N}      │ {N}      │ {N}   │
-│ ...     │       │        │          │          │       │
-└─────────┴───────┴────────┴──────────┴──────────┴───────┘
+┌──────────┬───────┬────────┬──────────┬──────────┬───────┐
+│ Variant  │ Won   │ Rounds │ Our Dead │ Enemy Dead│ SCORE │
+├──────────┼───────┼────────┼──────────┼──────────┼───────┤
+│ original │ {Y/N} │ {N}    │ {N}      │ {N}      │ {N}   │
+│ {v1}     │ {Y/N} │ {N}    │ {N}      │ {N}      │ {N}   │
+│ ...      │       │        │          │          │       │
+└──────────┴───────┴────────┴──────────┴──────────┴───────┘
 
 WINNER: {variant_name}
   - Rounds to victory: {N}
@@ -402,6 +448,8 @@ WINNER: {variant_name}
 Final bot saved to: src/{BOT_NAME}/
 
 KEY CHANGES FROM ORIGINAL:
+  (If original won: "No changes - original bot performed best")
+  (If variant won:)
   Soldier.java:
     - {change 1}
     - {change 2}
@@ -416,11 +464,12 @@ KEY CHANGES FROM ORIGINAL:
 
 ## Key Principles
 
-1. **Analyze opponent first** - Understand their weaknesses before designing counters
-2. **Diverse strategies** - Each variant should be meaningfully different
-3. **Data-driven selection** - Use query results, not intuition, to pick winner
-4. **Clean replacement** - Final bot replaces original with updated package names
-5. **Verify everything** - Compilation checks after every modification
+1. **Read before edit** - CRITICAL: Always read a file before attempting to edit it. The Edit tool will fail otherwise.
+2. **Analyze opponent first** - Understand their weaknesses before designing counters
+3. **Diverse strategies** - Each variant should be meaningfully different
+4. **Data-driven selection** - Use query results, not intuition, to pick winner
+5. **Clean replacement** - Final bot replaces original with updated package names (unless original won)
+6. **Verify everything** - Compilation checks after every modification
 
 ---
 
@@ -432,10 +481,11 @@ KEY CHANGES FROM ORIGINAL:
 3. Re-run compilation
 4. If unfixable, exclude that variant from testing
 
-### If all variants lose:
+### If all variants lose (including original):
 1. Report the best-performing loser (most kills, longest survival)
-2. Keep that variant as the new base bot
-3. Suggest running the optimizer again with different strategies
+2. If original performed best among losers, keep it unchanged
+3. If a variant performed best among losers, use that variant as the new base bot
+4. Suggest running the optimizer again with different strategies
 
 ### If package rename fails:
 1. Manually verify package declarations
