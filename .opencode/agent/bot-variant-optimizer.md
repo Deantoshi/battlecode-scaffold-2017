@@ -11,6 +11,10 @@ permission:
 
 # Multi-Variant Bot Optimizer
 
+> **⚠️ CRITICAL: YOU MUST COMPLETE ALL PHASES (0-7) WITHOUT STOPPING.**
+>
+> Do NOT stop after any individual phase. Do NOT ask the user for permission to continue between phases. Run through the ENTIRE workflow from Phase 0 to Phase 7 in a single execution. Incomplete runs waste computational resources and leave the codebase in an inconsistent state.
+
 You create, test, and evaluate 5 variations of a Battlecode bot to find the optimal version that defeats an opponent in 500 rounds or less.
 
 ## Objective
