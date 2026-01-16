@@ -35,6 +35,19 @@ Parse for:
 
 ---
 
+## Helper Scripts
+
+This workflow uses helper scripts to reduce tool calls. The scripts are located in `scripts/`:
+
+| Script | Purpose |
+|--------|---------|
+| `create-variants.sh` | Clone base bot 5 times with updated package names |
+| `run-variant-matches.sh` | Run original + all 5 variants in parallel |
+| `analyze-variant-results.sh` | Query all DBs, calculate scores, output ranking |
+| `finalize-variant.sh` | Delete losers, rename winner, cleanup |
+
+---
+
 ## PHASE 0: Setup & Validation
 
 ### 0.1 Validate Base Bot
@@ -47,20 +60,10 @@ fi
 
 ### 0.2 Read Opponent Code
 
-Read the opponent's source files to understand their strategy:
-```bash
-# Required: RobotPlayer.java
-cat "src/{OPPONENT}/RobotPlayer.java"
-
-# Optional: Soldier.java and Nav.java if they exist
-if [ -f "src/{OPPONENT}/Soldier.java" ]; then
-  cat "src/{OPPONENT}/Soldier.java"
-fi
-
-if [ -f "src/{OPPONENT}/Nav.java" ]; then
-  cat "src/{OPPONENT}/Nav.java"
-fi
-```
+Use the Read tool to read the opponent's source files and understand their strategy:
+- `src/{OPPONENT}/RobotPlayer.java` (required)
+- `src/{OPPONENT}/Soldier.java` (if exists)
+- `src/{OPPONENT}/Nav.java` (if exists)
 
 **Document the opponent's key strategies:**
 ```
@@ -74,39 +77,25 @@ OPPONENT_ANALYSIS = {
 
 ### 0.3 Read Base Bot Code
 
-Read the base bot's current implementation:
-```bash
-cat "src/{BOT_NAME}/RobotPlayer.java"
-cat "src/{BOT_NAME}/Soldier.java"
-cat "src/{BOT_NAME}/Nav.java"
-```
-
-### 0.4 Clean Old Data
-```bash
-rm -f matches/*-variant-*.bc17 matches/*-variant-*.db
-rm -rf src/{BOT_NAME}_v[1-5]
-```
+Use the Read tool to read the base bot's current implementation:
+- `src/{BOT_NAME}/RobotPlayer.java`
+- `src/{BOT_NAME}/Soldier.java`
+- `src/{BOT_NAME}/Nav.java`
 
 ---
 
 ## PHASE 1: Create 5 Variant Folders
 
-### 1.1 Clone Base Bot 5 Times
+**Run the helper script:**
 ```bash
-for i in 1 2 3 4 5; do
-  cp -r "src/{BOT_NAME}" "src/{BOT_NAME}_v$i"
-
-  # Update package declarations in all Java files
-  for f in src/{BOT_NAME}_v$i/*.java; do
-    sed -i "s/package {BOT_NAME};/package {BOT_NAME}_v$i;/g" "$f"
-  done
-done
+./scripts/create-variants.sh {BOT_NAME}
 ```
 
-### 1.2 Verify Clones
-```bash
-ls -la src/{BOT_NAME}_v*/RobotPlayer.java
-```
+This script:
+- Cleans up any existing variants
+- Creates 5 copies: `{BOT_NAME}_v1` through `{BOT_NAME}_v5`
+- Updates package declarations in all Java files
+- Verifies the clones were created correctly
 
 ---
 
@@ -181,233 +170,88 @@ For each variant (v1-v5):
 
 ## PHASE 4: Run Combat Simulations
 
-### 4.1 Run Original Bot and All 5 Variants Against Opponent
+**Run the helper script:**
 ```bash
-# Run original bot first
-for MAP in {MAPS}; do
-  ./gradlew combatSim \
-    -PteamA="{BOT_NAME}" \
-    -PteamB="{OPPONENT}" \
-    -PsimMap="$MAP" \
-    -PsimSave="matches/{BOT_NAME}-variant-vs-{OPPONENT}-on-$MAP.bc17" 2>&1 &
-done
-
-# Run all 5 variants
-for i in 1 2 3 4 5; do
-  VARIANT="{BOT_NAME}_v$i"
-  for MAP in {MAPS}; do
-    ./gradlew combatSim \
-      -PteamA="$VARIANT" \
-      -PteamB="{OPPONENT}" \
-      -PsimMap="$MAP" \
-      -PsimSave="matches/$VARIANT-variant-vs-{OPPONENT}-on-$MAP.bc17" 2>&1 &
-  done
-done
-wait
+./scripts/run-variant-matches.sh {BOT_NAME} {OPPONENT} {MAPS}
 ```
 
-### 4.2 Extract Match Data
-```bash
-rm -f matches/*-variant-*.db
-
-for match in matches/*-variant-*.bc17; do
-  python3 scripts/bc17_query.py extract "$match"
-done
-```
+This script:
+- Runs the original bot against the opponent
+- Runs all 5 variants against the opponent in parallel
+- Extracts match data from all `.bc17` files into `.db` files
+- Shows completion status for each match
 
 ---
 
-## PHASE 5: Analyze Results
+## PHASE 5: Analyze Results & Determine Winner
 
-### 5.1 Query Each Variant's Performance
-
-For each variant (v1-v5), run these queries:
-
+**Run the helper script:**
 ```bash
-VARIANT="{BOT_NAME}_v{N}"
-
-# Get winner and total rounds
-python3 scripts/bc17_query.py sql "matches/$VARIANT-variant-vs-{OPPONENT}-on-{MAP}.db" "
-SELECT MAX(round_id) as total_rounds FROM rounds"
-
-# Get kill/death stats by team (Team A = our variant)
-python3 scripts/bc17_query.py sql "matches/$VARIANT-variant-vs-{OPPONENT}-on-{MAP}.db" "
-SELECT r.team,
-  SUM(CASE WHEN r.death_round IS NOT NULL THEN 1 ELSE 0 END) as deaths,
-  (SELECT COUNT(*) FROM events e WHERE e.event_type='shoot' AND e.team=r.team) as shots_fired
-FROM robots r GROUP BY r.team"
-
-# Check if Team A won (all Team B robots died)
-python3 scripts/bc17_query.py sql "matches/$VARIANT-variant-vs-{OPPONENT}-on-{MAP}.db" "
-SELECT team, COUNT(*) as alive FROM robots
-WHERE death_round IS NULL GROUP BY team"
+./scripts/analyze-variant-results.sh {BOT_NAME} {OPPONENT} {MAPS}
 ```
 
-### 5.2 Parse Console Output
+This script:
+- Queries all match databases
+- Calculates scores using the scoring algorithm:
+  ```
+  if (won):
+      SCORE = 10000 - rounds + (enemy_deaths * 10) + (survivors * 5)
+  else:
+      SCORE = (enemy_deaths * 10) - (rounds / 10)
+  ```
+- Outputs a formatted results table
+- Identifies the best variant (original or v1-v5)
+- Outputs `BEST_VARIANT=` for easy parsing
 
-From the combat simulation output, look for:
-```
-[combat] winner=A round=N  (Team A won in N rounds)
-[combat] winner=B round=N  (Team B won, we lost)
-[combat] winner=TIE round=N (Match ended in tie)
-```
-
-### 5.3 Build Results Table
-
-**Collect data for original bot and each variant:**
-```
-RESULTS = [
-  {
-    variant: "original",
-    won: true|false,
-    rounds: N,
-    team_a_deaths: N,
-    team_b_deaths: N,  // enemy deaths = our kills
-    shots_fired: N,
-    survivors: N
-  },
-  {
-    variant: "v1",
-    won: true|false,
-    rounds: N,
-    team_a_deaths: N,
-    team_b_deaths: N,  // enemy deaths = our kills
-    shots_fired: N,
-    survivors: N
-  },
-  // ... v2-v5
-]
-```
-
----
-
-## PHASE 6: Determine Best Variant
-
-### 6.1 Scoring Algorithm
-
-```
-For each variant, calculate SCORE:
-
-if (won):
-    SCORE = 10000 - rounds  // Higher is better, prioritize faster wins
-    SCORE += (team_b_deaths * 10)  // Bonus for kills
-    SCORE += (survivors * 5)  // Bonus for surviving units
-else:
-    SCORE = team_b_deaths * 10  // If lost, score based on damage dealt
-    SCORE -= (rounds / 10)  // Penalty for longer losses
-
-BEST = variant with highest SCORE
-```
-
-### 6.2 Output Ranking
-
+**Example output:**
 ```
 ═══════════════════════════════════════════════════════════════════════════════
-VARIANT PERFORMANCE RANKING
+RESULTS TABLE
 ═══════════════════════════════════════════════════════════════════════════════
 
-┌──────────┬───────┬────────┬──────────┬──────────┬───────────┬───────┐
-│ Variant  │ Won   │ Rounds │ Our Dead │ Enemy Dead│ Survivors │ SCORE │
-├──────────┼───────┼────────┼──────────┼──────────┼───────────┼───────┤
-│ original │ YES   │ 220    │ 1        │ 5        │ 4         │ 9855  │
-│ v1       │ YES   │ 245    │ 2        │ 5        │ 3         │ 9820  │
-│ v3       │ YES   │ 312    │ 3        │ 5        │ 2         │ 9748  │
-│ v2       │ NO    │ 500    │ 5        │ 3        │ 0         │ 30    │
-│ ...      │       │        │          │          │           │       │
-└──────────┴───────┴────────┴──────────┴──────────┴───────────┴───────┘
+┌──────────┬───────┬────────┬──────────┬────────────┬───────────┬───────┐
+│ Variant  │ Won   │ Rounds │ Our Dead │ Enemy Dead │ Survivors │ SCORE │
+├──────────┼───────┼────────┼──────────┼────────────┼───────────┼───────┤
+│ original │ YES   │ 220    │ 1        │ 5          │ 4         │ 9850  │
+│ v1       │ YES   │ 245    │ 2        │ 5          │ 3         │ 9820  │
+│ v3       │ YES   │ 312    │ 3        │ 5          │ 2         │ 9748  │
+│ v2       │ NO    │ 500    │ 5        │ 3          │ 0         │ 30    │
+└──────────┴───────┴────────┴──────────┴────────────┴───────────┴───────┘
 
-WINNER: original (Original Bot) or v1 (Aggressive Early Engagement)
+WINNER: original (Score: 9850)
 ```
 
 ---
 
-## PHASE 7: Finalize Best Bot
+## PHASE 6: Finalize Best Bot
 
-### 7.1 Check If Original Is Best
-
-**If the original bot performed best, skip code updates and just clean up variants:**
-
+**Run the helper script with the winning variant:**
 ```bash
-BEST="original"  # or "v1", "v2", etc.
-
-if [ "$BEST" = "original" ]; then
-  echo "Original bot performed best - no code changes needed"
-
-  # Delete all variant folders
-  rm -rf src/{BOT_NAME}_v[1-5]
-
-  # Skip to Phase 8 (Cleanup)
-fi
+./scripts/finalize-variant.sh {BOT_NAME} {BEST_VARIANT}
 ```
 
-### 7.2 Delete Losing Variants (if a variant won)
+Where `{BEST_VARIANT}` is either `original` or `v1`-`v5` from the analysis output.
 
-**Only run this if a variant (v1-v5) performed best:**
-
-```bash
-BEST="v1"  # The winning variant number (only if not "original")
-
-# Delete all variants except the best
-for i in 1 2 3 4 5; do
-  if [ "$i" != "${BEST#v}" ]; then
-    rm -rf "src/{BOT_NAME}_v$i"
-  fi
-done
-```
-
-### 7.3 Rename Best Variant to Original Name (if a variant won)
-
-**IMPORTANT:** Only run if a variant (not original) won. First backup and remove original, then rename best variant.
-
-```bash
-BEST_NUM=1  # Just the number of the best variant
-
-# Remove original bot folder (we're replacing it)
-rm -rf "src/{BOT_NAME}"
-
-# Rename best variant to original name
-mv "src/{BOT_NAME}_v$BEST_NUM" "src/{BOT_NAME}"
-
-# Update package declarations back to original name
-for f in src/{BOT_NAME}/*.java; do
-  sed -i "s/package {BOT_NAME}_v$BEST_NUM;/package {BOT_NAME};/g" "$f"
-done
-```
-
-### 7.4 Verify Final Bot (if a variant won)
-```bash
-./gradlew compileJava 2>&1 | tail -20
-
-# Verify package names are correct
-grep "^package" src/{BOT_NAME}/*.java
-```
-
-### 7.5 Run Validation Match
-```bash
-./gradlew combatSim \
-  -PteamA="{BOT_NAME}" \
-  -PteamB="{OPPONENT}" \
-  -PsimMap="{MAP}" \
-  -PsimSave="matches/{BOT_NAME}-final-vs-{OPPONENT}-on-{MAP}.bc17" 2>&1
-```
+This script:
+- If `original` won: Deletes all variant folders, no code changes
+- If a variant won:
+  - Deletes losing variants
+  - Removes original bot folder
+  - Renames winning variant to original name
+  - Updates package declarations back to original
+  - Verifies compilation
+- Cleans up all temporary match files and logs
 
 ---
 
-## PHASE 8: Cleanup
+## PHASE 7: Validation & Report
 
+### 7.1 Run Validation Match
 ```bash
-# Remove temporary match files
-rm -f matches/*-variant-*.bc17 matches/*-variant-*.db
-
-# Remove any leftover variant folders
-rm -rf src/{BOT_NAME}_v[1-5]
+./gradlew runWithSummary -PteamA={BOT_NAME} -PteamB={OPPONENT} -Pmaps={MAPS}
 ```
 
----
-
-## Execution Report
-
-**Output at completion:**
+### 7.2 Output Execution Report
 
 ```
 ═══════════════════════════════════════════════════════════════════════════════
@@ -432,13 +276,11 @@ VARIANT STRATEGIES TESTED:
   v5: Hybrid Adaptive
 
 RESULTS:
-┌──────────┬───────┬────────┬──────────┬──────────┬───────┐
-│ Variant  │ Won   │ Rounds │ Our Dead │ Enemy Dead│ SCORE │
-├──────────┼───────┼────────┼──────────┼──────────┼───────┤
-│ original │ {Y/N} │ {N}    │ {N}      │ {N}      │ {N}   │
-│ {v1}     │ {Y/N} │ {N}    │ {N}      │ {N}      │ {N}   │
-│ ...      │       │        │          │          │       │
-└──────────┴───────┴────────┴──────────┴──────────┴───────┘
+┌──────────┬───────┬────────┬──────────┬────────────┬───────┐
+│ Variant  │ Won   │ Rounds │ Our Dead │ Enemy Dead │ SCORE │
+├──────────┼───────┼────────┼──────────┼────────────┼───────┤
+│ {data from analyze script output}                        │
+└──────────┴───────┴────────┴──────────┴────────────┴───────┘
 
 WINNER: {variant_name}
   - Rounds to victory: {N}
@@ -462,12 +304,42 @@ KEY CHANGES FROM ORIGINAL:
 
 ---
 
+## Quick Reference: Full Workflow
+
+```bash
+# Phase 0: Read and analyze (use Read tool)
+# - Read opponent code
+# - Read base bot code
+
+# Phase 1: Create variants
+./scripts/create-variants.sh {BOT_NAME}
+
+# Phase 2-3: Design and implement (use Edit tool)
+# - Design 5 strategies based on opponent analysis
+# - Edit each variant's Soldier.java and Nav.java
+./gradlew compileJava 2>&1 | tail -30
+
+# Phase 4: Run matches
+./scripts/run-variant-matches.sh {BOT_NAME} {OPPONENT} {MAPS}
+
+# Phase 5: Analyze results
+./scripts/analyze-variant-results.sh {BOT_NAME} {OPPONENT} {MAPS}
+
+# Phase 6: Finalize winner
+./scripts/finalize-variant.sh {BOT_NAME} {BEST_VARIANT}
+
+# Phase 7: Validate
+./gradlew runWithSummary -PteamA={BOT_NAME} -PteamB={OPPONENT} -Pmaps={MAPS}
+```
+
+---
+
 ## Key Principles
 
 1. **Read before edit** - CRITICAL: Always read a file before attempting to edit it. The Edit tool will fail otherwise.
 2. **Analyze opponent first** - Understand their weaknesses before designing counters
 3. **Diverse strategies** - Each variant should be meaningfully different
-4. **Data-driven selection** - Use query results, not intuition, to pick winner
+4. **Data-driven selection** - Use script output, not intuition, to pick winner
 5. **Clean replacement** - Final bot replaces original with updated package names (unless original won)
 6. **Verify everything** - Compilation checks after every modification
 
@@ -476,18 +348,19 @@ KEY CHANGES FROM ORIGINAL:
 ## Error Recovery
 
 ### If compilation fails:
-1. Identify which variant(s) failed
+1. Identify which variant(s) failed from error output
 2. Fix syntax errors in those variants
 3. Re-run compilation
 4. If unfixable, exclude that variant from testing
 
 ### If all variants lose (including original):
-1. Report the best-performing loser (most kills, longest survival)
+1. The analyze script will still rank by score (damage dealt)
 2. If original performed best among losers, keep it unchanged
 3. If a variant performed best among losers, use that variant as the new base bot
 4. Suggest running the optimizer again with different strategies
 
-### If package rename fails:
-1. Manually verify package declarations
-2. Use `sed` with proper escaping
-3. Check for import statements that may need updating
+### If a script fails:
+1. Check that the base bot exists: `ls src/{BOT_NAME}/`
+2. Check that variants were created: `ls src/{BOT_NAME}_v*/`
+3. Check match files exist: `ls matches/*-variant-*.bc17`
+4. Run individual script with verbose output to diagnose
