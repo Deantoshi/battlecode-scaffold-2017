@@ -37,7 +37,9 @@ Parse for:
 
 ## Helper Scripts
 
-This workflow uses helper scripts to reduce tool calls. The scripts are located in `scripts/`:
+**IMPORTANT: All scripts exist and are ready to use. Just run them directly without checking if they exist.**
+
+This workflow uses helper scripts in `scripts/`:
 
 | Script | Purpose |
 |--------|---------|
@@ -48,17 +50,9 @@ This workflow uses helper scripts to reduce tool calls. The scripts are located 
 
 ---
 
-## PHASE 0: Setup & Validation
+## PHASE 0: Setup & Analysis
 
-### 0.1 Validate Base Bot
-```bash
-if [ ! -f "src/{BOT_NAME}/RobotPlayer.java" ]; then
-  echo "ERROR: Base bot not found at src/{BOT_NAME}/"
-  exit 1
-fi
-```
-
-### 0.2 Read Opponent Code
+### 0.1 Read Opponent Code
 
 Use the Read tool to read the opponent's source files and understand their strategy:
 - `src/{OPPONENT}/RobotPlayer.java` (required)
@@ -75,7 +69,7 @@ OPPONENT_ANALYSIS = {
 }
 ```
 
-### 0.3 Read Base Bot Code
+### 0.2 Read Base Bot Code
 
 Use the Read tool to read the base bot's current implementation:
 - `src/{BOT_NAME}/RobotPlayer.java`
@@ -306,12 +300,14 @@ KEY CHANGES FROM ORIGINAL:
 
 ## Quick Reference: Full Workflow
 
+**All scripts exist - just run them directly.**
+
 ```bash
 # Phase 0: Read and analyze (use Read tool)
 # - Read opponent code
 # - Read base bot code
 
-# Phase 1: Create variants
+# Phase 1: Create variants (just run it)
 ./scripts/create-variants.sh {BOT_NAME}
 
 # Phase 2-3: Design and implement (use Edit tool)
@@ -361,7 +357,7 @@ KEY CHANGES FROM ORIGINAL:
 4. Suggest running the optimizer again with different strategies
 
 ### If a script fails:
-1. Check that the base bot exists: `ls src/{BOT_NAME}/`
-2. Check that variants were created: `ls src/{BOT_NAME}_v*/`
+1. Check the script output for specific error messages
+2. Verify variants were created: `ls src/{BOT_NAME}_v*/`
 3. Check match files exist: `ls matches/*-variant-*.bc17`
-4. Run individual script with verbose output to diagnose
+4. Re-run the failed script to see detailed output
