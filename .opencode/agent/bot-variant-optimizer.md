@@ -248,7 +248,7 @@ This script:
 
 ### 7.1 Run Validation Match
 ```bash
-./gradlew runWithSummary -PteamA={BOT_NAME} -PteamB={OPPONENT} -Pmaps={MAPS}
+./gradlew combatSim -PteamA={BOT_NAME} -PteamB={OPPONENT} -Pmaps={MAPS}
 ```
 
 ### 7.2 Output Execution Report
