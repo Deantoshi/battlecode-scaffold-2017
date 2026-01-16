@@ -1,0 +1,3 @@
+Write file contents directly without requiring a prior read.
+
+Warning: This bypasses the read-before-edit guard and can overwrite files blindly.
