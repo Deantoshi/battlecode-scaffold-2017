@@ -308,36 +308,7 @@ KEY CHANGES FROM ORIGINAL:
 
 ---
 
-## Quick Reference: Full Workflow
-
 **All scripts exist - just run them directly.**
-
-```bash
-# Phase 0: Read and analyze (use Read tool)
-# - Read opponent code
-# - Read base bot code
-
-# Phase 1: Create variants (just run it)
-./scripts/create-variants.sh {BOT_NAME}
-
-# Phase 2-3: Design and implement (use unsafe-write tool)
-# - Design 5 strategies based on opponent analysis
-# - Write each variant's Soldier.java and Nav.java using unsafe-write
-./gradlew compileJava 2>&1 | tail -30
-
-# Phase 4: Run matches
-./scripts/run-variant-matches.sh {BOT_NAME} {OPPONENT} {MAPS}
-
-# Phase 5+6: Analyze results AND auto-finalize winner
-./scripts/analyze-variant-results.sh {BOT_NAME} {OPPONENT} {MAPS} --finalize
-
-# Or run phases separately:
-# ./scripts/analyze-variant-results.sh {BOT_NAME} {OPPONENT} {MAPS}
-# ./scripts/finalize-variant.sh {BOT_NAME} {BEST_VARIANT}
-
-# Phase 7: Validate
-./gradlew runWithSummary -PteamA={BOT_NAME} -PteamB={OPPONENT} -Pmaps={MAPS}
-```
 
 ---
 
