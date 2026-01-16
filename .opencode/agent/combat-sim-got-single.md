@@ -154,6 +154,8 @@ Analyze the combat data from **THREE different perspectives**. Do each analysis 
 
 ### 1A: Targeting Analysis
 
+**Soldier Key Actions:** `rc.fireSingleShot(dir)`, `rc.fireTriadShot(dir)`, `rc.firePentadShot(dir)`
+
 Read the code:
 ```bash
 cat src/{BOT_NAME}/{UNIT}.java | head -200
