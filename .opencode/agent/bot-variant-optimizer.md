@@ -188,7 +188,9 @@ This script:
 - Queries all match databases
 - Calculates scores using the scoring algorithm:
   ```
-  if (won):
+  if (won && rounds <= 500):
+      SCORE = 10000 - rounds + (enemy_deaths * 10) + (survivors * 50)
+  elif (won):
       SCORE = 10000 - rounds + (enemy_deaths * 10) + (survivors * 5)
   else:
       SCORE = (enemy_deaths * 10) - (rounds / 10)

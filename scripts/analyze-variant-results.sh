@@ -156,7 +156,12 @@ for VARIANT_KEY in "original" "v1" "v2" "v3" "v4" "v5"; do
         if [ "$WON" = "YES" ]; then
             TOTAL_WON=$((TOTAL_WON + 1))
             # Score: prioritize wins, then fewer rounds, then more kills
-            MATCH_SCORE=$((10000 - ROUNDS + ENEMY_DEAD * 10 + SURVIVORS * 5))
+            if [ "$ROUNDS" -le 500 ]; then
+                # Decisive victory: big bonus for survivors
+                MATCH_SCORE=$((10000 - ROUNDS + ENEMY_DEAD * 10 + SURVIVORS * 50))
+            else
+                MATCH_SCORE=$((10000 - ROUNDS + ENEMY_DEAD * 10 + SURVIVORS * 5))
+            fi
         else
             # Lost: score based on damage dealt
             MATCH_SCORE=$((ENEMY_DEAD * 10 - ROUNDS / 10))
