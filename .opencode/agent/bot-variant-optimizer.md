@@ -153,11 +153,11 @@ For each variant (v1-v5):
 
 ### 3.1 Modify Soldier.java
 1. **Read first:** `src/{BOT_NAME}_v{N}/Soldier.java`
-2. **Then edit** with the variant's targeting strategy.
+2. **Then edit** with the variant's targeting strategy (using `replace` tool, NOT `sed`).
 
 ### 3.2 Modify Nav.java
 1. **Read first:** `src/{BOT_NAME}_v{N}/Nav.java`
-2. **Then edit** with the variant's movement strategy.
+2. **Then edit** with the variant's movement strategy (using `replace` tool, NOT `sed`).
 
 ### 3.3 Verify Compilation
 ```bash
@@ -342,6 +342,7 @@ KEY CHANGES FROM ORIGINAL:
 4. **Data-driven selection** - Use script output, not intuition, to pick winner
 5. **Clean replacement** - Final bot replaces original with updated package names (unless original won)
 6. **Verify everything** - Compilation checks after every modification
+7. **NO SED/AWK** - Do NOT use `sed` or `awk` to modify code. Use the `replace` tool.
 
 ---
 
