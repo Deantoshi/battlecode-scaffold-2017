@@ -116,21 +116,7 @@ Based on the opponent analysis from Phase 0, design 5 DIFFERENT strategies for S
 4. Specific changes to Nav.java (movement, positioning)
 
 **Output design for each variant:**
-```
-VARIANT_DESIGNS = [
-  {
-    id: "v1",
-    name: "Descriptive Name",
-    strategy: "Core philosophy and approach",
-    counters: "What opponent weakness this exploits",
-    soldier_changes: ["specific code changes"],
-    nav_changes: ["specific code changes"]
-  },
-  // ... v2-v5
-]
-```
-
----
+1. Give a summary of the bots you are creating
 
 ## PHASE 3: Implement Variants
 

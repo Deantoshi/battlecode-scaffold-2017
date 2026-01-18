@@ -57,14 +57,6 @@ Parse for:
 
 **IMPORTANT: All scripts exist and are ready to use. Just run them directly without checking if they exist.**
 
-This workflow uses helper scripts in `scripts/`:
-
-| Script | Purpose |
-|--------|---------|
-| `create-variants.sh` | Clone base bot 5 times with updated package names |
-| `run-game-variant-matches.sh` | Run original + all 5 variants in parallel (full games) |
-| `analyze-game-variant-results.sh` | Query all DBs, calculate scores, output ranking, finalize winner |
-
 ---
 
 ## PHASE 0: Setup & Analysis
@@ -131,24 +123,7 @@ Based on the opponent analysis from Phase 0, design 5 DIFFERENT strategies that 
 4. Specific changes to each file being modified
 
 **Output design for each variant:**
-```
-VARIANT_DESIGNS = [
-  {
-    id: "v1",
-    name: "Descriptive Name",
-    strategy: "Core philosophy and approach",
-    win_condition: "elimination / VP rush / hybrid",
-    counters: "What opponent weakness this exploits",
-    file_changes: {
-      "RobotPlayer.java": ["specific changes"],
-      "Archon.java": ["specific changes"],
-      "Soldier.java": ["specific changes"],
-      // ... any other files
-    }
-  },
-  // ... v2-v5
-]
-```
+1. Give a high summary of each variant
 
 ---
 
