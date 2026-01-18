@@ -30,6 +30,9 @@ public strictfp class RobotPlayer {
             case LUMBERJACK:
                 runLumberjack();
                 break;
+            case SCOUT:
+                runScout();
+                break;
         }
 	}
 
@@ -48,7 +51,7 @@ public strictfp class RobotPlayer {
                     rc.hireGardener(dir);
                 }
 
-                // Move toward enemy archon
+                // Move randomly, but broadcast enemy archon if seen
                 RobotInfo[] allRobots = rc.senseNearbyRobots(-1);
                 MapLocation enemyArchonLoc = null;
                 for (RobotInfo r : allRobots) {
@@ -58,16 +61,21 @@ public strictfp class RobotPlayer {
                     }
                 }
                 if (enemyArchonLoc != null) {
-                    Direction toEnemy = rc.getLocation().directionTo(enemyArchonLoc);
-                    tryMove(toEnemy);
-                } else {
-                    tryMove(randomDirection());
+                    // Broadcast enemy archon location
+                    rc.broadcast(2,(int)enemyArchonLoc.x);
+                    rc.broadcast(3,(int)enemyArchonLoc.y);
                 }
+                tryMove(randomDirection());
 
                 // Broadcast archon's location for other robots on the team to know
                 MapLocation myLocation = rc.getLocation();
                 rc.broadcast(0,(int)myLocation.x);
                 rc.broadcast(1,(int)myLocation.y);
+
+                // Try to buy victory points if we have enough bullets
+                if (rc.getTeamBullets() > 10) {
+                    rc.donate(rc.getTeamBullets() - 10f);
+                }
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();
@@ -91,9 +99,29 @@ public strictfp class RobotPlayer {
                 // Generate a random direction
                 Direction dir = randomDirection();
 
-                // Build only soldiers
-                if (rc.canBuildRobot(RobotType.SOLDIER, dir)) {
-                    rc.buildRobot(RobotType.SOLDIER, dir);
+                // Water nearby trees
+                TreeInfo[] trees = rc.senseNearbyTrees(2);
+                for (TreeInfo t : trees) {
+                    if (rc.canWater(t.ID)) {
+                        rc.water(t.ID);
+                        break;
+                    }
+                }
+
+                // Plant tree if possible
+                Direction plantDir = randomDirection();
+                if (rc.canPlantTree(plantDir)) {
+                    rc.plantTree(plantDir);
+                }
+
+                // Build soldiers and lumberjacks
+                RobotType toBuild = rc.getRoundNum() % 3 == 0 ? RobotType.LUMBERJACK : RobotType.SOLDIER;
+                for (int i = 0; i < 8; i++) {
+                    if (rc.canBuildRobot(toBuild, dir)) {
+                        rc.buildRobot(toBuild, dir);
+                        break;
+                    }
+                    dir = dir.rotateLeftDegrees(45);
                 }
 
                 // Move randomly
@@ -125,17 +153,46 @@ public strictfp class RobotPlayer {
 
                 // If there are some...
                 if (robots.length > 0) {
+                    // Find the closest enemy
+                    RobotInfo closestEnemy = robots[0];
+                    float minDist = myLocation.distanceTo(closestEnemy.location);
+                    for (RobotInfo r : robots) {
+                        float dist = myLocation.distanceTo(r.location);
+                        if (dist < minDist) {
+                            minDist = dist;
+                            closestEnemy = r;
+                        }
+                    }
                     // And we have enough bullets, and haven't attacked yet this turn...
                     if (rc.canFireSingleShot()) {
                         // ...Then fire a bullet in the direction of the enemy.
-                        rc.fireSingleShot(rc.getLocation().directionTo(robots[0].location));
+                        rc.fireSingleShot(rc.getLocation().directionTo(closestEnemy.location));
                     }
                     // Move toward enemy
-                    Direction toEnemy = rc.getLocation().directionTo(robots[0].location);
+                    Direction toEnemy = rc.getLocation().directionTo(closestEnemy.location);
                     tryMove(toEnemy);
                 } else {
-                    // Move randomly for exploration
-                    tryMove(randomDirection());
+                    // Move towards enemy archon if known
+                    int ex = rc.readBroadcast(2);
+                    int ey = rc.readBroadcast(3);
+                    if (ex != 0 || ey != 0) {
+                        MapLocation enemyArchon = new MapLocation(ex, ey);
+                        Direction toEnemyArchon = myLocation.directionTo(enemyArchon);
+                        tryMove(toEnemyArchon);
+                    } else {
+                        // Move randomly for exploration
+                        tryMove(randomDirection());
+                    }
+                }
+
+                // Dodge bullets
+                BulletInfo[] bullets = rc.senseNearbyBullets();
+                for (BulletInfo b : bullets) {
+                    if (willCollideWithMe(b)) {
+                        Direction away = b.dir.opposite();
+                        tryMove(away);
+                        break;
+                    }
                 }
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
@@ -157,6 +214,7 @@ public strictfp class RobotPlayer {
 
             // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
             try {
+                MapLocation myLocation = rc.getLocation();
 
                 // See if there are any enemy robots within striking range (distance 1 from lumberjack's radius)
                 RobotInfo[] robots = rc.senseNearbyRobots(RobotType.LUMBERJACK.bodyRadius+GameConstants.LUMBERJACK_STRIKE_RADIUS, enemy);
@@ -170,14 +228,51 @@ public strictfp class RobotPlayer {
 
                     // If there is a robot, move towards it
                     if(robots.length > 0) {
-                        MapLocation myLocation = rc.getLocation();
                         MapLocation enemyLocation = robots[0].getLocation();
                         Direction toEnemy = myLocation.directionTo(enemyLocation);
 
                         tryMove(toEnemy);
                     } else {
-                        // Move Randomly
-                        tryMove(randomDirection());
+                        // No enemies, check for neutral trees to chop
+                        TreeInfo[] trees = rc.senseNearbyTrees(-1);
+                        TreeInfo targetTree = null;
+                        for (TreeInfo t : trees) {
+                            if (t.team == Team.NEUTRAL) {
+                                targetTree = t;
+                                break;
+                            }
+                        }
+                        if (targetTree != null) {
+                            MapLocation treeLoc = targetTree.location;
+                            Direction toTree = myLocation.directionTo(treeLoc);
+                            if (rc.canChop(treeLoc)) {
+                                rc.chop(treeLoc);
+                            } else {
+                                tryMove(toTree);
+                            }
+                        } else {
+                            // Move towards enemy archon if known
+                            int ex = rc.readBroadcast(2);
+                            int ey = rc.readBroadcast(3);
+                            if (ex != 0 || ey != 0) {
+                                MapLocation enemyArchon = new MapLocation(ex, ey);
+                                Direction toEnemyArchon = myLocation.directionTo(enemyArchon);
+                                tryMove(toEnemyArchon);
+                            } else {
+                                // Move Randomly
+                                tryMove(randomDirection());
+                            }
+                        }
+                    }
+                }
+
+                // Dodge bullets
+                BulletInfo[] bullets = rc.senseNearbyBullets();
+                for (BulletInfo b : bullets) {
+                    if (willCollideWithMe(b)) {
+                        Direction away = b.dir.opposite();
+                        tryMove(away);
+                        break;
                     }
                 }
 
@@ -186,6 +281,74 @@ public strictfp class RobotPlayer {
 
             } catch (Exception e) {
                 System.out.println("Lumberjack Exception");
+                e.printStackTrace();
+            }
+        }
+    }
+
+    static void runScout() throws GameActionException {
+        System.out.println("I'm a scout!");
+        Team enemy = rc.getTeam().opponent();
+
+        // The code you want your robot to perform every round should be in this loop
+        while (true) {
+
+            // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
+            try {
+                MapLocation myLocation = rc.getLocation();
+
+                // See if there are any nearby enemy robots
+                RobotInfo[] robots = rc.senseNearbyRobots(-1, enemy);
+
+                // If there are some...
+                if (robots.length > 0) {
+                    // Find the closest enemy
+                    RobotInfo closestEnemy = robots[0];
+                    float minDist = myLocation.distanceTo(closestEnemy.location);
+                    for (RobotInfo r : robots) {
+                        float dist = myLocation.distanceTo(r.location);
+                        if (dist < minDist) {
+                            minDist = dist;
+                            closestEnemy = r;
+                        }
+                    }
+                    // And we have enough bullets, and haven't attacked yet this turn...
+                    if (rc.canFireSingleShot()) {
+                        // ...Then fire a bullet in the direction of the enemy.
+                        rc.fireSingleShot(rc.getLocation().directionTo(closestEnemy.location));
+                    }
+                    // Move toward enemy
+                    Direction toEnemy = rc.getLocation().directionTo(closestEnemy.location);
+                    tryMove(toEnemy);
+                } else {
+                    // Move towards enemy archon if known
+                    int ex = rc.readBroadcast(2);
+                    int ey = rc.readBroadcast(3);
+                    if (ex != 0 || ey != 0) {
+                        MapLocation enemyArchon = new MapLocation(ex, ey);
+                        Direction toEnemyArchon = myLocation.directionTo(enemyArchon);
+                        tryMove(toEnemyArchon);
+                    } else {
+                        // Move randomly for exploration
+                        tryMove(randomDirection());
+                    }
+                }
+
+                // Dodge bullets
+                BulletInfo[] bullets = rc.senseNearbyBullets();
+                for (BulletInfo b : bullets) {
+                    if (willCollideWithMe(b)) {
+                        Direction away = b.dir.opposite();
+                        tryMove(away);
+                        break;
+                    }
+                }
+
+                // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
+                Clock.yield();
+
+            } catch (Exception e) {
+                System.out.println("Scout Exception");
                 e.printStackTrace();
             }
         }
