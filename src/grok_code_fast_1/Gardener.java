@@ -105,8 +105,8 @@ public strictfp class Gardener {
         int priority = Comms.getProductionPriority(); // Read from broadcast
         int turnCount = rc.getRoundNum();
         RobotType toBuild;
-        // Force lumberjack production - more for MagicWood
-        int minLumberjacks = (turnCount < 400) ? 3 : 2;
+        // MagicWood specialized - mass lumberjack production
+        int minLumberjacks = (turnCount < 600) ? 8 : 5;
         if (Comms.getOurLumberjackCount() < minLumberjacks) {
             toBuild = RobotType.LUMBERJACK;
         } else {

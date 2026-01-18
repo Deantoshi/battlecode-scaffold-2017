@@ -56,8 +56,8 @@ public strictfp class Archon {
             Nav.tryMove(away);
         }
 
-        // Hire only 2 gardeners total for maximum early aggression
-        int maxGardeners = 2;  // Minimal gardeners, immediate military focus
+        // MagicWood specialized: hire 3 gardeners for massive tree clearing
+        int maxGardeners = 3;  // More gardeners for lumberjack production
         // Check density
         TreeInfo[] nearbyTrees = rc.senseNearbyTrees(10.0f);
         if (nearbyTrees.length > 5) {
@@ -83,10 +83,10 @@ public strictfp class Archon {
             }
         }
 
-        // Very Aggressive VP Donations - aim for early VP victory
+ // MagicWood optimized VP strategy - donate after clearing paths
         float vpCost = rc.getVictoryPointCost();
-        if (turnCounter > 200 && rc.getTeamBullets() > vpCost * 1.5) {
-            while (rc.getTeamBullets() >= vpCost && turnCounter < 1000) {
+        if (turnCounter > 300 && rc.getTeamBullets() > vpCost * 1.3) {
+            while (rc.getTeamBullets() >= vpCost && turnCounter < 1200) {
                 rc.donate(vpCost);
             }
         }
