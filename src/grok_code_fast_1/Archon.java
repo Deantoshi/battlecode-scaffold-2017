@@ -39,8 +39,8 @@ public strictfp class Archon {
         int priority = 1;  // Military focus
         Comms.broadcastProductionPriority(priority);
 
-          // MILITARY STRATEGY - hire optimal gardeners for soldier production
-          int maxGardeners = 4;  // Optimal gardeners for military
+           // MILITARY STRATEGY - hire optimal gardeners for soldier production
+           int maxGardeners = 8;  // More gardeners for more units
 
         // Count actual gardeners from nearby robots
         RobotInfo[] nearbyRobots = rc.senseNearbyRobots(-1, rc.getTeam());
@@ -65,8 +65,8 @@ public strictfp class Archon {
         Comms.broadcastTreePlantingThreshold(10);  // New broadcast for planting threshold
         if (enemies.length > 0 && !rc.hasMoved()) {
             MapLocation centroid = Utils.calculateCentroid(enemies);
-            Direction away = rc.getLocation().directionTo(centroid).opposite();
-            Nav.tryMove(away);
+            Direction toward = rc.getLocation().directionTo(centroid);
+            Nav.tryMove(toward);
         }
 
 

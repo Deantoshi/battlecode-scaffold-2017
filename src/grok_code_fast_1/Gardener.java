@@ -68,13 +68,6 @@ public strictfp class Gardener {
             }
         }
         if (!rc.hasMoved()) {
-            RobotInfo[] allies = rc.senseNearbyRobots(5.0f, rc.getTeam());
-            if (allies.length > 5) {
-                MapLocation allyCentroid = Utils.calculateCentroid(allies);
-                Direction away = rc.getLocation().directionTo(allyCentroid).opposite();
-                Nav.tryMove(away);
-                return;
-            }
             MapLocation target = Comms.getEnemyArchonLocation();
             if (target != null) {
                 Nav.moveToward(target);
@@ -104,22 +97,12 @@ public strictfp class Gardener {
         Direction[] dirs = Utils.getDirections();
 
         if (priority == 1) {
-            // Military strategy: build soldiers primarily, some lumberjacks for bullet generation
-            if (buildCount % 3 == 0) {  // Every 3rd build is lumberjack
-                for (Direction dir : dirs) {
-                    if (rc.canBuildRobot(RobotType.LUMBERJACK, dir)) {
-                        rc.buildRobot(RobotType.LUMBERJACK, dir);
-                        buildCount++;
-                        return true;
-                    }
-                }
-            } else {
-                for (Direction dir : dirs) {
-                    if (rc.canBuildRobot(RobotType.SOLDIER, dir)) {
-                        rc.buildRobot(RobotType.SOLDIER, dir);
-                        buildCount++;
-                        return true;
-                    }
+            // Military strategy: build soldiers only on empty maps
+            for (Direction dir : dirs) {
+                if (rc.canBuildRobot(RobotType.SOLDIER, dir)) {
+                    rc.buildRobot(RobotType.SOLDIER, dir);
+                    buildCount++;
+                    return true;
                 }
             }
         } else {

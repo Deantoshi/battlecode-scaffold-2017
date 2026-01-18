@@ -67,60 +67,10 @@ public strictfp class Soldier {
                 }
             }
         }
-        // Clustering avoidance
+
         if (!rc.hasMoved()) {
-            RobotInfo[] allies = rc.senseNearbyRobots(5.0f, rc.getTeam());
-            if (allies.length > 5) {
-                MapLocation allyCentroid = Utils.calculateCentroid(allies);
-                Direction away = rc.getLocation().directionTo(allyCentroid).opposite();
-                Nav.tryMove(away);
-                return;
-            }
-        }
-        // Enhanced bullet evasion: priority over other movement
-        BulletInfo[] bullets = rc.senseNearbyBullets();
-        if (bullets.length > 0 && !rc.hasMoved()) {
-            Direction bestDir = null;
-            float bestDist = Float.MAX_VALUE;
-            float minDistToBullet = Float.MAX_VALUE;
-            for (Direction dir : Utils.getDirections()) {
-                MapLocation nextLoc = rc.getLocation().add(dir, rc.getType().strideRadius);
-                boolean safe = true;
-                float closestBulletDist = Float.MAX_VALUE;
-                for (BulletInfo bullet : bullets) {
-                    float bulletDist = bullet.getLocation().add(bullet.getDir(), bullet.getSpeed()).distanceTo(nextLoc);
-                    if (bulletDist < rc.getType().bodyRadius + 0.5f) {
-                        safe = false;
-                        break;
-                    }
-                    if (bulletDist < closestBulletDist) closestBulletDist = bulletDist;
-                }
-                if (safe && closestBulletDist > minDistToBullet) {
-                    bestDir = dir;
-                    minDistToBullet = closestBulletDist;
-                }
-            }
-            if (bestDir != null) {
-                Nav.tryMove(bestDir);
-            }
-        } else if (!rc.hasMoved()) {
-            MapLocation enemyLoc = Comms.getEnemyLocation();
-            if (enemyLoc != null) {
-                Nav.moveToward(enemyLoc);
-            } else {
-                MapLocation enemyArchonLoc = Comms.getEnemyArchonLocation();
-                if (enemyArchonLoc != null) {
-                    Nav.moveToward(enemyArchonLoc);
-                } else {
-                    MapLocation rally = Comms.getRallyPoint();
-                    if (rally != null) {
-                        Nav.moveToward(rally);
-                    } else {
-                        MapLocation center = new MapLocation(50.0f, 50.0f);
-                        Nav.moveToward(center);
-                    }
-                }
-            }
+            // Random movement like examplefuncsplayer for better exploration
+            Nav.tryMove(Nav.randomDirection());
         }
     }
 
@@ -148,21 +98,8 @@ public strictfp class Soldier {
     static void tryShoot(RobotInfo target, RobotInfo[] enemies) throws GameActionException {
         if (target == null || !rc.canFireSingleShot()) return;
         MapLocation aimLocation = target.location;
-        int id = target.ID;
-        if (enemyVelocities.containsKey(id)) {
-            Direction velDir = enemyVelocities.get(id);
-            float speed = enemySpeeds.get(id);
-            float bulletSpeed = 3.0f;
-            float dist = rc.getLocation().distanceTo(target.location);
-            float time = dist / bulletSpeed;
-            MapLocation predicted = target.location.add(velDir, speed * time * 0.8f); // Slightly less conservative
-            aimLocation = predicted;
-        }
-        if (!hasLineOfSight(rc.getLocation(), aimLocation)) {
-            aimLocation = target.location;
-        }
         if (hasLineOfSight(rc.getLocation(), aimLocation)) {
-            // Maximum aggression - use triad whenever available
+            // Maximum aggression - use triad whenever available to spend more bullets
             if (rc.canFireTriadShot()) {
                 rc.fireTriadShot(rc.getLocation().directionTo(aimLocation));
             } else if (rc.canFireSingleShot()) {
