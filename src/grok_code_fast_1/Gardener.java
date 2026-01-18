@@ -52,15 +52,8 @@ public strictfp class Gardener {
             Direction dirToTarget = rc.getLocation().directionTo(wateringTarget);
             Nav.tryMove(dirToTarget);
         }
- // BALANCED VP/MILITARY - focus on VP with minimal defense
-        if (rc.getRoundNum() < 100) {
-            // Plant trees rapidly for VP generation
-            tryPlantTree();
-        }
-        // Build minimal military for self-defense only
-        if (buildCount < 5) {  // Only 5 units for defense
-            tryBuildUnit();
-        }
+ // VP-FIRST STRATEGY - prioritize trees for maximum bullet generation
+        tryPlantTree();  // Always prioritize trees over military
         if (!rc.hasMoved()) {
             RobotInfo[] allies = rc.senseNearbyRobots(5.0f, rc.getTeam());
             if (allies.length > 5) {
@@ -94,50 +87,33 @@ public strictfp class Gardener {
     }
 
     boolean tryBuildUnit() throws GameActionException {
-        int turnCount = rc.getRoundNum();
-        RobotType toBuild = RobotType.SOLDIER;  // Always prioritize soldiers for archon elimination
+        // VP strategy: minimal military production only when absolutely necessary
+        int currentTurn = rc.getRoundNum();
+        TreeInfo[] nearbyTrees = rc.senseNearbyTrees(4.0f);
         
-        // Early game: build scouts first to find enemy archon quickly
-        if (turnCount < 25 && buildCount < 2) {
-            toBuild = RobotType.SCOUT;
-        }
-        // Then build 1-2 lumberjacks if blocked by trees
-        else if (turnCount < 100 && buildCount < 5) {
-            TreeInfo[] nearbyTrees = rc.senseNearbyTrees(4.0f);
-            if (nearbyTrees.length > 8) {
-                toBuild = RobotType.LUMBERJACK;
+        // Only build lumberjacks if severely blocked by trees
+        if (nearbyTrees.length > 12 && currentTurn > 100) {
+            Direction[] dirs = Utils.getDirections();
+            for (Direction dir : dirs) {
+                if (rc.canBuildRobot(RobotType.LUMBERJACK, dir)) {
+                    rc.buildRobot(RobotType.LUMBERJACK, dir);
+                    buildCount++;
+                    return true;
+                }
             }
         }
-        // After round 100: pure soldier rush
-        else {
-            toBuild = RobotType.SOLDIER;
-        }
-        
-        Direction[] dirs = Utils.getDirections();
-        for (Direction dir : dirs) {
-            if (rc.canBuildRobot(toBuild, dir)) {
-                rc.buildRobot(toBuild, dir);
-                buildCount++;
-                if (toBuild == RobotType.LUMBERJACK) {
-                    Comms.broadcastOurLumberjackCount(Comms.getOurLumberjackCount() + 1);
-                }
-                if (toBuild == RobotType.SOLDIER) {
-                    Comms.broadcastOurSoldierCount(Comms.getOurSoldierCount() + 1);
-                }
-                return true;
-            }
-        }
-        return false;
+        return false;  // Don't build military by default
     }
 
     boolean tryPlantTree() throws GameActionException {
         Direction[] dirs = Utils.getDirections();
         for (Direction dir : dirs) {
             if (rc.canPlantTree(dir)) {
-                // Improve tree spacing
+                // Maximum density planting for VP generation
                 MapLocation plantLoc = rc.getLocation().add(dir, rc.getType().bodyRadius + GameConstants.BULLET_TREE_RADIUS);
-                TreeInfo[] nearbyTrees = rc.senseNearbyTrees(plantLoc, 4.0f, null);  // Check all teams for spacing
-                if (nearbyTrees.length == 0) {  // Ensure at least 4.0f spacing
+                TreeInfo[] nearbyTrees = rc.senseNearbyTrees(plantLoc, 2.5f, null);  // Even tighter spacing
+                RobotInfo[] ownRobots = rc.senseNearbyRobots(1.5f, rc.getTeam());  // Minimal spacing
+                if (nearbyTrees.length <= 2 && ownRobots.length <= 1) {  // Allow clustering for max VP
                     rc.plantTree(dir);
                     return true;
                 }

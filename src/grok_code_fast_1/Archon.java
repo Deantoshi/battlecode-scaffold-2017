@@ -34,22 +34,21 @@ public strictfp class Archon {
         if (enemies.length > 0) {
             Comms.broadcastEnemyThreats(enemies.length); // New method in Comms
         }
- // PURE ELIMINATION FOCUS - military all the way
+ // DYNAMIC STRATEGY - adapt based on game progress
         int priority;
-        TreeInfo[] nearbyTreesForPriority = rc.senseNearbyTrees(10.0f);
+        TreeInfo[] nearbyTrees = rc.senseNearbyTrees(10.0f);
         
-        if (turnCounter < 15 && !Comms.isEnemySpotted()) {
-            priority = 2;  // Quick scout for intel, then all military
-        } else if (nearbyTreesForPriority.length > 15 && turnCounter < 300) {
-            priority = 0;  // Early lumberjacks to clear dense areas
+        if (turnCounter < 500) {
+            priority = 2;  // Military focus early
+        } else if (nearbyTrees.length > 12) {
+            priority = 0;  // Clear trees if blocked
         } else {
-            priority = 1;  // Soldiers for elimination
+            priority = 1;  // Balanced mid-late game
         }
         Comms.broadcastProductionPriority(priority);
         
-        
-        // OPTIMIZED HYBRID STRATEGY - balance VP and military for fastest win
-        int maxGardeners = 3;  // Three gardeners for optimal balance
+        // VP-OPTIMIZED STRATEGY - maximize bullet generation through trees
+        int maxGardeners = 5;  // More gardeners for maximum tree planting
         
         // Count actual gardeners from nearby robots
         RobotInfo[] nearbyRobots = rc.senseNearbyRobots(-1, rc.getTeam());
@@ -61,8 +60,8 @@ public strictfp class Archon {
         }
         Comms.broadcastUnitCount(actualGardenerCount * 6); // Estimate total units
         
-        // Hire gardeners rapidly for maximum VP generation
-        if (actualGardenerCount < maxGardeners && rc.getTeamBullets() > 150) {
+         // Hire minimal gardeners for VP strategy
+         if (actualGardenerCount < maxGardeners && rc.getTeamBullets() > 100) {
             if (tryHireGardener()) {
                 gardenersHired++;
             }
@@ -78,24 +77,12 @@ public strictfp class Archon {
 
 
 
- // MAXIMUM VP GENERATION - start immediately and donate everything
-        float vpCost = rc.getVictoryPointCost();
-        float currentVP = rc.getTeamVictoryPoints();
+ // ULTRA-AGGRESSIVE VP STRATEGY - maximize VP generation for sub-1500 rounds
+        float bullets = rc.getTeamBullets();
         
-        // Start donating from round 30 for fastest VP accumulation
-        if (turnCounter > 30 && currentVP < 1000) {
-            // Keep minimum bullets for gardeners, donate everything else
-            int bulletsToKeep = 75;  // Minimum reserve for 3 gardeners
-            int availableForVP = (int)(rc.getTeamBullets() - bulletsToKeep);
-            
-            if (availableForVP >= vpCost) {
-                int donationsToMake = availableForVP / (int)vpCost;
-                
-                // Donate as much as possible
-                for (int i = 0; i < donationsToMake && rc.getTeamBullets() >= vpCost + bulletsToKeep; i++) {
-                    rc.donate(vpCost);
-                }
-            }
+        // Always donate everything except minimum needed for gardener production
+        if (bullets > 35) {  // Just enough to hire one gardener
+            rc.donate(bullets - 35);
         }
 
         if (!rc.hasMoved()) {

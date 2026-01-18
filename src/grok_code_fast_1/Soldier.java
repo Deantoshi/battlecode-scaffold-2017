@@ -42,13 +42,27 @@ public strictfp class Soldier {
             RobotInfo target = findTarget();
             float dist = rc.getLocation().distanceTo(target.location);
             tryShoot(target, enemies);
-            // Aggressive engagement: close distance for faster kills
+            // ULTRA-AGGRESSIVE: suicide charge toward archons, ignore everything else
             if (!rc.hasMoved()) {
-                if (dist < 3.0f) {  // Very close range - minimal kiting
-                    Direction awayDir = rc.getLocation().directionTo(target.location).opposite();
-                    Nav.tryMove(awayDir);
+                if (target.type == RobotType.ARCHON) {
+                    // Maximum aggression - get as close as possible to archon
+                    Direction toArchon = rc.getLocation().directionTo(target.location);
+                    if (rc.canMove(toArchon)) {
+                        rc.move(toArchon);
+                    } else {
+                        // Try adjacent directions to get closer
+                        for (Direction dir : Utils.getDirections()) {
+                            if (rc.canMove(dir)) {
+                                MapLocation newLoc = rc.getLocation().add(dir, rc.getType().strideRadius);
+                                if (newLoc.distanceTo(target.location) < rc.getLocation().distanceTo(target.location)) {
+                                    rc.move(dir);
+                                    break;
+                                }
+                            }
+                        }
+                    }
                 } else {
-                    // Always advance toward target
+                    // Still aggressive toward other targets
                     Nav.moveToward(target.location);
                 }
             }
