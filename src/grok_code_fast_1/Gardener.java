@@ -104,12 +104,22 @@ public strictfp class Gardener {
         Direction[] dirs = Utils.getDirections();
 
         if (priority == 1) {
-            // Military strategy: build only soldiers
-            for (Direction dir : dirs) {
-                if (rc.canBuildRobot(RobotType.SOLDIER, dir)) {
-                    rc.buildRobot(RobotType.SOLDIER, dir);
-                    buildCount++;
-                    return true;
+            // Military strategy: build soldiers primarily, some lumberjacks for bullet generation
+            if (buildCount % 3 == 0) {  // Every 3rd build is lumberjack
+                for (Direction dir : dirs) {
+                    if (rc.canBuildRobot(RobotType.LUMBERJACK, dir)) {
+                        rc.buildRobot(RobotType.LUMBERJACK, dir);
+                        buildCount++;
+                        return true;
+                    }
+                }
+            } else {
+                for (Direction dir : dirs) {
+                    if (rc.canBuildRobot(RobotType.SOLDIER, dir)) {
+                        rc.buildRobot(RobotType.SOLDIER, dir);
+                        buildCount++;
+                        return true;
+                    }
                 }
             }
         } else {

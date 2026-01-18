@@ -35,12 +35,12 @@ public strictfp class Archon {
         if (enemies.length > 0) {
             Comms.broadcastEnemyThreats(enemies.length); // New method in Comms
         }
-    // VP STRATEGY - focus on victory points
+    // VP STRATEGY - focus on victory points with maximum gardeners
         int priority = 0;  // VP focus
         Comms.broadcastProductionPriority(priority);
 
-          // VP STRATEGY - hire gardeners for bullet generation
-          int maxGardeners = 3;  // Gardeners for VP
+          // VP STRATEGY - hire maximum gardeners for bullet generation
+          int maxGardeners = 6;  // Maximum gardeners for VP
 
         // Count actual gardeners from nearby robots
         RobotInfo[] nearbyRobots = rc.senseNearbyRobots(-1, rc.getTeam());
@@ -52,10 +52,13 @@ public strictfp class Archon {
         }
         Comms.broadcastUnitCount(actualGardenerCount * 6); // Estimate total units
 
-          // Hire gardeners for military strategy - hire one by one
-          if (actualGardenerCount < maxGardeners && rc.getTeamBullets() >= 100) {
+          // Hire gardeners for military strategy - hire as many as possible
+          while (actualGardenerCount < maxGardeners && rc.getTeamBullets() >= 20) {
              if (tryHireGardener()) {
                  gardenersHired++;
+                 actualGardenerCount++;  // Update count
+             } else {
+                 break;  // Can't hire more
              }
          }
         Comms.broadcastVictoryPoints((int)rc.getTeamVictoryPoints()); // New broadcast for VP tracking
@@ -69,9 +72,9 @@ public strictfp class Archon {
 
 
 
-     // VP STRATEGY - donate bullets for victory points
-        if (rc.getTeamBullets() >= 10) {  // Minimum reserve
-            int donateAmount = (int)(rc.getTeamBullets() - 10);
+      // VP STRATEGY - donate bullets for victory points aggressively but keep reserve for production
+        if (rc.getTeamBullets() >= 50) {  // Keep reserve for building units
+            int donateAmount = (int)(rc.getTeamBullets() - 50);
             if (donateAmount > 0) {
                 rc.donate(donateAmount);
             }
