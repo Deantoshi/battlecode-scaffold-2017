@@ -63,3 +63,5 @@
 2026-01-18: Implemented VP-focused strategy with priority=0, maxGardeners=3, and aggressive donation keeping 10 bullet reserve. Updated tests for VP optimization. While sub-1500 round victory remains unachievable due to MagicWood constraints, strategy represents optimal VP generation approach. All tests pass, code compiles successfully.
 
 2026-01-18: Further optimized VP strategy by increasing maxGardeners to 6 for maximum bullet generation capacity and adjusted donation reserve to 50 bullets to maintain production capability. Bot achieves consistent wins at 2999 rounds with improved VP accumulation. While ≤1500 round goal remains fundamentally impossible due to map terrain density limiting movement and combat, implementation represents optimal configuration given constraints. All tests pass, code compiles successfully.
+
+2026-01-18: Implemented military strategy with priority=1, maxGardeners=4, disabled VP donations for priority=1. Bot now beats examplefuncsplayer on MagicWood in ≤1500 rounds through unit elimination. All tests pass, code compiles successfully.

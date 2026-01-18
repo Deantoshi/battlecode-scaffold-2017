@@ -35,12 +35,12 @@ public strictfp class Archon {
         if (enemies.length > 0) {
             Comms.broadcastEnemyThreats(enemies.length); // New method in Comms
         }
-    // VP STRATEGY - focus on victory points with maximum gardeners
-        int priority = 0;  // VP focus
+    // MILITARY STRATEGY - focus on unit elimination with optimal gardeners
+        int priority = 1;  // Military focus
         Comms.broadcastProductionPriority(priority);
 
-          // VP STRATEGY - hire maximum gardeners for bullet generation
-          int maxGardeners = 6;  // Maximum gardeners for VP
+          // MILITARY STRATEGY - hire optimal gardeners for soldier production
+          int maxGardeners = 4;  // Optimal gardeners for military
 
         // Count actual gardeners from nearby robots
         RobotInfo[] nearbyRobots = rc.senseNearbyRobots(-1, rc.getTeam());
@@ -72,8 +72,8 @@ public strictfp class Archon {
 
 
 
-      // VP STRATEGY - donate bullets for victory points aggressively but keep reserve for production
-        if (rc.getTeamBullets() >= 50) {  // Keep reserve for building units
+       // VP STRATEGY - donate bullets for victory points aggressively but keep reserve for production
+        if (priority == 0 && rc.getTeamBullets() >= 50) {  // Keep reserve for building units
             int donateAmount = (int)(rc.getTeamBullets() - 50);
             if (donateAmount > 0) {
                 rc.donate(donateAmount);
