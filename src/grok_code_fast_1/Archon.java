@@ -35,24 +35,17 @@ public strictfp class Archon {
         if (enemies.length > 0) {
             Comms.broadcastEnemyThreats(enemies.length); // New method in Comms
         }
-        // Dynamic production broadcasts
+        // Dynamic production broadcasts - handle MagicWood trees
         int priority;
-        if (turnCounter < 300 && !Comms.isEnemySpotted()) {
-            priority = 2;  // Scouts early if no enemy detected
-        } else if (turnCounter % 500 < 100 || Comms.getEnemyThreats() > 0) {
-            priority = 0;  // Lumberjacks periodically or if enemies detected globally
-        } else if (turnCounter < 800) {
-            priority = 1;  // Soldiers
-        } else if (turnCounter > 1000) {
-            priority = 3;  // Tanks for late-game sieges
+        TreeInfo[] nearbyTreesForPriority = rc.senseNearbyTrees(10.0f);
+        if (turnCounter < 100 && !Comms.isEnemySpotted()) {
+            priority = 2;  // Scouts very early for intel
+        } else if (nearbyTreesForPriority.length > 8) {
+            priority = 0;  // Lumberjacks to clear dense trees on MagicWood
+        } else if (Comms.getEnemyThreats() > 0) {
+            priority = 1;  // Soldiers if enemies detected
         } else {
-            TreeInfo[] nearbyTrees = rc.senseNearbyTrees(10.0f);
-            RobotInfo[] enemiesForPriority = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
-            if (nearbyTrees.length > 5 || enemiesForPriority.length > 2) {
-                priority = 1;  // Soldiers for clearing/harassment
-            } else {
-                priority = 1;  // Soldiers
-            }
+            priority = 1;  // Default to soldiers for aggression
         }
         Comms.broadcastProductionPriority(priority);
         Comms.broadcastUnitCount(gardenerCount * 6); // Estimate total units
@@ -63,8 +56,8 @@ public strictfp class Archon {
             Nav.tryMove(away);
         }
 
-        // Hire up to 10 gardeners early if bullets sufficient, prefer safe directions
-        int maxGardeners = turnCounter < 300 ? 1 : 10;  // Focus on tree-planting gardeners first before combat units
+        // Hire only 2 gardeners total for maximum early aggression
+        int maxGardeners = 2;  // Minimal gardeners, immediate military focus
         // Check density
         TreeInfo[] nearbyTrees = rc.senseNearbyTrees(10.0f);
         if (nearbyTrees.length > 5) {
@@ -90,10 +83,12 @@ public strictfp class Archon {
             }
         }
 
-        // Delay VP Donations
+        // Very Aggressive VP Donations - aim for early VP victory
         float vpCost = rc.getVictoryPointCost();
-        if (turnCounter > 700 && rc.getTeamBullets() > vpCost * 2) {
-            rc.donate(vpCost);
+        if (turnCounter > 200 && rc.getTeamBullets() > vpCost * 1.5) {
+            while (rc.getTeamBullets() >= vpCost && turnCounter < 1000) {
+                rc.donate(vpCost);
+            }
         }
 
         if (!rc.hasMoved()) {

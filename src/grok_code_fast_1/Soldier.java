@@ -42,19 +42,14 @@ public strictfp class Soldier {
             RobotInfo target = findTarget();
             float dist = rc.getLocation().distanceTo(target.location);
             tryShoot(target, enemies);
-            // Enhanced Defensive Kiting: maintain wider range 8-10 for survival
+            // Aggressive engagement: close distance for faster kills
             if (!rc.hasMoved()) {
-                if (dist < 8.0f) {  // Increased min range
+                if (dist < 3.0f) {  // Very close range - minimal kiting
                     Direction awayDir = rc.getLocation().directionTo(target.location).opposite();
-                    MapLocation awayLoc = rc.getLocation().add(awayDir, 4.0f);
-                    Nav.moveToward(awayLoc);
-                } else if (dist > 10.0f) {  // Increased max range
-                    Nav.moveToward(target.location);
+                    Nav.tryMove(awayDir);
                 } else {
-                    // Stay at optimal range, circle
-                    Direction circleDir = rc.getLocation().directionTo(target.location).rotateLeftDegrees(90);
-                    MapLocation circleLoc = rc.getLocation().add(circleDir, 1.0f);
-                    Nav.moveToward(circleLoc);
+                    // Always advance toward target
+                    Nav.moveToward(target.location);
                 }
             }
         }
@@ -117,12 +112,24 @@ public strictfp class Soldier {
 
     static RobotInfo findTarget() throws GameActionException {
         RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
-        // Prioritize lowest health for focus fire
+        // Priority 1: ARCHON - win condition
+        for (RobotInfo enemy : enemies) {
+            if (enemy.type == RobotType.ARCHON) {
+                return enemy;
+            }
+        }
+        // Priority 2: GARDENER - prevents enemy production
+        for (RobotInfo enemy : enemies) {
+            if (enemy.type == RobotType.GARDENER) {
+                return enemy;
+            }
+        }
+        // Priority 3: Lowest health for focus fire
         RobotInfo lowestHealth = Utils.findLowestHealthTarget(enemies);
         if (lowestHealth != null) {
             return lowestHealth;
         }
-        // Fallback to type priorities if tie
+        // Fallback to type priorities
         for (RobotInfo enemy : enemies) {
             if (enemy.type == RobotType.TANK) {
                 return enemy;
@@ -130,16 +137,6 @@ public strictfp class Soldier {
         }
         for (RobotInfo enemy : enemies) {
             if (enemy.type == RobotType.SOLDIER) {
-                return enemy;
-            }
-        }
-        for (RobotInfo enemy : enemies) {
-            if (enemy.type == RobotType.ARCHON) {
-                return enemy;
-            }
-        }
-        for (RobotInfo enemy : enemies) {
-            if (enemy.type == RobotType.GARDENER) {
                 return enemy;
             }
         }
@@ -168,8 +165,12 @@ public strictfp class Soldier {
             aimLocation = target.location;
         }
         if (hasLineOfSight(rc.getLocation(), aimLocation)) {
-            rc.fireSingleShot(rc.getLocation().directionTo(aimLocation));
-            // Defensive: no triad, conserve
+            // Maximum aggression - use triad whenever available
+            if (rc.canFireTriadShot()) {
+                rc.fireTriadShot(rc.getLocation().directionTo(aimLocation));
+            } else if (rc.canFireSingleShot()) {
+                rc.fireSingleShot(rc.getLocation().directionTo(aimLocation));
+            }
         }
     }
 

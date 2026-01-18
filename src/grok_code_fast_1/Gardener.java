@@ -52,19 +52,13 @@ public strictfp class Gardener {
             Direction dirToTarget = rc.getLocation().directionTo(wateringTarget);
             Nav.tryMove(dirToTarget);
         }
-        // Increase tree limits and add scouts
-        while (treesPlanted < 5 && rc.getTeamBullets() >= 50) {
-            if (tryPlantTree()) {
-                treesPlanted++;
-            } else {
-                break;
-            }
-        }
-        if (rc.getTeamBullets() >= 60) {
+        // Zero trees - pure military rush
+        // No tree planting
+        if (rc.getTeamBullets() >= 35) {
             tryBuildUnit();
         }
-        // Fallback: if round >200 and no units built, force build soldier
-        if (rc.getRoundNum() > 200 && buildCount == 0) {
+        // Fallback: if round >50 and no units built, force build soldier
+        if (rc.getRoundNum() > 50 && buildCount == 0) {
             tryBuildUnit();
         }
         if (!rc.hasMoved()) {
@@ -111,8 +105,8 @@ public strictfp class Gardener {
         int priority = Comms.getProductionPriority(); // Read from broadcast
         int turnCount = rc.getRoundNum();
         RobotType toBuild;
-        // Force lumberjack production
-        int minLumberjacks = (turnCount < 500) ? 4 : 2;
+        // Force lumberjack production - more for MagicWood
+        int minLumberjacks = (turnCount < 400) ? 3 : 2;
         if (Comms.getOurLumberjackCount() < minLumberjacks) {
             toBuild = RobotType.LUMBERJACK;
         } else {

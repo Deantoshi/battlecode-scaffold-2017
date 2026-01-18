@@ -35,9 +35,9 @@ public strictfp class Scout {
         broadcastMapIntel();
 
         RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
-        // Retreat if low health or outnumbered
+        // Only retreat if very low health - more aggressive
         MapLocation allyArchon = Comms.readLocation(0, 1);
-        if (rc.getHealth() < 40 || (enemies.length > 2 && countLumberjacksSoldiers(enemies) > 2)) {
+        if (rc.getHealth() < 20) {
             if (allyArchon != null && !rc.hasMoved()) {
                 Direction retreatDir = rc.getLocation().directionTo(allyArchon);
                 Nav.tryMove(retreatDir);
@@ -46,11 +46,14 @@ public strictfp class Scout {
         }
         for (RobotInfo enemy : enemies) {
             reportEnemy(enemy);
-            if ((enemy.type == RobotType.GARDENER || enemy.type == RobotType.ARCHON) && !rc.hasMoved()) {
+            if (enemy.type == RobotType.ARCHON && !rc.hasMoved()) {
                 Nav.moveToward(enemy.location);
                 return;
-            } else if (enemy.type != RobotType.ARCHON && enemy.type != RobotType.GARDENER && rc.getHealth() > 20 && !rc.hasMoved()) {
-                // Harass other units if safe
+            } else if (enemy.type == RobotType.GARDENER && !rc.hasMoved()) {
+                Nav.moveToward(enemy.location);
+                return;
+            } else if (rc.getHealth() > 30 && !rc.hasMoved()) {
+                // More aggressive harassment
                 Direction harassDir = rc.getLocation().directionTo(enemy.location);
                 Nav.tryMove(harassDir);
             }
@@ -86,16 +89,17 @@ public strictfp class Scout {
 
         if (!rc.hasMoved()) {
             if (enemies.length == 0) {
-                // Replace quadrant patrol with dynamic sweeps
+                // Aggressive beeline toward suspected enemy location
                 MapLocation archonLoc = Comms.readLocation(0, 1); // Friendly archon
                 MapLocation enemyLoc = Comms.getEnemyArchonLocation();
-                if (archonLoc != null && enemyLoc != null) {
-                    float baseDist = archonLoc.distanceTo(enemyLoc);
-                    float currentDist = archonLoc.distanceTo(rc.getLocation());
-                    int spiralTurns = (int)(currentDist / 5.0f); // More systematic
-                    Direction toEnemy = archonLoc.directionTo(enemyLoc);
-                    Direction spiralDir = toEnemy.rotateLeftDegrees(spiralTurns * 45.0f); // Consistent 45-degree steps
-                    Nav.tryMove(spiralDir);
+                if (archonLoc != null) {
+                    // Predict enemy location and go straight there
+                    MapLocation predictedEnemy = new MapLocation(100.0f - archonLoc.x, 100.0f - archonLoc.y);
+                    if (enemyLoc != null) {
+                        Nav.moveToward(enemyLoc);
+                    } else {
+                        Nav.moveToward(predictedEnemy);
+                    }
                 } else {
                     Nav.tryMove(Nav.randomDirection()); // Fallback
                 }
