@@ -6,7 +6,6 @@ public strictfp class Archon {
     static int turnCounter = 0;
     static int hireCounter = 0;
     static int gardenersHired = 0;
-    static int gardenerCount = 0;
 
     public static void run(RobotController rc) throws GameActionException {
         Archon.rc = rc;
@@ -47,7 +46,27 @@ public strictfp class Archon {
             priority = 1;  // Soldiers for elimination
         }
         Comms.broadcastProductionPriority(priority);
-        Comms.broadcastUnitCount(gardenerCount * 6); // Estimate total units
+        
+        
+        // OPTIMIZED HYBRID STRATEGY - balance VP and military for fastest win
+        int maxGardeners = 3;  // Three gardeners for optimal balance
+        
+        // Count actual gardeners from nearby robots
+        RobotInfo[] nearbyRobots = rc.senseNearbyRobots(-1, rc.getTeam());
+        int actualGardenerCount = 0;
+        for (RobotInfo robot : nearbyRobots) {
+            if (robot.type == RobotType.GARDENER) {
+                actualGardenerCount++;
+            }
+        }
+        Comms.broadcastUnitCount(actualGardenerCount * 6); // Estimate total units
+        
+        // Hire gardeners rapidly for maximum VP generation
+        if (actualGardenerCount < maxGardeners && rc.getTeamBullets() > 150) {
+            if (tryHireGardener()) {
+                gardenersHired++;
+            }
+        }
         Comms.broadcastVictoryPoints((int)rc.getTeamVictoryPoints()); // New broadcast for VP tracking
         Comms.broadcastTreePlantingThreshold(10);  // New broadcast for planting threshold
         if (enemies.length > 0 && !rc.hasMoved()) {
@@ -56,31 +75,25 @@ public strictfp class Archon {
             Nav.tryMove(away);
         }
 
- // PURE ARCHON VP - absolutely NO gardeners, maximum bullets for VP
-        int maxGardeners = 0;  // Zero gardeners for maximum VP accumulation
- // NO GARDENERS - all bullets saved for VP
-        // No hiring logic
 
- // MAXIMUM VP RUSH - donate EVERYTHING possible from the start
+
+
+ // MAXIMUM VP GENERATION - start immediately and donate everything
         float vpCost = rc.getVictoryPointCost();
         float currentVP = rc.getTeamVictoryPoints();
         
-        // Start donating from round 1 - no waiting
-        if (turnCounter > 1 && currentVP < 1000) {
-            // Donate ALL bullets except tiny emergency reserve
-            int bulletsToKeep = 10;  // Almost no reserve
+        // Start donating from round 30 for fastest VP accumulation
+        if (turnCounter > 30 && currentVP < 1000) {
+            // Keep minimum bullets for gardeners, donate everything else
+            int bulletsToKeep = 75;  // Minimum reserve for 3 gardeners
             int availableForVP = (int)(rc.getTeamBullets() - bulletsToKeep);
             
             if (availableForVP >= vpCost) {
                 int donationsToMake = availableForVP / (int)vpCost;
                 
-                // Donate EVERYTHING possible
-                for (int i = 0; i < donationsToMake; i++) {
-                    if (rc.getTeamBullets() >= vpCost + bulletsToKeep) {
-                        rc.donate(vpCost);
-                    } else {
-                        break;
-                    }
+                // Donate as much as possible
+                for (int i = 0; i < donationsToMake && rc.getTeamBullets() >= vpCost + bulletsToKeep; i++) {
+                    rc.donate(vpCost);
                 }
             }
         }

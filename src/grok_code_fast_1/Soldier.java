@@ -124,17 +124,11 @@ public strictfp class Soldier {
                 return enemy;
             }
         }
-        // THIRD: Closest target - advance quickly
-        RobotInfo closest = null;
-        float minDist = Float.MAX_VALUE;
-        for (RobotInfo enemy : enemies) {
-            float dist = rc.getLocation().distanceTo(enemy.location);
-            if (dist < minDist) {
-                minDist = dist;
-                closest = enemy;
-            }
+        // THIRD: Any enemy - engage aggressively
+        if (enemies.length > 0) {
+            return enemies[0];
         }
-        return closest;
+        return null;
     }
 
     static void tryShoot(RobotInfo target, RobotInfo[] enemies) throws GameActionException {

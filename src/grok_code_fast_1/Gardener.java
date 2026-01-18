@@ -52,10 +52,13 @@ public strictfp class Gardener {
             Direction dirToTarget = rc.getLocation().directionTo(wateringTarget);
             Nav.tryMove(dirToTarget);
         }
-        // PURE ECONOMY GARDENERS - no military, just water trees and save bullets
-        // No unit building - save all bullets for VP donations by archon
-        // Fallback: if round >50 and no units built, force build soldier
-        if (rc.getRoundNum() > 50 && buildCount == 0) {
+ // BALANCED VP/MILITARY - focus on VP with minimal defense
+        if (rc.getRoundNum() < 100) {
+            // Plant trees rapidly for VP generation
+            tryPlantTree();
+        }
+        // Build minimal military for self-defense only
+        if (buildCount < 5) {  // Only 5 units for defense
             tryBuildUnit();
         }
         if (!rc.hasMoved()) {
@@ -91,45 +94,25 @@ public strictfp class Gardener {
     }
 
     boolean tryBuildUnit() throws GameActionException {
-        RobotInfo[] enemies = rc.senseNearbyRobots(10, rc.getTeam().opponent());
-        int lumberjackCount = 0;
-        for (RobotInfo enemy : enemies) {
-            if (enemy.type == RobotType.LUMBERJACK) {
-                lumberjackCount++;
-            }
-        }
-        Comms.broadcastLumberjackThreat(lumberjackCount);
-        int priority = Comms.getProductionPriority(); // Read from broadcast
         int turnCount = rc.getRoundNum();
-        RobotType toBuild;
- // MAXIMUM MILITARY PRODUCTION - balanced force for elimination
-        TreeInfo[] nearbyTrees = rc.senseNearbyTrees(6.0f);
-        int minLumberjacks = (turnCount < 400) ? 4 : 2;  // More lumberjacks for tree clearing
-        int minSoldiers = (turnCount < 400) ? 20 : 15;  // Massive soldier wave
+        RobotType toBuild = RobotType.SOLDIER;  // Always prioritize soldiers for archon elimination
         
-        // Adapt based on tree density
-        if (nearbyTrees.length > 12) {
-            minLumberjacks = (turnCount < 400) ? 8 : 5;  // Even more lumberjacks in dense areas
+        // Early game: build scouts first to find enemy archon quickly
+        if (turnCount < 25 && buildCount < 2) {
+            toBuild = RobotType.SCOUT;
         }
-        
-        if (Comms.getOurLumberjackCount() < minLumberjacks && nearbyTrees.length > 8) {
-            toBuild = RobotType.LUMBERJACK;
-        } else if (Comms.getOurSoldierCount() < minSoldiers) {
-            toBuild = RobotType.SOLDIER;
-        } else {
-            if (turnCount > 200 && lumberjackCount == 0) {
-                toBuild = RobotType.SOLDIER;
-            } else if (turnCount < 100 && Comms.getOurSoldierCount() < 3) {
-                toBuild = RobotType.SOLDIER;
-            } else if (priority == 0) {
+        // Then build 1-2 lumberjacks if blocked by trees
+        else if (turnCount < 100 && buildCount < 5) {
+            TreeInfo[] nearbyTrees = rc.senseNearbyTrees(4.0f);
+            if (nearbyTrees.length > 8) {
                 toBuild = RobotType.LUMBERJACK;
-            } else if (priority == 2) {
-                toBuild = RobotType.SCOUT;
-            } else {
-                // Default to soldiers for aggression
-                toBuild = RobotType.SOLDIER;
             }
         }
+        // After round 100: pure soldier rush
+        else {
+            toBuild = RobotType.SOLDIER;
+        }
+        
         Direction[] dirs = Utils.getDirections();
         for (Direction dir : dirs) {
             if (rc.canBuildRobot(toBuild, dir)) {
@@ -142,25 +125,6 @@ public strictfp class Gardener {
                     Comms.broadcastOurSoldierCount(Comms.getOurSoldierCount() + 1);
                 }
                 return true;
-            }
-        }
-        // Fallback to cheaper alternatives
-        RobotType[] fallbacks = {RobotType.LUMBERJACK};
-        for (RobotType fallback : fallbacks) {
-            if (fallback != toBuild) {
-                for (Direction dir : dirs) {
-                    if (rc.canBuildRobot(fallback, dir)) {
-                        rc.buildRobot(fallback, dir);
-                        buildCount++;
-                        if (fallback == RobotType.LUMBERJACK) {
-                            Comms.broadcastOurLumberjackCount(Comms.getOurLumberjackCount() + 1);
-                        }
-                        if (fallback == RobotType.SOLDIER) {
-                            Comms.broadcastOurSoldierCount(Comms.getOurSoldierCount() + 1);
-                        }
-                        return true;
-                    }
-                }
             }
         }
         return false;

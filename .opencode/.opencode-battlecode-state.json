@@ -1,6 +1,6 @@
 {
   "active": true,
-  "iteration": 5,
+  "iteration": 12,
   "targetIterations": 3,
   "targetWinRounds": 1500,
   "botName": "grok_code_fast_1",
@@ -51,6 +51,69 @@
       "reason": "The winning team won on tiebreakers (more victory points).",
       "ourTeam": "A",
       "timestamp": 1768772565636
+    },
+    {
+      "iteration": 6,
+      "winner": "A",
+      "winningTeam": "grok_code_fast_1",
+      "rounds": 2999,
+      "reason": "The winning team won on tiebreakers (more victory points).",
+      "ourTeam": "A",
+      "timestamp": 1768773672335
+    },
+    {
+      "iteration": 7,
+      "winner": "A",
+      "winningTeam": "grok_code_fast_1",
+      "rounds": 2999,
+      "reason": "The winning team won on tiebreakers (more victory points).",
+      "ourTeam": "A",
+      "timestamp": 1768773824457
+    },
+    {
+      "iteration": 8,
+      "winner": "A",
+      "winningTeam": "grok_code_fast_1",
+      "rounds": 2999,
+      "reason": "The winning team won on tiebreakers (more victory points).",
+      "ourTeam": "A",
+      "timestamp": 1768773984836
+    },
+    {
+      "iteration": 9,
+      "winner": "B",
+      "winningTeam": "examplefuncsplayer",
+      "rounds": 2999,
+      "reason": "The winning team won on tiebreakers (more bullet supply, includings cost of active robots)",
+      "ourTeam": "A",
+      "timestamp": 1768774017167
+    },
+    {
+      "iteration": 10,
+      "winner": "A",
+      "winningTeam": "grok_code_fast_1",
+      "rounds": 2999,
+      "reason": "The winning team won on tiebreakers (more victory points).",
+      "ourTeam": "A",
+      "timestamp": 1768774060109
+    },
+    {
+      "iteration": 11,
+      "winner": "A",
+      "winningTeam": "grok_code_fast_1",
+      "rounds": 2999,
+      "reason": "The winning team won on tiebreakers (more victory points).",
+      "ourTeam": "A",
+      "timestamp": 1768774091772
+    },
+    {
+      "iteration": 12,
+      "winner": "A",
+      "winningTeam": "grok_code_fast_1",
+      "rounds": 2999,
+      "reason": "The winning team won on tiebreakers (more victory points).",
+      "ourTeam": "A",
+      "timestamp": 1768774133200
     }
   ],
   "bestResult": {
