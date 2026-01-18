@@ -63,8 +63,10 @@ echo "TARGET=1500"
 
 if [[ "$WON" == "YES" && "$TOTAL_ROUNDS" -le 1500 ]]; then
     echo "GOAL_MET=YES"
+    GOAL_MET="YES"
 else
     echo "GOAL_MET=NO"
+    GOAL_MET="NO"
 fi
 
 echo ""
@@ -198,3 +200,26 @@ fi
 
 echo ""
 echo "═══════════════════════════════════════════════════════════════════════════════"
+
+# Append concise match summary for next-iteration context.
+PROGRESS_FILE="$PROJECT_DIR/.ralphy/progress.txt"
+if [[ -f "$PROGRESS_FILE" ]]; then
+    MATCH_TIME=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+    A_BULLETS=$(sqlite3 "$DB_FILE" "SELECT team_a_bullets FROM rounds ORDER BY round_id DESC LIMIT 1" 2>/dev/null || echo "0")
+    B_BULLETS=$(sqlite3 "$DB_FILE" "SELECT team_b_bullets FROM rounds ORDER BY round_id DESC LIMIT 1" 2>/dev/null || echo "0")
+    A_VP=$(sqlite3 "$DB_FILE" "SELECT team_a_vp FROM rounds ORDER BY round_id DESC LIMIT 1" 2>/dev/null || echo "0")
+    B_VP=$(sqlite3 "$DB_FILE" "SELECT team_b_vp FROM rounds ORDER BY round_id DESC LIMIT 1" 2>/dev/null || echo "0")
+    A_ALIVE=$(sqlite3 "$DB_FILE" "SELECT COUNT(*) FROM robots WHERE death_round IS NULL AND team='A' AND body_type NOT IN ('TREE_BULLET','TREE_NEUTRAL','BULLET','NONE')" 2>/dev/null || echo "0")
+    B_ALIVE=$(sqlite3 "$DB_FILE" "SELECT COUNT(*) FROM robots WHERE death_round IS NULL AND team='B' AND body_type NOT IN ('TREE_BULLET','TREE_NEUTRAL','BULLET','NONE')" 2>/dev/null || echo "0")
+    A_PROD=$(sqlite3 "$DB_FILE" "SELECT COUNT(*) FROM events WHERE event_type='spawn' AND team='A' AND body_type NOT IN ('TREE_BULLET','TREE_NEUTRAL','BULLET','NONE')" 2>/dev/null || echo "0")
+    A_LOST=$(sqlite3 "$DB_FILE" "SELECT COUNT(*) FROM events WHERE event_type='death' AND team='A' AND body_type NOT IN ('TREE_BULLET','TREE_NEUTRAL','BULLET','NONE')" 2>/dev/null || echo "0")
+
+    {
+        echo ""
+        echo "MATCH $MATCH_TIME: $BOT vs $OPPONENT on $MAP"
+        echo "RESULT winner=$WINNER rounds=$TOTAL_ROUNDS goal_met=$GOAL_MET"
+        echo "FINAL bullets_a=$A_BULLETS vp_a=$A_VP bullets_b=$B_BULLETS vp_b=$B_VP"
+        echo "ALIVE a=$A_ALIVE b=$B_ALIVE"
+        echo "A produced=$A_PROD lost=$A_LOST"
+    } >> "$PROGRESS_FILE"
+fi
