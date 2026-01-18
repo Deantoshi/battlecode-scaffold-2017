@@ -11,9 +11,9 @@ permission:
 
 # Multi-Variant Bot Optimizer
 
-> **⚠️ CRITICAL: YOU MUST COMPLETE ALL PHASES (0-7) WITHOUT STOPPING.**
+> **⚠️ CRITICAL: YOU MUST COMPLETE ALL PHASES (0-6) WITHOUT STOPPING.**
 >
-> Do NOT stop after any individual phase. Do NOT ask the user for permission to continue between phases. Run through the ENTIRE workflow from Phase 0 to Phase 7 in a single execution. Incomplete runs waste computational resources and leave the codebase in an inconsistent state.
+> Do NOT stop after any individual phase. Do NOT ask the user for permission to continue between phases. Run through the ENTIRE workflow from Phase 0 to Phase 6 in a single execution. Incomplete runs waste computational resources and leave the codebase in an inconsistent state.
 
 You create, test, and evaluate 5 variations of a Battlecode bot to find the optimal version that defeats an opponent in 500 rounds or less.
 
@@ -49,8 +49,7 @@ This workflow uses helper scripts in `scripts/`:
 |--------|---------|
 | `create-variants.sh` | Clone base bot 5 times with updated package names |
 | `run-variant-matches.sh` | Run original + all 5 variants in parallel |
-| `analyze-variant-results.sh` | Query all DBs, calculate scores, output ranking |
-| `finalize-variant.sh` | Delete losers, rename winner, cleanup |
+| `analyze-variant-results.sh` | Query all DBs, calculate scores, output ranking, finalize winner |
 
 ---
 
@@ -103,41 +102,27 @@ This script:
 
 ## PHASE 2: Design 5 Unique Variants
 
-Based on the opponent analysis, design 5 DIFFERENT strategies for Soldier.java and Nav.java.
+Based on the opponent analysis from Phase 0, design 5 DIFFERENT strategies for Soldier.java and Nav.java that specifically counter the opponent's weaknesses.
 
-**Each variant should have a distinct approach:**
+**Requirements:**
+- Each variant must be meaningfully different from the others
+- Each variant should exploit a specific weakness or counter a specific strength identified in the opponent
+- Consider variations in: targeting logic, movement patterns, engagement range, aggression level, positioning, and resource management
 
-### Variant 1: Aggressive Early Engagement
-- **Strategy:** Move directly toward enemies, fire immediately when in range
-- **Focus:** Minimize time-to-first-shot, use triad shots for area damage
-- **Movement:** Direct path to enemy, minimal dodging
-
-### Variant 2: Defensive Kiting
-- **Strategy:** Maintain optimal range, retreat while firing
-- **Focus:** Stay at max effective range, prioritize survival
-- **Movement:** Keep distance, dodge bullets aggressively
-
-### Variant 3: Focus Fire Priority
-- **Strategy:** Target lowest HP enemy first, coordinate fire
-- **Focus:** Kill efficiency over speed, finish targets before switching
-- **Movement:** Standard approach, position for clear shots
-
-### Variant 4: Flanking/Positioning
-- **Strategy:** Move to advantageous angles before engaging
-- **Focus:** Avoid frontal engagements, attack from sides
-- **Movement:** Circle around enemy formations
-
-### Variant 5: Hybrid Adaptive
-- **Strategy:** Switch between aggressive and defensive based on HP/numbers
-- **Focus:** Aggressive when winning, defensive when losing
-- **Movement:** Adaptive based on situation
+**Design each variant with:**
+1. A descriptive name
+2. The core strategy/philosophy
+3. Specific changes to Soldier.java (targeting, firing, behavior)
+4. Specific changes to Nav.java (movement, positioning)
 
 **Output design for each variant:**
 ```
 VARIANT_DESIGNS = [
   {
     id: "v1",
-    name: "Aggressive Early Engagement",
+    name: "Descriptive Name",
+    strategy: "Core philosophy and approach",
+    counters: "What opponent weakness this exploits",
     soldier_changes: ["specific code changes"],
     nav_changes: ["specific code changes"]
   },
@@ -188,7 +173,7 @@ This script:
 **Run the helper script:**
 ```bash
 
-# Analyze AND auto-finalize the winner (combines Phase 5 + 6)
+# Analyze AND auto-finalize the winner
 ./scripts/analyze-variant-results.sh {BOT_NAME} {OPPONENT} {MAPS} --finalize
 ```
 
@@ -206,6 +191,10 @@ This script:
 - Outputs a formatted results table
 - Identifies the best variant (original or v1-v5)
 - Outputs `BEST_VARIANT=` for easy parsing
+- With `--finalize` flag: automatically finalizes the winner by:
+  - If `original` won: Deletes all variant folders
+  - If a variant won: Replaces original with winner, updates package names
+  - Cleans up all temporary match files and logs
 
 **Example output:**
 ```
@@ -227,35 +216,14 @@ WINNER: original (Score: 9850)
 
 ---
 
-## PHASE 6: Finalize Best Bot
+## PHASE 6: Validation & Report
 
-**Run the helper script with the winning variant:**
-```bash
-./scripts/finalize-variant.sh {BOT_NAME} {BEST_VARIANT}
-```
-
-Where `{BEST_VARIANT}` is either `original` or `v1`-`v5` from the analysis output.
-
-This script:
-- If `original` won: Deletes all variant folders, no code changes
-- If a variant won:
-  - Deletes losing variants
-  - Removes original bot folder
-  - Renames winning variant to original name
-  - Updates package declarations back to original
-  - Verifies compilation
-- Cleans up all temporary match files and logs
-
----
-
-## PHASE 7: Validation & Report
-
-### 7.1 Run Validation Match
+### 6.1 Run Validation Match
 ```bash
 ./gradlew combatSim -PteamA={BOT_NAME} -PteamB={OPPONENT} -Pmaps={MAPS}
 ```
 
-### 7.2 Output Execution Report
+### 6.2 Output Execution Report
 
 ```
 ═══════════════════════════════════════════════════════════════════════════════
@@ -273,11 +241,11 @@ OPPONENT ANALYSIS:
 
 VARIANT STRATEGIES TESTED:
   original: Original Bot (unchanged)
-  v1: Aggressive Early Engagement
-  v2: Defensive Kiting
-  v3: Focus Fire Priority
-  v4: Flanking/Positioning
-  v5: Hybrid Adaptive
+  v1: {variant 1 name and strategy}
+  v2: {variant 2 name and strategy}
+  v3: {variant 3 name and strategy}
+  v4: {variant 4 name and strategy}
+  v5: {variant 5 name and strategy}
 
 RESULTS:
 ┌──────────┬───────┬────────┬──────────┬────────────┬───────┐
