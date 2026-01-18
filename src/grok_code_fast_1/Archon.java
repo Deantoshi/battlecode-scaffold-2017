@@ -25,6 +25,7 @@ public strictfp class Archon {
 
     static void doTurn() throws GameActionException {
         turnCounter++;
+        tryShakeTree();
         Comms.broadcastLocation(0, 1, rc.getLocation());
 
         // Check for nearby enemies - if any, move away from closest, considering multiple threats
@@ -34,13 +35,13 @@ public strictfp class Archon {
         if (enemies.length > 0) {
             Comms.broadcastEnemyThreats(enemies.length); // New method in Comms
         }
-  // MILITARY STRATEGY - focus on fast elimination
-        int priority = 2;  // Military focus always
+   // VP STRATEGY - focus on victory points via bullet generation
+        int priority = 3;  // VP focus
         Comms.broadcastProductionPriority(priority);
-        
-        // MILITARY STRATEGY - fewer gardeners, more focus on units
-        int maxGardeners = 3;  // Fewer gardeners for military focus
-        
+
+        // VP STRATEGY - hire gardeners to build lumberjacks for chopping trees
+        int maxGardeners = 3;  // Gardeners to build lumberjacks
+
         // Count actual gardeners from nearby robots
         RobotInfo[] nearbyRobots = rc.senseNearbyRobots(-1, rc.getTeam());
         int actualGardenerCount = 0;
@@ -50,11 +51,13 @@ public strictfp class Archon {
             }
         }
         Comms.broadcastUnitCount(actualGardenerCount * 6); // Estimate total units
-        
-         // Hire minimal gardeners for VP strategy
-         if (actualGardenerCount < maxGardeners && rc.getTeamBullets() > 100) {
-            if (tryHireGardener()) {
-                gardenersHired++;
+
+         // Hire gardeners for VP strategy - hire all at once if enough bullets
+         if (actualGardenerCount < maxGardeners && rc.getTeamBullets() >= maxGardeners * 100) {
+            for (int i = actualGardenerCount; i < maxGardeners; i++) {
+                if (tryHireGardener()) {
+                    gardenersHired++;
+                }
             }
         }
         Comms.broadcastVictoryPoints((int)rc.getTeamVictoryPoints()); // New broadcast for VP tracking
@@ -68,14 +71,12 @@ public strictfp class Archon {
 
 
 
-  // MILITARY STRATEGY - donate only when safe to do so
+   // VP STRATEGY - donate after initial economy setup
         float bullets = rc.getTeamBullets();
-        
-        // Strategic donation: only when surplus and late game
-        if (bullets > 200 && turnCounter > 500) {
-            rc.donate(bullets - 100);  // Keep some for emergencies
-        } else if (rc.getTeamVictoryPoints() > 800) {
-            rc.donate(bullets);  // Donate all if close to win
+
+        // Donate when surplus, keep for initial builds
+        if (bullets > 200 && turnCounter > 100) {
+            rc.donate(bullets - 100);
         }
 
         if (!rc.hasMoved()) {
@@ -113,6 +114,17 @@ public strictfp class Archon {
             Direction dir = new Direction(i * (float)Math.PI / 4);
             if (rc.canHireGardener(dir)) {
                 rc.hireGardener(dir);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    static boolean tryShakeTree() throws GameActionException {
+        TreeInfo[] trees = rc.senseNearbyTrees(3.0f, Team.NEUTRAL);
+        for (TreeInfo tree : trees) {
+            if (tree.containedBullets > 0 && rc.canShake(tree.ID)) {
+                rc.shake(tree.ID);
                 return true;
             }
         }

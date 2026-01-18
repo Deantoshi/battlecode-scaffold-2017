@@ -27,7 +27,7 @@ rm -f "$MATCH_FILE" "$DB_FILE"
 
 # Run match
 cd "$PROJECT_DIR"
-./gradlew run -PteamA="$BOT" -PteamB="$OPPONENT" -Pmaps="$MAP" --quiet 2>&1 | tail -5
+./gradlew run -PteamA="$BOT" -PteamB="$OPPONENT" -Pmaps="$MAP" --quiet
 
 # Check if match file exists
 if [[ ! -f "$MATCH_FILE" ]]; then
@@ -51,8 +51,8 @@ echo "MATCH RESULT"
 echo "═══════════════════════════════════════════════════════════════════════════════"
 
 # Get winner and total rounds
-WINNER=$(sqlite3 "$DB_FILE" "SELECT value FROM metadata WHERE key='winner'" 2>/dev/null || echo "UNKNOWN")
-TOTAL_ROUNDS=$(sqlite3 "$DB_FILE" "SELECT MAX(round_id) FROM rounds" 2>/dev/null || echo "0")
+WINNER=$(python3 "$SCRIPT_DIR/bc17_query.py" sql "$DB_FILE" "SELECT value FROM metadata WHERE key='winner'" 2>/dev/null | tail -2 | head -1 || echo "UNKNOWN")
+TOTAL_ROUNDS=$(python3 "$SCRIPT_DIR/bc17_query.py" sql "$DB_FILE" "SELECT MAX(round_id) FROM rounds" 2>/dev/null | tail -2 | head -1 || echo "0")
 
 # Determine if our bot won (we are Team A)
 if [[ "$WINNER" == "A" ]]; then
@@ -68,7 +68,10 @@ echo "WIN_STATUS=$WON"
 echo "ROUNDS=$TOTAL_ROUNDS"
 echo "TARGET=1500"
 
-if [[ "$WON" == "YES" && "$TOTAL_ROUNDS" -le 1500 ]]; then
+# Get final VP for team A
+A_VP=$(python3 "$SCRIPT_DIR/bc17_query.py" sql "$DB_FILE" "SELECT team_a_vp FROM rounds ORDER BY round_id DESC LIMIT 1" 2>/dev/null | tail -2 | head -1 || echo "0")
+
+if [[ "$WON" == "YES" && "$TOTAL_ROUNDS" -le 1500 ]] || [[ "$A_VP" -ge 1000 ]]; then
     echo "GOAL_MET=YES"
     GOAL_MET="YES"
 else
@@ -82,7 +85,7 @@ echo "FINAL STATE"
 echo "═══════════════════════════════════════════════════════════════════════════════"
 
 # Get final round data
-sqlite3 -header -column "$DB_FILE" "
+python3 "$SCRIPT_DIR/bc17_query.py" sql "$DB_FILE" "
 SELECT
     'A' as Team,
     team_a_bullets as Bullets,

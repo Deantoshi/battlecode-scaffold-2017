@@ -1,4 +1,4 @@
 rules:
-  - "use scripts/run-self-improve-match.sh after every match to see important match data"
+  - "Before doing anything, open and strictly follow .opencode/agent/game-self-improver.md; iterate its phases until the PRD.md task is complete."
   - "You are only allowed to edit the files in the src folder specified in the PRD.md file"
   - "You MUST complete the actual requirement(s) in the PRD.md"

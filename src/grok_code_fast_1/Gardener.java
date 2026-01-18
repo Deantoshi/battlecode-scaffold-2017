@@ -52,11 +52,13 @@ public strictfp class Gardener {
             Direction dirToTarget = rc.getLocation().directionTo(wateringTarget);
             Nav.tryMove(dirToTarget);
         }
-  // MILITARY-FIRST STRATEGY - prioritize building soldiers for fast elimination
+   // VP STRATEGY - plant trees first for bullet generation, then build scouts
+        if (tryPlantTree()) {
+            return;
+        }
         if (tryBuildUnit()) {
             return;
         }
-        tryPlantTree();  // Plant trees after building units
         if (!rc.hasMoved()) {
             RobotInfo[] allies = rc.senseNearbyRobots(5.0f, rc.getTeam());
             if (allies.length > 5) {
@@ -90,30 +92,15 @@ public strictfp class Gardener {
     }
 
     boolean tryBuildUnit() throws GameActionException {
-        // Military strategy: build soldiers aggressively for fast win
-        int currentTurn = rc.getRoundNum();
+        // VP strategy: build lumberjacks to chop neutral trees for bullets
         Direction[] dirs = Utils.getDirections();
-        
-        // Build soldiers early and often
-        if (currentTurn > 50) {
-            for (Direction dir : dirs) {
-                if (rc.canBuildRobot(RobotType.SOLDIER, dir)) {
-                    rc.buildRobot(RobotType.SOLDIER, dir);
-                    buildCount++;
-                    return true;
-                }
-            }
-        }
-        
-        // Build lumberjacks if needed for tree clearing on MagicWood
-        TreeInfo[] nearbyTrees = rc.senseNearbyTrees(4.0f);
-        if (nearbyTrees.length > 8) {
-            for (Direction dir : dirs) {
-                if (rc.canBuildRobot(RobotType.LUMBERJACK, dir)) {
-                    rc.buildRobot(RobotType.LUMBERJACK, dir);
-                    buildCount++;
-                    return true;
-                }
+
+        // Build lumberjacks early and often for bullet generation
+        for (Direction dir : dirs) {
+            if (rc.canBuildRobot(RobotType.LUMBERJACK, dir)) {
+                rc.buildRobot(RobotType.LUMBERJACK, dir);
+                buildCount++;
+                return true;
             }
         }
         return false;
@@ -125,9 +112,9 @@ public strictfp class Gardener {
             if (rc.canPlantTree(dir)) {
                 // Maximum density planting for VP generation
                 MapLocation plantLoc = rc.getLocation().add(dir, rc.getType().bodyRadius + GameConstants.BULLET_TREE_RADIUS);
-                TreeInfo[] nearbyTrees = rc.senseNearbyTrees(plantLoc, 2.5f, null);  // Even tighter spacing
+                TreeInfo[] nearbyTrees = rc.senseNearbyTrees(plantLoc, 2.5f, null);  // Check for blocking trees
                 RobotInfo[] ownRobots = rc.senseNearbyRobots(1.5f, rc.getTeam());  // Minimal spacing
-                if (nearbyTrees.length <= 2 && ownRobots.length <= 1) {  // Allow clustering for max VP
+                if (nearbyTrees.length <= 5 && ownRobots.length <= 1) {  // Allow more trees for dense planting
                     rc.plantTree(dir);
                     return true;
                 }

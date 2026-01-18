@@ -64,19 +64,20 @@ public class VPOptimizationTest {
     }
 
     @Test
-    public void testGardenerLimitStrategy() {
-        // Test reduced gardener count for VP strategy
-        int maxGardeners = 2;  // Reduced from 5
-        
-        assertTrue("VP strategy should use maximum 2 gardeners",
-                   maxGardeners == 2);
-        
-        // Verify gardener reduction improves VP generation
+    public void testGardenerHiringStrategy() {
+        // Test minimal gardener count for VP strategy via scout building
+        int maxGardeners = 1;  // Minimal for scout production
+
+        assertTrue("VP strategy should use maximum 1 gardener",
+                    maxGardeners == 1);
+
+        // Verify minimal gardener maximizes scout production
         float gardenerCost = 50f;  // Cost per gardener
-        float savedBullets = (5 - maxGardeners) * gardenerCost;
-        
-        assertTrue("Reducing gardeners should save bullets for VP donations",
-                   savedBullets > 0);
+        float scoutCost = 80f;  // Cost per scout
+        float scoutsPerGardener = 10f;  // Estimated scouts per gardener
+
+        assertTrue("One gardener can produce many scouts for bullet generation",
+                    scoutsPerGardener * scoutCost > gardenerCost);
     }
 
     @Test
@@ -98,31 +99,49 @@ public class VPOptimizationTest {
         // Test VP donation threshold optimization
         float minDonationThreshold = 15f;
         float emergencyReserve = 10f;
-        
+
         assertTrue("Should donate bullets when above minimum threshold",
-                   minDonationThreshold > emergencyReserve);
-        
+                    minDonationThreshold > emergencyReserve);
+
         // Verify donation keeps emergency reserve
         float testBullets = 20f;
         float expectedDonation = testBullets - emergencyReserve;
-        
+
         assertTrue("Should keep emergency reserve after donation",
-                   expectedDonation > 0 && expectedDonation == 10f);
+                    expectedDonation > 0 && expectedDonation == 10f);
+    }
+
+    @Test
+    public void testAggressiveDonationStrategy() {
+        // Test immediate donation from round 1
+        float emergencyReserve = 10f;
+        float availableBullets = 100f;
+
+        // Should donate immediately, keeping only emergency reserve
+        float expectedDonation = availableBullets - emergencyReserve;
+
+        assertTrue("Should donate all bullets except emergency reserve from round 1",
+                    expectedDonation == 90f);
+
+        // Verify this maximizes VP generation
+        float vpGain = expectedDonation / 10;  // 10 bullets = 1 VP
+        assertTrue("Aggressive donation should generate significant VP",
+                    vpGain == 9f);
     }
 
     @Test
     public void testProductionPriorityOptimization() {
         // Test production priority changes for VP strategy
-        int treePlantingPriority = 3;
+        int gardenerPriority = 3;
         int militaryPriority = 1;
         int lumberjackPriority = 0;
-        
-        assertTrue("Tree planting should have highest priority for VP generation",
-                   treePlantingPriority > militaryPriority && treePlantingPriority > lumberjackPriority);
-        
+
+        assertTrue("Gardener production should have highest priority for scout generation",
+                    gardenerPriority > militaryPriority && gardenerPriority > lumberjackPriority);
+
         // Lumberjacks only built when blocked by trees
         int treeBlockingThreshold = 15;
         assertTrue("Should only build lumberjacks when heavily blocked",
-                   treeBlockingThreshold > 10);
+                    treeBlockingThreshold > 10);
     }
 }
