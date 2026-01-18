@@ -34,6 +34,7 @@ public strictfp class Gardener {
     }
 
     void doTurn() throws GameActionException {
+        int priority = Comms.getProductionPriority();
         waterLowestHealthTree();
         // Move towards tree needing water
         if (wateringTarget == null || (rc.canSenseLocation(wateringTarget) && rc.senseTreeAtLocation(wateringTarget).health >= 50)) {
@@ -52,12 +53,19 @@ public strictfp class Gardener {
             Direction dirToTarget = rc.getLocation().directionTo(wateringTarget);
             Nav.tryMove(dirToTarget);
         }
-   // VP STRATEGY - plant trees first for bullet generation, then build scouts
-        if (tryPlantTree()) {
-            return;
-        }
-        if (tryBuildUnit()) {
-            return;
+        // MILITARY STRATEGY - build soldiers only, no tree planting
+        if (priority == 1) {
+            if (tryBuildUnit()) {
+                return;
+            }
+        } else {
+            // VP strategy: plant trees first, then build units
+            if (tryPlantTree()) {
+                return;
+            }
+            if (tryBuildUnit()) {
+                return;
+            }
         }
         if (!rc.hasMoved()) {
             RobotInfo[] allies = rc.senseNearbyRobots(5.0f, rc.getTeam());
@@ -96,7 +104,7 @@ public strictfp class Gardener {
         Direction[] dirs = Utils.getDirections();
 
         if (priority == 1) {
-            // Military strategy: build soldiers
+            // Military strategy: build only soldiers
             for (Direction dir : dirs) {
                 if (rc.canBuildRobot(RobotType.SOLDIER, dir)) {
                     rc.buildRobot(RobotType.SOLDIER, dir);

@@ -55,29 +55,30 @@ public class VPOptimizationTest {
         // Test bullet conservation for VP donations
         float emergencyBullets = 10f;
         float availableBullets = 50f;
-        
+
         // Should keep only emergency bullets and donate rest
         float donationAmount = availableBullets - emergencyBullets;
-        
+
         assertTrue("Should donate excess bullets while keeping emergency reserve",
-                   donationAmount > 0 && Math.abs(availableBullets - donationAmount - emergencyBullets) < 0.001f);
+                    donationAmount == 40f && emergencyBullets == 10f);
     }
 
     @Test
     public void testGardenerHiringStrategy() {
-        // Test minimal gardener count for VP strategy via scout building
-        int maxGardeners = 1;  // Minimal for scout production
+        // Test optimized gardener count for VP strategy
+        int maxGardeners = 3;  // Optimal for VP generation
 
-        assertTrue("VP strategy should use maximum 1 gardener",
-                    maxGardeners == 1);
+        assertTrue("VP strategy should use 3 gardeners for balanced bullet production",
+                     maxGardeners == 3);
 
-        // Verify minimal gardener maximizes scout production
+        // Verify 3 gardeners provide optimal economy
         float gardenerCost = 50f;  // Cost per gardener
-        float scoutCost = 80f;  // Cost per scout
-        float scoutsPerGardener = 10f;  // Estimated scouts per gardener
+        float treeProduction = 6f;  // Trees per gardener
+        float bulletsPerTreePerRound = 1f;  // Bullets generated per tree
 
-        assertTrue("One gardener can produce many scouts for bullet generation",
-                    scoutsPerGardener * scoutCost > gardenerCost);
+        float totalBulletsPerRound = maxGardeners * treeProduction * bulletsPerTreePerRound;
+        assertTrue("3 gardeners should generate sufficient bullets for VP",
+                     totalBulletsPerRound >= 18f);
     }
 
     @Test

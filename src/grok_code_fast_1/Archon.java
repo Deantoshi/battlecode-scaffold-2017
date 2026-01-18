@@ -35,12 +35,12 @@ public strictfp class Archon {
         if (enemies.length > 0) {
             Comms.broadcastEnemyThreats(enemies.length); // New method in Comms
         }
-    // MILITARY STRATEGY - focus on eliminating enemy units
-        int priority = 1;  // Military focus
+    // VP STRATEGY - focus on victory points
+        int priority = 0;  // VP focus
         Comms.broadcastProductionPriority(priority);
 
-        // MILITARY STRATEGY - hire gardeners to build soldiers
-        int maxGardeners = 4;  // Gardeners to build soldiers
+          // VP STRATEGY - hire gardeners for bullet generation
+          int maxGardeners = 3;  // Gardeners for VP
 
         // Count actual gardeners from nearby robots
         RobotInfo[] nearbyRobots = rc.senseNearbyRobots(-1, rc.getTeam());
@@ -52,14 +52,12 @@ public strictfp class Archon {
         }
         Comms.broadcastUnitCount(actualGardenerCount * 6); // Estimate total units
 
-         // Hire gardeners for VP strategy - hire all at once if enough bullets
-         if (actualGardenerCount < maxGardeners && rc.getTeamBullets() >= maxGardeners * 100) {
-            for (int i = actualGardenerCount; i < maxGardeners; i++) {
-                if (tryHireGardener()) {
-                    gardenersHired++;
-                }
-            }
-        }
+          // Hire gardeners for military strategy - hire one by one
+          if (actualGardenerCount < maxGardeners && rc.getTeamBullets() >= 100) {
+             if (tryHireGardener()) {
+                 gardenersHired++;
+             }
+         }
         Comms.broadcastVictoryPoints((int)rc.getTeamVictoryPoints()); // New broadcast for VP tracking
         Comms.broadcastTreePlantingThreshold(10);  // New broadcast for planting threshold
         if (enemies.length > 0 && !rc.hasMoved()) {
@@ -71,7 +69,13 @@ public strictfp class Archon {
 
 
 
-    // MILITARY STRATEGY - no donation, save bullets for units
+     // VP STRATEGY - donate bullets for victory points
+        if (rc.getTeamBullets() >= 10) {  // Minimum reserve
+            int donateAmount = (int)(rc.getTeamBullets() - 10);
+            if (donateAmount > 0) {
+                rc.donate(donateAmount);
+            }
+        }
 
         if (!rc.hasMoved()) {
             // Radial toward enemy archons
