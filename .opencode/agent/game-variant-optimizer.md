@@ -5,7 +5,7 @@ temperature: 1
 permission:
   bash: allow
   read: allow
-  edit: allow
+  unsafe-write: allow
   glob: allow
 ---
 

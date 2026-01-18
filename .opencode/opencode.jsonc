@@ -8,7 +8,8 @@
     "bc_reset": false,
     "ralph_status": false,
     "cancel_ralph": false,
-    "write": false
+    "write": false,
+    "task": false
   },
   "$schema": "https://opencode.ai/config.json"
 }
