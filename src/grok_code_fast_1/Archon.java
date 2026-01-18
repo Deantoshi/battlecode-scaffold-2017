@@ -35,13 +35,15 @@ public strictfp class Archon {
         if (enemies.length > 0) {
             Comms.broadcastEnemyThreats(enemies.length); // New method in Comms
         }
-        // Dynamic production broadcasts - handle MagicWood trees
+ // Extreme early military rush for fast victory
         int priority;
         TreeInfo[] nearbyTreesForPriority = rc.senseNearbyTrees(10.0f);
-        if (turnCounter < 100 && !Comms.isEnemySpotted()) {
-            priority = 2;  // Scouts very early for intel
-        } else if (nearbyTreesForPriority.length > 8) {
-            priority = 0;  // Lumberjacks to clear dense trees on MagicWood
+        if (turnCounter < 50 && !Comms.isEnemySpotted()) {
+            priority = 2;  // Scouts first for immediate intel
+        } else if (turnCounter < 300) {
+            priority = 1;  // Soldiers for early aggression 
+        } else if (nearbyTreesForPriority.length > 12) {
+            priority = 0;  // Lumberjacks only if extremely dense
         } else if (Comms.getEnemyThreats() > 0) {
             priority = 1;  // Soldiers if enemies detected
         } else {
@@ -56,25 +58,22 @@ public strictfp class Archon {
             Nav.tryMove(away);
         }
 
-        // MagicWood specialized: hire 3 gardeners for massive tree clearing
-        int maxGardeners = 3;  // More gardeners for lumberjack production
-        // Check density
+        // VP-focused: minimal gardeners, just enough for bullet generation
+        int maxGardeners = 2;  // Minimized to save bullets for VP donation
+        // Check density but be more aggressive about hiring
         TreeInfo[] nearbyTrees = rc.senseNearbyTrees(10.0f);
-        if (nearbyTrees.length > 5) {
-            // Skip hiring or reposition
-            if (!rc.hasMoved()) {
-                // Move to less dense direction
+        if (nearbyTrees.length > 8) {
+            // Very dense: prioritize moving to clear area but still hire
+            if (!rc.hasMoved() && gardenersHired < 2) {
+                // Move to less dense direction after initial gardeners
                 Direction denseDir = rc.getLocation().directionTo(nearbyTrees[0].location);
                 Direction awayDense = denseDir.opposite();
                 Nav.tryMove(awayDense);
             }
-        
+            maxGardeners = 5;  // Even more gardeners in very dense areas
         } else if (nearbyTrees.length >= 3 && nearbyTrees.length <= 5) {
-            // Moderately dense: hire lumberjacks for clearing
-            maxGardeners = 6;  // Further reduced to 6 in moderately dense areas
-            if (rc.getTeamBullets() >= 50 && gardenersHired < maxGardeners) {
-                // Prioritize lumberjack in dense areas via tryHireGardener adjustment
-            }
+            // Moderately dense: standard hiring
+            maxGardeners = 4;
         }
         if (rc.getTeamBullets() >= 50 && gardenersHired < maxGardeners) {
             if (tryHireGardener()) {
@@ -83,9 +82,9 @@ public strictfp class Archon {
             }
         }
 
- // MagicWood optimized VP strategy - donate after clearing paths
+ // Ultra-extreme VP rush - donate as soon as possible for fastest win
         float vpCost = rc.getVictoryPointCost();
-        if (turnCounter > 300 && rc.getTeamBullets() > vpCost * 1.3) {
+        if (turnCounter > 50 && rc.getTeamBullets() > vpCost * 1.05) {
             while (rc.getTeamBullets() >= vpCost && turnCounter < 1200) {
                 rc.donate(vpCost);
             }

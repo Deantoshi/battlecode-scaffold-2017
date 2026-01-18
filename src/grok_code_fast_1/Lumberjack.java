@@ -52,8 +52,8 @@ public strictfp class Lumberjack {
                     }
                 }
                 // ... existing clearing logic
-                // Proactive clearing: check for blocking trees before moving
-                TreeInfo[] blockingTrees = rc.senseNearbyTrees(rc.getType().bodyRadius + rc.getType().strideRadius + 6.0f, Team.NEUTRAL);  // Increased range
+                // Extreme clearing: maximum range tree clearing before moving
+                TreeInfo[] blockingTrees = rc.senseNearbyTrees(rc.getType().bodyRadius + rc.getType().strideRadius + 10.0f, Team.NEUTRAL);  // Maximum range
                 if (blockingTrees.length > 0) {
                     for (TreeInfo tree : blockingTrees) {
                         if (rc.canChop(tree.ID)) {
@@ -83,8 +83,8 @@ public strictfp class Lumberjack {
                         return;
                     }
                 }
-                // Explore aggressively with clearing
-                TreeInfo[] blockingTrees = rc.senseNearbyTrees(rc.getType().bodyRadius + rc.getType().strideRadius + 6.0f, Team.NEUTRAL);  // Increased range
+                // Explore extremely aggressively with maximum clearing
+                TreeInfo[] blockingTrees = rc.senseNearbyTrees(rc.getType().bodyRadius + rc.getType().strideRadius + 10.0f, Team.NEUTRAL);  // Maximum range
                 if (blockingTrees.length > 0) {
                     for (TreeInfo tree : blockingTrees) {
                         if (rc.canChop(tree.ID)) {

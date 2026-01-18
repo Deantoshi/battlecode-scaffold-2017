@@ -146,4 +146,12 @@ public strictfp class Comms {
     public static int getLumberjackThreat() throws GameActionException {
         return rc.readBroadcast(30);
     }
+
+    public static void broadcastOurSoldierCount(int count) throws GameActionException {
+        rc.broadcast(31, count);
+    }
+
+    public static int getOurSoldierCount() throws GameActionException {
+        return rc.readBroadcast(31);
+    }
 }

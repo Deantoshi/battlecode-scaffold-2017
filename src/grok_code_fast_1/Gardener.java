@@ -105,30 +105,27 @@ public strictfp class Gardener {
         int priority = Comms.getProductionPriority(); // Read from broadcast
         int turnCount = rc.getRoundNum();
         RobotType toBuild;
-        // MagicWood specialized - mass lumberjack production
-        int minLumberjacks = (turnCount < 600) ? 8 : 5;
-        if (Comms.getOurLumberjackCount() < minLumberjacks) {
+ // Military rush strategy - minimal lumberjacks, max soldiers
+        TreeInfo[] nearbyTrees = rc.senseNearbyTrees(6.0f);
+        int minLumberjacks = (turnCount < 800) ? 3 : 1;  // Drastically reduced lumberjacks
+        int minSoldiers = (turnCount < 500) ? 8 : 5;      // Added soldier minimum
+        
+        if (Comms.getOurLumberjackCount() < minLumberjacks && nearbyTrees.length > 10) {
             toBuild = RobotType.LUMBERJACK;
+        } else if (Comms.getOurSoldierCount() < minSoldiers) {
+            toBuild = RobotType.SOLDIER;
         } else {
-            if (turnCount > 500 && lumberjackCount == 0) {
+            if (turnCount > 200 && lumberjackCount == 0) {
                 toBuild = RobotType.SOLDIER;
-            } else if (turnCount < 300 && Comms.getOurLumberjackCount() == 0) {
+            } else if (turnCount < 100 && Comms.getOurSoldierCount() < 3) {
+                toBuild = RobotType.SOLDIER;
+            } else if (priority == 0) {
                 toBuild = RobotType.LUMBERJACK;
-            } else if (turnCount < 100) {
-                toBuild = RobotType.LUMBERJACK;
-            } else if (lumberjackCount > 0) {
-                toBuild = RobotType.LUMBERJACK;
+            } else if (priority == 2) {
+                toBuild = RobotType.SCOUT;
             } else {
-                if (turnCount > 1000 && priority == 3) {
-                    toBuild = RobotType.TANK;
-                } else if (priority == 0) {
-                    toBuild = RobotType.LUMBERJACK;
-                } else if (priority == 2) {
-                    toBuild = RobotType.SCOUT;
-                } else {
-                    // Default to soldiers for priority 1 or unknown
-                    toBuild = RobotType.SOLDIER;
-                }
+                // Default to soldiers for aggression
+                toBuild = RobotType.SOLDIER;
             }
         }
         Direction[] dirs = Utils.getDirections();
@@ -138,6 +135,9 @@ public strictfp class Gardener {
                 buildCount++;
                 if (toBuild == RobotType.LUMBERJACK) {
                     Comms.broadcastOurLumberjackCount(Comms.getOurLumberjackCount() + 1);
+                }
+                if (toBuild == RobotType.SOLDIER) {
+                    Comms.broadcastOurSoldierCount(Comms.getOurSoldierCount() + 1);
                 }
                 return true;
             }
@@ -152,6 +152,9 @@ public strictfp class Gardener {
                         buildCount++;
                         if (fallback == RobotType.LUMBERJACK) {
                             Comms.broadcastOurLumberjackCount(Comms.getOurLumberjackCount() + 1);
+                        }
+                        if (fallback == RobotType.SOLDIER) {
+                            Comms.broadcastOurSoldierCount(Comms.getOurSoldierCount() + 1);
                         }
                         return true;
                     }

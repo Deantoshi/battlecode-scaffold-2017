@@ -1,0 +1,66 @@
+{
+  "active": true,
+  "iteration": 5,
+  "targetIterations": 3,
+  "targetWinRounds": 1500,
+  "botName": "grok_code_fast_1",
+  "opponent": "examplefuncsplayer",
+  "mapName": "MagicWood",
+  "results": [
+    {
+      "iteration": 1,
+      "winner": "A",
+      "winningTeam": "grok_code_fast_1",
+      "rounds": 2999,
+      "reason": "The winning team won on tiebreakers (more victory points).",
+      "ourTeam": "A",
+      "timestamp": 1768772352887
+    },
+    {
+      "iteration": 2,
+      "winner": "A",
+      "winningTeam": "grok_code_fast_1",
+      "rounds": 2999,
+      "reason": "The winning team won on tiebreakers (more victory points).",
+      "ourTeam": "A",
+      "timestamp": 1768772418433
+    },
+    {
+      "iteration": 3,
+      "winner": "A",
+      "winningTeam": "grok_code_fast_1",
+      "rounds": 2999,
+      "reason": "The winning team won on tiebreakers (more victory points).",
+      "ourTeam": "A",
+      "timestamp": 1768772461488
+    },
+    {
+      "iteration": 4,
+      "winner": "A",
+      "winningTeam": "grok_code_fast_1",
+      "rounds": 2999,
+      "reason": "The winning team won on tiebreakers (more victory points).",
+      "ourTeam": "A",
+      "timestamp": 1768772535819
+    },
+    {
+      "iteration": 5,
+      "winner": "A",
+      "winningTeam": "grok_code_fast_1",
+      "rounds": 2999,
+      "reason": "The winning team won on tiebreakers (more victory points).",
+      "ourTeam": "A",
+      "timestamp": 1768772565636
+    }
+  ],
+  "bestResult": {
+    "iteration": 1,
+    "winner": "A",
+    "winningTeam": "grok_code_fast_1",
+    "rounds": 2999,
+    "reason": "The winning team won on tiebreakers (more victory points).",
+    "ourTeam": "A",
+    "timestamp": 1768772352887
+  },
+  "startTime": 1768772324956
+}
