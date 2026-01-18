@@ -95,6 +95,18 @@ ROUNDS={N}
 GOAL_MET={YES|NO}
 ```
 
+### 1.1 Quadrant Data (stuck unit signal)
+
+Use the query tool to get quadrant counts for units that stayed in the same quadrant since the last snapshot (likely stuck):
+
+```bash
+python3 scripts/bc17_query.py unit-positions "matches/*.db" [--round=N] [--team=A|B] [--include-trees]
+```
+
+Notes:
+- Outputs counts by `Map`, `Round`, and `Quadrant` (NW/NE/SW/SE), broken down by unit type.
+- High counts in a single quadrant across snapshots can indicate pathing or movement issues.
+
 ---
 
 ## PHASE 2: Check Goal
