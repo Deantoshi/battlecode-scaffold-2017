@@ -154,4 +154,12 @@ public strictfp class Comms {
     public static int getOurSoldierCount() throws GameActionException {
         return rc.readBroadcast(31);
     }
+
+    public static void broadcastVictoryPoints(int vp) throws GameActionException {
+        rc.broadcast(32, vp);
+    }
+
+    public static int getVictoryPoints() throws GameActionException {
+        return rc.readBroadcast(32);
+    }
 }

@@ -35,22 +35,20 @@ public strictfp class Archon {
         if (enemies.length > 0) {
             Comms.broadcastEnemyThreats(enemies.length); // New method in Comms
         }
- // Extreme early military rush for fast victory
+ // PURE ELIMINATION FOCUS - military all the way
         int priority;
         TreeInfo[] nearbyTreesForPriority = rc.senseNearbyTrees(10.0f);
-        if (turnCounter < 50 && !Comms.isEnemySpotted()) {
-            priority = 2;  // Scouts first for immediate intel
-        } else if (turnCounter < 300) {
-            priority = 1;  // Soldiers for early aggression 
-        } else if (nearbyTreesForPriority.length > 12) {
-            priority = 0;  // Lumberjacks only if extremely dense
-        } else if (Comms.getEnemyThreats() > 0) {
-            priority = 1;  // Soldiers if enemies detected
+        
+        if (turnCounter < 15 && !Comms.isEnemySpotted()) {
+            priority = 2;  // Quick scout for intel, then all military
+        } else if (nearbyTreesForPriority.length > 15 && turnCounter < 300) {
+            priority = 0;  // Early lumberjacks to clear dense areas
         } else {
-            priority = 1;  // Default to soldiers for aggression
+            priority = 1;  // Soldiers for elimination
         }
         Comms.broadcastProductionPriority(priority);
         Comms.broadcastUnitCount(gardenerCount * 6); // Estimate total units
+        Comms.broadcastVictoryPoints((int)rc.getTeamVictoryPoints()); // New broadcast for VP tracking
         Comms.broadcastTreePlantingThreshold(10);  // New broadcast for planting threshold
         if (enemies.length > 0 && !rc.hasMoved()) {
             MapLocation centroid = Utils.calculateCentroid(enemies);
@@ -58,35 +56,32 @@ public strictfp class Archon {
             Nav.tryMove(away);
         }
 
-        // VP-focused: minimal gardeners, just enough for bullet generation
-        int maxGardeners = 2;  // Minimized to save bullets for VP donation
-        // Check density but be more aggressive about hiring
-        TreeInfo[] nearbyTrees = rc.senseNearbyTrees(10.0f);
-        if (nearbyTrees.length > 8) {
-            // Very dense: prioritize moving to clear area but still hire
-            if (!rc.hasMoved() && gardenersHired < 2) {
-                // Move to less dense direction after initial gardeners
-                Direction denseDir = rc.getLocation().directionTo(nearbyTrees[0].location);
-                Direction awayDense = denseDir.opposite();
-                Nav.tryMove(awayDense);
-            }
-            maxGardeners = 5;  // Even more gardeners in very dense areas
-        } else if (nearbyTrees.length >= 3 && nearbyTrees.length <= 5) {
-            // Moderately dense: standard hiring
-            maxGardeners = 4;
-        }
-        if (rc.getTeamBullets() >= 50 && gardenersHired < maxGardeners) {
-            if (tryHireGardener()) {
-                gardenersHired++;
-                gardenerCount++;
-            }
-        }
+ // PURE ARCHON VP - absolutely NO gardeners, maximum bullets for VP
+        int maxGardeners = 0;  // Zero gardeners for maximum VP accumulation
+ // NO GARDENERS - all bullets saved for VP
+        // No hiring logic
 
- // Ultra-extreme VP rush - donate as soon as possible for fastest win
+ // MAXIMUM VP RUSH - donate EVERYTHING possible from the start
         float vpCost = rc.getVictoryPointCost();
-        if (turnCounter > 50 && rc.getTeamBullets() > vpCost * 1.05) {
-            while (rc.getTeamBullets() >= vpCost && turnCounter < 1200) {
-                rc.donate(vpCost);
+        float currentVP = rc.getTeamVictoryPoints();
+        
+        // Start donating from round 1 - no waiting
+        if (turnCounter > 1 && currentVP < 1000) {
+            // Donate ALL bullets except tiny emergency reserve
+            int bulletsToKeep = 10;  // Almost no reserve
+            int availableForVP = (int)(rc.getTeamBullets() - bulletsToKeep);
+            
+            if (availableForVP >= vpCost) {
+                int donationsToMake = availableForVP / (int)vpCost;
+                
+                // Donate EVERYTHING possible
+                for (int i = 0; i < donationsToMake; i++) {
+                    if (rc.getTeamBullets() >= vpCost + bulletsToKeep) {
+                        rc.donate(vpCost);
+                    } else {
+                        break;
+                    }
+                }
             }
         }
 

@@ -112,40 +112,29 @@ public strictfp class Soldier {
 
     static RobotInfo findTarget() throws GameActionException {
         RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
-        // Priority 1: ARCHON - win condition
+        // ABSOLUTE PRIORITY: ARCHON - immediate win condition
         for (RobotInfo enemy : enemies) {
             if (enemy.type == RobotType.ARCHON) {
                 return enemy;
             }
         }
-        // Priority 2: GARDENER - prevents enemy production
+        // SECOND PRIORITY: GARDENER - cut off enemy production
         for (RobotInfo enemy : enemies) {
             if (enemy.type == RobotType.GARDENER) {
                 return enemy;
             }
         }
-        // Priority 3: Lowest health for focus fire
-        RobotInfo lowestHealth = Utils.findLowestHealthTarget(enemies);
-        if (lowestHealth != null) {
-            return lowestHealth;
-        }
-        // Fallback to type priorities
+        // THIRD: Closest target - advance quickly
+        RobotInfo closest = null;
+        float minDist = Float.MAX_VALUE;
         for (RobotInfo enemy : enemies) {
-            if (enemy.type == RobotType.TANK) {
-                return enemy;
+            float dist = rc.getLocation().distanceTo(enemy.location);
+            if (dist < minDist) {
+                minDist = dist;
+                closest = enemy;
             }
         }
-        for (RobotInfo enemy : enemies) {
-            if (enemy.type == RobotType.SOLDIER) {
-                return enemy;
-            }
-        }
-        for (RobotInfo enemy : enemies) {
-            if (enemy.type == RobotType.SCOUT) {
-                return enemy;
-            }
-        }
-        return null;
+        return closest;
     }
 
     static void tryShoot(RobotInfo target, RobotInfo[] enemies) throws GameActionException {

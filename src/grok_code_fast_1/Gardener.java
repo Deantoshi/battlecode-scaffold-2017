@@ -52,11 +52,8 @@ public strictfp class Gardener {
             Direction dirToTarget = rc.getLocation().directionTo(wateringTarget);
             Nav.tryMove(dirToTarget);
         }
-        // Zero trees - pure military rush
-        // No tree planting
-        if (rc.getTeamBullets() >= 35) {
-            tryBuildUnit();
-        }
+        // PURE ECONOMY GARDENERS - no military, just water trees and save bullets
+        // No unit building - save all bullets for VP donations by archon
         // Fallback: if round >50 and no units built, force build soldier
         if (rc.getRoundNum() > 50 && buildCount == 0) {
             tryBuildUnit();
@@ -105,12 +102,17 @@ public strictfp class Gardener {
         int priority = Comms.getProductionPriority(); // Read from broadcast
         int turnCount = rc.getRoundNum();
         RobotType toBuild;
- // Military rush strategy - minimal lumberjacks, max soldiers
+ // MAXIMUM MILITARY PRODUCTION - balanced force for elimination
         TreeInfo[] nearbyTrees = rc.senseNearbyTrees(6.0f);
-        int minLumberjacks = (turnCount < 800) ? 3 : 1;  // Drastically reduced lumberjacks
-        int minSoldiers = (turnCount < 500) ? 8 : 5;      // Added soldier minimum
+        int minLumberjacks = (turnCount < 400) ? 4 : 2;  // More lumberjacks for tree clearing
+        int minSoldiers = (turnCount < 400) ? 20 : 15;  // Massive soldier wave
         
-        if (Comms.getOurLumberjackCount() < minLumberjacks && nearbyTrees.length > 10) {
+        // Adapt based on tree density
+        if (nearbyTrees.length > 12) {
+            minLumberjacks = (turnCount < 400) ? 8 : 5;  // Even more lumberjacks in dense areas
+        }
+        
+        if (Comms.getOurLumberjackCount() < minLumberjacks && nearbyTrees.length > 8) {
             toBuild = RobotType.LUMBERJACK;
         } else if (Comms.getOurSoldierCount() < minSoldiers) {
             toBuild = RobotType.SOLDIER;
