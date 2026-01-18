@@ -92,15 +92,26 @@ public strictfp class Gardener {
     }
 
     boolean tryBuildUnit() throws GameActionException {
-        // VP strategy: build lumberjacks to chop neutral trees for bullets
+        int priority = Comms.getProductionPriority();
         Direction[] dirs = Utils.getDirections();
 
-        // Build lumberjacks early and often for bullet generation
-        for (Direction dir : dirs) {
-            if (rc.canBuildRobot(RobotType.LUMBERJACK, dir)) {
-                rc.buildRobot(RobotType.LUMBERJACK, dir);
-                buildCount++;
-                return true;
+        if (priority == 1) {
+            // Military strategy: build soldiers
+            for (Direction dir : dirs) {
+                if (rc.canBuildRobot(RobotType.SOLDIER, dir)) {
+                    rc.buildRobot(RobotType.SOLDIER, dir);
+                    buildCount++;
+                    return true;
+                }
+            }
+        } else {
+            // VP or lumberjack strategy: build lumberjacks for bullet generation
+            for (Direction dir : dirs) {
+                if (rc.canBuildRobot(RobotType.LUMBERJACK, dir)) {
+                    rc.buildRobot(RobotType.LUMBERJACK, dir);
+                    buildCount++;
+                    return true;
+                }
             }
         }
         return false;

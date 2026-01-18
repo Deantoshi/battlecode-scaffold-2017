@@ -35,12 +35,12 @@ public strictfp class Archon {
         if (enemies.length > 0) {
             Comms.broadcastEnemyThreats(enemies.length); // New method in Comms
         }
-   // VP STRATEGY - focus on victory points via bullet generation
-        int priority = 3;  // VP focus
+    // MILITARY STRATEGY - focus on eliminating enemy units
+        int priority = 1;  // Military focus
         Comms.broadcastProductionPriority(priority);
 
-        // VP STRATEGY - hire gardeners to build lumberjacks for chopping trees
-        int maxGardeners = 3;  // Gardeners to build lumberjacks
+        // MILITARY STRATEGY - hire gardeners to build soldiers
+        int maxGardeners = 4;  // Gardeners to build soldiers
 
         // Count actual gardeners from nearby robots
         RobotInfo[] nearbyRobots = rc.senseNearbyRobots(-1, rc.getTeam());
@@ -71,13 +71,7 @@ public strictfp class Archon {
 
 
 
-   // VP STRATEGY - donate after initial economy setup
-        float bullets = rc.getTeamBullets();
-
-        // Donate when surplus, keep for initial builds
-        if (bullets > 200 && turnCounter > 100) {
-            rc.donate(bullets - 100);
-        }
+    // MILITARY STRATEGY - no donation, save bullets for units
 
         if (!rc.hasMoved()) {
             // Radial toward enemy archons
