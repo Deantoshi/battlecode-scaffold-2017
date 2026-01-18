@@ -120,6 +120,15 @@ ORDER BY round_id
 
 echo ""
 echo "═══════════════════════════════════════════════════════════════════════════════"
+echo "UNIT QUADRANTS (likely stuck since last snapshot)"
+echo "═══════════════════════════════════════════════════════════════════════════════"
+
+python3 "$SCRIPT_DIR/bc17_query.py" unit-positions "$DB_FILE" --team=A
+echo ""
+python3 "$SCRIPT_DIR/bc17_query.py" unit-positions "$DB_FILE" --team=B
+
+echo ""
+echo "═══════════════════════════════════════════════════════════════════════════════"
 echo "UNIT PRODUCTION (Team A = $BOT)"
 echo "═══════════════════════════════════════════════════════════════════════════════"
 
