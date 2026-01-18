@@ -1,7 +1,7 @@
 {
   "active": true,
-  "iteration": 12,
-  "targetIterations": 3,
+  "iteration": 2,
+  "targetIterations": 10,
   "targetWinRounds": 1500,
   "botName": "grok_code_fast_1",
   "opponent": "examplefuncsplayer",
@@ -14,7 +14,7 @@
       "rounds": 2999,
       "reason": "The winning team won on tiebreakers (more victory points).",
       "ourTeam": "A",
-      "timestamp": 1768772352887
+      "timestamp": 1768775490737
     },
     {
       "iteration": 2,
@@ -23,97 +23,7 @@
       "rounds": 2999,
       "reason": "The winning team won on tiebreakers (more victory points).",
       "ourTeam": "A",
-      "timestamp": 1768772418433
-    },
-    {
-      "iteration": 3,
-      "winner": "A",
-      "winningTeam": "grok_code_fast_1",
-      "rounds": 2999,
-      "reason": "The winning team won on tiebreakers (more victory points).",
-      "ourTeam": "A",
-      "timestamp": 1768772461488
-    },
-    {
-      "iteration": 4,
-      "winner": "A",
-      "winningTeam": "grok_code_fast_1",
-      "rounds": 2999,
-      "reason": "The winning team won on tiebreakers (more victory points).",
-      "ourTeam": "A",
-      "timestamp": 1768772535819
-    },
-    {
-      "iteration": 5,
-      "winner": "A",
-      "winningTeam": "grok_code_fast_1",
-      "rounds": 2999,
-      "reason": "The winning team won on tiebreakers (more victory points).",
-      "ourTeam": "A",
-      "timestamp": 1768772565636
-    },
-    {
-      "iteration": 6,
-      "winner": "A",
-      "winningTeam": "grok_code_fast_1",
-      "rounds": 2999,
-      "reason": "The winning team won on tiebreakers (more victory points).",
-      "ourTeam": "A",
-      "timestamp": 1768773672335
-    },
-    {
-      "iteration": 7,
-      "winner": "A",
-      "winningTeam": "grok_code_fast_1",
-      "rounds": 2999,
-      "reason": "The winning team won on tiebreakers (more victory points).",
-      "ourTeam": "A",
-      "timestamp": 1768773824457
-    },
-    {
-      "iteration": 8,
-      "winner": "A",
-      "winningTeam": "grok_code_fast_1",
-      "rounds": 2999,
-      "reason": "The winning team won on tiebreakers (more victory points).",
-      "ourTeam": "A",
-      "timestamp": 1768773984836
-    },
-    {
-      "iteration": 9,
-      "winner": "B",
-      "winningTeam": "examplefuncsplayer",
-      "rounds": 2999,
-      "reason": "The winning team won on tiebreakers (more bullet supply, includings cost of active robots)",
-      "ourTeam": "A",
-      "timestamp": 1768774017167
-    },
-    {
-      "iteration": 10,
-      "winner": "A",
-      "winningTeam": "grok_code_fast_1",
-      "rounds": 2999,
-      "reason": "The winning team won on tiebreakers (more victory points).",
-      "ourTeam": "A",
-      "timestamp": 1768774060109
-    },
-    {
-      "iteration": 11,
-      "winner": "A",
-      "winningTeam": "grok_code_fast_1",
-      "rounds": 2999,
-      "reason": "The winning team won on tiebreakers (more victory points).",
-      "ourTeam": "A",
-      "timestamp": 1768774091772
-    },
-    {
-      "iteration": 12,
-      "winner": "A",
-      "winningTeam": "grok_code_fast_1",
-      "rounds": 2999,
-      "reason": "The winning team won on tiebreakers (more victory points).",
-      "ourTeam": "A",
-      "timestamp": 1768774133200
+      "timestamp": 1768775667152
     }
   ],
   "bestResult": {
@@ -123,7 +33,7 @@
     "rounds": 2999,
     "reason": "The winning team won on tiebreakers (more victory points).",
     "ourTeam": "A",
-    "timestamp": 1768772352887
+    "timestamp": 1768775490737
   },
-  "startTime": 1768772324956
+  "startTime": 1768775478482
 }

@@ -34,21 +34,12 @@ public strictfp class Archon {
         if (enemies.length > 0) {
             Comms.broadcastEnemyThreats(enemies.length); // New method in Comms
         }
- // DYNAMIC STRATEGY - adapt based on game progress
-        int priority;
-        TreeInfo[] nearbyTrees = rc.senseNearbyTrees(10.0f);
-        
-        if (turnCounter < 500) {
-            priority = 2;  // Military focus early
-        } else if (nearbyTrees.length > 12) {
-            priority = 0;  // Clear trees if blocked
-        } else {
-            priority = 1;  // Balanced mid-late game
-        }
+  // MILITARY STRATEGY - focus on fast elimination
+        int priority = 2;  // Military focus always
         Comms.broadcastProductionPriority(priority);
         
-        // VP-OPTIMIZED STRATEGY - maximize bullet generation through trees
-        int maxGardeners = 5;  // More gardeners for maximum tree planting
+        // MILITARY STRATEGY - fewer gardeners, more focus on units
+        int maxGardeners = 3;  // Fewer gardeners for military focus
         
         // Count actual gardeners from nearby robots
         RobotInfo[] nearbyRobots = rc.senseNearbyRobots(-1, rc.getTeam());
@@ -77,12 +68,14 @@ public strictfp class Archon {
 
 
 
- // ULTRA-AGGRESSIVE VP STRATEGY - maximize VP generation for sub-1500 rounds
+  // MILITARY STRATEGY - donate only when safe to do so
         float bullets = rc.getTeamBullets();
         
-        // Always donate everything except minimum needed for gardener production
-        if (bullets > 35) {  // Just enough to hire one gardener
-            rc.donate(bullets - 35);
+        // Strategic donation: only when surplus and late game
+        if (bullets > 200 && turnCounter > 500) {
+            rc.donate(bullets - 100);  // Keep some for emergencies
+        } else if (rc.getTeamVictoryPoints() > 800) {
+            rc.donate(bullets);  // Donate all if close to win
         }
 
         if (!rc.hasMoved()) {

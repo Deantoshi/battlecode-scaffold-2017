@@ -52,8 +52,11 @@ public strictfp class Gardener {
             Direction dirToTarget = rc.getLocation().directionTo(wateringTarget);
             Nav.tryMove(dirToTarget);
         }
- // VP-FIRST STRATEGY - prioritize trees for maximum bullet generation
-        tryPlantTree();  // Always prioritize trees over military
+  // MILITARY-FIRST STRATEGY - prioritize building soldiers for fast elimination
+        if (tryBuildUnit()) {
+            return;
+        }
+        tryPlantTree();  // Plant trees after building units
         if (!rc.hasMoved()) {
             RobotInfo[] allies = rc.senseNearbyRobots(5.0f, rc.getTeam());
             if (allies.length > 5) {
@@ -87,13 +90,24 @@ public strictfp class Gardener {
     }
 
     boolean tryBuildUnit() throws GameActionException {
-        // VP strategy: minimal military production only when absolutely necessary
+        // Military strategy: build soldiers aggressively for fast win
         int currentTurn = rc.getRoundNum();
-        TreeInfo[] nearbyTrees = rc.senseNearbyTrees(4.0f);
+        Direction[] dirs = Utils.getDirections();
         
-        // Only build lumberjacks if severely blocked by trees
-        if (nearbyTrees.length > 12 && currentTurn > 100) {
-            Direction[] dirs = Utils.getDirections();
+        // Build soldiers early and often
+        if (currentTurn > 50) {
+            for (Direction dir : dirs) {
+                if (rc.canBuildRobot(RobotType.SOLDIER, dir)) {
+                    rc.buildRobot(RobotType.SOLDIER, dir);
+                    buildCount++;
+                    return true;
+                }
+            }
+        }
+        
+        // Build lumberjacks if needed for tree clearing on MagicWood
+        TreeInfo[] nearbyTrees = rc.senseNearbyTrees(4.0f);
+        if (nearbyTrees.length > 8) {
             for (Direction dir : dirs) {
                 if (rc.canBuildRobot(RobotType.LUMBERJACK, dir)) {
                     rc.buildRobot(RobotType.LUMBERJACK, dir);
@@ -102,7 +116,7 @@ public strictfp class Gardener {
                 }
             }
         }
-        return false;  // Don't build military by default
+        return false;
     }
 
     boolean tryPlantTree() throws GameActionException {
