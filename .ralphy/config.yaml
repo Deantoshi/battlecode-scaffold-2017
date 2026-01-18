@@ -1,4 +1,5 @@
 rules:
-  - "Before doing anything, open and strictly follow .opencode/agent/game-self-improver.md; iterate its phases until the PRD.md task is complete."
-  - "You are only allowed to edit the files in the src folder specified in the PRD.md file"
-  - "You MUST complete the actual requirement(s) in the PRD.md"
+  - "Follow @.opencode/agent/game-self-improver.md exactly."
+  - "Use --bot grok_code_fast_1 --opponent examplefuncsplayer --maps MagicWood."
+  - "Write an iteration summary to summaries/grok_code_fast_1_vs_examplefuncsplayer.md and read it at the start of each iteration."
+  - "Do NOT mark the PRD task complete unless the bot wins in <=1500 rounds."
