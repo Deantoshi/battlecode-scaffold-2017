@@ -1,10 +1,10 @@
 {
   "active": true,
   "botName": "grok_code_fast_1",
-  "prompt": "1. Find the highest-priority incomplete task and implement it.\n2. Write tests for the feature.\n3. Run tests and ensure they pass before proceeding.\n4. Run linting and ensure it passes before proceeding.\n5. Update the PRD to mark the task as complete (change '- [ ]' to '- [x]').\n6. Append your progress to .ralphy/progress.txt.\n7. Commit your changes with a descriptive message.\nONLY WORK ON A SINGLE TASK. Do not proceed if tests fail. Do not proceed if linting fails. If .ralphy/validate.sh fails, do NOT mark the task complete.\nIf ALL tasks in the PRD are complete, output <promise>COMPLETE</promise>.",
+  "prompt": "@PRD.md @.ralphy/progress.txt\n1. Find the highest-priority incomplete task and implement it.\n2. Write tests for the feature.\n3. Run tests and ensure they pass before proceeding.\n4. Run linting and ensure it passes before proceeding.\n5. Update the PRD to mark the task as complete (change '- [ ]' to '- [x]').\n6. Append your progress to .ralphy/progress.txt.\n7. Commit your changes with a descriptive message.\nONLY WORK ON A SINGLE TASK. Do not proceed if tests fail. Do not proceed if linting fails. If .ralphy/validate.sh fails, do NOT mark the task complete.\nIf ALL tasks in the PRD are complete, output <promise>COMPLETE</promise>.",
   "iteration": 1,
-  "maxIterations": 5,
-  "completionPromise": "<promise>COMPLETE</promise>",
-  "sessionID": "ses_42cc4d074ffegmcD0TMfRXZoW3",
-  "startTime": 1768775538532
+  "maxIterations": 0,
+  "completionPromise": "GOAL_MET=YES",
+  "sessionID": "ses_42c8dc2e9ffeY4obWR9TmxLi7I",
+  "startTime": 1768779315769
 }

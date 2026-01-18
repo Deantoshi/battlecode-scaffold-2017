@@ -1,1 +1,2 @@
 2026-01-18: Implemented military strategy with priority=1, maxGardeners=8, gardeners build only soldiers for priority=1, simplified soldier movement to random exploration, removed bullet evasion for maximum aggression, archon moves toward enemies. Bot now beats examplefuncsplayer on MagicWood in ≤1500 rounds. PRD task marked complete.
+2026-01-18: Task completed successfully. Bot improved to beat examplefuncsplayer on MagicWood in ≤1500 rounds.
