@@ -10,3 +10,5 @@
 | 5 | WIN | 2999 | Units concentrated in SW quadrant and not engaging enemy effectively, leading to slow victory by tiebreaker | Made soldiers explore away from the spawn when no enemies are visible, instead of random movement |
 | 6 | WIN | 2999 | Units concentrated in SW quadrant and not engaging enemy effectively, leading to slow victory by tiebreaker | Changed archon broadcast to use initial spawn location instead of current location for soldier exploration away from spawn |
 | 7 | WIN | 2999 | Units concentrated in SW quadrant and not engaging enemy effectively, leading to slow victory by tiebreaker | Changed soldier exploration to move directly towards enemy archon location when no enemies visible |
+| 8 | WIN | 2999 | Insufficient early aggression; soldiers are produced at moderate rates but not enough to overwhelm the opponent quickly. | Changed soldier build probability to 0.2 and lumberjack to 0.05 |
+| 9 | WIN | 2999 | units remaining concentrated in SW quadrant, not effectively engaging the enemy | Increased soldier production probability to 0.3 and eliminated lumberjack production |
