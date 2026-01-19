@@ -74,6 +74,12 @@ public strictfp class Gardener {
             Nav.moveToward(center);
         }
 
+        if (!rc.hasMoved() && priority == 1) {
+            // Move to center if couldn't build soldier
+            MapLocation center = new MapLocation(rc.getMapWidth() / 2.0f, rc.getMapHeight() / 2.0f);
+            Nav.moveToward(center);
+        }
+
         if (!rc.hasMoved()) {
             MapLocation target = Comms.getEnemyArchonLocation();
             if (target != null) {
