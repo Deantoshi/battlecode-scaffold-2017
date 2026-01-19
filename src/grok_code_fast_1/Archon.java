@@ -11,6 +11,7 @@ public strictfp class Archon {
         Archon.rc = rc;
         Nav.init(rc);
         Comms.init(rc);
+        Comms.broadcastLocation(2, 3, rc.getInitialArchonLocations(rc.getTeam().opponent())[0]);
 
         while (true) {
             try {

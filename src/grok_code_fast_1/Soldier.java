@@ -70,7 +70,8 @@ public strictfp class Soldier {
 
         if (!rc.hasMoved()) {
             // Random movement like examplefuncsplayer for better exploration
-            Nav.tryMove(Nav.randomDirection());
+            MapLocation target = Comms.getEnemyArchonLocation();
+            if (target != null) Nav.moveToward(target); else Nav.tryMove(Nav.randomDirection());
         }
     }
 

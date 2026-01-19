@@ -42,7 +42,7 @@ public strictfp class Gardener {
             }
             if (!rc.hasMoved()) {
                 // Move to center if couldn't build soldier
-                MapLocation center = new MapLocation(50.0f, 50.0f);
+                MapLocation center = Comms.getEnemyArchonLocation();
                 Nav.moveToward(center);
             }
         } else {
@@ -56,7 +56,7 @@ public strictfp class Gardener {
             }
             if (!rc.hasMoved()) {
                 // Move to center if couldn't build unit
-                MapLocation center = new MapLocation(50.0f, 50.0f);
+                MapLocation center = Comms.getEnemyArchonLocation();
                 Nav.moveToward(center);
             }
         }
