@@ -37,82 +37,11 @@ public strictfp class RobotPlayer {
 	}
 
     static void runArchon() throws GameActionException {
-        System.out.println("I'm an archon!");
-
-        // The code you want your robot to perform every round should be in this loop
-        while (true) {
-
-            // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
-            try {
-
-                // Hire gardeners
-                Direction dir = randomDirection();
-                if (rc.canHireGardener(dir)) {
-                    rc.hireGardener(dir);
-                }
-
-                // Move randomly, but broadcast enemy archon if seen
-                RobotInfo[] allRobots = rc.senseNearbyRobots(-1);
-                MapLocation enemyArchonLoc = null;
-                for (RobotInfo r : allRobots) {
-                    if (r.type == RobotType.ARCHON && r.team == rc.getTeam().opponent()) {
-                        enemyArchonLoc = r.location;
-                        break;
-                    }
-                }
-                if (enemyArchonLoc != null) {
-                    // Broadcast enemy archon location
-                    rc.broadcast(2,(int)enemyArchonLoc.x);
-                    rc.broadcast(3,(int)enemyArchonLoc.y);
-                }
-                tryMove(randomDirection());
-
-                // Broadcast archon's location for other robots on the team to know
-                MapLocation myLocation = rc.getLocation();
-                rc.broadcast(0,(int)myLocation.x);
-                rc.broadcast(1,(int)myLocation.y);
-
-                // Try to buy victory points if we have enough bullets
-                if (rc.getTeamBullets() > 10) {
-                    rc.donate(rc.getTeamBullets() - 10f);
-                }
-
-                // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
-                Clock.yield();
-
-            } catch (Exception e) {
-                System.out.println("Archon Exception");
-                e.printStackTrace();
-            }
-        }
+        Archon.run(rc);
     }
 
 	static void runGardener() throws GameActionException {
         Gardener.run(rc);
-    }
-                }
-
-                // Build soldiers and lumberjacks
-                RobotType toBuild = rc.getRoundNum() % 3 == 0 ? RobotType.LUMBERJACK : RobotType.SOLDIER;
-                for (int i = 0; i < 8; i++) {
-                    if (rc.canBuildRobot(toBuild, dir)) {
-                        rc.buildRobot(toBuild, dir);
-                        break;
-                    }
-                    dir = dir.rotateLeftDegrees(45);
-                }
-
-                // Move randomly
-                tryMove(randomDirection());
-
-                // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
-                Clock.yield();
-
-            } catch (Exception e) {
-                System.out.println("Gardener Exception");
-                e.printStackTrace();
-            }
-        }
     }
 
     static void runSoldier() throws GameActionException {

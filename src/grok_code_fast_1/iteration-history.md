@@ -15,7 +15,7 @@ Goal: Win in ≤1500 rounds
 | 5 | WIN | 2999 | Won the match but took 2999 rounds, exceeding the target of ≤1500 rounds due to slow victory point accumulation from lack of aggressive unit production | Reduce tree planting threshold from 4 to 2 to enable earlier soldier production while maintaining some economic base |
 | 6 | WIN | 2999 | Won the match but took 2999 rounds, exceeding the target of ≤1500 rounds due to slow victory point accumulation from lack of aggressive unit production. | Removed tree planting from gardeners and removed neutral tree requirement for hiring gardeners |
 | 7 | WIN | 2999 | Gardener stuck in SW quadrant, unable to build units | Move toward map center when unable to build units |
-| 8 | PENDING | - | Gardener code not used in RobotPlayer | Switch to Gardener.run(rc) in RobotPlayer.runGardener() |
+| 8 | WIN | 2999 | Archon and Gardener classes not integrated | Use Archon.run(rc) and Gardener.run(rc) in RobotPlayer |
 
 ## Final Status
 
