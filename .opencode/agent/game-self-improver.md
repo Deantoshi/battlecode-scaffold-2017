@@ -82,7 +82,18 @@ Goal: Win in ≤1500 rounds
 
 **Skip this phase if history file already existed.**
 
-### 0.5.1 Read Opponent Code
+### 0.5.1 Read Technical Documentation
+
+Read `TECHNICAL_DOCS.md` in the project root to understand:
+- Victory conditions (VP vs elimination)
+- Robot types and their roles (Archon, Gardener, Soldier, Lumberjack, Scout, Tank)
+- Economy system (bullets, trees, income sources)
+- Key API methods for sensing, movement, and combat
+- Code structure requirements and best practices
+
+This provides essential context for understanding game mechanics before analyzing code.
+
+### 0.5.2 Read Opponent Code
 Glob `src/{OPPONENT}/*.java`, then Read each file.
 
 Document:
@@ -94,7 +105,7 @@ OPPONENT:
 - Weaknesses: {exploitable gaps}
 ```
 
-### 0.5.2 Read Your Bot Code
+### 0.5.3 Read Your Bot Code
 Glob `src/{BOT}/*.java`, then Read each file.
 
 Document:
