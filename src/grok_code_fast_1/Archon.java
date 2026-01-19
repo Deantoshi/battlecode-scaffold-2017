@@ -106,7 +106,7 @@ public strictfp class Archon {
             MapLocation hireLoc = rc.getLocation().add(dir, 2.0f);
             if (enemyCentroid != null && hireLoc.distanceTo(enemyCentroid) < 5.0f) continue; // Avoid near enemies
             TreeInfo[] trees = rc.senseNearbyTrees(hireLoc, 2.0f, Team.NEUTRAL);
-            if (trees.length > 0 && rc.canHireGardener(dir)) {
+            if (rc.canHireGardener(dir)) {
                 rc.hireGardener(dir);
                 return true;
             }

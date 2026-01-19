@@ -55,10 +55,6 @@ public strictfp class Gardener {
         }
         if (priority == 1) {
             // Balanced: plant up to 4 trees for economy, then soldiers
-            if (treesPlanted < 2 && tryPlantTree()) {
-                treesPlanted++;
-                return;
-            }
             if (tryBuildUnit()) {
                 return;
             }
