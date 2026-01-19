@@ -108,12 +108,6 @@ public strictfp class RobotPlayer {
                     }
                 }
 
-                // Plant tree if possible
-                Direction plantDir = randomDirection();
-                if (rc.canPlantTree(plantDir)) {
-                    rc.plantTree(plantDir);
-                }
-
                 // Build soldiers and lumberjacks
                 RobotType toBuild = rc.getRoundNum() % 3 == 0 ? RobotType.LUMBERJACK : RobotType.SOLDIER;
                 for (int i = 0; i < 8; i++) {
@@ -438,8 +432,7 @@ public strictfp class RobotPlayer {
         }
 
         // distToRobot is our hypotenuse, theta is our angle, and we want to know this length of the opposite leg.
-        // This corresponds to the smallest radius circle centered at our location that would intersect with the
-        // line that is the path of the bullet.
+        // This corresponds to the line that is the path of the bullet.
         float perpendicularDist = (float)Math.abs(distToRobot * Math.sin(theta)); // soh cah toa :)
 
         return (perpendicularDist <= rc.getType().bodyRadius);

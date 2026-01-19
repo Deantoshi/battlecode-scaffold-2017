@@ -114,6 +114,14 @@ YOUR BOT:
 ./scripts/run-match-with-analysis.sh {BOT} {OPPONENT} {MAP}
 ```
 
+**⚠️ IMPORTANT: Do NOT run any database queries yourself!**
+The script provides ALL the analysis you need. Never:
+- Run `sqlite3` commands
+- Run Python scripts to query the .db file
+- Try to extract additional data from the database
+
+The script output is your ONLY data source for analysis. Use it directly.
+
 This single command runs the match and outputs consolidated LLM-friendly analysis:
 
 **RESULT section:**
@@ -323,6 +331,7 @@ PHASE 4: Implement, compile, update history file
 5. **Be aggressive** - Faster wins require early pressure
 6. **Use unsafe-write** - Write complete files, no sed/awk
 7. **Always update history file** - Enables clean context resumption across LLM sessions
+8. **NO DATABASE QUERIES** - Never run sqlite3 or Python DB queries; use ONLY the script output
 
 ## Error Recovery
 

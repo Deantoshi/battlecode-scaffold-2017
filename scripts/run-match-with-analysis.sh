@@ -80,52 +80,60 @@ fi
 # Extract to database
 python3 "$SCRIPT_DIR/bc17_query.py" extract "$MATCH_FILE" "$DB_FILE" > /dev/null
 
-# Get winner and total rounds
-WINNER=$(sqlite3 "$DB_FILE" "SELECT value FROM metadata WHERE key='winner'" 2>/dev/null || echo "UNKNOWN")
-TOTAL_ROUNDS=$(sqlite3 "$DB_FILE" "SELECT MAX(round_id) FROM rounds" 2>/dev/null || echo "0")
+# Use Python for all database queries (no sqlite3 CLI dependency)
+python3 - "$DB_FILE" <<'PYEOF'
+import sqlite3
+import sys
 
-echo ""
-echo "───────────────────────────────────────────────────────────────────────────────"
-echo "RESULT"
-echo "───────────────────────────────────────────────────────────────────────────────"
+db_path = sys.argv[1]
+conn = sqlite3.connect(db_path)
+conn.row_factory = sqlite3.Row
+
+# Get winner and total rounds
+winner = conn.execute("SELECT value FROM metadata WHERE key='winner'").fetchone()
+winner = winner['value'] if winner else 'UNKNOWN'
+
+total_rounds_row = conn.execute("SELECT MAX(round_id) as max_round FROM rounds").fetchone()
+total_rounds = total_rounds_row['max_round'] if total_rounds_row else 0
+
+print()
+print("───────────────────────────────────────────────────────────────────────────────")
+print("RESULT")
+print("───────────────────────────────────────────────────────────────────────────────")
 
 # Determine if our bot won (we are Team A)
-if [[ "$WINNER" == "A" ]]; then
-    WON="YES"
-    OUTCOME="WIN"
-else
-    WON="NO"
-    OUTCOME="LOSS"
-fi
+won = "YES" if winner == "A" else "NO"
+outcome = "WIN" if winner == "A" else "LOSS"
 
 # Get final state
-FINAL_DATA=$(sqlite3 "$DB_FILE" "
-SELECT
-    team_a_bullets, team_b_bullets, team_a_vp, team_b_vp
-FROM rounds ORDER BY round_id DESC LIMIT 1
-" 2>/dev/null)
+final_data = conn.execute("""
+    SELECT team_a_bullets, team_b_bullets, team_a_vp, team_b_vp
+    FROM rounds ORDER BY round_id DESC LIMIT 1
+""").fetchone()
 
-A_BULLETS=$(echo "$FINAL_DATA" | cut -d'|' -f1 | xargs printf "%.0f")
-B_BULLETS=$(echo "$FINAL_DATA" | cut -d'|' -f2 | xargs printf "%.0f")
-A_VP=$(echo "$FINAL_DATA" | cut -d'|' -f3)
-B_VP=$(echo "$FINAL_DATA" | cut -d'|' -f4)
+if final_data:
+    a_bullets = int(final_data['team_a_bullets'])
+    b_bullets = int(final_data['team_b_bullets'])
+    a_vp = final_data['team_a_vp']
+    b_vp = final_data['team_b_vp']
+else:
+    a_bullets = b_bullets = a_vp = b_vp = 0
 
-if [[ "$WON" == "YES" && "$TOTAL_ROUNDS" -le 1500 ]] || [[ "$A_VP" -ge 1000 ]]; then
-    GOAL_MET="YES"
-else
-    GOAL_MET="NO"
-fi
+if (won == "YES" and total_rounds <= 1500) or a_vp >= 1000:
+    goal_met = "YES"
+else:
+    goal_met = "NO"
 
-echo "OUTCOME=$OUTCOME  ROUNDS=$TOTAL_ROUNDS  TARGET=1500  GOAL_MET=$GOAL_MET"
-echo "FINAL: A=${A_BULLETS}bullets/${A_VP}vp  B=${B_BULLETS}bullets/${B_VP}vp"
+print(f"OUTCOME={outcome}  ROUNDS={total_rounds}  TARGET=1500  GOAL_MET={goal_met}")
+print(f"FINAL: A={a_bullets}bullets/{a_vp}vp  B={b_bullets}bullets/{b_vp}vp")
 
-echo ""
-echo "───────────────────────────────────────────────────────────────────────────────"
-echo "UNIT SUMMARY (Produced / Lost / Alive)"
-echo "───────────────────────────────────────────────────────────────────────────────"
+# UNIT SUMMARY
+print()
+print("───────────────────────────────────────────────────────────────────────────────")
+print("UNIT SUMMARY (Produced / Lost / Alive)")
+print("───────────────────────────────────────────────────────────────────────────────")
 
-# Consolidated unit table: produced, lost, alive for both teams (including trees)
-sqlite3 -header -column "$DB_FILE" "
+unit_data = conn.execute("""
 WITH produced AS (
     SELECT team,
            CASE WHEN body_type='TREE_BULLET' THEN 'TREE' ELSE body_type END as body_type,
@@ -170,14 +178,21 @@ ORDER BY Team,
         WHEN 'TREE' THEN 7
         ELSE 8
     END
-" 2>/dev/null
+""").fetchall()
 
-echo ""
-echo "───────────────────────────────────────────────────────────────────────────────"
-echo "ECONOMY TIMELINE (current bullets/vp | cumulative generated/spent)"
-echo "───────────────────────────────────────────────────────────────────────────────"
+# Print as formatted table
+print(f"{'Team':<6} {'Unit':<12} {'Prod':<6} {'Lost':<6} {'Alive':<6}")
+print("-" * 40)
+for row in unit_data:
+    print(f"{row['Team']:<6} {row['Unit']:<12} {row['Prod']:<6} {row['Lost']:<6} {row['Alive']:<6}")
 
-sqlite3 "$DB_FILE" "
+# ECONOMY TIMELINE
+print()
+print("───────────────────────────────────────────────────────────────────────────────")
+print("ECONOMY TIMELINE (current bullets/vp | cumulative generated/spent)")
+print("───────────────────────────────────────────────────────────────────────────────")
+
+econ_data = conn.execute("""
 WITH cumulative AS (
     SELECT
         round_id,
@@ -188,24 +203,34 @@ WITH cumulative AS (
     FROM snapshots
 )
 SELECT
-    printf('R%-4d', r.round_id) || ' | ' ||
-    'A: ' || printf('%3.0f', r.team_a_bullets) || '/' || printf('%-3d', r.team_a_vp) ||
-    ' (gen:' || printf('%4.0f', COALESCE(c.a_gen,0)) || ' spent:' || printf('%4.0f', COALESCE(c.a_spent,0)) || ')' ||
-    '  B: ' || printf('%3.0f', r.team_b_bullets) || '/' || printf('%-3d', r.team_b_vp) ||
-    ' (gen:' || printf('%4.0f', COALESCE(c.b_gen,0)) || ' spent:' || printf('%4.0f', COALESCE(c.b_spent,0)) || ')'
+    r.round_id,
+    r.team_a_bullets, r.team_a_vp,
+    r.team_b_bullets, r.team_b_vp,
+    COALESCE(c.a_gen, 0) as a_gen,
+    COALESCE(c.a_spent, 0) as a_spent,
+    COALESCE(c.b_gen, 0) as b_gen,
+    COALESCE(c.b_spent, 0) as b_spent
 FROM rounds r
 LEFT JOIN cumulative c ON r.round_id = c.round_id
 WHERE r.round_id % 500 = 0 OR r.round_id = (SELECT MAX(round_id) FROM rounds)
 ORDER BY r.round_id
-" 2>/dev/null
+""").fetchall()
 
-echo ""
-echo "───────────────────────────────────────────────────────────────────────────────"
-echo "COMBAT TIMELINE (deaths by period)"
-echo "───────────────────────────────────────────────────────────────────────────────"
+for row in econ_data:
+    line = f"R{row['round_id']:<4} | "
+    line += f"A: {int(row['team_a_bullets']):>3}/{row['team_a_vp']:<3} "
+    line += f"(gen:{int(row['a_gen']):>4} spent:{int(row['a_spent']):>4})"
+    line += f"  B: {int(row['team_b_bullets']):>3}/{row['team_b_vp']:<3} "
+    line += f"(gen:{int(row['b_gen']):>4} spent:{int(row['b_spent']):>4})"
+    print(line)
 
-# Compact death timeline
-sqlite3 "$DB_FILE" "
+# COMBAT TIMELINE
+print()
+print("───────────────────────────────────────────────────────────────────────────────")
+print("COMBAT TIMELINE (deaths by period)")
+print("───────────────────────────────────────────────────────────────────────────────")
+
+combat_data = conn.execute("""
 SELECT
     CASE
         WHEN round_id <= 500 THEN 'R1-500'
@@ -214,127 +239,120 @@ SELECT
         WHEN round_id <= 2000 THEN 'R1501-2000'
         ELSE 'R2001+'
     END as Period,
-    'A:' || SUM(CASE WHEN team='A' THEN 1 ELSE 0 END) || ' B:' || SUM(CASE WHEN team='B' THEN 1 ELSE 0 END) as Deaths
+    SUM(CASE WHEN team='A' THEN 1 ELSE 0 END) as A_Deaths,
+    SUM(CASE WHEN team='B' THEN 1 ELSE 0 END) as B_Deaths
 FROM events
 WHERE event_type='death'
   AND body_type NOT IN ('TREE_BULLET', 'TREE_NEUTRAL', 'BULLET', 'NONE')
 GROUP BY Period
 ORDER BY Period
-" 2>/dev/null || echo "(no combat deaths)"
+""").fetchall()
 
-echo ""
-echo "───────────────────────────────────────────────────────────────────────────────"
-echo "MOVEMENT ANALYSIS (unit distribution changes)"
-echo "───────────────────────────────────────────────────────────────────────────────"
+if combat_data:
+    for row in combat_data:
+        print(f"{row['Period']}: A:{row['A_Deaths']} B:{row['B_Deaths']}")
+else:
+    print("(no combat deaths)")
 
-# LLM-friendly movement analysis instead of giant table
-# Compare early vs late snapshots to detect stuck units
-python3 - "$DB_FILE" <<'PYEOF'
-import sqlite3
-import sys
-
-db_path = sys.argv[1]
-conn = sqlite3.connect(db_path)
-conn.row_factory = sqlite3.Row
+# MOVEMENT ANALYSIS
+print()
+print("───────────────────────────────────────────────────────────────────────────────")
+print("MOVEMENT ANALYSIS (unit distribution changes)")
+print("───────────────────────────────────────────────────────────────────────────────")
 
 # Get first and last snapshot rounds
 snapshots = conn.execute("SELECT round_id FROM snapshots ORDER BY round_id").fetchall()
-if len(snapshots) < 2:
-    print("Insufficient snapshots for movement analysis")
-    sys.exit(0)
+if len(snapshots) >= 2:
+    early_round = snapshots[min(2, len(snapshots)-1)]['round_id']
+    late_round = snapshots[-1]['round_id']
 
-early_round = snapshots[min(2, len(snapshots)-1)]['round_id']  # ~round 300
-late_round = snapshots[-1]['round_id']
+    def get_quadrant_summary(round_id, team):
+        rows = conn.execute("""
+            SELECT quadrant, body_type, count
+            FROM unit_quadrants
+            WHERE round_id=? AND team=? AND body_type NOT IN ('TREE_BULLET','TREE_NEUTRAL')
+            ORDER BY quadrant, body_type
+        """, (round_id, team)).fetchall()
 
-# Get quadrant data for both teams at early and late rounds
-def get_quadrant_summary(round_id, team):
-    rows = conn.execute("""
-        SELECT quadrant, body_type, count
-        FROM unit_quadrants
-        WHERE round_id=? AND team=? AND body_type NOT IN ('TREE_BULLET','TREE_NEUTRAL')
-        ORDER BY quadrant, body_type
-    """, (round_id, team)).fetchall()
+        by_quadrant = {'NW': {}, 'NE': {}, 'SW': {}, 'SE': {}}
+        for r in rows:
+            if r['count'] > 0:
+                by_quadrant[r['quadrant']][r['body_type']] = r['count']
+        return by_quadrant
 
-    by_quadrant = {'NW': {}, 'NE': {}, 'SW': {}, 'SE': {}}
-    for r in rows:
-        if r['count'] > 0:
-            by_quadrant[r['quadrant']][r['body_type']] = r['count']
-    return by_quadrant
+    def summarize_distribution(data):
+        total_by_quad = {q: sum(units.values()) for q, units in data.items()}
+        total = sum(total_by_quad.values())
 
-def summarize_distribution(data):
-    """Generate LLM-friendly summary of unit distribution"""
-    total_by_quad = {q: sum(units.values()) for q, units in data.items()}
-    total = sum(total_by_quad.values())
+        if total == 0:
+            return "No units tracked"
 
-    if total == 0:
-        return "No units tracked"
+        dominant = [(q, c) for q, c in total_by_quad.items() if c > 0]
+        dominant.sort(key=lambda x: -x[1])
 
-    # Find dominant quadrant(s)
-    dominant = [(q, c) for q, c in total_by_quad.items() if c > 0]
-    dominant.sort(key=lambda x: -x[1])
+        if len(dominant) == 1 or (len(dominant) > 1 and dominant[0][1] > total * 0.8):
+            quad = dominant[0][0]
+            units_str = ', '.join(f"{c} {t}" for t, c in data[quad].items())
+            return f"CONCENTRATED in {quad} ({units_str})"
+        elif len(dominant) >= 2:
+            spread = ', '.join(f"{q}:{c}" for q, c in dominant if c > 0)
+            return f"Spread across quadrants ({spread})"
 
-    # Check for concentration (potential stuck units)
-    if len(dominant) == 1 or (len(dominant) > 1 and dominant[0][1] > total * 0.8):
-        quad = dominant[0][0]
-        units_str = ', '.join(f"{c} {t}" for t, c in data[quad].items())
-        return f"CONCENTRATED in {quad} ({units_str})"
-    elif len(dominant) >= 2:
-        spread = ', '.join(f"{q}:{c}" for q, c in dominant if c > 0)
-        return f"Spread across quadrants ({spread})"
+        return f"{total} units"
 
-    return f"{total} units"
+    def detect_stuck_units(early, late, team_name):
+        stuck = []
+        for quad in ['NW', 'NE', 'SW', 'SE']:
+            early_units = early.get(quad, {})
+            late_units = late.get(quad, {})
+            for unit_type in set(early_units.keys()) | set(late_units.keys()):
+                early_count = early_units.get(unit_type, 0)
+                late_count = late_units.get(unit_type, 0)
+                if early_count > 0 and late_count >= early_count:
+                    stuck.append(f"{late_count} {unit_type} in {quad}")
 
-def detect_stuck_units(early, late, team_name):
-    """Detect units that haven't moved between snapshots"""
-    stuck = []
-    for quad in ['NW', 'NE', 'SW', 'SE']:
-        early_units = early.get(quad, {})
-        late_units = late.get(quad, {})
-        for unit_type in set(early_units.keys()) | set(late_units.keys()):
-            early_count = early_units.get(unit_type, 0)
-            late_count = late_units.get(unit_type, 0)
-            # If same or more units in same quadrant, likely stuck
-            if early_count > 0 and late_count >= early_count:
-                stuck.append(f"{late_count} {unit_type} in {quad}")
+        if stuck:
+            return f"{team_name} POTENTIAL STUCK: {', '.join(stuck)}"
+        return None
 
-    if stuck:
-        return f"{team_name} POTENTIAL STUCK: {', '.join(stuck)}"
-    return None
-
-print(f"Comparing R{early_round} vs R{late_round}:")
-print()
-
-for team, team_name in [('A', 'Team A'), ('B', 'Team B')]:
-    early = get_quadrant_summary(early_round, team)
-    late = get_quadrant_summary(late_round, team)
-
-    print(f"  {team_name} at R{early_round}: {summarize_distribution(early)}")
-    print(f"  {team_name} at R{late_round}: {summarize_distribution(late)}")
-
-    stuck_msg = detect_stuck_units(early, late, team_name)
-    if stuck_msg:
-        print(f"  ⚠ {stuck_msg}")
+    print(f"Comparing R{early_round} vs R{late_round}:")
     print()
+
+    for team, team_name in [('A', 'Team A'), ('B', 'Team B')]:
+        early = get_quadrant_summary(early_round, team)
+        late = get_quadrant_summary(late_round, team)
+
+        print(f"  {team_name} at R{early_round}: {summarize_distribution(early)}")
+        print(f"  {team_name} at R{late_round}: {summarize_distribution(late)}")
+
+        stuck_msg = detect_stuck_units(early, late, team_name)
+        if stuck_msg:
+            print(f"  ⚠ {stuck_msg}")
+        print()
+else:
+    print("Insufficient snapshots for movement analysis")
+
+# VP ACTIVITY
+print("───────────────────────────────────────────────────────────────────────────────")
+print("VP ACTIVITY")
+print("───────────────────────────────────────────────────────────────────────────────")
+
+donate_count = conn.execute("SELECT COUNT(*) as cnt FROM events WHERE event_type='donate'").fetchone()['cnt']
+if donate_count > 0:
+    vp_data = conn.execute("""
+        SELECT team, COUNT(*) as donations,
+               COALESCE(SUM(json_extract(details, '$.vp_gain')), 0) as vp_gained
+        FROM events WHERE event_type='donate'
+        GROUP BY team
+    """).fetchall()
+    for row in vp_data:
+        print(f"Team {row['team']}: {row['donations']} donations, {row['vp_gained']} VP gained")
+else:
+    print("(No VP donations)")
+
+print()
+print("═══════════════════════════════════════════════════════════════════════════════")
+print(f"Database: {db_path}")
 
 conn.close()
 PYEOF
-
-echo "───────────────────────────────────────────────────────────────────────────────"
-echo "VP ACTIVITY"
-echo "───────────────────────────────────────────────────────────────────────────────"
-
-DONATE_COUNT=$(sqlite3 "$DB_FILE" "SELECT COUNT(*) FROM events WHERE event_type='donate'" 2>/dev/null || echo "0")
-if [[ "$DONATE_COUNT" -gt 0 ]]; then
-    sqlite3 "$DB_FILE" "
-    SELECT 'Team ' || team || ': ' || COUNT(*) || ' donations, ' ||
-           COALESCE(SUM(json_extract(details, '\$.vp_gain')), 0) || ' VP gained'
-    FROM events WHERE event_type='donate'
-    GROUP BY team
-    " 2>/dev/null
-else
-    echo "(No VP donations)"
-fi
-
-echo ""
-echo "═══════════════════════════════════════════════════════════════════════════════"
-echo "Database: $DB_FILE"
