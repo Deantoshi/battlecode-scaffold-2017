@@ -6,11 +6,12 @@ Goal: Win in ≤1500 rounds
 ## Iterations
 
 | # | Result | Rounds | Problem | Change Made |
-|---|--------|--------|---------|-------------|
+|---|---|--------|---------|-------------|
 | 0 | LOSS | 2100 | (baseline) | (baseline) |
 | 1 | LOSS | 1800 | Units stuck in spawn | Added wandering behavior |
 | 2 | WIN | 1200 | Too passive early | Rush 3 soldiers before trees |
 | 3 | WIN | 2999 | Still no soldier production even after removing tree planting | Removed tree planting code entirely from gardener |
+| 4 | WIN | 2999 | Won the match but took 2999 rounds, exceeding the target of ≤1500 rounds due to slow victory point accumulation | Modified Gardener priority logic to plant up to 4 trees for bullet income before building soldiers in military mode |
 
 ## Final Status
 

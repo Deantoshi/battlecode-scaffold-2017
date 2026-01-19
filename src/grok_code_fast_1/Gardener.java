@@ -53,14 +53,19 @@ public strictfp class Gardener {
             Direction dirToTarget = rc.getLocation().directionTo(wateringTarget);
             Nav.tryMove(dirToTarget);
         }
-        // MILITARY STRATEGY - build soldiers only, no tree planting
         if (priority == 1) {
+            // Balanced: plant up to 4 trees for economy, then soldiers
+            if (treesPlanted < 4 && tryPlantTree()) {
+                treesPlanted++;
+                return;
+            }
             if (tryBuildUnit()) {
                 return;
             }
         } else {
             // VP strategy: plant trees first, then build units
             if (tryPlantTree()) {
+                treesPlanted++;
                 return;
             }
             if (tryBuildUnit()) {
@@ -128,6 +133,7 @@ public strictfp class Gardener {
                 RobotInfo[] ownRobots = rc.senseNearbyRobots(1.5f, rc.getTeam());  // Minimal spacing
                 if (nearbyTrees.length <= 5 && ownRobots.length <= 1) {  // Allow more trees for dense planting
                     rc.plantTree(dir);
+                    treesPlanted++;
                     return true;
                 }
             }
