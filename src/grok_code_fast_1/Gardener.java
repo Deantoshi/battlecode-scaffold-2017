@@ -35,6 +35,31 @@ public strictfp class Gardener {
 
     void doTurn() throws GameActionException {
         int priority = Comms.getProductionPriority();
+        if (priority == 1) {
+            // Balanced: plant up to 4 trees for economy, then soldiers
+            if (tryBuildUnit()) {
+                return;
+            }
+            if (!rc.hasMoved()) {
+                // Move to center if couldn't build soldier
+                MapLocation center = new MapLocation(50.0f, 50.0f);
+                Nav.moveToward(center);
+            }
+        } else {
+            // VP strategy: plant trees first, then build units
+            if (tryPlantTree()) {
+                treesPlanted++;
+                return;
+            }
+            if (tryBuildUnit()) {
+                return;
+            }
+            if (!rc.hasMoved()) {
+                // Move to center if couldn't build unit
+                MapLocation center = new MapLocation(50.0f, 50.0f);
+                Nav.moveToward(center);
+            }
+        }
         waterLowestHealthTree();
         // Move towards tree needing water
         if (wateringTarget == null || (rc.canSenseLocation(wateringTarget) && rc.senseTreeAtLocation(wateringTarget).health >= 50)) {
@@ -53,26 +78,6 @@ public strictfp class Gardener {
             Direction dirToTarget = rc.getLocation().directionTo(wateringTarget);
             Nav.tryMove(dirToTarget);
         }
-        if (priority == 1) {
-            // Balanced: plant up to 4 trees for economy, then soldiers
-            if (tryBuildUnit()) {
-                return;
-            }
-        } else {
-            // VP strategy: plant trees first, then build units
-            if (tryPlantTree()) {
-                treesPlanted++;
-                return;
-            }
-            if (tryBuildUnit()) {
-                return;
-        }
-
-        if (!rc.hasMoved() && priority == 1) {
-            // Move to center if couldn't build soldier
-            MapLocation center = new MapLocation(50.0f, 50.0f);
-            Nav.moveToward(center);
-        }
 
         if (!rc.hasMoved()) {
             MapLocation target = Comms.getEnemyArchonLocation();
@@ -81,7 +86,6 @@ public strictfp class Gardener {
             } else {
                 Nav.tryMove(Nav.randomDirection());
             }
-        }
         }
     }
 

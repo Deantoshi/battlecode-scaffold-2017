@@ -14,14 +14,14 @@ Goal: Win in ≤1500 rounds
 | 4 | WIN | 2999 | Won the match but took 2999 rounds, exceeding the target of ≤1500 rounds due to slow victory point accumulation | Modified Gardener priority logic to plant up to 4 trees for bullet income before building soldiers in military mode |
 | 5 | WIN | 2999 | Won the match but took 2999 rounds, exceeding the target of ≤1500 rounds due to slow victory point accumulation from lack of aggressive unit production | Reduce tree planting threshold from 4 to 2 to enable earlier soldier production while maintaining some economic base |
 | 6 | WIN | 2999 | Won the match but took 2999 rounds, exceeding the target of ≤1500 rounds due to slow victory point accumulation from lack of aggressive unit production. | Removed tree planting from gardeners and removed neutral tree requirement for hiring gardeners |
+| 7 | WIN | 2999 | Gardener stuck in SW quadrant, unable to build units | Move toward map center when unable to build units |
+| 8 | PENDING | - | Gardener code not used in RobotPlayer | Switch to Gardener.run(rc) in RobotPlayer.runGardener() |
 
 ## Final Status
 
 **RESULT:** WIN in 2999 rounds
 **GOAL:** Win in ≤1500 rounds
-**STATUS:** NOT ACHIEVED after 6 iterations
+**STATUS:** NOT ACHIEVED after 7 iterations
 
 ### Summary of Changes
-Started with baseline loss in 2100 rounds, then improved unit movement with wandering in iteration 1 (1800 rounds), then rushed soldiers early in iteration 2 (1200 rounds win), but then regressed to 2999 rounds win with persistent soldier production issues, attempted tree planting removal to fix.</content>
-</xai:function_call name="unsafe-write">
-<parameter name="filePath">src/grok_code_fast_1/iteration-history.md
+Started with baseline loss in 2100 rounds, then improved unit movement with wandering in iteration 1 (1800 rounds), then rushed soldiers early in iteration 2 (1200 rounds win), but then regressed to 2999 rounds win with persistent soldier production issues, attempted tree planting removal to fix.

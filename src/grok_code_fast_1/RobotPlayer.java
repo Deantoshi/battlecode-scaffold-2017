@@ -88,24 +88,8 @@ public strictfp class RobotPlayer {
     }
 
 	static void runGardener() throws GameActionException {
-        System.out.println("I'm a gardener!");
-
-        // The code you want your robot to perform every round should be in this loop
-        while (true) {
-
-            // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
-            try {
-
-                // Generate a random direction
-                Direction dir = randomDirection();
-
-                // Water nearby trees
-                TreeInfo[] trees = rc.senseNearbyTrees(2);
-                for (TreeInfo t : trees) {
-                    if (rc.canWater(t.ID)) {
-                        rc.water(t.ID);
-                        break;
-                    }
+        Gardener.run(rc);
+    }
                 }
 
                 // Build soldiers and lumberjacks

@@ -1,7 +1,7 @@
 # Improvement Plan
 
 ## Iteration
-4
+8
 
 ## Match Result
 - Outcome: WIN
@@ -11,26 +11,26 @@
 ## Analysis
 
 ### Primary Problem
-Won the match but took 2999 rounds, exceeding the target of ≤1500 rounds due to slow victory point accumulation.
+Gardener not producing any soldiers despite military priority, stuck in SW quadrant without building units.
 
 ### Root Cause
-Gardener priority set to military mode (soldiers only), resulting in no tree planting and zero bullet income, preventing donation to victory points.
+Gardener.java class with movement and building logic was not being used; instead, baseline RobotPlayer.runGardener() was used, which didn't include center movement or priority-based building.
 
 ### Previous Attempts
-Iteration 3 attempted to remove tree planting entirely to fix soldier production issues, but this eliminated bullet generation needed for VP strategy.
+Previous iterations (4-7) modified Gardener.java to remove tree planting and add center movement, but didn't update RobotPlayer to use the Gardener class.
 
 ## Proposed Solution
 
 ### Strategy Change
-Implement balanced economy and military production by allowing gardeners to plant trees while building soldiers.
+Use the advanced Gardener logic that moves toward center when unable to build and builds soldiers when priority=1.
 
 ### Implementation Details
-- **File:** src/grok_code_fast_1/Gardener.java
-- **Location:** doTurn() method, priority handling logic
-- **Change:** Modify the conditional to plant trees even when priority == 1, e.g., alternate between planting trees and building soldiers or plant trees up to a certain limit.
+- **File:** `src/grok_code_fast_1/RobotPlayer.java`
+- **Location:** `runGardener()` method
+- **Change:** Replace the entire method body with `Gardener.run(rc);`
 
 ### Expected Impact
-Restoring bullet income will enable faster VP donation, reducing game duration to under 1500 rounds.
+Gardener will move to open space and build soldiers early, leading to faster combat victory.
 
 ### Success Criteria
-Next match wins in ≤1500 rounds with victory points.
+Produce at least 3 soldiers by round 1000, achieve victory in ≤1500 rounds.
