@@ -11,7 +11,7 @@ MATCH: grok_code_fast_1 (A) vs examplefuncsplayer (B) on MagicWood
 RESULT
 ───────────────────────────────────────────────────────────────────────────────
 OUTCOME=WIN  ROUNDS=2999  TARGET=1500  GOAL_MET=NO
-FINAL: A=32bullets/0vp  B=137bullets/0vp
+FINAL: A=12bullets/0vp  B=80bullets/0vp
 
 ───────────────────────────────────────────────────────────────────────────────
 UNIT SUMMARY (Produced / Lost / Alive)
@@ -19,27 +19,28 @@ UNIT SUMMARY (Produced / Lost / Alive)
 Team   Unit         Prod   Lost   Alive 
 ----------------------------------------
 A      ARCHON       1      0      1     
-A      GARDENER     8      0      8     
-A      SOLDIER      21     1      20    
-A      LUMBERJACK   16     1      15    
+A      GARDENER     7      0      7     
+A      SOLDIER      28     3      25    
+A      LUMBERJACK   7      0      7     
 B      ARCHON       1      0      1     
-B      GARDENER     4      0      4     
-B      SOLDIER      16     1      15    
-B      LUMBERJACK   12     0      12    
+B      GARDENER     5      1      4     
+B      SOLDIER      12     0      12    
+B      LUMBERJACK   15     1      14    
 
 ───────────────────────────────────────────────────────────────────────────────
 ECONOMY TIMELINE (current bullets/vp | cumulative generated/spent)
 ───────────────────────────────────────────────────────────────────────────────
-R500  | A:  96/0   (gen: 996 spent: 900)  B: 136/0   (gen: 736 spent: 600)
-R1000 | A:   6/0   (gen:1706 spent:1700)  B:  66/0   (gen:1166 spent:1100)
-R1500 | A:  23/0   (gen:2423 spent:2400)  B:  54/0   (gen:1754 spent:1700)
-R2000 | A:  36/0   (gen:3136 spent:3100)  B:  91/0   (gen:2391 spent:2300)
-R2500 | A:  45/0   (gen:3845 spent:3800)  B:  71/0   (gen:2771 spent:2700)
-R2999 | A:  32/0   (gen:4532 spent:4500)  B: 137/0   (gen:3337 spent:3200)
+R500  | A:  83/0   (gen: 983 spent: 900)  B: 136/0   (gen: 736 spent: 600)
+R1000 | A:  93/0   (gen:1693 spent:1600)  B: 118/0   (gen:1118 spent:1000)
+R1500 | A:   8/0   (gen:2408 spent:2400)  B: 130/0   (gen:1630 spent:1500)
+R2000 | A:  48/0   (gen:2948 spent:2900)  B:  65/0   (gen:2165 spent:2100)
+R2500 | A:  50/0   (gen:3550 spent:3500)  B:  51/0   (gen:2651 spent:2600)
+R2999 | A:  12/0   (gen:4212 spent:4200)  B:  80/0   (gen:3280 spent:3200)
 
 ───────────────────────────────────────────────────────────────────────────────
 COMBAT TIMELINE (deaths by period)
 ───────────────────────────────────────────────────────────────────────────────
+R1501-2000: A:1 B:1
 R2001+: A:2 B:1
 
 ───────────────────────────────────────────────────────────────────────────────
@@ -47,13 +48,13 @@ MOVEMENT ANALYSIS (unit distribution changes)
 ───────────────────────────────────────────────────────────────────────────────
 Comparing R300 vs R2999:
 
-  Team A at R300: CONCENTRATED in SW (1 ARCHON, 3 GARDENER, 1 SOLDIER)
-  Team A at R2999: CONCENTRATED in SW (1 ARCHON, 7 GARDENER, 12 LUMBERJACK, 15 SOLDIER)
-  ⚠ Team A POTENTIAL STUCK: 15 SOLDIER in SW, 7 GARDENER in SW, 1 ARCHON in SW
+  Team A at R300: CONCENTRATED in SW (1 ARCHON, 2 GARDENER, 1 LUMBERJACK, 2 SOLDIER)
+  Team A at R2999: Spread across quadrants (SW:28, NW:6, SE:2)
+  ⚠ Team A POTENTIAL STUCK: 20 SOLDIER in SW, 1 ARCHON in SW, 5 GARDENER in SW, 2 LUMBERJACK in SW
 
   Team B at R300: CONCENTRATED in NE (1 ARCHON, 1 GARDENER, 3 LUMBERJACK)
-  Team B at R2999: Spread across quadrants (NE:24, SE:8)
-  ⚠ Team B POTENTIAL STUCK: 3 GARDENER in NE, 10 LUMBERJACK in NE, 1 ARCHON in NE
+  Team B at R2999: Spread across quadrants (NE:22, SE:6)
+  ⚠ Team B POTENTIAL STUCK: 1 ARCHON in NE, 3 GARDENER in NE, 8 LUMBERJACK in NE
 
 ───────────────────────────────────────────────────────────────────────────────
 VP ACTIVITY
