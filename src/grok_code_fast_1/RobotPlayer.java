@@ -136,25 +136,9 @@ public strictfp class RobotPlayer {
 
                 } else {
 
-                    // Sense allied robots to avoid clustering
-                    RobotInfo[] allies = rc.senseNearbyRobots(-1, rc.getTeam());
-                    if (allies.length > 0) {
-                        // Compute centroid of allied units
-                        float avgX = 0, avgY = 0;
-                        for (RobotInfo ally : allies) {
-                            avgX += ally.location.x;
-                            avgY += ally.location.y;
-                        }
-                        avgX /= allies.length;
-                        avgY /= allies.length;
-                        MapLocation centroid = new MapLocation(avgX, avgY);
-                        // Move away from centroid to spread out
-                        Direction away = rc.getLocation().directionTo(centroid).opposite();
-                        tryMove(away);
-                    } else {
-                        // No allies nearby, move randomly for exploration
-                        tryMove(randomDirection());
-                    }
+                    Direction dir = rc.getLocation().directionTo(enemyArchons[0]);
+                    dir = dir.rotateLeftDegrees((float)(Math.random() - 0.5) * 90);
+                    tryMove(dir);
 
                 }
 
@@ -295,8 +279,7 @@ public strictfp class RobotPlayer {
         }
 
         // distToRobot is our hypotenuse, theta is our angle, and we want to know this length of the opposite leg.
-        // This corresponds to the smallest radius circle centered at our location that would intersect with the
-        // line that is the path of the bullet.
+        // This corresponds to the line that is the path of the bullet.
         float perpendicularDist = (float)Math.abs(distToRobot * Math.sin(theta)); // soh cah toa :)
 
         return (perpendicularDist <= rc.getType().bodyRadius);
