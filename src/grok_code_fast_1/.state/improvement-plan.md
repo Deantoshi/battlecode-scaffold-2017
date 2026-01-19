@@ -1,7 +1,7 @@
 # Improvement Plan
 
 ## Iteration
-8
+9
 
 ## Match Result
 - Outcome: WIN
@@ -11,26 +11,26 @@
 ## Analysis
 
 ### Primary Problem
-Won the match but in 2999 rounds, exceeding the target of 1500 rounds. Units remain concentrated in their starting quadrants, leading to slow victory by tiebreaker despite having more combat units.
+Won in 2999 rounds (>1500 target) due to units remaining concentrated in SW quadrant, not effectively engaging the enemy despite multiple movement adjustments.
 
 ### Root Cause
-Insufficient early aggression; soldiers are produced at moderate rates but not enough to overwhelm the opponent quickly. The bot produces more soldiers (23 vs 15) and lumberjacks (15 vs 14) than the opponent, but the victory is slow, indicating that early game pressure is lacking.
+Soldiers moving towards the enemy archon location but still stuck in own quadrant, suggesting map obstacles or ineffective pathfinding preventing cross-map engagement.
 
 ### Previous Attempts
-Iterations 1-2 focused on increasing production probabilities for soldiers and lumberjacks. Iterations 3-7 addressed movement and exploration, but the issue of slow victories persists despite these changes.
+Iterations 3-8 focused on movement fixes: towards enemies, away from spawn, towards enemy archon, and increasing soldier production; iteration 8 set soldier probability to 0.2 and lumberjack to 0.05.
 
 ## Proposed Solution
 
 ### Strategy Change
-Increase early game aggression by boosting soldier production probability in gardeners to produce more combat units faster and overwhelm the opponent before they can build up defenses.
+Eliminate lumberjack production to focus all build resources on soldiers for overwhelming early aggression, increasing soldier production probability to 0.3.
 
 ### Implementation Details
-- **File:** `src/grok_code_fast_1/RobotPlayer.java`
-- **Location:** `runGardener()` method, line 90
-- **Change:** Change soldier build probability from 0.15 to 0.2, and lumberjack from 0.1 to 0.05 to prioritize combat units.
+- **File:** src/grok_code_fast_1/RobotPlayer.java
+- **Location:** runGardener method, lines 90-94
+- **Change:** Change soldier build probability from 0.2 to 0.3, remove lumberjack build condition entirely
 
 ### Expected Impact
-More soldiers produced early, leading to faster engagement with the enemy and potential victory in under 1500 rounds.
+Higher soldier count will enable faster enemy engagement and victory before round 1500.
 
 ### Success Criteria
-Achieve victory in 1500 rounds or fewer against examplefuncsplayer on MagicWood.
+Win in ≤1500 rounds with soldiers actively engaging and defeating enemy units.
