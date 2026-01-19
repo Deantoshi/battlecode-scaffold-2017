@@ -4,14 +4,14 @@ MATCH: grok_code_fast_1 (A) vs examplefuncsplayer (B) on MagicWood
 [server] -------------------- Match Starting --------------------
 [server] grok_code_fast_1 vs. examplefuncsplayer on MagicWood
 [server]                grok_code_fast_1 (A) wins (round 2999)
-[server] Reason: The winning team won on tiebreakers (more victory points).
+[server] Reason: The winning team won on tiebreakers (more bullet supply, includings cost of active robots)
 [server] -------------------- Match Finished --------------------
 
 ───────────────────────────────────────────────────────────────────────────────
 RESULT
 ───────────────────────────────────────────────────────────────────────────────
 OUTCOME=WIN  ROUNDS=2999  TARGET=1500  GOAL_MET=NO
-FINAL: A=11bullets/25vp  B=65bullets/0vp
+FINAL: A=59bullets/0vp  B=69bullets/0vp
 
 ───────────────────────────────────────────────────────────────────────────────
 UNIT SUMMARY (Produced / Lost / Alive)
@@ -19,44 +19,47 @@ UNIT SUMMARY (Produced / Lost / Alive)
 Team   Unit         Prod   Lost   Alive 
 ----------------------------------------
 A      ARCHON       1      0      1     
-A      GARDENER     1      0      1     
+A      GARDENER     5      0      5     
+A      SOLDIER      39     5      34    
 B      ARCHON       1      0      1     
-B      GARDENER     7      0      7     
-B      SOLDIER      17     0      17    
-B      LUMBERJACK   13     0      13    
+B      GARDENER     4      0      4     
+B      SOLDIER      15     1      14    
+B      LUMBERJACK   14     1      13    
 
 ───────────────────────────────────────────────────────────────────────────────
 ECONOMY TIMELINE (current bullets/vp | cumulative generated/spent)
 ───────────────────────────────────────────────────────────────────────────────
-R500  | A:  11/25  (gen: 299 spent: 100)  B:  46/0   (gen: 746 spent: 700)
-R1000 | A:  11/25  (gen: 299 spent: 100)  B:  76/0   (gen:1376 spent:1300)
-R1500 | A:  11/25  (gen: 299 spent: 100)  B:  27/0   (gen:1927 spent:1900)
-R2000 | A:  11/25  (gen: 299 spent: 100)  B:  44/0   (gen:2544 spent:2500)
-R2500 | A:  11/25  (gen: 299 spent: 100)  B:  53/0   (gen:3153 spent:3100)
-R2999 | A:  11/25  (gen: 299 spent: 100)  B:  65/0   (gen:3765 spent:3700)
+R500  | A:  20/0   (gen:1020 spent:1000)  B: 136/0   (gen: 736 spent: 600)
+R1000 | A:  49/0   (gen:1749 spent:1700)  B:  65/0   (gen:1165 spent:1100)
+R1500 | A:  60/0   (gen:2460 spent:2400)  B:  27/0   (gen:1727 spent:1700)
+R2000 | A:  57/0   (gen:3157 spent:3100)  B: 118/0   (gen:2318 spent:2200)
+R2500 | A:  90/0   (gen:3790 spent:3700)  B: 101/0   (gen:2801 spent:2700)
+R2999 | A:  59/0   (gen:4459 spent:4400)  B:  69/0   (gen:3369 spent:3300)
 
 ───────────────────────────────────────────────────────────────────────────────
 COMBAT TIMELINE (deaths by period)
 ───────────────────────────────────────────────────────────────────────────────
-(no combat deaths)
+R1001-1500: A:1 B:0
+R1501-2000: A:1 B:0
+R2001+: A:3 B:2
 
 ───────────────────────────────────────────────────────────────────────────────
 MOVEMENT ANALYSIS (unit distribution changes)
 ───────────────────────────────────────────────────────────────────────────────
 Comparing R300 vs R2999:
 
-  Team A at R300: CONCENTRATED in SW (1 ARCHON, 1 GARDENER)
-  Team A at R2999: CONCENTRATED in SW (1 ARCHON, 1 GARDENER)
-  ⚠ Team A POTENTIAL STUCK: 1 GARDENER in SW, 1 ARCHON in SW
+  Team A at R300: CONCENTRATED in SW (1 ARCHON, 4 GARDENER)
+  Team A at R2999: CONCENTRATED in SW (1 ARCHON, 5 GARDENER, 28 SOLDIER)
+  ⚠ Team A POTENTIAL STUCK: 1 ARCHON in SW, 5 GARDENER in SW
 
-  Team B at R300: CONCENTRATED in NE (1 ARCHON, 2 GARDENER, 1 LUMBERJACK, 1 SOLDIER)
-  Team B at R2999: CONCENTRATED in NE (1 ARCHON, 6 GARDENER, 9 LUMBERJACK, 12 SOLDIER)
-  ⚠ Team B POTENTIAL STUCK: 1 ARCHON in NE, 6 GARDENER in NE, 12 SOLDIER in NE, 9 LUMBERJACK in NE
+  Team B at R300: CONCENTRATED in NE (1 ARCHON, 1 GARDENER, 3 LUMBERJACK)
+  Team B at R2999: CONCENTRATED in NE (1 ARCHON, 4 GARDENER, 9 LUMBERJACK, 12 SOLDIER)
+  ⚠ Team B POTENTIAL STUCK: 9 LUMBERJACK in NE, 1 ARCHON in NE, 4 GARDENER in NE
 
 ───────────────────────────────────────────────────────────────────────────────
 VP ACTIVITY
 ───────────────────────────────────────────────────────────────────────────────
-Team A: 2999 donations, 25 VP gained
+(No VP donations)
 
 ═══════════════════════════════════════════════════════════════════════════════
 Database: /home/ddean/battlecode-scaffold-2017/matches/grok_code_fast_1-vs-examplefuncsplayer-on-MagicWood.db
