@@ -76,36 +76,33 @@ YOUR BOT:
 ## PHASE 1: Run Match
 
 ```bash
-./scripts/run-self-improve-match.sh {BOT} {OPPONENT} {MAP}
+./scripts/run-match-with-analysis.sh {BOT} {OPPONENT} {MAP}
 ```
 
-This outputs:
-- Win/loss status
-- Round count
+This single command runs the match and outputs consolidated LLM-friendly analysis:
+
+**RESULT section:**
+- `OUTCOME=WIN|LOSS`, `ROUNDS=N`, `GOAL_MET=YES|NO`
 - Final bullets/VP for both teams
-- Units alive at end
-- Economy timeline
-- Unit production/losses
-- Death timeline by period
 
-**Parse the output for:**
-```
-WIN_STATUS={YES|NO}
-ROUNDS={N}
-GOAL_MET={YES|NO}
-```
+**UNIT SUMMARY table:**
+- Produced / Lost / Alive counts per unit type (including trees)
+- Both teams in one table
 
-### 1.1 Quadrant Data (stuck unit signal)
+**ECONOMY TIMELINE:**
+- Current bullets/VP at 500-round intervals
+- Cumulative bullets generated/spent (reveals economy efficiency)
 
-Use the query tool to get quadrant counts for units that stayed in the same quadrant since the last snapshot (likely stuck):
+**COMBAT TIMELINE:**
+- Deaths by period (R1-500, R501-1000, etc.)
 
-```bash
-python3 scripts/bc17_query.py unit-positions "matches/*.db" [--round=N] [--team=A|B] [--include-trees]
-```
+**MOVEMENT ANALYSIS:**
+- Compares early vs late unit distribution by quadrant
+- Flags potential stuck units with ⚠ warnings
+- High concentration in single quadrant = likely pathing issues
 
-Notes:
-- Outputs counts by `Map`, `Round`, and `Quadrant` (NW/NE/SW/SE), broken down by unit type.
-- High counts in a single quadrant across snapshots can indicate pathing or movement issues.
+**VP ACTIVITY:**
+- Donation events if any
 
 ---
 
@@ -126,19 +123,19 @@ Based on match data, identify the **single most impactful** improvement.
 **Analysis Framework:**
 
 1. **If you lost by elimination:**
-   - Did you produce enough combat units?
-   - Did your units die too fast? (check death timeline)
-   - Did you engage at wrong times/places?
+   - Did you produce enough combat units? (check UNIT SUMMARY)
+   - Did your units die too fast? (check COMBAT TIMELINE)
+   - Are units stuck and not engaging? (check MOVEMENT ANALYSIS for ⚠ warnings)
 
 2. **If you lost by VP:**
-   - Did opponent out-economy you?
+   - Did opponent out-economy you? (compare cumulative gen/spent in ECONOMY TIMELINE)
    - Should you donate bullets to VP earlier?
    - Should you rush to kill before they get VP?
 
 3. **If you won but >1500 rounds:**
-   - What slowed you down?
+   - What slowed you down? (check MOVEMENT ANALYSIS for stuck units)
    - Can you be more aggressive earlier?
-   - Can you optimize build order?
+   - Can you optimize build order? (check when units were produced vs economy)
 
 **Output your plan:**
 ```
