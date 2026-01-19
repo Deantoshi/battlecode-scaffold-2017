@@ -1,7 +1,7 @@
 # Improvement Plan
 
 ## Iteration
-9
+11
 
 ## Match Result
 - Outcome: WIN
@@ -11,26 +11,27 @@
 ## Analysis
 
 ### Primary Problem
-Won in 2999 rounds (>1500 target) due to units remaining concentrated in SW quadrant, not effectively engaging the enemy despite multiple movement adjustments.
+Units concentrated in SW quadrant, not effectively engaging enemy, leading to slow victory by tiebreaker
 
 ### Root Cause
-Soldiers moving towards the enemy archon location but still stuck in own quadrant, suggesting map obstacles or ineffective pathfinding preventing cross-map engagement.
+Soldiers spreading away from allied units but not advancing towards enemy territory, keeping them clustered in starting quadrant
 
 ### Previous Attempts
-Iterations 3-8 focused on movement fixes: towards enemies, away from spawn, towards enemy archon, and increasing soldier production; iteration 8 set soldier probability to 0.2 and lumberjack to 0.05.
+Iteration 7 used direct movement towards enemy archon; iterations 8-10 focused on increasing soldier production and various spreading logics to avoid clustering
 
 ## Proposed Solution
 
 ### Strategy Change
-Eliminate lumberjack production to focus all build resources on soldiers for overwhelming early aggression, increasing soldier production probability to 0.3.
+Modify soldier movement to prioritize advancing towards enemy archon location with added randomness when no enemies are visible, replacing the ally-avoidance spreading logic
 
 ### Implementation Details
-- **File:** src/grok_code_fast_1/RobotPlayer.java
-- **Location:** runGardener method, lines 90-94
-- **Change:** Change soldier build probability from 0.2 to 0.3, remove lumberjack build condition entirely
+- **File:** `src/grok_code_fast_1/RobotPlayer.java`
+- **Location:** `runSoldier()` method, the else block after checking for robots.length > 0
+- **Change:** Remove the RobotInfo[] allies sensing, centroid calculation, and movement away from centroid; instead compute Direction dir = rc.getLocation().directionTo(enemyArchons[0]); then dir = dir.rotateLeftDegrees((float)(Math.random() - 0.5) * 90); tryMove(dir);
 
 ### Expected Impact
-Higher soldier count will enable faster enemy engagement and victory before round 1500.
+Soldiers will aggressively advance towards the enemy while maintaining spread through randomness, leading to earlier engagement and faster victory
 
 ### Success Criteria
-Win in ≤1500 rounds with soldiers actively engaging and defeating enemy units.
+Win the match in ≤1500 rounds instead of taking the full 2999 rounds</content>
+<parameter name="filePath">src/grok_code_fast_1/.state/improvement-plan.md
