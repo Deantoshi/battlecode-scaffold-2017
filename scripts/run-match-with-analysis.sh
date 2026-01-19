@@ -174,17 +174,29 @@ ORDER BY Team,
 
 echo ""
 echo "───────────────────────────────────────────────────────────────────────────────"
-echo "ECONOMY TIMELINE (bullets | vp)"
+echo "ECONOMY TIMELINE (current bullets/vp | cumulative generated/spent)"
 echo "───────────────────────────────────────────────────────────────────────────────"
 
 sqlite3 "$DB_FILE" "
+WITH cumulative AS (
+    SELECT
+        round_id,
+        SUM(team_a_bullets_generated) OVER (ORDER BY round_id) as a_gen,
+        SUM(team_a_bullets_spent) OVER (ORDER BY round_id) as a_spent,
+        SUM(team_b_bullets_generated) OVER (ORDER BY round_id) as b_gen,
+        SUM(team_b_bullets_spent) OVER (ORDER BY round_id) as b_spent
+    FROM snapshots
+)
 SELECT
-    printf('R%-4d', round_id) || ' | ' ||
-    'A: ' || printf('%4.0f', team_a_bullets) || '/' || printf('%-3d', team_a_vp) ||
-    '  B: ' || printf('%4.0f', team_b_bullets) || '/' || printf('%-3d', team_b_vp)
-FROM rounds
-WHERE round_id % 500 = 0 OR round_id = (SELECT MAX(round_id) FROM rounds)
-ORDER BY round_id
+    printf('R%-4d', r.round_id) || ' | ' ||
+    'A: ' || printf('%3.0f', r.team_a_bullets) || '/' || printf('%-3d', r.team_a_vp) ||
+    ' (gen:' || printf('%4.0f', COALESCE(c.a_gen,0)) || ' spent:' || printf('%4.0f', COALESCE(c.a_spent,0)) || ')' ||
+    '  B: ' || printf('%3.0f', r.team_b_bullets) || '/' || printf('%-3d', r.team_b_vp) ||
+    ' (gen:' || printf('%4.0f', COALESCE(c.b_gen,0)) || ' spent:' || printf('%4.0f', COALESCE(c.b_spent,0)) || ')'
+FROM rounds r
+LEFT JOIN cumulative c ON r.round_id = c.round_id
+WHERE r.round_id % 500 = 0 OR r.round_id = (SELECT MAX(round_id) FROM rounds)
+ORDER BY r.round_id
 " 2>/dev/null
 
 echo ""
