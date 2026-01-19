@@ -19,10 +19,10 @@ public strictfp class RobotPlayer {
         // You can add the missing ones or rewrite this into your own control structure.
         switch (rc.getType()) {
             case ARCHON:
-                runArchon();
+                Archon.run(rc);
                 break;
             case GARDENER:
-                runGardener();
+                Gardener.run(rc);
                 break;
             case SOLDIER:
                 runSoldier();
@@ -36,13 +36,7 @@ public strictfp class RobotPlayer {
         }
 	}
 
-    static void runArchon() throws GameActionException {
-        Archon.run(rc);
-    }
 
-	static void runGardener() throws GameActionException {
-        Gardener.run(rc);
-    }
 
     static void runSoldier() throws GameActionException {
         System.out.println("I'm a soldier!");
@@ -54,6 +48,22 @@ public strictfp class RobotPlayer {
             // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
             try {
                 MapLocation myLocation = rc.getLocation();
+
+                // Track stationary rounds for stuck detection
+                int myID = rc.getID();
+                int base = myID * 100;
+                int lastX = rc.readBroadcast(base + 1);
+                int lastY = rc.readBroadcast(base + 2);
+                MapLocation lastPos = new MapLocation(lastX / 100f, lastY / 100f);
+                int stationary = rc.readBroadcast(base + 3);
+                if (myLocation.equals(lastPos) && lastX != 0) {
+                    stationary++;
+                } else {
+                    stationary = 0;
+                }
+                rc.broadcast(base + 1, (int)(myLocation.x * 100));
+                rc.broadcast(base + 2, (int)(myLocation.y * 100));
+                rc.broadcast(base + 3, stationary);
 
                 // See if there are any nearby enemy robots
                 RobotInfo[] robots = rc.senseNearbyRobots(-1, enemy);
@@ -79,16 +89,30 @@ public strictfp class RobotPlayer {
                     Direction toEnemy = rc.getLocation().directionTo(closestEnemy.location);
                     tryMove(toEnemy);
                 } else {
-                    // Move towards enemy archon if known
-                    int ex = rc.readBroadcast(2);
-                    int ey = rc.readBroadcast(3);
-                    if (ex != 0 || ey != 0) {
-                        MapLocation enemyArchon = new MapLocation(ex, ey);
-                        Direction toEnemyArchon = myLocation.directionTo(enemyArchon);
-                        tryMove(toEnemyArchon);
+                    // Movement logic with stuck override
+                    if (stationary > 100) {
+                        // Force move toward enemy location to break out of stuck position
+                        int ex = rc.readBroadcast(2);
+                        int ey = rc.readBroadcast(3);
+                        if (ex != 0 || ey != 0) {
+                            MapLocation enemyArchon = new MapLocation(ex, ey);
+                            Direction toEnemy = myLocation.directionTo(enemyArchon);
+                            tryMove(toEnemy);
+                        } else {
+                            tryMove(randomDirection());
+                        }
                     } else {
-                        // Move randomly for exploration
-                        tryMove(randomDirection());
+                        // Move towards enemy archon if known
+                        int ex = rc.readBroadcast(2);
+                        int ey = rc.readBroadcast(3);
+                        if (ex != 0 || ey != 0) {
+                            MapLocation enemyArchon = new MapLocation(ex, ey);
+                            Direction toEnemyArchon = myLocation.directionTo(enemyArchon);
+                            tryMove(toEnemyArchon);
+                        } else {
+                            // Move randomly for exploration
+                            tryMove(randomDirection());
+                        }
                     }
                 }
 

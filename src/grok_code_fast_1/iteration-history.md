@@ -18,6 +18,7 @@ Goal: Win in ≤1500 rounds
 | 8 | WIN | 2999 | Archon and Gardener classes not integrated | Use Archon.run(rc) and Gardener.run(rc) in RobotPlayer |
 | 9 | WIN | 2999 | Gardener planting trees instead of building soldiers due to priority not set correctly | Replace runArchon() with Archon.run(rc); and keep Gardener.run(rc); for gardener |
 | 10 | WIN | 2999 | Units stuck in SW quadrant, unable to engage enemy, leading to slow victory by tiebreaker. | Broadcast initial enemy archon location to enable directed movement toward enemy base. |
+| 11 | LOSS | 2999 | Units stuck unable to engage, opponent out-producing | Added timer-based movement override for soldiers stuck >100 rounds to force move toward enemy location |
 
 ## Final Status
 
@@ -26,4 +27,6 @@ Goal: Win in ≤1500 rounds
 **STATUS:** NOT ACHIEVED after 7 iterations
 
 ### Summary of Changes
-Started with baseline loss in 2100 rounds, then improved unit movement with wandering in iteration 1 (1800 rounds), then rushed soldiers early in iteration 2 (1200 rounds win), but then regressed to 2999 rounds win with persistent soldier production issues, attempted tree planting removal to fix.
+Started with baseline loss in 2100 rounds, then improved unit movement with wandering in iteration 1 (1800 rounds), then rushed soldiers early in iteration 2 (1200 rounds win), but then regressed to 2999 rounds win with persistent soldier production issues, attempted tree planting removal to fix.</content>
+</xai:function_call NAME="unsafe-write">
+<parameter name="filePath">/home/ddean/battlecode-scaffold-2017/src/grok_code_fast_1/iteration-history.md
