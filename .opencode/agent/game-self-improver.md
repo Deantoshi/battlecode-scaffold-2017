@@ -45,9 +45,44 @@ Goal: Win in ≤1500 rounds
 
 ---
 
-## PHASE 0: Initial Analysis
+## PHASE 0: Load/Create Iteration History
 
-### 0.1 Read Opponent Code
+**History file location:** `src/{BOT}/iteration-history.md`
+
+### 0.1 Check if History File Exists
+
+Try to Read `src/{BOT}/iteration-history.md`.
+
+**If file exists:**
+- Parse the history to determine current iteration number
+- Review previous iterations to understand what has been tried
+- Skip to PHASE 1 (code analysis was done in previous session)
+
+**If file does NOT exist:**
+- Create the file with this initial template using `unsafe-write`:
+
+```markdown
+# Iteration History: {BOT} vs {OPPONENT}
+
+Map: {MAP}
+Goal: Win in ≤1500 rounds
+
+## Iterations
+
+| # | Result | Rounds | Problem | Change Made |
+|---|--------|--------|---------|-------------|
+```
+
+- Set iteration counter to 0
+- Continue to PHASE 0.5 (Initial Analysis)
+
+---
+
+## PHASE 0.5: Initial Analysis (First Run Only)
+
+**Skip this phase if history file already existed.**
+
+### 0.5.1 Read Opponent Code
 Glob `src/{OPPONENT}/*.java`, then Read each file.
 
 Document:
@@ -59,7 +94,7 @@ OPPONENT:
 - Weaknesses: {exploitable gaps}
 ```
 
-### 0.2 Read Your Bot Code
+### 0.5.2 Read Your Bot Code
 Glob `src/{BOT}/*.java`, then Read each file.
 
 Document:
@@ -106,7 +141,16 @@ This single command runs the match and outputs consolidated LLM-friendly analysi
 
 ---
 
-## PHASE 2: Check Goal
+## PHASE 2: Check Goal & Record Baseline
+
+### 2.1 Record Baseline (Iteration 0 Only)
+
+If this is the first match (iteration 0), add the baseline row to the history file:
+```
+| 0 | {W/L} | {ROUNDS} | (baseline) | (baseline) |
+```
+
+### 2.2 Evaluate Goal
 
 **If `GOAL_MET=YES`:**
 - Skip to PHASE 5 (Final Report)
@@ -162,13 +206,55 @@ Use `unsafe-write` to write the complete modified file.
 
 **If compilation fails:** Fix errors before proceeding.
 
-### 4.3 Return to PHASE 1
+### 4.3 Update Iteration History File
+
+After successful compilation, append the current iteration to `src/{BOT}/iteration-history.md`.
+
+**Add a new row to the Iterations table:**
+```
+| {N} | {W/L} | {ROUNDS} | {problem identified} | {change made} |
+```
+
+Where:
+- `{N}` = iteration number (0 for baseline, 1+ for improvements)
+- `{W/L}` = WIN or LOSS from PHASE 1 result
+- `{ROUNDS}` = number of rounds from PHASE 1 result
+- `{problem identified}` = brief description from PHASE 3 analysis
+- `{change made}` = brief description of code change (or "baseline" for iteration 0)
+
+**Example after 2 iterations:**
+```markdown
+| # | Result | Rounds | Problem | Change Made |
+|---|--------|--------|---------|-------------|
+| 0 | LOSS | 2100 | (baseline) | (baseline) |
+| 1 | LOSS | 1800 | Units stuck in spawn | Added wandering behavior |
+| 2 | WIN | 1200 | Too passive early | Rush 3 soldiers before trees |
+```
+
+### 4.4 Return to PHASE 1
 
 Increment iteration counter and run another match.
 
 ---
 
 ## PHASE 5: Final Report
+
+### 5.1 Update History File with Final Status
+
+Add a summary section to `src/{BOT}/iteration-history.md`:
+
+```markdown
+## Final Status
+
+**RESULT:** {WIN/LOSS} in {ROUNDS} rounds
+**GOAL:** Win in ≤1500 rounds
+**STATUS:** {ACHIEVED / NOT ACHIEVED after N iterations}
+
+### Summary of Changes
+{Brief description of the overall strategy evolution}
+```
+
+### 5.2 Output Final Report
 
 ```
 ═══════════════════════════════════════════════════════════════════════════════
@@ -183,7 +269,7 @@ RESULT: {WIN/LOSS} in {ROUNDS} rounds
 GOAL: Win in ≤1500 rounds
 STATUS: {ACHIEVED / NOT ACHIEVED after N iterations}
 
-ITERATIONS SUMMARY:
+ITERATIONS SUMMARY: (see src/{BOT}/iteration-history.md for full details)
 ┌───────────┬────────┬────────┬─────────────────────────────────┐
 │ Iteration │ Result │ Rounds │ Change Made                     │
 ├───────────┼────────┼────────┼─────────────────────────────────┤
@@ -195,6 +281,7 @@ ITERATIONS SUMMARY:
 FINAL BOT CHANGES FROM ORIGINAL:
 {List all changes made across iterations}
 
+History file saved to: src/{BOT}/iteration-history.md
 ═══════════════════════════════════════════════════════════════════════════════
 ```
 
@@ -203,7 +290,11 @@ FINAL BOT CHANGES FROM ORIGINAL:
 ## Iteration Loop Summary
 
 ```
-PHASE 0: Read opponent + own code (once)
+PHASE 0: Load/Create iteration history file
+    ↓
+    ├─→ History exists? → Skip to PHASE 1 (resume from previous session)
+    ↓ No
+PHASE 0.5: Read opponent + own code (first run only)
     ↓
 PHASE 1: Run match → get data
     ↓
@@ -211,10 +302,15 @@ PHASE 2: Goal met? → YES → PHASE 5
     ↓ NO
 PHASE 3: Analyze, plan 1 improvement
     ↓
-PHASE 4: Implement, compile, verify
+PHASE 4: Implement, compile, update history file
     ↓
     └─→ Back to PHASE 1 (until goal met or max iterations)
 ```
+
+**History file enables:**
+- Clean context between LLM sessions
+- Resume from any point without re-reading all code
+- Track what has been tried to avoid repeating failed approaches
 
 ---
 
@@ -226,6 +322,7 @@ PHASE 4: Implement, compile, verify
 4. **Speed matters** - ≤1500 rounds is the goal
 5. **Be aggressive** - Faster wins require early pressure
 6. **Use unsafe-write** - Write complete files, no sed/awk
+7. **Always update history file** - Enables clean context resumption across LLM sessions
 
 ## Error Recovery
 
