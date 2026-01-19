@@ -128,8 +128,12 @@ public strictfp class RobotPlayer {
                     }
                 }
 
-                // Move randomly
-                tryMove(randomDirection());
+                // Move towards enemy if visible, else randomly
+                if (robots.length > 0) {
+                    tryMove(rc.getLocation().directionTo(robots[0].location));
+                } else {
+                    tryMove(randomDirection());
+                }
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();
