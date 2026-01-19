@@ -3,6 +3,7 @@ import battlecode.common.*;
 
 public strictfp class RobotPlayer {
     static RobotController rc;
+    static MapLocation initialArchonLoc;
 
     /**
      * run() is the method that is called when a robot is instantiated in the Battlecode world.
@@ -16,7 +17,7 @@ public strictfp class RobotPlayer {
         RobotPlayer.rc = rc;
 
         // Here, we've separated the controls into a different method for each RobotType.
-        // You can add the missing ones or rewrite this into your own control structure.
+        // You can add the missing ones or rewrite this into your control structure.
         switch (rc.getType()) {
             case ARCHON:
                 runArchon();
@@ -35,6 +36,7 @@ public strictfp class RobotPlayer {
 
     static void runArchon() throws GameActionException {
         System.out.println("I'm an archon!");
+        initialArchonLoc = rc.getLocation();
 
         // The code you want your robot to perform every round should be in this loop
         while (true) {
@@ -54,9 +56,8 @@ public strictfp class RobotPlayer {
                 tryMove(randomDirection());
 
                 // Broadcast archon's location for other robots on the team to know
-                MapLocation myLocation = rc.getLocation();
-                rc.broadcast(0,(int)myLocation.x);
-                rc.broadcast(1,(int)myLocation.y);
+                rc.broadcast(0,(int)initialArchonLoc.x);
+                rc.broadcast(1,(int)initialArchonLoc.y);
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();
