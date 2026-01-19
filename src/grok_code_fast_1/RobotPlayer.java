@@ -128,11 +128,26 @@ public strictfp class RobotPlayer {
                     }
                 }
 
-                // Move towards enemy if visible, else randomly
+                // Move towards enemy if visible, else move away from archon to explore
+
                 if (robots.length > 0) {
+
                     tryMove(rc.getLocation().directionTo(robots[0].location));
+
                 } else {
-                    tryMove(randomDirection());
+
+                    // Move away from archon to explore
+
+                    int xPos = rc.readBroadcast(0);
+
+                    int yPos = rc.readBroadcast(1);
+
+                    MapLocation archonLoc = new MapLocation((float)xPos, (float)yPos);
+
+                    Direction away = rc.getLocation().directionTo(archonLoc).opposite();
+
+                    tryMove(away);
+
                 }
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again

@@ -1,6 +1,6 @@
 {
   "active": true,
-  "iteration": 10,
+  "iteration": 11,
   "targetIterations": 10,
   "targetWinRounds": 1500,
   "botName": "grok_code_fast_1",
@@ -96,6 +96,15 @@
       "reason": "The winning team won on tiebreakers (more victory points).",
       "ourTeam": "A",
       "timestamp": 1768851989927
+    },
+    {
+      "iteration": 11,
+      "winner": "A",
+      "winningTeam": "grok_code_fast_1",
+      "rounds": 2999,
+      "reason": "The winning team won on tiebreakers (more bullet supply, includings cost of active robots)",
+      "ourTeam": "A",
+      "timestamp": 1768852802109
     }
   ],
   "bestResult": {

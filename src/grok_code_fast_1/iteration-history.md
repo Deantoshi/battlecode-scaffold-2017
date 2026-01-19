@@ -6,3 +6,4 @@
 | 1 | LOSS | 2999 | Low probability for building soldiers and lumberjacks | Increased soldier build probability to 0.1, decreased lumberjack to 0.05 |
 | 2 | LOSS | 2999 | Insufficient economic units (fewer gardeners and lumberjacks produced: 3G/4LJ vs 4G/10LJ) | Increased gardener hire probability to 0.1, lumberjack build probability to 0.1 |
 | 3 | WIN | 2999 | Units stuck in SW quadrant, not engaging enemy effectively | Implement soldier movement towards visible enemies and increase soldier production probability |
+| 4 | WIN | 2999 | Units concentrated in SW quadrant, not engaging enemy effectively | Implement soldier movement away from archon when no enemies visible for better exploration |

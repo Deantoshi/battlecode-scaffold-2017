@@ -1,7 +1,7 @@
 # Improvement Plan
 
 ## Iteration
-3
+4
 
 ## Match Result
 - Outcome: WIN
@@ -11,26 +11,28 @@
 ## Analysis
 
 ### Primary Problem
-Units stuck in SW quadrant, not engaging enemy effectively
+Units concentrated in SW quadrant and not engaging enemy effectively, leading to slow victory by tiebreaker.
 
 ### Root Cause
-Random movement without pathfinding towards enemy robots
+Soldiers move randomly when no enemies are visible, keeping them clustered near the spawn area instead of exploring the map.
 
 ### Previous Attempts
-Increased soldier and lumberjack build probabilities in iteration 1, increased gardener and lumberjack in iteration 2
+Iteration 1: Increased soldier build probability to encourage more combat units.
+Iteration 2: Increased gardener and lumberjack probabilities for better economy.
+Iteration 3: Implemented soldier movement towards visible enemies and increased soldier production probability, but random movement when enemies not visible still causes clustering.
 
 ## Proposed Solution
 
 ### Strategy Change
-Implement soldier movement towards visible enemies and increase soldier production probability
+Make soldiers explore away from the spawn when no enemies are visible, instead of random movement, to spread out and find enemies earlier.
 
 ### Implementation Details
 - **File:** `src/grok_code_fast_1/RobotPlayer.java`
-- **Location:** `runSoldier` method and `runGardener` method
-- **Change:** In `runSoldier`, add movement towards enemy if visible; in `runGardener`, change soldier build probability from 0.1 to 0.15
+- **Location:** `runSoldier` method, around line 134-136
+- **Change:** Replace `tryMove(randomDirection());` with logic to read archon location from broadcast channels 0 and 1, calculate direction away from archon, and `tryMove(awayDirection);`
 
 ### Expected Impact
-Improved unit engagement and faster build order for quicker victories
+Soldiers will spread out more effectively, leading to earlier enemy detection and engagement, reducing total rounds to win.
 
 ### Success Criteria
-Win the match in ≤1500 rounds
+Win the match in ≤1500 rounds with units spread across multiple quadrants.
