@@ -2,7 +2,7 @@
 MATCH: grok_code_fast_1 (A) vs examplefuncsplayer (B) on MagicWood
 ═══════════════════════════════════════════════════════════════════════════════
 [server] -------------------- Match Starting --------------------
-[server] grok_code_fast_1 vs. examplefuncsplayer on MagicWood
+[server] grok_code_fast_1 vs. examplefuncsplayer (B) on MagicWood
 [server]                grok_code_fast_1 (A) wins (round 2999)
 [server] Reason: The winning team won on tiebreakers (more bullet supply, includings cost of active robots)
 [server] -------------------- Match Finished --------------------
@@ -11,7 +11,7 @@ MATCH: grok_code_fast_1 (A) vs examplefuncsplayer (B) on MagicWood
 RESULT
 ───────────────────────────────────────────────────────────────────────────────
 OUTCOME=WIN  ROUNDS=2999  TARGET=1500  GOAL_MET=NO
-FINAL: A=64bullets/0vp  B=73bullets/0vp
+FINAL: A=74bullets/0vp  B=45bullets/0vp
 
 ───────────────────────────────────────────────────────────────────────────────
 UNIT SUMMARY (Produced / Lost / Alive)
@@ -20,27 +20,26 @@ Team   Unit         Prod   Lost   Alive
 ----------------------------------------
 A      ARCHON       1      0      1     
 A      GARDENER     6      0      6     
-A      SOLDIER      31     0      31    
-A      LUMBERJACK   8      0      8     
+A      SOLDIER      38     3      35    
 B      ARCHON       1      0      1     
-B      GARDENER     6      0      6     
-B      SOLDIER      15     0      15    
-B      LUMBERJACK   11     0      11    
+B      GARDENER     5      0      5     
+B      SOLDIER      16     1      15    
+B      LUMBERJACK   13     0      13    
 
 ───────────────────────────────────────────────────────────────────────────────
 ECONOMY TIMELINE (current bullets/vp | cumulative generated/spent)
 ───────────────────────────────────────────────────────────────────────────────
-R500  | A:  91/0   (gen: 991 spent: 900)  B: 136/0   (gen: 736 spent: 600)
-R1000 | A: 101/0   (gen:1701 spent:1600)  B:  66/0   (gen:1166 spent:1100)
-R1500 | A:  29/0   (gen:2429 spent:2400)  B:  54/0   (gen:1754 spent:1700)
-R2000 | A:  51/0   (gen:3151 spent:3100)  B: 132/0   (gen:2332 spent:2200)
-R2500 | A:  71/0   (gen:3871 spent:3800)  B: 103/0   (gen:2703 spent:2600)
-R2999 | A:  64/0   (gen:4564 spent:4500)  B:  73/0   (gen:3273 spent:3200)
+R500  | A: 101/0   (gen:1001 spent: 900)  B: 136/0   (gen: 736 spent: 600)
+R1000 | A:  17/0   (gen:1717 spent:1700)  B:  66/0   (gen:1166 spent:1100)
+R1500 | A:  28/0   (gen:2428 spent:2400)  B:  54/0   (gen:1754 spent:1700)
+R2000 | A:  46/0   (gen:3146 spent:3100)  B:  65/0   (gen:2365 spent:2300)
+R2500 | A:  32/0   (gen:3832 spent:3800)  B:  78/0   (gen:2878 spent:2800)
+R2999 | A:  74/0   (gen:4474 spent:4400)  B:  45/0   (gen:3445 spent:3400)
 
 ───────────────────────────────────────────────────────────────────────────────
 COMBAT TIMELINE (deaths by period)
 ───────────────────────────────────────────────────────────────────────────────
-(no combat deaths)
+R2001+: A:3 B:1
 
 ───────────────────────────────────────────────────────────────────────────────
 MOVEMENT ANALYSIS (unit distribution changes)
@@ -48,12 +47,12 @@ MOVEMENT ANALYSIS (unit distribution changes)
 Comparing R300 vs R2999:
 
   Team A at R300: CONCENTRATED in SW (1 ARCHON, 3 GARDENER, 2 SOLDIER)
-  Team A at R2999: CONCENTRATED in SW (1 ARCHON, 5 GARDENER, 6 LUMBERJACK, 27 SOLDIER)
-  ⚠ Team A POTENTIAL STUCK: 27 SOLDIER in SW, 5 GARDENER in SW, 1 ARCHON in SW
+  Team A at R2999: CONCENTRATED in SW (1 ARCHON, 6 GARDENER, 34 SOLDIER)
+  ⚠ Team A POTENTIAL STUCK: 6 GARDENER in SW, 34 SOLDIER in SW, 1 ARCHON in SW
 
   Team B at R300: CONCENTRATED in NE (1 ARCHON, 1 GARDENER, 3 LUMBERJACK)
-  Team B at R2999: CONCENTRATED in NE (1 ARCHON, 6 GARDENER, 8 LUMBERJACK, 12 SOLDIER)
-  ⚠ Team B POTENTIAL STUCK: 6 GARDENER in NE, 1 ARCHON in NE, 8 LUMBERJACK in NE
+  Team B at R2999: CONCENTRATED in NE (1 ARCHON, 4 GARDENER, 11 LUMBERJACK, 12 SOLDIER)
+  ⚠ Team B POTENTIAL STUCK: 4 GARDENER in NE, 11 LUMBERJACK in NE, 1 ARCHON in NE
 
 ───────────────────────────────────────────────────────────────────────────────
 VP ACTIVITY
