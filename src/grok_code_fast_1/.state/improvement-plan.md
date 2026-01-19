@@ -1,7 +1,7 @@
 # Improvement Plan
 
 ## Iteration
-4
+7
 
 ## Match Result
 - Outcome: WIN
@@ -11,28 +11,27 @@
 ## Analysis
 
 ### Primary Problem
-Units concentrated in SW quadrant and not engaging enemy effectively, leading to slow victory by tiebreaker.
+Won the match but took 2999 rounds, far exceeding the target of ≤1500 rounds, resulting in victory by tiebreakers on bullet supply rather than decisive combat.
 
 ### Root Cause
-Soldiers move randomly when no enemies are visible, keeping them clustered near the spawn area instead of exploring the map.
+Soldiers are moving away from their own archon spawn location for exploration, but this leads to slow and inefficient pathfinding towards the enemy base. Units remain concentrated in the SW quadrant despite previous movement adjustments, indicating that the exploration strategy is not directing units effectively towards enemy positions.
 
 ### Previous Attempts
-Iteration 1: Increased soldier build probability to encourage more combat units.
-Iteration 2: Increased gardener and lumberjack probabilities for better economy.
-Iteration 3: Implemented soldier movement towards visible enemies and increased soldier production probability, but random movement when enemies not visible still causes clustering.
+Iterations 3-6 focused on modifying soldier movement to explore away from the spawn location, including using archon broadcasts for initial spawn location, implementing movement away from archon when no enemies visible, and adjusting exploration patterns. However, these changes still result in units concentrating in their quadrant and slow engagement.
 
 ## Proposed Solution
 
 ### Strategy Change
-Make soldiers explore away from the spawn when no enemies are visible, instead of random movement, to spread out and find enemies earlier.
+Change soldier exploration behavior from moving away from own spawn to directly moving towards the enemy archon location when no enemies are visible, enabling faster and more direct engagement.
 
 ### Implementation Details
-- **File:** `src/grok_code_fast_1/RobotPlayer.java`
-- **Location:** `runSoldier` method, around line 134-136
-- **Change:** Replace `tryMove(randomDirection());` with logic to read archon location from broadcast channels 0 and 1, calculate direction away from archon, and `tryMove(awayDirection);`
+- **File:** src/grok_code_fast_1/RobotPlayer.java
+- **Location:** runSoldier() method, initialization section and movement logic
+- **Change:** Add MapLocation[] enemyArchons = rc.getInitialArchonLocations(rc.getTeam().opponent()); at the beginning of runSoldier(). In the else block (when no enemies visible), replace moving away from archon with tryMove(rc.getLocation().directionTo(enemyArchons[0]));
 
 ### Expected Impact
-Soldiers will spread out more effectively, leading to earlier enemy detection and engagement, reducing total rounds to win.
+Soldiers will move directly towards enemy positions, leading to earlier engagement, more decisive combat, and victory in fewer rounds.
 
 ### Success Criteria
-Win the match in ≤1500 rounds with units spread across multiple quadrants.
+Achieve victory in ≤1500 rounds against examplefuncsplayer on MagicWood map.</content>
+<parameter name="filePath">src/grok_code_fast_1/.state/improvement-plan.md

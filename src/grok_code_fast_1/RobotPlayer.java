@@ -109,6 +109,7 @@ public strictfp class RobotPlayer {
     static void runSoldier() throws GameActionException {
         System.out.println("I'm an soldier!");
         Team enemy = rc.getTeam().opponent();
+        MapLocation[] enemyArchons = rc.getInitialArchonLocations(rc.getTeam().opponent());
 
         // The code you want your robot to perform every round should be in this loop
         while (true) {
@@ -137,17 +138,9 @@ public strictfp class RobotPlayer {
 
                 } else {
 
-                    // Move away from archon to explore
+                    // Move towards enemy archon to engage
 
-                    int xPos = rc.readBroadcast(0);
-
-                    int yPos = rc.readBroadcast(1);
-
-                    MapLocation archonLoc = new MapLocation((float)xPos, (float)yPos);
-
-                    Direction away = rc.getLocation().directionTo(archonLoc).opposite();
-
-                    tryMove(away);
+                    tryMove(rc.getLocation().directionTo(enemyArchons[0]));
 
                 }
 
