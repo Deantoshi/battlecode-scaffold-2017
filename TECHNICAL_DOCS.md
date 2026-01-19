@@ -58,7 +58,97 @@
 *   **Role:** Siege unit.
 *   **Stats:** High HP, High Damage, expensive.
 
-## 5. Key API Methods (`RobotController rc`)
+## 5. Trees as Map Obstacles
+
+Trees are physical obstacles that block movement and line-of-sight for bullets. Understanding how to clear trees is essential for navigation and combat.
+
+### **Tree Types**
+*   **Neutral Trees:** Pre-placed on map. Often contain bullets that can be shaken.
+*   **Bullet Trees:** Planted by Gardeners. Generate income for the owning team.
+*   **Team Trees:** Belong to a team. Destroying enemy trees hurts their economy.
+
+### **Why Clear Trees?**
+*   Open pathways for unit movement
+*   Create firing lanes for ranged units
+*   Deny enemy economy (destroy their Bullet Trees)
+*   Collect bullets from neutral trees before destroying
+
+### **Methods to Destroy Trees**
+
+#### **1. Lumberjack Chopping (Most Efficient)**
+Lumberjacks deal **5 damage per chop** to a single tree. This is the most bytecode-efficient and intentional method.
+
+```java
+// In Lumberjack logic
+TreeInfo[] trees = rc.senseNearbyTrees(2.0f, Team.NEUTRAL); // or Team.B for enemy
+if (trees.length > 0) {
+    TreeInfo target = trees[0];
+    // Shake first to collect bullets (if neutral)
+    if (rc.canShake(target.ID) && target.containedBullets > 0) {
+        rc.shake(target.ID);
+    }
+    // Then chop
+    if (rc.canChop(target.ID)) {
+        rc.chop(target.ID);
+    }
+}
+```
+
+#### **2. Soldier/Tank Shooting**
+Bullets that hit trees deal damage. Soldiers can clear trees at range but waste ammo.
+
+```java
+// In Soldier logic - shooting at a tree blocking path
+TreeInfo[] blockingTrees = rc.senseNearbyTrees(3.0f, Team.NEUTRAL);
+for (TreeInfo tree : blockingTrees) {
+    Direction toTree = rc.getLocation().directionTo(tree.location);
+    if (rc.canFireSingleShot()) {
+        rc.fireSingleShot(toTree);
+        break;
+    }
+}
+```
+
+#### **3. Tank Trampling (Unique Ability)**
+Tanks can **move through trees**, destroying them on contact. This makes Tanks excellent for clearing dense forests.
+
+```java
+// In Tank logic - intentionally path through trees
+TreeInfo[] trees = rc.senseNearbyTrees(2.0f, Team.NEUTRAL);
+if (trees.length > 0) {
+    Direction toTree = rc.getLocation().directionTo(trees[0].location);
+    // Tanks can move into trees - the tree is destroyed
+    if (rc.canMove(toTree)) {
+        rc.move(toTree);
+    }
+}
+```
+
+> **Note:** Tank trampling is instant and doesn't cost bullets, but Tanks are expensive (300 bullets). Use for strategic forest clearing.
+
+#### **4. Lumberjack Strike (AoE Tree Damage)**
+`rc.strike()` damages ALL trees (and units) within radius 2, dealing **2 damage** to each.
+
+```java
+// Clear multiple trees at once (careful of friendly fire!)
+TreeInfo[] nearbyTrees = rc.senseNearbyTrees(2.0f);
+RobotInfo[] nearbyFriendlies = rc.senseNearbyRobots(2.0f, rc.getTeam());
+// Only strike if trees present and no friendlies in range
+if (nearbyTrees.length > 2 && nearbyFriendlies.length == 0) {
+    if (rc.canStrike()) {
+        rc.strike();
+    }
+}
+```
+
+### **Tree Health Reference**
+| Tree Type | Starting Health |
+|-----------|-----------------|
+| Small Neutral | ~20-50 HP |
+| Large Neutral | ~100-300 HP |
+| Bullet Tree | 100 HP (max when fully grown) |
+
+## 6. Key API Methods (`RobotController rc`)
 
 ### **Sensing**
 *   `rc.senseNearbyRobots(radius, team)`: Returns `RobotInfo[]`.
@@ -76,7 +166,7 @@
 *   `rc.readBroadcast(int channel)`: Reads from the array.
 *   **Usage:** Archons broadcast their location so Gardeners know where to spawn. Scouts broadcast enemy locations.
 
-## 6. Code Structure Template
+## 7. Code Structure Template
 The generated bot **must** follow this pattern:
 
 ```java
@@ -112,7 +202,7 @@ public strictfp class RobotPlayer {
 }
 ```
 
-## 7. File Structure Recommendations (Top Team Practices)
+## 8. File Structure Recommendations (Top Team Practices)
 
 Top teams almost always used multiple files for maintainability and iteration speed. A very common pattern was:
 
@@ -154,7 +244,7 @@ src/<yourbotpackage>/
 
 > **Note:** While you can technically put multiple classes in one `.java` file (non-public helper classes), this is uncommon among strong teams because it slows development and makes iteration harder.
 
-## 8. Implementation Requirements for Competence
+## 9. Implementation Requirements for Competence
 
 1.  **Movement Engine:** Do not just `rc.move(dir)`. Implement a `tryMove(dir)` helper that checks `rc.canMove(dir)` and tries rotated angles if blocked (simple obstacle avoidance).
 2.  **Combat Micro:**
@@ -165,7 +255,7 @@ src/<yourbotpackage>/
     *   Pattern: Build trees in a circle around the gardener.
     *   **Watering:** Always prioritize `rc.water()` on the tree with lowest health within range.
 
-## 9. Engine References (Under the Hood)
+## 10. Engine References (Under the Hood)
 *   `engine/battlecode/common/`: Bot-facing types and constants (e.g., `RobotType`, `GameConstants`, `MapLocation`, `Direction`).
 *   `engine/battlecode/world/`: Core simulation (robots, bullets, trees, collisions, `RobotControllerImpl`).
     *   `engine/battlecode/world/GameWorld.java`: Main simulation loop and world state updates.
@@ -178,7 +268,7 @@ src/<yourbotpackage>/
 *   `engine/battlecode/schema/`: Serialized match state and replay data.
 *   `engine/battlecode/doc/`: Engine notes and documentation (if present).
 
-## 10. Example "Smart" Move Helper
+## 11. Example "Smart" Move Helper
 ```java
 static void tryMove(Direction dir) throws GameActionException {
     if (rc.canMove(dir)) {
