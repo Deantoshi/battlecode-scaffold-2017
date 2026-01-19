@@ -136,9 +136,25 @@ public strictfp class RobotPlayer {
 
                 } else {
 
-                    // Move towards enemy archon to engage
-
-                    tryMove(rc.getLocation().directionTo(enemyArchons[0]));
+                    // Sense allied robots to avoid clustering
+                    RobotInfo[] allies = rc.senseNearbyRobots(-1, rc.getTeam());
+                    if (allies.length > 0) {
+                        // Compute centroid of allied units
+                        float avgX = 0, avgY = 0;
+                        for (RobotInfo ally : allies) {
+                            avgX += ally.location.x;
+                            avgY += ally.location.y;
+                        }
+                        avgX /= allies.length;
+                        avgY /= allies.length;
+                        MapLocation centroid = new MapLocation(avgX, avgY);
+                        // Move away from centroid to spread out
+                        Direction away = rc.getLocation().directionTo(centroid).opposite();
+                        tryMove(away);
+                    } else {
+                        // No allies nearby, move randomly for exploration
+                        tryMove(randomDirection());
+                    }
 
                 }
 
