@@ -3,7 +3,6 @@ import battlecode.common.*;
 
 public strictfp class RobotPlayer {
     static RobotController rc;
-    static MapLocation initialArchonLoc;
 
     /**
      * run() is the method that is called when a robot is instantiated in the Battlecode world.
@@ -17,7 +16,7 @@ public strictfp class RobotPlayer {
         RobotPlayer.rc = rc;
 
         // Here, we've separated the controls into a different method for each RobotType.
-        // You can add the missing ones or rewrite this into your control structure.
+        // You can add the missing ones or rewrite this into your own control structure.
         switch (rc.getType()) {
             case ARCHON:
                 runArchon();
@@ -36,7 +35,6 @@ public strictfp class RobotPlayer {
 
     static void runArchon() throws GameActionException {
         System.out.println("I'm an archon!");
-        initialArchonLoc = rc.getLocation();
 
         // The code you want your robot to perform every round should be in this loop
         while (true) {
@@ -48,7 +46,7 @@ public strictfp class RobotPlayer {
                 Direction dir = randomDirection();
 
                 // Randomly attempt to build a gardener in this direction
-                if (rc.canHireGardener(dir) && Math.random() < .1) {
+                if (rc.canHireGardener(dir) && Math.random() < .01) {
                     rc.hireGardener(dir);
                 }
 
@@ -56,8 +54,9 @@ public strictfp class RobotPlayer {
                 tryMove(randomDirection());
 
                 // Broadcast archon's location for other robots on the team to know
-                rc.broadcast(0,(int)initialArchonLoc.x);
-                rc.broadcast(1,(int)initialArchonLoc.y);
+                MapLocation myLocation = rc.getLocation();
+                rc.broadcast(0,(int)myLocation.x);
+                rc.broadcast(1,(int)myLocation.y);
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();
@@ -86,10 +85,12 @@ public strictfp class RobotPlayer {
                 // Generate a random direction
                 Direction dir = randomDirection();
 
-                 // Randomly attempt to build a soldier or lumberjack in this direction
-                 if (rc.canBuildRobot(RobotType.SOLDIER, dir) && Math.random() < .3) {
-                     rc.buildRobot(RobotType.SOLDIER, dir);
-                 }
+                // Randomly attempt to build a soldier or lumberjack in this direction
+                if (rc.canBuildRobot(RobotType.SOLDIER, dir) && Math.random() < .01) {
+                    rc.buildRobot(RobotType.SOLDIER, dir);
+                } else if (rc.canBuildRobot(RobotType.LUMBERJACK, dir) && Math.random() < .01 && rc.isBuildReady()) {
+                    rc.buildRobot(RobotType.LUMBERJACK, dir);
+                }
 
                 // Move randomly
                 tryMove(randomDirection());
@@ -107,7 +108,6 @@ public strictfp class RobotPlayer {
     static void runSoldier() throws GameActionException {
         System.out.println("I'm an soldier!");
         Team enemy = rc.getTeam().opponent();
-        MapLocation[] enemyArchons = rc.getInitialArchonLocations(rc.getTeam().opponent());
 
         // The code you want your robot to perform every round should be in this loop
         while (true) {
@@ -126,20 +126,12 @@ public strictfp class RobotPlayer {
                         // ...Then fire a bullet in the direction of the enemy.
                         rc.fireSingleShot(rc.getLocation().directionTo(robots[0].location));
                     }
-                }
-
-                // Move towards enemy if visible, else move away from archon to explore
-
-                if (robots.length > 0) {
-
-                    tryMove(rc.getLocation().directionTo(robots[0].location));
-
+                    // Move towards the enemy
+                    Direction toEnemy = myLocation.directionTo(robots[0].location);
+                    tryMove(toEnemy);
                 } else {
-
-                    Direction dir = rc.getLocation().directionTo(enemyArchons[0]);
-                    dir = dir.rotateLeftDegrees((float)(Math.random() - 0.5) * 90);
-                    tryMove(dir);
-
+                    // Move randomly
+                    tryMove(randomDirection());
                 }
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
@@ -211,7 +203,7 @@ public strictfp class RobotPlayer {
      * @throws GameActionException
      */
     static boolean tryMove(Direction dir) throws GameActionException {
-        return tryMove(dir,20,3);
+        return tryMove(dir,10,5);
     }
 
     /**
@@ -279,7 +271,8 @@ public strictfp class RobotPlayer {
         }
 
         // distToRobot is our hypotenuse, theta is our angle, and we want to know this length of the opposite leg.
-        // This corresponds to the line that is the path of the bullet.
+        // This corresponds to the smallest radius circle centered at our location that would intersect with the
+        // line that is the path of the bullet.
         float perpendicularDist = (float)Math.abs(distToRobot * Math.sin(theta)); // soh cah toa :)
 
         return (perpendicularDist <= rc.getType().bodyRadius);
