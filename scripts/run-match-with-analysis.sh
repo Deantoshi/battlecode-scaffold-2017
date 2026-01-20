@@ -69,7 +69,7 @@ rm -f "$MATCH_FILE" "$DB_FILE"
 
 # Run match
 cd "$PROJECT_DIR"
-./gradlew run -PteamA="$BOT" -PteamB="$OPPONENT" -Pmaps="$MAP" --quiet 2>&1 | grep -E "^\[server\]"
+./gradlew runWithSummary -PteamA="$BOT" -PteamB="$OPPONENT" -Pmaps="$MAP" --quiet 2>&1 | grep -E "^\[server\]"
 
 # Check if match file exists
 if [[ ! -f "$MATCH_FILE" ]]; then

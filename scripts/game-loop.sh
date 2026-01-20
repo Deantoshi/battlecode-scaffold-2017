@@ -15,14 +15,14 @@
 
 set -e
 
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-BOLD='\033[1m'
-NC='\033[0m' # No Color
+# Colors - use $'...' syntax for macOS bash 3.2 compatibility
+RED=$'\033[0;31m'
+GREEN=$'\033[0;32m'
+YELLOW=$'\033[1;33m'
+BLUE=$'\033[0;34m'
+CYAN=$'\033[0;36m'
+BOLD=$'\033[1m'
+NC=$'\033[0m' # No Color
 
 # Arguments
 BOT="${1:-}"
@@ -38,7 +38,7 @@ AI_ENGINE="${AI_ENGINE:-opencode}"
 
 # Validate arguments
 if [[ -z "$BOT" || -z "$OPPONENT" ]]; then
-    echo -e "${RED}Usage: $0 <bot> <opponent> [map] [max-iterations]${NC}"
+    printf '%s\n' "${RED}Usage: $0 <bot> <opponent> [map] [max-iterations]${NC}"
     echo ""
     echo "Arguments:"
     echo "  bot            Your bot folder name (required)"
@@ -56,7 +56,7 @@ fi
 
 # Check Ralphy exists
 if [[ ! -f "$RALPHY" ]]; then
-    echo -e "${RED}Error: Ralphy not found at $RALPHY${NC}"
+    printf '%s\n' "${RED}Error: Ralphy not found at $RALPHY${NC}"
     exit 1
 fi
 
@@ -64,40 +64,49 @@ fi
 STATE_DIR="src/$BOT/.state"
 
 # Print header
-echo -e "${BOLD}${CYAN}"
+printf '%s\n' "${BOLD}${CYAN}"
 echo "═══════════════════════════════════════════════════════════════════════════════"
 echo "                         GAME IMPROVEMENT LOOP"
 echo "═══════════════════════════════════════════════════════════════════════════════"
-echo -e "${NC}"
-echo -e "${BLUE}Bot:${NC}        $BOT"
-echo -e "${BLUE}Opponent:${NC}   $OPPONENT"
-echo -e "${BLUE}Map:${NC}        $MAP"
-echo -e "${BLUE}Max Iters:${NC}  $MAX_ITERS"
-echo -e "${BLUE}AI Engine:${NC}  $AI_ENGINE"
+printf '%s\n' "${NC}"
+printf '%s\n' "${BLUE}Bot:${NC}        $BOT"
+printf '%s\n' "${BLUE}Opponent:${NC}   $OPPONENT"
+printf '%s\n' "${BLUE}Map:${NC}        $MAP"
+printf '%s\n' "${BLUE}Max Iters:${NC}  $MAX_ITERS"
+printf '%s\n' "${BLUE}AI Engine:${NC}  $AI_ENGINE"
 echo ""
 
 # Function to run an agent
 run_agent() {
     local agent_name="$1"
     local args="$2"
+    local exit_code=0
 
-    echo -e "${YELLOW}━━━ Running @${agent_name} ━━━${NC}"
+    printf '%s\n' "${YELLOW}━━━ Running @${agent_name} ━━━${NC}"
 
     case "$AI_ENGINE" in
         opencode)
-            "$RALPHY" "@${agent_name} ${args}" --opencode
+            # Call opencode directly with --agent flag (ralphy doesn't handle this correctly)
+            # Pass args as a single message string after --
+            opencode run --agent "${agent_name}" --format default -- "${args}" || exit_code=$?
             ;;
         claude)
-            "$RALPHY" "@${agent_name} ${args}"
+            "$RALPHY" "@${agent_name} ${args}" || exit_code=$?
             ;;
         cursor)
-            "$RALPHY" "@${agent_name} ${args}" --cursor
+            "$RALPHY" "@${agent_name} ${args}" --cursor || exit_code=$?
             ;;
         *)
-            echo -e "${RED}Unknown AI engine: $AI_ENGINE${NC}"
+            printf '%s\n' "${RED}Unknown AI engine: $AI_ENGINE${NC}"
             exit 1
             ;;
     esac
+
+    if [[ $exit_code -ne 0 ]]; then
+        printf '%s\n' "${RED}Agent @${agent_name} failed with exit code: $exit_code${NC}"
+        printf '%s\n' "${YELLOW}Check that the agent file exists in .opencode/agent/${agent_name}.md${NC}"
+        exit $exit_code
+    fi
 }
 
 # Function to check goal status from state file
@@ -113,14 +122,14 @@ check_goal() {
 # Function to VALIDATE goal by actually running a match and checking output
 # This ensures we don't falsely claim success
 validate_goal() {
-    echo -e "${YELLOW}━━━ Validating Goal (running verification match) ━━━${NC}"
+    printf '%s\n' "${YELLOW}━━━ Validating Goal (running verification match) ━━━${NC}"
 
     # Run the match and check for GOAL_MET=YES in output
     if ./scripts/run-match-with-analysis.sh "$BOT" "$OPPONENT" "$MAP" 2>&1 | grep -q 'GOAL_MET=YES'; then
-        echo -e "${GREEN}✓ Validation PASSED: GOAL_MET=YES confirmed${NC}"
+        printf '%s\n' "${GREEN}✓ Validation PASSED: GOAL_MET=YES confirmed${NC}"
         return 0
     else
-        echo -e "${RED}✗ Validation FAILED: GOAL_MET=YES not found${NC}"
+        printf '%s\n' "${RED}✗ Validation FAILED: GOAL_MET=YES not found${NC}"
         return 1
     fi
 }
@@ -129,7 +138,7 @@ validate_goal() {
 # PHASE 0: Initialize (only if history doesn't exist)
 # ═══════════════════════════════════════════════════════════════════════════════
 
-echo -e "${BOLD}${GREEN}[PHASE 0] Initialization${NC}"
+printf '%s\n' "${BOLD}${GREEN}[PHASE 0] Initialization${NC}"
 
 if [[ ! -f "src/$BOT/iteration-history.md" ]]; then
     echo "No history file found. Running initialization..."
@@ -146,23 +155,23 @@ echo ""
 # ═══════════════════════════════════════════════════════════════════════════════
 
 for i in $(seq 1 "$MAX_ITERS"); do
-    echo -e "${BOLD}${CYAN}"
+    printf '%s\n' "${BOLD}${CYAN}"
     echo "═══════════════════════════════════════════════════════════════════════════════"
     echo "                            ITERATION $i / $MAX_ITERS"
     echo "═══════════════════════════════════════════════════════════════════════════════"
-    echo -e "${NC}"
+    printf '%s\n' "${NC}"
 
     # ─────────────────────────────────────────────────────────────────────────────
     # Step 1: Run Match (fresh context)
     # ─────────────────────────────────────────────────────────────────────────────
-    echo -e "${BOLD}${GREEN}[STEP 1] Run Match${NC}"
+    printf '%s\n' "${BOLD}${GREEN}[STEP 1] Run Match${NC}"
     run_agent "game-run-match" "--bot $BOT --opponent $OPPONENT --maps $MAP"
     echo ""
 
     # ─────────────────────────────────────────────────────────────────────────────
     # Step 2: Analyze (fresh context)
     # ─────────────────────────────────────────────────────────────────────────────
-    echo -e "${BOLD}${GREEN}[STEP 2] Analyze Results${NC}"
+    printf '%s\n' "${BOLD}${GREEN}[STEP 2] Analyze Results${NC}"
     run_agent "game-analyze" "--bot $BOT --opponent $OPPONENT --maps $MAP"
     echo ""
 
@@ -172,30 +181,30 @@ for i in $(seq 1 "$MAX_ITERS"); do
     GOAL_STATUS=$(check_goal)
 
     if [[ "$GOAL_STATUS" == "ACHIEVED" ]]; then
-        echo -e "${BOLD}${CYAN}[STEP 3] Goal Status: ACHIEVED (pending validation)${NC}"
+        printf '%s\n' "${BOLD}${CYAN}[STEP 3] Goal Status: ACHIEVED (pending validation)${NC}"
         echo ""
 
         # VALIDATION: Actually run the match and confirm GOAL_MET=YES
         if validate_goal; then
             echo ""
-            echo -e "${BOLD}${GREEN}"
+            printf '%s\n' "${BOLD}${GREEN}"
             echo "┌─────────────────────────────────────────────────────────────────────────────┐"
             echo "│                           GOAL ACHIEVED!                                    │"
             echo "└─────────────────────────────────────────────────────────────────────────────┘"
-            echo -e "${NC}"
+            printf '%s\n' "${NC}"
 
             # Generate final report
-            echo -e "${BOLD}${GREEN}[FINAL] Generating Report${NC}"
+            printf '%s\n' "${BOLD}${GREEN}[FINAL] Generating Report${NC}"
             run_agent "game-report" "--bot $BOT"
 
             echo ""
-            echo -e "${GREEN}Successfully improved $BOT to beat $OPPONENT in ≤1500 rounds!${NC}"
+            printf '%s\n' "${GREEN}Successfully improved $BOT to beat $OPPONENT in ≤1500 rounds!${NC}"
             exit 0
         else
             # Validation failed - the LLM claimed success but match doesn't confirm it
             echo ""
-            echo -e "${YELLOW}Validation failed. Analyze agent reported ACHIEVED but match shows otherwise.${NC}"
-            echo -e "${YELLOW}Continuing to next iteration...${NC}"
+            printf '%s\n' "${YELLOW}Validation failed. Analyze agent reported ACHIEVED but match shows otherwise.${NC}"
+            printf '%s\n' "${YELLOW}Continuing to next iteration...${NC}"
             # Reset goal status so we continue
             echo "CONTINUE" > "$STATE_DIR/goal-status.txt"
         fi
@@ -204,11 +213,11 @@ for i in $(seq 1 "$MAX_ITERS"); do
     # ─────────────────────────────────────────────────────────────────────────────
     # Step 4: Implement Improvement (fresh context)
     # ─────────────────────────────────────────────────────────────────────────────
-    echo -e "${BOLD}${GREEN}[STEP 3] Implement Improvement${NC}"
+    printf '%s\n' "${BOLD}${GREEN}[STEP 3] Implement Improvement${NC}"
     run_agent "game-implement" "--bot $BOT"
     echo ""
 
-    echo -e "${BLUE}Iteration $i complete. Starting next iteration...${NC}"
+    printf '%s\n' "${BLUE}Iteration $i complete. Starting next iteration...${NC}"
     echo ""
 done
 
@@ -216,19 +225,19 @@ done
 # MAX ITERATIONS REACHED
 # ═══════════════════════════════════════════════════════════════════════════════
 
-echo -e "${BOLD}${YELLOW}"
+printf '%s\n' "${BOLD}${YELLOW}"
 echo "═══════════════════════════════════════════════════════════════════════════════"
 echo "                     MAX ITERATIONS REACHED ($MAX_ITERS)"
 echo "═══════════════════════════════════════════════════════════════════════════════"
-echo -e "${NC}"
+printf '%s\n' "${NC}"
 
 echo "Goal was NOT achieved within $MAX_ITERS iterations."
 echo ""
 
 # Still generate a report
-echo -e "${BOLD}${GREEN}[FINAL] Generating Report${NC}"
+printf '%s\n' "${BOLD}${GREEN}[FINAL] Generating Report${NC}"
 run_agent "game-report" "--bot $BOT"
 
 echo ""
-echo -e "${YELLOW}Review src/$BOT/iteration-history.md for details on what was tried.${NC}"
+printf '%s\n' "${YELLOW}Review src/$BOT/iteration-history.md for details on what was tried.${NC}"
 exit 1
