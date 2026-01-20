@@ -1,0 +1,35 @@
+Map: DarkSide (60x53)
+Legend: A/a=Archon, G/g=Gardener, S/s=Soldier, L/l=Lumberjack
+        T=Tree, $=Tree+bullets, ?=Tree+robot, UPPER=TeamA, lower=TeamB
++------------------------------------------------------------+
+|                                                            |
+|                                                            |
+|                                                            |
+|                                                            |
+|                                                            |
+|                                                 a          |
+|                                                            |
+|                                                            |
+|                                                            |
+|              T                                             |
+|             T T                                            |
+|                  T                                         |
+|         TT T   T TTTTTTTT                                  |
+|     TTTT  T  ?  T  TTTT  TTT TT       T T T T T T       TT |
+|  TTT     T       T     TTT     TTT     T       T     TTT   |
+|TT       T T T T T T       TT TTT  TTTT  T  ?  T  TTTT      |
+|                                 TTTTTTTT T   T TT          |
+|                                        T                   |
+|                                           T T              |
+|                                            T               |
+|                                                            |
+|                                                            |
+|                                                            |
+|         a                                                  |
+|                                                            |
+|                                                            |
+|                                                            |
+|                                                            |
+|                                                            |
+|                                                            |
++------------------------------------------------------------+
