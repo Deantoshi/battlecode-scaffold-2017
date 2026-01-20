@@ -19,6 +19,10 @@ Usage:
         # Note: returns quadrant counts for units that stayed in the same quadrant since last snapshot (likely stuck)
         #       with a glob it outputs a single table with a Map column
     python3 bc17_query.py economy <match.db> [--round=N]
+    python3 bc17_query.py combat <match.db>
+        # Combat analysis: shot breakdown, efficiency, friendly fire suspects
+    python3 bc17_query.py buildorder <match.db> [--team=A|B]
+        # Build order: production sequence and key milestones
     python3 bc17_query.py search <match.db> <query>
     python3 bc17_query.py sql <match.db> "<SQL query>"
 
@@ -147,6 +151,40 @@ class BC17Database:
                 PRIMARY KEY (round_id, team, quadrant, body_type)
             );
 
+            -- Combat summary per team (aggregated stats)
+            CREATE TABLE IF NOT EXISTS combat_summary (
+                team TEXT PRIMARY KEY,  -- 'A' or 'B'
+                shots_single INTEGER DEFAULT 0,
+                shots_triad INTEGER DEFAULT 0,
+                shots_pentad INTEGER DEFAULT 0,
+                lumberjack_strikes INTEGER DEFAULT 0,
+                chops INTEGER DEFAULT 0,
+                total_bullet_cost INTEGER DEFAULT 0,
+                total_deaths INTEGER DEFAULT 0,
+                enemy_kills INTEGER DEFAULT 0,
+                bullets_per_kill REAL DEFAULT 0
+            );
+
+            -- Friendly fire suspects (deaths when only own team was attacking)
+            CREATE TABLE IF NOT EXISTS friendly_fire_suspects (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                round_id INTEGER,
+                team TEXT,
+                dead_unit_type TEXT,
+                own_attacks TEXT,  -- JSON list of attack types
+                FOREIGN KEY (round_id) REFERENCES rounds(round_id)
+            );
+
+            -- Build order (first N units produced per team)
+            CREATE TABLE IF NOT EXISTS build_order (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                team TEXT,
+                sequence INTEGER,  -- 1, 2, 3, etc.
+                round_id INTEGER,
+                body_type TEXT,
+                FOREIGN KEY (round_id) REFERENCES rounds(round_id)
+            );
+
             -- Create indexes for fast querying
             CREATE INDEX IF NOT EXISTS idx_events_round ON events(round_id);
             CREATE INDEX IF NOT EXISTS idx_events_type ON events(event_type);
@@ -157,6 +195,8 @@ class BC17Database:
             CREATE INDEX IF NOT EXISTS idx_robots_type ON robots(body_type);
             CREATE INDEX IF NOT EXISTS idx_unit_quadrants_round ON unit_quadrants(round_id);
             CREATE INDEX IF NOT EXISTS idx_unit_quadrants_team ON unit_quadrants(team);
+            CREATE INDEX IF NOT EXISTS idx_build_order_team ON build_order(team);
+            CREATE INDEX IF NOT EXISTS idx_friendly_fire_team ON friendly_fire_suspects(team);
         """)
         self.conn.commit()
 
@@ -364,6 +404,71 @@ class BC17Database:
                         "INSERT OR REPLACE INTO unit_quadrants (round_id, team, quadrant, body_type, count) VALUES (?, ?, ?, ?, ?)",
                         (snapshot.round, 'B', quadrant, body_type, count)
                     )
+
+        # Store combat summary (aggregated stats from parser.combat_stats)
+        if hasattr(parser, 'combat_stats'):
+            for team_idx in [0, 1]:
+                team = 'A' if team_idx == 0 else 'B'
+                enemy_idx = 1 - team_idx
+                stats = parser.combat_stats.get(team_idx)
+                enemy_stats = parser.combat_stats.get(enemy_idx)
+
+                if stats:
+                    total_deaths = sum(stats.deaths_by_type.values())
+                    enemy_kills = sum(enemy_stats.deaths_by_type.values()) if enemy_stats else 0
+                    bullet_cost = stats.total_bullet_cost
+                    bullets_per_kill = bullet_cost / enemy_kills if enemy_kills > 0 else 0
+
+                    self.conn.execute("""
+                        INSERT OR REPLACE INTO combat_summary
+                        (team, shots_single, shots_triad, shots_pentad, lumberjack_strikes,
+                         chops, total_bullet_cost, total_deaths, enemy_kills, bullets_per_kill)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """, (
+                        team,
+                        stats.shots_single,
+                        stats.shots_triad,
+                        stats.shots_pentad,
+                        stats.lumberjack_strikes,
+                        stats.chops,
+                        bullet_cost,
+                        total_deaths,
+                        enemy_kills,
+                        bullets_per_kill
+                    ))
+
+        # Store combat timing in metadata
+        if parser.first_combat_round is not None:
+            self.conn.execute(
+                "INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)",
+                ('first_combat_round', str(parser.first_combat_round))
+            )
+        if parser.last_combat_round is not None:
+            self.conn.execute(
+                "INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)",
+                ('last_combat_round', str(parser.last_combat_round))
+            )
+
+        # Store friendly fire suspects
+        if hasattr(parser, 'friendly_fire_suspects'):
+            for round_id, team_idx, dead_type, attacks in parser.friendly_fire_suspects:
+                team = 'A' if team_idx == 0 else 'B'
+                self.conn.execute(
+                    "INSERT INTO friendly_fire_suspects (round_id, team, dead_unit_type, own_attacks) VALUES (?, ?, ?, ?)",
+                    (round_id, team, dead_type, json.dumps(attacks))
+                )
+
+        # Store build order (first 20 units per team)
+        if hasattr(parser, 'combat_stats'):
+            for team_idx in [0, 1]:
+                team = 'A' if team_idx == 0 else 'B'
+                stats = parser.combat_stats.get(team_idx)
+                if stats and hasattr(stats, 'production_order'):
+                    for seq, (round_id, body_type) in enumerate(stats.production_order[:20], 1):
+                        self.conn.execute(
+                            "INSERT INTO build_order (team, sequence, round_id, body_type) VALUES (?, ?, ?, ?)",
+                            (team, seq, round_id, body_type)
+                        )
 
         self.conn.commit()
         return len(parser.rounds)
@@ -692,6 +797,189 @@ def cmd_economy(db_path: str, round_id: int = None):
     conn.close()
 
 
+def cmd_combat(db_path: str):
+    """Query combat analysis (shot breakdown, efficiency, friendly fire)."""
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+
+    # Get metadata for team names and combat timing
+    metadata = {}
+    for row in conn.execute("SELECT key, value FROM metadata"):
+        metadata[row['key']] = row['value']
+
+    teams_str = metadata.get('teams', '["Team A", "Team B"]')
+    try:
+        teams = json.loads(teams_str)
+    except json.JSONDecodeError:
+        teams = ['Team A', 'Team B']
+    team_a = teams[0] if len(teams) > 0 else 'Team A'
+    team_b = teams[1] if len(teams) > 1 else 'Team B'
+
+    first_combat = metadata.get('first_combat_round', 'N/A')
+    last_combat = metadata.get('last_combat_round', 'N/A')
+
+    print("=" * 70)
+    print("COMBAT ANALYSIS")
+    print("=" * 70)
+    print(f"Combat Duration: Rounds {first_combat} - {last_combat}")
+    print()
+
+    # Shot breakdown
+    combat_rows = conn.execute("SELECT * FROM combat_summary").fetchall()
+
+    if combat_rows:
+        print("Shot Breakdown:")
+        print("-" * 70)
+        print(f"{'Metric':<20} {'Team A':>12} {'Team B':>12} {'Analysis':<20}")
+        print("-" * 70)
+
+        stats = {'A': None, 'B': None}
+        for row in combat_rows:
+            stats[row['team']] = row
+
+        a = stats.get('A')
+        b = stats.get('B')
+
+        if a and b:
+            print(f"{'Single shots':<20} {a['shots_single']:>12} {b['shots_single']:>12} {'1 bullet each':<20}")
+            print(f"{'Triad shots':<20} {a['shots_triad']:>12} {b['shots_triad']:>12} {'3 bullets each':<20}")
+            print(f"{'Pentad shots':<20} {a['shots_pentad']:>12} {b['shots_pentad']:>12} {'5 bullets each':<20}")
+            print(f"{'Lumberjack strikes':<20} {a['lumberjack_strikes']:>12} {b['lumberjack_strikes']:>12} {'AoE damage':<20}")
+            print(f"{'Tree chops':<20} {a['chops']:>12} {b['chops']:>12} {'Tree clearing':<20}")
+            print(f"{'TOTAL BULLET COST':<20} {a['total_bullet_cost']:>12} {b['total_bullet_cost']:>12} {'Ammo spent':<20}")
+            print()
+
+            # Combat efficiency
+            print("Combat Efficiency:")
+            print("-" * 70)
+            print(f"{'Metric':<20} {'Team A':>12} {'Team B':>12}")
+            print("-" * 70)
+            print(f"{'Enemy kills':<20} {a['enemy_kills']:>12} {b['enemy_kills']:>12}")
+            print(f"{'Own deaths':<20} {a['total_deaths']:>12} {b['total_deaths']:>12}")
+
+            kd_a = a['enemy_kills'] / a['total_deaths'] if a['total_deaths'] > 0 else 0
+            kd_b = b['enemy_kills'] / b['total_deaths'] if b['total_deaths'] > 0 else 0
+            print(f"{'K/D ratio':<20} {kd_a:>12.2f} {kd_b:>12.2f}")
+            print(f"{'Bullets per kill':<20} {a['bullets_per_kill']:>12.1f} {b['bullets_per_kill']:>12.1f}")
+            print()
+
+            # Efficiency warnings
+            if a['bullets_per_kill'] > 0 and b['bullets_per_kill'] > 0:
+                if a['bullets_per_kill'] > b['bullets_per_kill'] * 2:
+                    print(f"⚠️  {team_a} is inefficient: {a['bullets_per_kill']:.1f} bullets/kill vs {team_b}'s {b['bullets_per_kill']:.1f}")
+                    if a['shots_pentad'] > a['shots_single']:
+                        print(f"    → Consider using single shots more often (pentad costs 5x)")
+                elif b['bullets_per_kill'] > a['bullets_per_kill'] * 2:
+                    print(f"⚠️  {team_b} is inefficient: {b['bullets_per_kill']:.1f} bullets/kill vs {team_a}'s {a['bullets_per_kill']:.1f}")
+                    if b['shots_pentad'] > b['shots_single']:
+                        print(f"    → Consider using single shots more often (pentad costs 5x)")
+    else:
+        print("No combat data found.")
+
+    # Friendly fire
+    ff_rows = conn.execute("""
+        SELECT team, COUNT(*) as count
+        FROM friendly_fire_suspects
+        GROUP BY team
+    """).fetchall()
+
+    if ff_rows:
+        print()
+        print("Potential Friendly Fire:")
+        print("-" * 70)
+        for row in ff_rows:
+            team_name = team_a if row['team'] == 'A' else team_b
+            print(f"  {team_name}: {row['count']} incidents")
+
+            # Show first few incidents
+            incidents = conn.execute("""
+                SELECT round_id, dead_unit_type, own_attacks
+                FROM friendly_fire_suspects
+                WHERE team = ?
+                ORDER BY round_id
+                LIMIT 3
+            """, (row['team'],)).fetchall()
+            for inc in incidents:
+                attacks = json.loads(inc['own_attacks']) if inc['own_attacks'] else []
+                print(f"    R{inc['round_id']}: {inc['dead_unit_type']} died (own attacks: {', '.join(set(attacks))})")
+
+    conn.close()
+
+
+def cmd_buildorder(db_path: str, team: str = None):
+    """Query build order (first units produced)."""
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+
+    # Get metadata for team names
+    metadata = {}
+    for row in conn.execute("SELECT key, value FROM metadata"):
+        metadata[row['key']] = row['value']
+
+    teams_str = metadata.get('teams', '["Team A", "Team B"]')
+    try:
+        teams = json.loads(teams_str)
+    except json.JSONDecodeError:
+        teams = ['Team A', 'Team B']
+    team_a = teams[0] if len(teams) > 0 else 'Team A'
+    team_b = teams[1] if len(teams) > 1 else 'Team B'
+
+    print("=" * 50)
+    print("BUILD ORDER ANALYSIS")
+    print("=" * 50)
+
+    teams_to_show = [team] if team else ['A', 'B']
+
+    for t in teams_to_show:
+        team_name = team_a if t == 'A' else team_b
+        print(f"\n{team_name} (Team {t}):")
+        print("-" * 40)
+
+        rows = conn.execute("""
+            SELECT sequence, round_id, body_type
+            FROM build_order
+            WHERE team = ?
+            ORDER BY sequence
+        """, (t,)).fetchall()
+
+        if rows:
+            for row in rows:
+                print(f"  {row['sequence']:>2}. R{row['round_id']:<5} {row['body_type']}")
+
+            # Find key milestones
+            first_soldier = next((r for r in rows if r['body_type'] == 'SOLDIER'), None)
+            first_lj = next((r for r in rows if r['body_type'] == 'LUMBERJACK'), None)
+
+            print()
+            print("  Key Milestones:")
+            if first_soldier:
+                print(f"    First SOLDIER: R{first_soldier['round_id']}")
+            else:
+                print(f"    First SOLDIER: None built")
+            if first_lj:
+                print(f"    First LUMBERJACK: R{first_lj['round_id']}")
+        else:
+            print("  (no build order data)")
+
+    # Compare first soldier timing
+    if not team:
+        a_soldier = conn.execute("""
+            SELECT round_id FROM build_order WHERE team='A' AND body_type='SOLDIER' ORDER BY sequence LIMIT 1
+        """).fetchone()
+        b_soldier = conn.execute("""
+            SELECT round_id FROM build_order WHERE team='B' AND body_type='SOLDIER' ORDER BY sequence LIMIT 1
+        """).fetchone()
+
+        if a_soldier and b_soldier:
+            diff = a_soldier['round_id'] - b_soldier['round_id']
+            print()
+            if abs(diff) > 100:
+                late_team = team_a if diff > 0 else team_b
+                print(f"⚠️  {late_team} built first SOLDIER {abs(diff)} rounds late!")
+
+    conn.close()
+
+
 def cmd_search(db_path: str, query: str):
     """Search logs and events for a pattern."""
     conn = sqlite3.connect(db_path)
@@ -990,6 +1278,22 @@ def main():
             if arg.startswith('--round='):
                 round_id = int(arg.split('=')[1])
         cmd_economy(sys.argv[2], round_id)
+
+    elif cmd == 'combat':
+        if len(sys.argv) < 3:
+            print("Usage: bc17_query.py combat <match.db>")
+            sys.exit(1)
+        cmd_combat(sys.argv[2])
+
+    elif cmd == 'buildorder':
+        if len(sys.argv) < 3:
+            print("Usage: bc17_query.py buildorder <match.db> [--team=A|B]")
+            sys.exit(1)
+        team = None
+        for arg in sys.argv[3:]:
+            if arg.startswith('--team='):
+                team = arg.split('=')[1]
+        cmd_buildorder(sys.argv[2], team)
 
     elif cmd == 'search':
         if len(sys.argv) < 4:

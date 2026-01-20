@@ -84,6 +84,7 @@ python3 "$SCRIPT_DIR/bc17_query.py" extract "$MATCH_FILE" "$DB_FILE" > /dev/null
 python3 - "$DB_FILE" <<'PYEOF'
 import sqlite3
 import sys
+import json
 
 db_path = sys.argv[1]
 conn = sqlite3.connect(db_path)
@@ -350,9 +351,124 @@ if donate_count > 0:
 else:
     print("(No VP donations)")
 
+# BUILD ORDER
+print()
+print("───────────────────────────────────────────────────────────────────────────────")
+print("BUILD ORDER (first 15 units per team)")
+print("───────────────────────────────────────────────────────────────────────────────")
+
+for t, team_name in [('A', 'Team A'), ('B', 'Team B')]:
+    rows = conn.execute("""
+        SELECT sequence, round_id, body_type
+        FROM build_order
+        WHERE team = ?
+        ORDER BY sequence
+        LIMIT 15
+    """, (t,)).fetchall()
+
+    if rows:
+        units = [f"R{r['round_id']}:{r['body_type']}" for r in rows]
+        print(f"{team_name}: {', '.join(units)}")
+
+        # Key milestones
+        first_soldier = next((r for r in rows if r['body_type'] == 'SOLDIER'), None)
+        first_lj = next((r for r in rows if r['body_type'] == 'LUMBERJACK'), None)
+        milestones = []
+        if first_soldier:
+            milestones.append(f"1st SOLDIER R{first_soldier['round_id']}")
+        if first_lj:
+            milestones.append(f"1st LUMBERJACK R{first_lj['round_id']}")
+        if milestones:
+            print(f"  Milestones: {', '.join(milestones)}")
+    else:
+        print(f"{team_name}: (no build order data)")
+
+# COMBAT ANALYSIS
+print()
+print("───────────────────────────────────────────────────────────────────────────────")
+print("COMBAT ANALYSIS (shots, efficiency, friendly fire)")
+print("───────────────────────────────────────────────────────────────────────────────")
+
+# Combat timing
+first_combat = conn.execute("SELECT value FROM metadata WHERE key='first_combat_round'").fetchone()
+last_combat = conn.execute("SELECT value FROM metadata WHERE key='last_combat_round'").fetchone()
+first_combat = first_combat['value'] if first_combat else 'N/A'
+last_combat = last_combat['value'] if last_combat else 'N/A'
+print(f"Combat Duration: R{first_combat} - R{last_combat}")
+print()
+
+# Shot breakdown
+combat_rows = conn.execute("SELECT * FROM combat_summary").fetchall()
+if combat_rows:
+    stats = {'A': None, 'B': None}
+    for row in combat_rows:
+        stats[row['team']] = row
+
+    a = stats.get('A')
+    b = stats.get('B')
+
+    if a and b:
+        print(f"{'Metric':<20} {'Team A':>10} {'Team B':>10}")
+        print("-" * 42)
+        print(f"{'Single shots':<20} {a['shots_single']:>10} {b['shots_single']:>10}")
+        print(f"{'Triad shots (3b)':<20} {a['shots_triad']:>10} {b['shots_triad']:>10}")
+        print(f"{'Pentad shots (5b)':<20} {a['shots_pentad']:>10} {b['shots_pentad']:>10}")
+        print(f"{'Lumberjack strikes':<20} {a['lumberjack_strikes']:>10} {b['lumberjack_strikes']:>10}")
+        print(f"{'Tree chops':<20} {a['chops']:>10} {b['chops']:>10}")
+        print(f"{'BULLET COST':<20} {a['total_bullet_cost']:>10} {b['total_bullet_cost']:>10}")
+        print()
+        print(f"{'Enemy kills':<20} {a['enemy_kills']:>10} {b['enemy_kills']:>10}")
+        print(f"{'Own deaths':<20} {a['total_deaths']:>10} {b['total_deaths']:>10}")
+        kd_a = a['enemy_kills'] / a['total_deaths'] if a['total_deaths'] > 0 else 0
+        kd_b = b['enemy_kills'] / b['total_deaths'] if b['total_deaths'] > 0 else 0
+        print(f"{'K/D ratio':<20} {kd_a:>10.2f} {kd_b:>10.2f}")
+        print(f"{'Bullets/kill':<20} {a['bullets_per_kill']:>10.1f} {b['bullets_per_kill']:>10.1f}")
+
+        # Efficiency warnings
+        if a['bullets_per_kill'] > 0 and b['bullets_per_kill'] > 0:
+            if a['bullets_per_kill'] > b['bullets_per_kill'] * 2:
+                print(f"\n⚠ Team A inefficient: {a['bullets_per_kill']:.1f} bullets/kill vs B's {b['bullets_per_kill']:.1f}")
+            elif b['bullets_per_kill'] > a['bullets_per_kill'] * 2:
+                print(f"\n⚠ Team B inefficient: {b['bullets_per_kill']:.1f} bullets/kill vs A's {a['bullets_per_kill']:.1f}")
+else:
+    print("(No combat data)")
+
+# Friendly fire suspects
+ff_rows = conn.execute("""
+    SELECT team, COUNT(*) as count
+    FROM friendly_fire_suspects
+    GROUP BY team
+""").fetchall()
+
+if ff_rows:
+    print()
+    print("Potential Friendly Fire:")
+    for row in ff_rows:
+        print(f"  Team {row['team']}: {row['count']} incidents")
+        incidents = conn.execute("""
+            SELECT round_id, dead_unit_type, own_attacks
+            FROM friendly_fire_suspects
+            WHERE team = ?
+            ORDER BY round_id
+            LIMIT 3
+        """, (row['team'],)).fetchall()
+        for inc in incidents:
+            attacks = json.loads(inc['own_attacks']) if inc['own_attacks'] else []
+            print(f"    R{inc['round_id']}: {inc['dead_unit_type']} died (own attacks: {', '.join(set(attacks))})")
+
 print()
 print("═══════════════════════════════════════════════════════════════════════════════")
 print(f"Database: {db_path}")
 
 conn.close()
 PYEOF
+
+# ASCII MAP
+MAP_FILE="$PROJECT_DIR/maps/${MAP}.map17"
+if [[ -f "$MAP_FILE" ]]; then
+    echo ""
+    echo "───────────────────────────────────────────────────────────────────────────────"
+    echo "MAP LAYOUT: $MAP"
+    echo "───────────────────────────────────────────────────────────────────────────────"
+    python3 "$SCRIPT_DIR/map17_parser.py" "$MAP_FILE" --ascii
+fi
