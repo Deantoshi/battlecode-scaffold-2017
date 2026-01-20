@@ -246,6 +246,35 @@ class GameSnapshot:
         self.team_b_unit_quadrants = defaultdict(lambda: defaultdict(int))
 
 
+class CombatStats:
+    """Combat statistics for a team."""
+    def __init__(self):
+        # Shots fired by type
+        self.shots_single = 0
+        self.shots_triad = 0
+        self.shots_pentad = 0
+        self.lumberjack_strikes = 0
+        self.chops = 0
+        # Actions by unit type: {body_type: {action_type: count}}
+        self.actions_by_unit = defaultdict(lambda: defaultdict(int))
+        # Deaths by unit type
+        self.deaths_by_type = defaultdict(int)
+        # Production order: [(round, body_type), ...]
+        self.production_order = []
+        # Total production by type
+        self.total_produced = defaultdict(int)
+
+    @property
+    def total_bullet_cost(self) -> int:
+        """Total bullets spent on shooting."""
+        return self.shots_single * 1 + self.shots_triad * 3 + self.shots_pentad * 5
+
+    @property
+    def total_shots(self) -> int:
+        """Total shooting actions."""
+        return self.shots_single + self.shots_triad + self.shots_pentad
+
+
 class BC17Parser:
     """Parser for .bc17 match replay files with full FlatBuffer support."""
 
@@ -261,6 +290,13 @@ class BC17Parser:
         self.map_max = None
         # Initial bodies from map (for combat sims): [(robot_id, team_idx, body_type, x, y), ...]
         self.initial_bodies: List[Tuple[int, int, int, float, float]] = []
+        # Combat statistics per team
+        self.combat_stats: Dict[int, CombatStats] = {0: CombatStats(), 1: CombatStats()}
+        # Combat timing
+        self.first_combat_round: Optional[int] = None
+        self.last_combat_round: Optional[int] = None
+        # Potential friendly fire incidents: [(round, team, dead_unit_type, own_attacks)]
+        self.friendly_fire_suspects: List[Tuple[int, int, str, List[str]]] = []
 
     def load(self) -> bool:
         """Load and decompress the .bc17 file."""
@@ -409,15 +445,74 @@ class BC17Parser:
                                 team_idx, body_type = robot_registry[robot_id]
                                 robot_positions[robot_id] = (team_idx, body_type, x, y)
 
+                        # Track production order and totals
+                        for robot_id, team_idx, body_type in round_data.spawned_robot_info:
+                            type_name = BODY_TYPES.get(body_type, f'UNKNOWN_{body_type}')
+                            if type_name in COMBAT_UNITS:
+                                self.combat_stats[team_idx].production_order.append((round_data.round_id, type_name))
+                                self.combat_stats[team_idx].total_produced[type_name] += 1
+
+                        # Track actions by robot/team
+                        team_attacks_this_round = {0: [], 1: []}
+                        for robot_id, action_type, target_id in round_data.actions:
+                            if robot_id in robot_registry:
+                                team_idx, body_type = robot_registry[robot_id]
+                                action_name = ACTION_TYPES.get(action_type, f'UNKNOWN_{action_type}')
+                                body_name = BODY_TYPES.get(body_type, f'UNKNOWN_{body_type}')
+
+                                # Track action by unit type
+                                self.combat_stats[team_idx].actions_by_unit[body_name][action_name] += 1
+
+                                # Track shot types
+                                if action_name == 'FIRE':
+                                    self.combat_stats[team_idx].shots_single += 1
+                                    team_attacks_this_round[team_idx].append('FIRE')
+                                elif action_name == 'FIRE_TRIAD':
+                                    self.combat_stats[team_idx].shots_triad += 1
+                                    team_attacks_this_round[team_idx].append('FIRE_TRIAD')
+                                elif action_name == 'FIRE_PENTAD':
+                                    self.combat_stats[team_idx].shots_pentad += 1
+                                    team_attacks_this_round[team_idx].append('FIRE_PENTAD')
+                                elif action_name == 'LUMBERJACK_STRIKE':
+                                    self.combat_stats[team_idx].lumberjack_strikes += 1
+                                    team_attacks_this_round[team_idx].append('STRIKE')
+                                elif action_name == 'CHOP':
+                                    self.combat_stats[team_idx].chops += 1
+
+                                # Track combat timing
+                                if action_name in ('FIRE', 'FIRE_TRIAD', 'FIRE_PENTAD', 'LUMBERJACK_STRIKE'):
+                                    if self.first_combat_round is None:
+                                        self.first_combat_round = round_data.round_id
+                                    self.last_combat_round = round_data.round_id
+
                         # Process deaths
                         deaths_by_team = {0: 0, 1: 0}
+                        robot_deaths_this_round = {0: [], 1: []}
                         for robot_id in round_data.died_ids:
                             if robot_id in robot_registry:
                                 team_idx, body_type = robot_registry[robot_id]
                                 units_alive[team_idx][body_type] = max(0, units_alive[team_idx][body_type] - 1)
                                 deaths_by_team[team_idx] += 1
+
+                                # Track deaths by type
+                                type_name = BODY_TYPES.get(body_type, f'UNKNOWN_{body_type}')
+                                self.combat_stats[team_idx].deaths_by_type[type_name] += 1
+                                robot_deaths_this_round[team_idx].append(type_name)
+
                                 del robot_registry[robot_id]
                                 robot_positions.pop(robot_id, None)
+
+                        # Detect potential friendly fire
+                        for team in [0, 1]:
+                            enemy = 1 - team
+                            if robot_deaths_this_round[team] and team_attacks_this_round[team] and not team_attacks_this_round[enemy]:
+                                for dead_type in robot_deaths_this_round[team]:
+                                    self.friendly_fire_suspects.append((
+                                        round_data.round_id,
+                                        team,
+                                        dead_type,
+                                        team_attacks_this_round[team][:]
+                                    ))
 
                         # Calculate bullets spent on units
                         spent_a = sum(UNIT_COSTS.get(BODY_TYPES.get(t, ''), 0) * c
@@ -876,7 +971,11 @@ class BC17Parser:
             'logs': logs,
             'snapshots': self.snapshots,
             'rounds_parsed': len(self.rounds),
-            'log_count': len(logs)
+            'log_count': len(logs),
+            'combat_stats': self.combat_stats,
+            'first_combat_round': self.first_combat_round,
+            'last_combat_round': self.last_combat_round,
+            'friendly_fire_suspects': self.friendly_fire_suspects
         }
 
 
@@ -892,6 +991,10 @@ class MatchSummarizer:
         self.metadata = parsed_data.get('metadata', {})
         self.logs = parsed_data.get('logs', [])
         self.snapshots = parsed_data.get('snapshots', [])
+        self.combat_stats = parsed_data.get('combat_stats', {0: CombatStats(), 1: CombatStats()})
+        self.first_combat_round = parsed_data.get('first_combat_round')
+        self.last_combat_round = parsed_data.get('last_combat_round')
+        self.friendly_fire_suspects = parsed_data.get('friendly_fire_suspects', [])
 
     def detect_victory_condition(self) -> Dict[str, Any]:
         """Detect how the match was won."""
@@ -1300,6 +1403,220 @@ class MatchSummarizer:
 
         return lines
 
+    def generate_combat_analysis(self) -> List[str]:
+        """Generate combat efficiency analysis section."""
+        lines = []
+        teams = self.metadata.get('teams', ['Team A', 'Team B'])
+        team_a = teams[0] if len(teams) > 0 else 'Team A'
+        team_b = teams[1] if len(teams) > 1 else 'Team B'
+
+        lines.append("## Combat Analysis")
+        lines.append("")
+
+        # Combat timing
+        if self.first_combat_round:
+            lines.append(f"**Combat Duration:** Rounds {self.first_combat_round} - {self.last_combat_round}")
+            lines.append("")
+
+        # Shot breakdown table
+        lines.append("### Shot Breakdown")
+        lines.append("")
+        lines.append("| Metric | Team A | Team B | Analysis |")
+        lines.append("|--------|--------|--------|----------|")
+
+        stats_a = self.combat_stats.get(0, CombatStats())
+        stats_b = self.combat_stats.get(1, CombatStats())
+
+        lines.append(f"| Single shots | {stats_a.shots_single} | {stats_b.shots_single} | 1 bullet each |")
+        lines.append(f"| Triad shots | {stats_a.shots_triad} | {stats_b.shots_triad} | 3 bullets each |")
+        lines.append(f"| Pentad shots | {stats_a.shots_pentad} | {stats_b.shots_pentad} | 5 bullets each |")
+        lines.append(f"| Lumberjack strikes | {stats_a.lumberjack_strikes} | {stats_b.lumberjack_strikes} | AoE damage |")
+        lines.append(f"| Tree chops | {stats_a.chops} | {stats_b.chops} | Tree clearing |")
+        lines.append(f"| **Total bullet cost** | **{stats_a.total_bullet_cost}** | **{stats_b.total_bullet_cost}** | Ammo spent |")
+        lines.append("")
+
+        # Combat efficiency
+        lines.append("### Combat Efficiency")
+        lines.append("")
+
+        # Calculate enemy deaths (kills)
+        total_deaths_a = sum(stats_a.deaths_by_type.values())
+        total_deaths_b = sum(stats_b.deaths_by_type.values())
+        kills_a = total_deaths_b  # Team A killed Team B units
+        kills_b = total_deaths_a  # Team B killed Team A units
+
+        bullets_per_kill_a = stats_a.total_bullet_cost / kills_a if kills_a > 0 else 0
+        bullets_per_kill_b = stats_b.total_bullet_cost / kills_b if kills_b > 0 else 0
+
+        lines.append("| Metric | Team A | Team B |")
+        lines.append("|--------|--------|--------|")
+        lines.append(f"| Enemy kills | {kills_a} | {kills_b} |")
+        lines.append(f"| Own deaths | {total_deaths_a} | {total_deaths_b} |")
+        lines.append(f"| K/D ratio | {kills_a/total_deaths_a:.2f} | {kills_b/total_deaths_b:.2f} |" if total_deaths_a > 0 and total_deaths_b > 0 else f"| K/D ratio | - | - |")
+        lines.append(f"| Bullets per kill | {bullets_per_kill_a:.1f} | {bullets_per_kill_b:.1f} |")
+        lines.append("")
+
+        # Efficiency warnings
+        if bullets_per_kill_a > 0 and bullets_per_kill_b > 0:
+            if bullets_per_kill_a > bullets_per_kill_b * 2:
+                lines.append(f"⚠️ **{team_a} is very inefficient** - spending {bullets_per_kill_a:.1f} bullets per kill vs {team_b}'s {bullets_per_kill_b:.1f}")
+                if stats_a.shots_pentad > stats_a.shots_single:
+                    lines.append(f"   - Consider using single shots more often (pentad costs 5x more)")
+            elif bullets_per_kill_b > bullets_per_kill_a * 2:
+                lines.append(f"⚠️ **{team_b} is very inefficient** - spending {bullets_per_kill_b:.1f} bullets per kill vs {team_a}'s {bullets_per_kill_a:.1f}")
+                if stats_b.shots_pentad > stats_b.shots_single:
+                    lines.append(f"   - Consider using single shots more often (pentad costs 5x more)")
+            lines.append("")
+
+        return lines
+
+    def generate_build_order_analysis(self) -> List[str]:
+        """Generate build order and production timing analysis."""
+        lines = []
+        teams = self.metadata.get('teams', ['Team A', 'Team B'])
+        team_a = teams[0] if len(teams) > 0 else 'Team A'
+        team_b = teams[1] if len(teams) > 1 else 'Team B'
+
+        lines.append("## Build Order Analysis")
+        lines.append("")
+
+        stats_a = self.combat_stats.get(0, CombatStats())
+        stats_b = self.combat_stats.get(1, CombatStats())
+
+        # Total production comparison
+        lines.append("### Total Production")
+        lines.append("")
+        lines.append("| Unit Type | Team A | Team B |")
+        lines.append("|-----------|--------|--------|")
+
+        all_types = set(stats_a.total_produced.keys()) | set(stats_b.total_produced.keys())
+        unit_order = ['ARCHON', 'GARDENER', 'LUMBERJACK', 'SOLDIER', 'TANK', 'SCOUT']
+        for unit_type in unit_order:
+            if unit_type in all_types:
+                count_a = stats_a.total_produced.get(unit_type, 0)
+                count_b = stats_b.total_produced.get(unit_type, 0)
+                lines.append(f"| {unit_type} | {count_a} | {count_b} |")
+        lines.append("")
+
+        # Build order comparison (first 10 units)
+        lines.append("### Build Order (First 10 Units)")
+        lines.append("")
+
+        # Find key milestones
+        first_soldier_a = next((r for r, t in stats_a.production_order if t == 'SOLDIER'), None)
+        first_soldier_b = next((r for r, t in stats_b.production_order if t == 'SOLDIER'), None)
+        first_lumberjack_a = next((r for r, t in stats_a.production_order if t == 'LUMBERJACK'), None)
+        first_lumberjack_b = next((r for r, t in stats_b.production_order if t == 'LUMBERJACK'), None)
+
+        lines.append(f"**{team_a}:**")
+        for i, (round_num, unit_type) in enumerate(stats_a.production_order[:10]):
+            lines.append(f"  {i+1}. R{round_num}: {unit_type}")
+        if not stats_a.production_order:
+            lines.append("  (no units produced)")
+        lines.append("")
+
+        lines.append(f"**{team_b}:**")
+        for i, (round_num, unit_type) in enumerate(stats_b.production_order[:10]):
+            lines.append(f"  {i+1}. R{round_num}: {unit_type}")
+        if not stats_b.production_order:
+            lines.append("  (no units produced)")
+        lines.append("")
+
+        # Build order insights
+        lines.append("### Build Order Insights")
+        lines.append("")
+        if first_soldier_a and first_soldier_b:
+            diff = first_soldier_a - first_soldier_b
+            if diff > 100:
+                lines.append(f"⚠️ **{team_a} built first SOLDIER {diff} rounds late** (R{first_soldier_a} vs R{first_soldier_b})")
+            elif diff < -100:
+                lines.append(f"⚠️ **{team_b} built first SOLDIER {-diff} rounds late** (R{first_soldier_b} vs R{first_soldier_a})")
+            else:
+                lines.append(f"- First SOLDIER timing similar: {team_a} R{first_soldier_a}, {team_b} R{first_soldier_b}")
+        elif first_soldier_a:
+            lines.append(f"- {team_a} first SOLDIER: R{first_soldier_a}")
+            lines.append(f"- {team_b} built no SOLDIERs")
+        elif first_soldier_b:
+            lines.append(f"- {team_a} built no SOLDIERs")
+            lines.append(f"- {team_b} first SOLDIER: R{first_soldier_b}")
+
+        if first_lumberjack_a and not first_lumberjack_b:
+            lines.append(f"- {team_a} invested in LUMBERJACKs (first at R{first_lumberjack_a}), {team_b} did not")
+        elif first_lumberjack_b and not first_lumberjack_a:
+            lines.append(f"- {team_b} invested in LUMBERJACKs (first at R{first_lumberjack_b}), {team_a} did not")
+
+        lines.append("")
+        return lines
+
+    def generate_death_analysis(self) -> List[str]:
+        """Generate death breakdown and friendly fire analysis."""
+        lines = []
+        teams = self.metadata.get('teams', ['Team A', 'Team B'])
+        team_a = teams[0] if len(teams) > 0 else 'Team A'
+        team_b = teams[1] if len(teams) > 1 else 'Team B'
+
+        stats_a = self.combat_stats.get(0, CombatStats())
+        stats_b = self.combat_stats.get(1, CombatStats())
+
+        lines.append("## Death Analysis")
+        lines.append("")
+
+        # Deaths by unit type
+        lines.append("### Deaths by Unit Type")
+        lines.append("")
+        lines.append("| Unit Type | Team A | Team B |")
+        lines.append("|-----------|--------|--------|")
+
+        all_death_types = set(stats_a.deaths_by_type.keys()) | set(stats_b.deaths_by_type.keys())
+        unit_order = ['ARCHON', 'GARDENER', 'LUMBERJACK', 'SOLDIER', 'TANK', 'SCOUT']
+        for unit_type in unit_order:
+            if unit_type in all_death_types:
+                deaths_a = stats_a.deaths_by_type.get(unit_type, 0)
+                deaths_b = stats_b.deaths_by_type.get(unit_type, 0)
+                lines.append(f"| {unit_type} | {deaths_a} | {deaths_b} |")
+
+        total_a = sum(stats_a.deaths_by_type.values())
+        total_b = sum(stats_b.deaths_by_type.values())
+        lines.append(f"| **TOTAL** | **{total_a}** | **{total_b}** |")
+        lines.append("")
+
+        # Friendly fire analysis
+        if self.friendly_fire_suspects:
+            ff_by_team = {0: [], 1: []}
+            for round_num, team, dead_type, attacks in self.friendly_fire_suspects:
+                ff_by_team[team].append((round_num, dead_type, attacks))
+
+            lines.append("### Potential Friendly Fire")
+            lines.append("*(Deaths where only the same team was attacking)*")
+            lines.append("")
+
+            for team in [0, 1]:
+                if ff_by_team[team]:
+                    team_name = team_a if team == 0 else team_b
+                    lines.append(f"**{team_name}:** {len(ff_by_team[team])} incidents")
+                    for round_num, dead_type, attacks in ff_by_team[team][:5]:
+                        attack_summary = ', '.join(set(attacks))
+                        lines.append(f"  - R{round_num}: {dead_type} died (own attacks: {attack_summary})")
+                    if len(ff_by_team[team]) > 5:
+                        lines.append(f"  - ... and {len(ff_by_team[team]) - 5} more")
+                    lines.append("")
+
+            # Warning if significant friendly fire
+            ff_count_a = len(ff_by_team[0])
+            ff_count_b = len(ff_by_team[1])
+            if ff_count_a >= 3:
+                lines.append(f"⚠️ **{team_a} may have friendly fire issues** - {ff_count_a} suspicious deaths")
+                if any('STRIKE' in str(attacks) for _, _, attacks in ff_by_team[0]):
+                    lines.append(f"   - Check lumberjack strike targeting (damages ALL units in range)")
+            if ff_count_b >= 3:
+                lines.append(f"⚠️ **{team_b} may have friendly fire issues** - {ff_count_b} suspicious deaths")
+                if any('STRIKE' in str(attacks) for _, _, attacks in ff_by_team[1]):
+                    lines.append(f"   - Check lumberjack strike targeting (damages ALL units in range)")
+            if ff_count_a >= 3 or ff_count_b >= 3:
+                lines.append("")
+
+        return lines
+
     def generate_summary(self, compact: bool = False) -> str:
         """Generate a markdown summary of the match.
 
@@ -1362,6 +1679,15 @@ class MatchSummarizer:
                 team_name = team_a if tp['team'] == 'A' else team_b
                 lines.append(f"- **R{tp['round']}**: {team_name} - {tp['type']}: {tp['detail']}")
             lines.append("")
+
+        # NEW: Combat Analysis Section
+        lines.extend(self.generate_combat_analysis())
+
+        # NEW: Build Order Analysis Section
+        lines.extend(self.generate_build_order_analysis())
+
+        # NEW: Death Analysis Section
+        lines.extend(self.generate_death_analysis())
 
         # Game Timeline - compact or detailed tables
         if self.snapshots:
