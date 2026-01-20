@@ -31,7 +31,14 @@ Bot: {BOT}
 
 ---
 
-## Step 1: Read Match Results & Map Context
+## Step 1: Read Match Results, Game Mechanics & Map Context
+
+Read `TECHNICAL_DOCS.md` for game mechanics reference:
+- Victory conditions (1000 VP or destroy all enemy units)
+- Robot types, stats, and roles (Archon, Gardener, Soldier, Lumberjack, Scout, Tank)
+- Tree clearing methods (lumberjack chop, tank trampling, soldier shooting, strike AoE)
+- Economy system (bullets, tree income, shaking)
+- Key API methods and combat micro tips
 
 Read `src/{BOT}/.state/match-result.txt` to get the full match analysis.
 
