@@ -148,6 +148,26 @@ else
     mkdir -p "$STATE_DIR"
 fi
 
+# Generate map context for agents (ASCII art + LLM-formatted info)
+MAP_FILE="engine/battlecode/world/resources/${MAP}.map17"
+if [[ -f "$MAP_FILE" ]]; then
+    printf '%s\n' "${BLUE}Generating map context for $MAP...${NC}"
+    python3 scripts/map17_parser.py "$MAP_FILE" --ascii > "$STATE_DIR/map-ascii.txt" 2>/dev/null
+    python3 scripts/map17_parser.py "$MAP_FILE" > "$STATE_DIR/map-context.txt" 2>/dev/null
+
+    if [[ -s "$STATE_DIR/map-ascii.txt" ]]; then
+        printf '%s\n' "${GREEN}✓ Map visualization saved to $STATE_DIR/map-ascii.txt${NC}"
+        printf '%s\n' "${GREEN}✓ Map context saved to $STATE_DIR/map-context.txt${NC}"
+        echo ""
+        echo "Map Preview:"
+        cat "$STATE_DIR/map-ascii.txt"
+    else
+        printf '%s\n' "${YELLOW}⚠ Could not parse map file${NC}"
+    fi
+else
+    printf '%s\n' "${YELLOW}⚠ Map file not found: $MAP_FILE${NC}"
+fi
+
 echo ""
 
 # ═══════════════════════════════════════════════════════════════════════════════

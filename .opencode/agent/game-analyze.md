@@ -31,7 +31,7 @@ Bot: {BOT}
 
 ---
 
-## Step 1: Read Match Results
+## Step 1: Read Match Results & Map Context
 
 Read `src/{BOT}/.state/match-result.txt` to get the full match analysis.
 
@@ -39,6 +39,18 @@ Read `src/{BOT}/.state/match-summary.txt` to get:
 - OUTCOME
 - ROUNDS
 - GOAL_MET
+
+Read `src/{BOT}/.state/map-context.txt` for map spatial information:
+- Map dimensions and boundaries
+- Neutral tree positions, radii, and contents (bullets/robots)
+- Tree density by quadrant (NW, NE, SW, SE)
+- Initial unit positions for both teams
+
+Read `src/{BOT}/.state/map-ascii.txt` for visual map layout:
+- Shows tree positions (T=tree, $=tree+bullets, ?=tree+robot)
+- Shows starting unit positions (UPPER=TeamA, lower=TeamB)
+
+This spatial context helps identify movement/pathing issues.
 
 ---
 
@@ -89,6 +101,14 @@ Based on match results, determine the PRIMARY issue:
 - Can you be more aggressive earlier?
 - Can you optimize build order?
 - Are units wandering instead of attacking?
+
+### Map-Aware Analysis (use map-context.txt):
+- **Tree obstacles**: Are units getting stuck in dense tree clusters? Check quadrant tree counts.
+- **Pathing issues**: Is there a clear path between spawn points or are trees blocking?
+- **Resource trees**: Are $-trees (containing bullets) being prioritized by lumberjacks?
+- **?-trees**: Are trees containing robots being chopped to gain unit advantage?
+- **Spawn distance**: How far apart are Team A and Team B archons? Affects rush viability.
+- **Quadrant strategy**: Which quadrant has fewest obstacles for flanking?
 
 ---
 
@@ -171,3 +191,7 @@ Plan saved to: src/{BOT}/.state/improvement-plan.md
 | Enemy has more VP | They're donating | Either rush kill or out-donate |
 | Won but slow (>1500) | Not aggressive enough | Seek enemies earlier |
 | Units alive but not engaging | Target acquisition issue | Fix enemy detection range |
+| Units stuck near spawn | Dense tree cluster blocking | Navigate around obstacle quadrant |
+| Not finding enemies | Trees blocking line of sight | Move to open quadrant first |
+| Missing resource trees | Not prioritizing $-trees | Target high-bullet trees early |
+| Enemy has more units | Not chopping ?-trees | Prioritize robot-containing trees |
