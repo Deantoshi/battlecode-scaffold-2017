@@ -1,0 +1,63 @@
+═══════════════════════════════════════════════════════════════════════════════
+MATCH: grok_code_fast_1 (A) vs copy_bot (B) on MagicWood
+═══════════════════════════════════════════════════════════════════════════════
+[server] -------------------- Match Starting --------------------
+[server] grok_code_fast_1 vs. copy_bot on MagicWood
+[server]                    copy_bot (B) wins (round 1724)
+[server] Reason: The winning team won by destruction.
+[server] -------------------- Match Finished --------------------
+
+───────────────────────────────────────────────────────────────────────────────
+RESULT
+───────────────────────────────────────────────────────────────────────────────
+OUTCOME=LOSS  ROUNDS=1724  TARGET=1500  GOAL_MET=NO
+FINAL: A=114bullets/0vp  B=72bullets/0vp
+
+───────────────────────────────────────────────────────────────────────────────
+UNIT SUMMARY (Produced / Lost / Alive)
+───────────────────────────────────────────────────────────────────────────────
+Team   Unit         Prod   Lost   Alive 
+----------------------------------------
+A      ARCHON       1      1      0     
+A      GARDENER     5      5      0     
+A      SOLDIER      3      3      0     
+A      LUMBERJACK   5      5      0     
+B      ARCHON       1      0      1     
+B      GARDENER     3      0      3     
+B      SOLDIER      20     15     5     
+
+───────────────────────────────────────────────────────────────────────────────
+ECONOMY TIMELINE (current bullets/vp | cumulative generated/spent)
+───────────────────────────────────────────────────────────────────────────────
+R500  | A:  56/0   (gen:1056 spent:1000)  B:  26/0   (gen: 726 spent: 700)
+R1000 | A:  69/0   (gen:1369 spent:1300)  B:  89/0   (gen:1389 spent:1300)
+R1500 | A: 140/0   (gen:1440 spent:1300)  B:  78/0   (gen:2078 spent:2000)
+R1724 | A: 114/0   (gen:1414 spent:1300)  B:  72/0   (gen:2372 spent:2300)
+
+───────────────────────────────────────────────────────────────────────────────
+COMBAT TIMELINE (deaths by period)
+───────────────────────────────────────────────────────────────────────────────
+R1-500: A:8 B:4
+R1001-1500: A:0 B:4
+R1501-2000: A:2 B:2
+R501-1000: A:4 B:5
+
+───────────────────────────────────────────────────────────────────────────────
+MOVEMENT ANALYSIS (unit distribution changes)
+───────────────────────────────────────────────────────────────────────────────
+Comparing R300 vs R1724:
+
+  Team A at R300: CONCENTRATED in SW (1 ARCHON, 2 GARDENER, 1 LUMBERJACK)
+  Team A at R1724: No units tracked
+
+  Team B at R300: Spread across quadrants (NE:2, SW:1)
+  Team B at R1724: Spread across quadrants (NE:6, SW:2, SE:1)
+  ⚠ Team B POTENTIAL STUCK: 1 ARCHON in NE, 3 GARDENER in NE, 2 SOLDIER in SW
+
+───────────────────────────────────────────────────────────────────────────────
+VP ACTIVITY
+───────────────────────────────────────────────────────────────────────────────
+(No VP donations)
+
+═══════════════════════════════════════════════════════════════════════════════
+Database: /Users/danieldean/Documents/work_code/battlecode-scaffold-2017/matches/grok_code_fast_1-vs-copy_bot-on-MagicWood.db
