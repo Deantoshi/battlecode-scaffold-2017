@@ -7,11 +7,10 @@
 # individual agents through Ralphy, each with a fresh context session.
 #
 # Agents called:
-#   1. game-init       - Initialize (once)
-#   2. game-run-match  - Run match
-#   3. game-analyze    - Analyze results & plan
-#   4. game-implement  - Implement changes
-#   5. game-report     - Final report (when goal achieved)
+#   1. game-init        - Initialize (once)
+#   2. game-run-analyze - Run match & analyze results & plan
+#   3. game-implement   - Implement changes
+#   4. game-report      - Final report (when goal achieved)
 
 set -e
 
@@ -182,26 +181,19 @@ for i in $(seq 1 "$MAX_ITERS"); do
     printf '%s\n' "${NC}"
 
     # ─────────────────────────────────────────────────────────────────────────────
-    # Step 1: Run Match (fresh context)
+    # Step 1: Run Match & Analyze (fresh context)
     # ─────────────────────────────────────────────────────────────────────────────
-    printf '%s\n' "${BOLD}${GREEN}[STEP 1] Run Match${NC}"
-    run_agent "game-run-match" "--bot $BOT --opponent $OPPONENT --maps $MAP"
+    printf '%s\n' "${BOLD}${GREEN}[STEP 1] Run Match & Analyze${NC}"
+    run_agent "game-run-analyze" "--bot $BOT --opponent $OPPONENT --maps $MAP"
     echo ""
 
     # ─────────────────────────────────────────────────────────────────────────────
-    # Step 2: Analyze (fresh context)
-    # ─────────────────────────────────────────────────────────────────────────────
-    printf '%s\n' "${BOLD}${GREEN}[STEP 2] Analyze Results${NC}"
-    run_agent "game-analyze" "--bot $BOT --opponent $OPPONENT --maps $MAP"
-    echo ""
-
-    # ─────────────────────────────────────────────────────────────────────────────
-    # Step 3: Check Goal Status
+    # Step 2: Check Goal Status
     # ─────────────────────────────────────────────────────────────────────────────
     GOAL_STATUS=$(check_goal)
 
     if [[ "$GOAL_STATUS" == "ACHIEVED" ]]; then
-        printf '%s\n' "${BOLD}${CYAN}[STEP 3] Goal Status: ACHIEVED (pending validation)${NC}"
+        printf '%s\n' "${BOLD}${CYAN}[STEP 2] Goal Status: ACHIEVED (pending validation)${NC}"
         echo ""
 
         # VALIDATION: Actually run the match and confirm GOAL_MET=YES
@@ -231,7 +223,7 @@ for i in $(seq 1 "$MAX_ITERS"); do
     fi
 
     # ─────────────────────────────────────────────────────────────────────────────
-    # Step 4: Implement Improvement (fresh context)
+    # Step 3: Implement Improvement (fresh context)
     # ─────────────────────────────────────────────────────────────────────────────
     printf '%s\n' "${BOLD}${GREEN}[STEP 3] Implement Improvement${NC}"
     run_agent "game-implement" "--bot $BOT"
