@@ -1,87 +1,44 @@
-## Map: MagicWood
+## Map: Boxed
 
-**Dimensions:** 80 x 80
-**Origin:** (89.3, 387.3)
-**Max Corner:** (169.3, 467.3)
+**Dimensions:** 50 x 50
+**Origin:** (377.6, 474.5)
+**Max Corner:** (427.6, 524.5)
 
 ### Initial Units
 **Team B:** 2 units
-  - ARCHON at (109.3, 407.3)
-  - ARCHON at (149.3, 447.3)
+  - ARCHON at (382.5, 519.6)
+  - ARCHON at (422.8, 479.4)
 
 ### Neutral Trees
-**Total:** 668 trees
+**Total:** 154 trees
 
-**Total bullets in trees:** 1800
-**Trees with bullets:** 18
-**Trees with robots:** 40
-  - TANK at (112.4, 424.8), radius 2.0
-  - TANK at (133.2, 409.0), radius 2.0
-  - SOLDIER at (91.5, 456.6), radius 1.0
-  - SOLDIER at (93.7, 456.6), radius 1.0
-  - SOLDIER at (96.2, 456.5), radius 1.0
-  - SOLDIER at (91.6, 459.0), radius 1.0
-  - SOLDIER at (94.0, 459.1), radius 1.0
-  - SOLDIER at (96.5, 459.0), radius 1.0
-  - SOLDIER at (91.8, 461.9), radius 1.0
-  - SOLDIER at (94.1, 461.7), radius 1.0
-  - SOLDIER at (96.3, 461.7), radius 1.0
-  - GARDENER at (112.8, 410.3), radius 1.0
-  - LUMBERJACK at (109.5, 442.7), radius 1.0
-  - SCOUT at (125.0, 441.5), radius 1.0
-  - SCOUT at (156.3, 460.2), radius 1.0
-  - TANK at (99.2, 464.4), radius 2.0
-  - LUMBERJACK at (124.5, 429.7), radius 1.0
-  - LUMBERJACK at (126.8, 431.1), radius 1.0
-  - LUMBERJACK at (124.3, 455.9), radius 1.0
-  - SCOUT at (113.7, 421.3), radius 1.0
-  - TANK at (146.2, 429.8), radius 2.0
-  - TANK at (125.3, 445.6), radius 2.0
-  - SOLDIER at (167.1, 398.0), radius 1.0
-  - SOLDIER at (164.8, 398.0), radius 1.0
-  - SOLDIER at (162.4, 398.1), radius 1.0
-  - SOLDIER at (167.0, 395.6), radius 1.0
-  - SOLDIER at (164.6, 395.4), radius 1.0
-  - SOLDIER at (162.0, 395.6), radius 1.0
-  - SOLDIER at (166.7, 392.7), radius 1.0
-  - SOLDIER at (164.5, 392.9), radius 1.0
-  - SOLDIER at (162.3, 392.9), radius 1.0
-  - GARDENER at (145.8, 444.2), radius 1.0
-  - LUMBERJACK at (149.1, 411.8), radius 1.0
-  - SCOUT at (133.6, 413.1), radius 1.0
-  - SCOUT at (102.3, 394.4), radius 1.0
-  - TANK at (159.4, 390.2), radius 2.0
-  - LUMBERJACK at (134.0, 424.8), radius 1.0
-  - LUMBERJACK at (131.8, 423.4), radius 1.0
-  - LUMBERJACK at (134.3, 398.7), radius 1.0
-  - SCOUT at (144.8, 433.3), radius 1.0
 
 **Tree positions (x, y, radius, bullets):**
-  NW quadrant: 171 trees
-    (119.4, 428.3) r=1.0
-    (122.5, 432.9) r=1.0
-    (124.8, 434.0) r=1.0
-    (127.6, 433.8) r=1.0
-    (101.3, 442.2) r=1.0
-    ... and 166 more
-  NE quadrant: 163 trees
-    (129.4, 432.5) r=1.0
-    (131.2, 431.1) r=1.0
-    (132.5, 429.5) r=1.0
-    (134.6, 431.4) r=1.0
-    (134.7, 433.8) r=1.0
-    ... and 158 more
-  SW quadrant: 163 trees
-    (119.1, 401.1) r=1.0
-    (119.3, 406.1) r=1.0
-    (119.0, 408.5) r=1.0
-    (118.1, 410.8) r=1.0
-    (114.3, 415.4) r=1.0
-    ... and 158 more
-  SE quadrant: 171 trees
-    (132.3, 418.6) r=1.0
-    (132.8, 415.9) r=1.0
-    (131.3, 413.2) r=1.0
-    (130.2, 410.8) r=1.0
-    (130.7, 400.8) r=1.0
-    ... and 166 more
+  NW quadrant: 38 trees
+    (387.6, 523.5) r=1.0
+    (387.6, 521.5) r=1.0
+    (387.6, 519.5) r=1.0
+    (387.6, 517.5) r=1.0
+    (387.6, 509.5) r=1.0
+    ... and 33 more
+  NE quadrant: 41 trees
+    (417.6, 499.5) r=1.0
+    (417.6, 501.5) r=1.0
+    (417.6, 507.5) r=1.0
+    (417.6, 509.5) r=1.0
+    (417.6, 511.5) r=1.0
+    ... and 36 more
+  SW quadrant: 37 trees
+    (387.6, 497.5) r=1.0
+    (387.6, 491.5) r=1.0
+    (387.6, 489.5) r=1.0
+    (387.6, 487.5) r=1.0
+    (387.6, 481.5) r=1.0
+    ... and 32 more
+  SE quadrant: 38 trees
+    (404.6, 484.5) r=1.0
+    (402.6, 484.5) r=1.0
+    (410.6, 484.5) r=1.0
+    (412.6, 484.5) r=1.0
+    (414.6, 484.5) r=1.0
+    ... and 33 more

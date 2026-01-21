@@ -1,36 +1,48 @@
 # Improvement Plan
 
 ## Iteration
-59
+1
 
 ## Match Result
-- Outcome: LOSS
-- Rounds: 1724
+- Outcome: WIN
+- Rounds: 2999
 - Goal Met: NO
 
 ## Analysis
 
 ### Primary Problem
-Lost by elimination due to all units dying early, insufficient soldier production (3 produced vs opponent's 20), and units concentrated in SW quadrant unable to expand or engage.
+Won the match but took 2999 rounds, far exceeding the target of ≤1500 rounds. The game ended in a tiebreaker based on bullet supply, indicating inefficient resource usage and slow progress.
 
 ### Root Cause
-High tree density in SW quadrant on MagicWood map trapping units and preventing movement, economy expansion, and combat engagement, leading to early deaths before sufficient units could be produced.
+- Potential stuck units (gardener in NW quadrant) suggest pathfinding issues through tree obstacles.
+- High friendly fire incidents (6 for Team A vs 2 for B) indicate poor targeting logic.
+- Inefficient combat (49 bullets/kill vs B's 38) and equal K/D ratio despite similar unit counts suggests units are not engaging effectively.
+- Build order started with lumberjack but only 8 produced vs 28 soldiers, insufficient for clearing the dense tree clusters on Boxed map.
+- Trees on Boxed map are arranged in rows blocking movement between quadrants.
 
 ### Previous Attempts
-Previous iterations tried quadrant-aware movement, prioritized lumberjack production before round 500, and added tree clearing logic for lumberjacks to chop/shake trees blocking movement. These helped but units still get stuck in SW.
+None - this is the first iteration.
 
 ## Proposed Solution
 
 ### Strategy Change
-Implement SW quadrant lockout on MagicWood map to prevent units from spawning or moving into the dense SW tree cluster.
+Prioritize tree clearing with more lumberjacks early in the game to open pathways, improve soldier targeting to reduce friendly fire, and enhance movement logic to avoid getting stuck in tree clusters.
 
 ### Implementation Details
-- **File:** src/grok_code_fast_1/Navigation.java
-- **Location:** In the movement methods (e.g., tryMove or pathfinding logic)
-- **Change:** Add a map-specific check for MagicWood that avoids SW quadrant (coordinates where x < mapCenter.x and y < mapCenter.y). Force units to target NE or NW quadrants instead.
+- **File:** `src/grok_code_fast_1/Gardener.java`
+- **Location:** Build priority logic in Gardener.run() method
+- **Change:** Increase lumberjack production priority in early game (first 3-5 units should include 2-3 lumberjacks), then focus on soldiers.
+
+- **File:** `src/grok_code_fast_1/Soldier.java`
+- **Location:** Targeting and firing logic in Soldier.run() method
+- **Change:** Add friendly fire checks before firing (ensure no friendly units in bullet path), prioritize targets by distance and health.
+
+- **File:** `src/grok_code_fast_1/Lumberjack.java`
+- **Location:** Movement logic in Lumberjack.run() method
+- **Change:** Add pathfinding towards enemy quadrant after clearing nearby trees, avoid getting stuck by moving towards archon locations.
 
 ### Expected Impact
-Units will disperse to less obstructed areas earlier, enabling better economy expansion, more unit production, and earlier engagement with enemy units.
+Faster tree clearing will allow quicker unit movement and engagement, reducing friendly fire will improve combat efficiency, leading to victory in ≤1500 rounds.
 
 ### Success Criteria
-Produce at least 10 soldiers before round 1000, achieve a win in under 1500 rounds, or at least survive longer with more units alive.
+Win the next match in ≤1500 rounds with fewer friendly fire incidents and more efficient unit movement.

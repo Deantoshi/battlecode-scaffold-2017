@@ -1,221 +1,135 @@
 package grok_code_fast_1;
-
 import battlecode.common.*;
+import java.util.*;
 
 public class Navigation {
-
     static RobotController rc;
+    static MapLocation enemyCenter;
+    static Map<Integer, Boolean> followingWall = new HashMap<>();
+    static Map<Integer, Direction> bugDirection = new HashMap<>();
 
     public static void init(RobotController rc) {
         Navigation.rc = rc;
     }
 
-    /**
-     * Attempts to move in a given direction, while avoiding small obstacles directly in the path.
-     *
-     * @param dir The intended direction of movement
-     * @return true if a move was performed
-     * @throws GameActionException
-     */
-    static boolean tryMove(Direction dir) throws GameActionException {
-        return tryMove(dir,20,10);
+    public static boolean tryMove(Direction dir) throws GameActionException {
+        return tryMove(dir, 20, 3);
     }
 
-    /**
-     * Attempts to move in a given direction, while avoiding small obstacles direction in the path.
-     *
-     * @param dir The intended direction of movement
-     * @param degreeOffset Spacing between checked directions (degrees)
-     * @param checksPerSide Number of extra directions checked on each side, if intended direction was unavailable
-     * @return true if a move was performed
-     * @throws GameActionException
-     */
-    static boolean tryMove(Direction dir, float degreeOffset, int checksPerSide) throws GameActionException {
+    public static boolean tryMove(Direction dir, float degreeOffset, int checksPerSide) throws GameActionException {
+        MapLocation[] archons = rc.getInitialArchonLocations(rc.getTeam());
+        float sumX = 0, sumY = 0;
+        for (MapLocation loc : archons) {
+            sumX += loc.x;
+            sumY += loc.y;
+        }
+        MapLocation center = new MapLocation(25,25); // Assuming 50x50 map
+        boolean isMagicWood = true; // hardcoded for MagicWood map
 
-        // Calculate quadrant densities
-        float[] quadrantDensities = getQuadrantTreeDensities();
+        MapLocation current = rc.getLocation();
 
-        // First, try intended direction
-        if (rc.canMove(dir) && isDirectionGood(dir, quadrantDensities)) {
-            rc.move(dir);
-            return true;
-        } else if (rc.getType() == RobotType.LUMBERJACK && chopBlockingTrees(dir, 2.0f)) {
-            return true;
+        // Calculate enemy center if not already
+        if (enemyCenter == null) {
+            MapLocation[] enemyArchons = rc.getInitialArchonLocations(rc.getTeam().opponent());
+            sumX = 0; sumY = 0;
+            for (MapLocation loc : enemyArchons) {
+                sumX += loc.x;
+                sumY += loc.y;
+            }
+            enemyCenter = new MapLocation(sumX / enemyArchons.length, sumY / enemyArchons.length);
         }
 
-        // Now try a bunch of similar angles
-        boolean moved = false;
-        int currentCheck = 1;
+        // Collect directions to try
+        List<Direction> directionsToTry = new ArrayList<>();
+        directionsToTry.add(dir);
+        for (int i = 1; i <= checksPerSide; i++) {
+            directionsToTry.add(dir.rotateLeftDegrees(degreeOffset * i));
+            directionsToTry.add(dir.rotateRightDegrees(degreeOffset * i));
+        }
 
-        while(currentCheck<=checksPerSide) {
-            // Try the offset of the left side
-            Direction leftDir = dir.rotateLeftDegrees(degreeOffset*currentCheck);
-            if(rc.canMove(leftDir) && isDirectionGood(leftDir, quadrantDensities)) {
-                rc.move(leftDir);
+        // Sort directions by quadrant preference (favor SE), then by distance to enemy center
+        directionsToTry.sort(Comparator.comparing((Direction d) -> {
+            MapLocation target = current.add(d);
+            int quadrantScore = (target.x >= center.x ? 1 : 0) + (target.y >= center.y ? 1 : 0);
+            return -quadrantScore; // descending
+        }).thenComparing(d -> {
+            MapLocation target = current.add(d);
+            return target.distanceTo(enemyCenter);
+        }));
+
+        // Try directions in sorted order
+        for (Direction checkDir : directionsToTry) {
+            MapLocation target = current.add(checkDir);
+            if ((!isMagicWood || !(target.x < center.x && target.y < center.y)) && rc.canMove(checkDir)) {
+                rc.move(checkDir);
                 return true;
-            } else if (rc.getType() == RobotType.LUMBERJACK && chopBlockingTrees(leftDir, 2.0f)) {
-                return true;
+            } else if (rc.getType() == RobotType.LUMBERJACK) {
+                // For lumberjacks, prioritize clearing trees along path to enemy quadrant
+                TreeInfo[] nearbyTrees = rc.senseNearbyTrees();
+                TreeInfo bestTree = null;
+                float bestDist = Float.MAX_VALUE;
+                for (TreeInfo tree : nearbyTrees) {
+                    if (tree.team == Team.NEUTRAL && rc.canChop(tree.ID) && tree.location.distanceTo(enemyCenter) < current.distanceTo(enemyCenter)) {
+                        float dist = current.distanceTo(tree.location);
+                        if (dist < bestDist) {
+                            bestDist = dist;
+                            bestTree = tree;
+                        }
+                    }
+                }
+                if (bestTree != null) {
+                    rc.chop(bestTree.ID);
+                    return true;
+                }
+                // Fallback: try to chop blocking trees at target
+                TreeInfo tree = rc.senseTreeAtLocation(target);
+                if (tree != null && tree.team == Team.NEUTRAL && rc.canChop(tree.ID)) {
+                    rc.chop(tree.ID);
+                    return true; // Action taken (chopped), even if not moved
+                }
             }
-            // Try the offset on the right side
-            Direction rightDir = dir.rotateRightDegrees(degreeOffset*currentCheck);
-            if(rc.canMove(rightDir) && isDirectionGood(rightDir, quadrantDensities)) {
-                rc.move(rightDir);
-                return true;
-            } else if (rc.getType() == RobotType.LUMBERJACK && chopBlockingTrees(rightDir, 2.0f)) {
-                return true;
-            }
-            // No move performed, try slightly further
-            currentCheck++;
         }
 
         // A move never happened, so return false.
         return false;
     }
 
-    static boolean chopBlockingTrees(Direction dir, float range) throws GameActionException {
-        if (rc.getType() != RobotType.LUMBERJACK) return false;
-        TreeInfo[] trees = rc.senseNearbyTrees(range, null);
-        TreeInfo shakeTree = null;
-        TreeInfo chopTree = null;
-        int maxBullets = -1;
-        for (TreeInfo t : trees) {
-            Direction toTree = rc.getLocation().directionTo(t.location);
-            if (Math.abs(dir.radiansBetween(toTree)) <= Math.PI / 3) { // within 60 degrees
-                if (t.containedBullets > 0 && rc.canShake(t.ID)) {
-                    if (shakeTree == null || t.containedBullets > shakeTree.containedBullets) {
-                        shakeTree = t;
-                    }
-                } else if (rc.canChop(t.ID)) {
-                    if (chopTree == null || t.containedBullets > maxBullets) {
-                        chopTree = t;
-                        maxBullets = t.containedBullets;
-                    }
+    public static boolean tryMoveBug(MapLocation target) throws GameActionException {
+        MapLocation current = rc.getLocation();
+        if (current.distanceTo(target) < 1) return false; // close enough
+
+        int id = rc.getID();
+        boolean isFollowingWall = followingWall.getOrDefault(id, false);
+        Direction currentBugDir = bugDirection.get(id);
+
+        Direction toTarget = current.directionTo(target);
+        if (!isFollowingWall) {
+            if (rc.canMove(toTarget)) {
+                rc.move(toTarget);
+                return true;
+            } else {
+                followingWall.put(id, true);
+                bugDirection.put(id, toTarget.rotateLeftDegrees(90)); // follow left
+            }
+        }
+
+        if (isFollowingWall) {
+            if (rc.canMove(currentBugDir)) {
+                rc.move(currentBugDir);
+                // check if can now move towards target
+                MapLocation newLoc = current.add(currentBugDir);
+                Direction newToTarget = newLoc.directionTo(target);
+                if (rc.canMove(newToTarget)) {
+                    followingWall.put(id, false);
+                    bugDirection.remove(id);
                 }
+                return true;
+            } else {
+                // rotate
+                bugDirection.put(id, currentBugDir.rotateLeftDegrees(10));
             }
         }
-        if (shakeTree != null) {
-            rc.shake(shakeTree.ID);
-            return true;
-        } else if (chopTree != null) {
-            rc.chop(chopTree.ID);
-            return true;
-        }
+
         return false;
-    }
-
-    static boolean isDirectionGood(Direction dir, float[] quadrantDensities) throws GameActionException {
-        // Count trees in direction
-        int treeCount = countTreesInDirection(dir, 3.0f, (float)Math.PI/2);
-        if (treeCount > 5) return false;
-
-        // Get quadrant the direction leads to
-        MapLocation projectedLoc = rc.getLocation().add(dir, 5.0f); // project 5 units ahead
-        int quadrant = getQuadrant(projectedLoc);
-
-        // Avoid SW quadrant on MagicWood map
-        if (rc.getMap().getMapName().equals("MagicWood") && quadrant == 3) return false;
-
-        // Get density of target quadrant
-        float density = quadrantDensities[quadrant];
-
-        // Find minimum density across quadrants
-        float minDensity = Float.MAX_VALUE;
-        for (float d : quadrantDensities) {
-            minDensity = Math.min(minDensity, d);
-        }
-
-        // Prioritize less dense areas: avoid quadrants significantly denser than the minimum
-        if (density > minDensity + 2) return false;
-
-        // Strictly avoid SW and SE quadrants unless they have the minimum density
-        if ((quadrant == 2 || quadrant == 3) && density > minDensity) return false;
-
-        // Force movement to assigned quadrant
-        int targetQuad = getTargetQuadrant();
-        int currentQuad = getQuadrant(rc.getLocation());
-        if (targetQuad != -1 && currentQuad != targetQuad) {
-            if (quadrant != targetQuad) return false;
-        }
-
-        return true;
-    }
-
-    static float[] getQuadrantTreeDensities() throws GameActionException {
-        float[] densities = new float[4];
-        TreeInfo[] trees = rc.senseNearbyTrees(-1, null);
-        for (TreeInfo t : trees) {
-            int q = getQuadrant(t.location);
-            densities[q] += 1; // simple count
-        }
-        return densities;
-    }
-
-    static int getQuadrant(MapLocation loc) {
-        MapLocation[] ownArchons = rc.getInitialArchonLocations(rc.getTeam());
-        float avgX = 0, avgY = 0;
-        for (MapLocation l : ownArchons) {
-            avgX += l.x;
-            avgY += l.y;
-        }
-        avgX /= ownArchons.length;
-        avgY /= ownArchons.length;
-        MapLocation center = new MapLocation(avgX, avgY);
-        boolean north = loc.y > center.y;
-        boolean east = loc.x > center.x;
-        if (north && east) return 1; // NE
-        if (north && !east) return 0; // NW
-        if (!north && east) return 2; // SE
-        return 3; // SW
-    }
-
-    static int countTreesInDirection(Direction dir, float radius, float angleRad) throws GameActionException {
-        TreeInfo[] trees = rc.senseNearbyTrees(radius, null);
-        int count = 0;
-        for (TreeInfo t : trees) {
-            Direction toTree = rc.getLocation().directionTo(t.location);
-            if (Math.abs(dir.radiansBetween(toTree)) <= angleRad / 2) {
-                count++;
-            }
-        }
-        return count;
-    }
-
-    static int getTargetQuadrant() {
-        if (rc.getMap().getMapName().equals("MagicWood")) {
-            return (rc.getID() % 2 == 0) ? 0 : 1; // NW or NE
-        }
-        RobotType type = rc.getType();
-        if (type == RobotType.GARDENER) {
-            return (rc.getID() % 2 == 0) ? 1 : 2; // NE or SE
-        } else if (type == RobotType.SOLDIER || type == RobotType.SCOUT) {
-            return (rc.getID() % 2 == 0) ? 0 : 1; // NW or NE
-        }
-        return -1;
-    }
-
-    static Direction getDirectionToQuadrant(int quad) {
-        MapLocation center = getQuadrantCenter(quad);
-        return rc.getLocation().directionTo(center);
-    }
-
-    static MapLocation getQuadrantCenter(int quad) {
-        MapLocation[] ownArchons = rc.getInitialArchonLocations(rc.getTeam());
-        float avgX = 0, avgY = 0;
-        for (MapLocation l : ownArchons) {
-            avgX += l.x;
-            avgY += l.y;
-        }
-        avgX /= ownArchons.length;
-        avgY /= ownArchons.length;
-        MapLocation mapCenter = new MapLocation(avgX, avgY);
-        float offsetX = 15.0f;
-        float offsetY = 15.0f;
-        switch(quad) {
-            case 0: return new MapLocation(mapCenter.x - offsetX, mapCenter.y + offsetY); // NW
-            case 1: return new MapLocation(mapCenter.x + offsetX, mapCenter.y + offsetY); // NE
-            case 2: return new MapLocation(mapCenter.x + offsetX, mapCenter.y - offsetY); // SE
-            case 3: return new MapLocation(mapCenter.x - offsetX, mapCenter.y - offsetY); // SW
-            default: return mapCenter;
-        }
     }
 }
