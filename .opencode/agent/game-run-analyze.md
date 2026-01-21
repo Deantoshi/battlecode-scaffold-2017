@@ -82,6 +82,16 @@ From the script output, extract:
 8. **COMBAT ANALYSIS:**
    - Shots, efficiency, friendly fire
 
+9. **UNIT LIFESPAN:**
+   - Avg/min/max lifespan by unit type
+   - Early deaths (first 5 per team)
+
+10. **TREE ECONOMY SNAPSHOT:**
+    - Trees alive at key rounds
+
+11. **ACTION SUMMARY:**
+    - Non-combat actions (plant/water/shake/spawn/chop)
+
 **Save files:**
 
 Write the COMPLETE script output to `src/{BOT}/.state/match-result.txt`

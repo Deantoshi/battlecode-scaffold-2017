@@ -187,6 +187,72 @@ print("-" * 40)
 for row in unit_data:
     print(f"{row['Team']:<6} {row['Unit']:<12} {row['Prod']:<6} {row['Lost']:<6} {row['Alive']:<6}")
 
+# UNIT LIFESPAN SUMMARY
+print()
+print("───────────────────────────────────────────────────────────────────────────────")
+print("UNIT LIFESPAN (avg/min/max rounds alive)")
+print("───────────────────────────────────────────────────────────────────────────────")
+
+lifespan_rows = conn.execute("""
+SELECT
+    team,
+    body_type,
+    COUNT(*) as deaths,
+    AVG(json_extract(details, '$.lifespan')) as avg_life,
+    MIN(json_extract(details, '$.lifespan')) as min_life,
+    MAX(json_extract(details, '$.lifespan')) as max_life
+FROM events
+WHERE event_type='death'
+  AND body_type NOT IN ('TREE_NEUTRAL', 'BULLET', 'NONE')
+GROUP BY team, body_type
+ORDER BY team, body_type
+""").fetchall()
+
+if lifespan_rows:
+    print(f"{'Team':<6} {'Unit':<12} {'Deaths':<7} {'Avg':<6} {'Min':<6} {'Max':<6}")
+    print("-" * 46)
+    for row in lifespan_rows:
+        avg_life = int(round(row['avg_life'])) if row['avg_life'] is not None else 0
+        min_life = int(row['min_life']) if row['min_life'] is not None else 0
+        max_life = int(row['max_life']) if row['max_life'] is not None else 0
+        print(f"{row['team']:<6} {row['body_type']:<12} {row['deaths']:<7} {avg_life:<6} {min_life:<6} {max_life:<6}")
+else:
+    print("(no deaths recorded)")
+
+# EARLY DEATHS
+print()
+print("───────────────────────────────────────────────────────────────────────────────")
+print("EARLY DEATHS (first 5 per team)")
+print("───────────────────────────────────────────────────────────────────────────────")
+
+early_rows = conn.execute("""
+SELECT team, round_id, body_type, json_extract(details, '$.lifespan') as lifespan
+FROM events
+WHERE event_type='death'
+  AND body_type NOT IN ('TREE_NEUTRAL', 'BULLET', 'NONE')
+ORDER BY round_id ASC
+""").fetchall()
+
+if early_rows:
+    by_team = {'A': [], 'B': []}
+    for row in early_rows:
+        team = row['team']
+        if team in by_team and len(by_team[team]) < 5:
+            by_team[team].append(row)
+
+    for team in ['A', 'B']:
+        entries = by_team[team]
+        if entries:
+            details = ", ".join(
+                f"R{r['round_id']}:{r['body_type']}(life {int(r['lifespan'])})"
+                for r in entries
+            )
+            print(f"Team {team}: {details}")
+        else:
+            print(f"Team {team}: (no deaths)")
+else:
+    print("(no deaths recorded)")
+
 # ECONOMY TIMELINE
 print()
 print("───────────────────────────────────────────────────────────────────────────────")
@@ -224,6 +290,28 @@ for row in econ_data:
     line += f"  B: {int(row['team_b_bullets']):>3}/{row['team_b_vp']:<3} "
     line += f"(gen:{int(row['b_gen']):>4} spent:{int(row['b_spent']):>4})"
     print(line)
+
+# TREE ECONOMY SNAPSHOT
+print()
+print("───────────────────────────────────────────────────────────────────────────────")
+print("TREE ECONOMY SNAPSHOT (trees alive at key rounds)")
+print("───────────────────────────────────────────────────────────────────────────────")
+
+tree_rows = conn.execute("""
+SELECT
+    s.round_id,
+    COALESCE(json_extract(s.team_a_units_alive, '$.TREE_BULLET'), 0) as a_trees,
+    COALESCE(json_extract(s.team_b_units_alive, '$.TREE_BULLET'), 0) as b_trees
+FROM snapshots s
+WHERE s.round_id % 500 = 0 OR s.round_id = (SELECT MAX(round_id) FROM snapshots)
+ORDER BY s.round_id
+""").fetchall()
+
+if tree_rows:
+    for row in tree_rows:
+        print(f"R{row['round_id']:<4} | A trees: {int(row['a_trees']):>3}  B trees: {int(row['b_trees']):>3}")
+else:
+    print("(no snapshot data)")
 
 # COMBAT TIMELINE
 print()
@@ -432,6 +520,29 @@ if combat_rows:
                 print(f"\n⚠ Team B inefficient: {b['bullets_per_kill']:.1f} bullets/kill vs A's {a['bullets_per_kill']:.1f}")
 else:
     print("(No combat data)")
+
+# ACTION SUMMARY (NON-COMBAT)
+print()
+print("───────────────────────────────────────────────────────────────────────────────")
+print("ACTION SUMMARY (non-combat actions)")
+print("───────────────────────────────────────────────────────────────────────────────")
+
+action_rows = conn.execute("""
+SELECT team, body_type as action, COUNT(*) as count
+FROM events
+WHERE event_type='action'
+  AND body_type IN ('PLANT_TREE', 'WATER_TREE', 'SHAKE_TREE', 'SPAWN_UNIT', 'CHOP')
+GROUP BY team, action
+ORDER BY team, count DESC
+""").fetchall()
+
+if action_rows:
+    print(f"{'Team':<6} {'Action':<12} {'Count':<6}")
+    print("-" * 28)
+    for row in action_rows:
+        print(f"{row['team']:<6} {row['action']:<12} {row['count']:<6}")
+else:
+    print("(No non-combat actions recorded)")
 
 # SHOTS BY UNIT TYPE
 print()

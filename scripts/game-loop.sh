@@ -172,6 +172,52 @@ generate_analyze_context() {
         else
             echo "(No iteration history yet)"
         fi
+        echo ""
+        echo "---"
+        echo ""
+        echo "# Bot Code Snapshot (truncated)"
+        echo ""
+        local max_total_lines=1200
+        local total_lines=0
+        local code_files=()
+        for f in src/"$BOT"/*.java; do
+            if [[ -f "$f" ]]; then
+                code_files+=("$f")
+            fi
+        done
+        if [[ ${#code_files[@]} -eq 0 ]]; then
+            echo "(No bot Java files found)"
+        else
+            echo "Files:"
+            for f in "${code_files[@]}"; do
+                local lines
+                lines=$(wc -l < "$f" | tr -d ' ')
+                echo "- $f ($lines lines)"
+            done
+            echo ""
+            for f in "${code_files[@]}"; do
+                local lines
+                lines=$(wc -l < "$f" | tr -d ' ')
+                echo "=== FILE: $f ==="
+                if (( total_lines >= max_total_lines )); then
+                    echo "(Truncated: total context line budget reached)"
+                    break
+                fi
+                if (( lines <= 300 )); then
+                    cat "$f"
+                    total_lines=$((total_lines + lines))
+                else
+                    local head_lines=200
+                    local tail_lines=60
+                    head -n "$head_lines" "$f"
+                    echo ""
+                    echo "... (truncated, showing last $tail_lines lines)"
+                    tail -n "$tail_lines" "$f"
+                    total_lines=$((total_lines + head_lines + tail_lines + 2))
+                fi
+                echo ""
+            done
+        fi
     } > "$output_file"
     printf '%s\n' "${GREEN}✓ Analyze context saved to $output_file${NC}"
 }
