@@ -204,6 +204,34 @@ Choose the **single most impactful** improvement.
 - **Location:** {method or section to modify}
 - **Change:** {specific code change description}
 
+### Economy Projection
+
+Calculate the expected bullet economy for the proposed build order:
+
+**Unit Costs (bullets):**
+- Archon: spawns free | Gardener: 100 | Scout: 80 | Soldier: 100 | Tank: 300 | Lumberjack: 100
+
+**Income Sources:**
+- Base: 1.0 bullet/round (passive)
+- Per Archon: +2.0 bullets/round
+- Per tree planted: +1.0 bullet/round (when fully grown)
+
+**Projection Table:**
+| Round | Build Action | Cost | Cumulative Spent | Income/Round | Balance |
+|-------|--------------|------|------------------|--------------|---------|
+| 1     | (start)      | 0    | 0                | 3.0          | 300     |
+| {R}   | {Unit}       | {C}  | {total}          | {income}     | {bal}   |
+| ...   | ...          | ...  | ...              | ...          | ...     |
+
+**Key Milestones:**
+- Round when first combat unit ready: {R}
+- Round when army size reaches 5: {R}
+- Projected bullets at R500: {N}
+
+**Break-even Analysis:**
+- If building Gardeners for trees: each Gardener costs 100, plants trees worth +1/round each
+- Gardener + 1 tree breaks even at round ~100 after build
+
 ### Expected Impact
 {How this should improve the outcome}
 
