@@ -30,12 +30,14 @@ Bot: {BOT}
 
 ---
 
-## Step 1: Read Improvement Plan
+## Step 1: Read Implementation Context
 
-Read `src/{BOT}/.state/improvement-plan.md` to get:
-- Which file to modify
-- What change to make
-- What problem it solves
+Read `src/{BOT}/.state/implement-context.md` which contains:
+- **Improvement Plan**: Which file to modify, what change to make, what problem it solves
+- **Match Summary**: OUTCOME (WIN/LOSS) and ROUNDS for history update
+- **Iteration History**: Previous iterations for context
+
+This single file contains everything you need - do NOT read the individual files separately.
 
 ---
 
@@ -78,17 +80,9 @@ Using `unsafe-write`, write the complete modified file.
 
 ---
 
-## Step 5: Read Match Summary
+## Step 5: Update Iteration History
 
-Read `src/{BOT}/.state/match-summary.txt` to get:
-- OUTCOME (WIN/LOSS)
-- ROUNDS
-
----
-
-## Step 6: Update Iteration History
-
-Read `src/{BOT}/iteration-history.md`.
+Using the Match Summary and Iteration History from `implement-context.md` (already read in Step 1):
 
 Determine the next iteration number by counting existing rows in the Iterations table.
 
@@ -114,7 +108,7 @@ Write the updated history file.
 
 ---
 
-## Step 7: Finish
+## Step 6: Finish
 
 Print:
 ```

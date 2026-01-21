@@ -117,22 +117,13 @@ B_VP={number}
 
 ## Step 4: Read Context
 
-You Must Read `HOW_TO_PLAY_BATTLE_CODE_2017.md` for game mechanics reference:
-- Victory conditions (1000 VP or destroy all enemy units)
-- Robot types, stats, and roles
-- Tree clearing methods
-- Economy system
+Read `src/{BOT}/.state/analyze-context.md` which contains all context combined:
+- Game mechanics reference (victory conditions, robot types, economy)
+- Map spatial information
+- Visual map layout
+- Iteration history (previous attempts to avoid repeating)
 
-Read `src/{BOT}/.state/map-context.txt` for map spatial information.
-
-Read `src/{BOT}/.state/map-ascii.txt` for visual map layout.
-
-Read `src/{BOT}/iteration-history.md` to see:
-- Previous iterations
-- What changes have already been tried
-- What problems have been identified
-
-This prevents repeating failed approaches.
+This single file contains everything you need - do NOT read the individual files separately.
 
 ---
 

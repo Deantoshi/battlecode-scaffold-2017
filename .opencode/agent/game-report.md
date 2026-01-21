@@ -28,12 +28,14 @@ Bot: {BOT}
 
 ---
 
-## Step 1: Read State Files
+## Step 1: Read Report Context
 
-Read the following files:
-- `src/{BOT}/iteration-history.md` - Full iteration history
-- `src/{BOT}/.state/match-summary.txt` - Final match results
-- `src/{BOT}/.state/goal-status.txt` - Goal status
+Read `src/{BOT}/.state/report-context.md` which contains all needed information:
+- **Iteration History**: Full iteration history with all changes made
+- **Match Summary**: Final match results (OUTCOME, ROUNDS)
+- **Goal Status**: Whether goal was ACHIEVED or not
+
+This single file contains everything you need - do NOT read the individual files separately.
 
 ---
 

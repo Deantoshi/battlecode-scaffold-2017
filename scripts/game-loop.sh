@@ -118,6 +118,140 @@ check_goal() {
     fi
 }
 
+# Function to combine all bot Java files into one file (reduces LLM tool calls)
+combine_bot_code() {
+    local output_file="$STATE_DIR/all-bot-code.txt"
+    printf '%s\n' "${BLUE}Combining bot Java files...${NC}"
+    {
+        for f in src/"$BOT"/*.java; do
+            if [[ -f "$f" ]]; then
+                echo "=== FILE: $f ==="
+                cat "$f"
+                echo ""
+            fi
+        done
+    } > "$output_file"
+    printf '%s\n' "${GREEN}✓ Combined bot code saved to $output_file${NC}"
+}
+
+# Function to generate combined context for game-run-analyze (reduces 4 reads to 1)
+generate_analyze_context() {
+    local output_file="$STATE_DIR/analyze-context.md"
+    printf '%s\n' "${BLUE}Generating analyze context...${NC}"
+    {
+        echo "# Game Reference"
+        echo ""
+        cat "HOW_TO_PLAY_BATTLE_CODE_2017.md"
+        echo ""
+        echo "---"
+        echo ""
+        echo "# Map Context"
+        echo ""
+        if [[ -f "$STATE_DIR/map-context.txt" ]]; then
+            cat "$STATE_DIR/map-context.txt"
+        else
+            echo "(No map context available)"
+        fi
+        echo ""
+        echo "---"
+        echo ""
+        echo "# Map ASCII"
+        echo ""
+        if [[ -f "$STATE_DIR/map-ascii.txt" ]]; then
+            cat "$STATE_DIR/map-ascii.txt"
+        else
+            echo "(No map ASCII available)"
+        fi
+        echo ""
+        echo "---"
+        echo ""
+        echo "# Iteration History"
+        echo ""
+        if [[ -f "src/$BOT/iteration-history.md" ]]; then
+            cat "src/$BOT/iteration-history.md"
+        else
+            echo "(No iteration history yet)"
+        fi
+    } > "$output_file"
+    printf '%s\n' "${GREEN}✓ Analyze context saved to $output_file${NC}"
+}
+
+# Function to generate combined context for game-implement (reduces 3 reads to 1)
+generate_implement_context() {
+    local output_file="$STATE_DIR/implement-context.md"
+    printf '%s\n' "${BLUE}Generating implement context...${NC}"
+    {
+        echo "# Implementation Context"
+        echo ""
+        echo "## Improvement Plan"
+        echo ""
+        if [[ -f "$STATE_DIR/improvement-plan.md" ]]; then
+            cat "$STATE_DIR/improvement-plan.md"
+        else
+            echo "(No improvement plan found)"
+        fi
+        echo ""
+        echo "---"
+        echo ""
+        echo "## Match Summary"
+        echo ""
+        if [[ -f "$STATE_DIR/match-summary.txt" ]]; then
+            cat "$STATE_DIR/match-summary.txt"
+        else
+            echo "(No match summary available)"
+        fi
+        echo ""
+        echo "---"
+        echo ""
+        echo "## Iteration History"
+        echo ""
+        if [[ -f "src/$BOT/iteration-history.md" ]]; then
+            cat "src/$BOT/iteration-history.md"
+        else
+            echo "(No iteration history yet)"
+        fi
+    } > "$output_file"
+    printf '%s\n' "${GREEN}✓ Implement context saved to $output_file${NC}"
+}
+
+# Function to generate combined context for game-report (reduces 3 reads to 1)
+generate_report_context() {
+    local output_file="$STATE_DIR/report-context.md"
+    printf '%s\n' "${BLUE}Generating report context...${NC}"
+    {
+        echo "# Report Context"
+        echo ""
+        echo "## Iteration History"
+        echo ""
+        if [[ -f "src/$BOT/iteration-history.md" ]]; then
+            cat "src/$BOT/iteration-history.md"
+        else
+            echo "(No iteration history)"
+        fi
+        echo ""
+        echo "---"
+        echo ""
+        echo "## Match Summary"
+        echo ""
+        if [[ -f "$STATE_DIR/match-summary.txt" ]]; then
+            cat "$STATE_DIR/match-summary.txt"
+        else
+            echo "(No match summary)"
+        fi
+        echo ""
+        echo "---"
+        echo ""
+        echo "## Goal Status"
+        echo ""
+        if [[ -f "$STATE_DIR/goal-status.txt" ]]; then
+            cat "$STATE_DIR/goal-status.txt"
+        else
+            echo "UNKNOWN"
+        fi
+    } > "$output_file"
+    printf '%s\n' "${GREEN}✓ Report context saved to $output_file${NC}"
+}
+
 # Function to VALIDATE goal by actually running a match and checking output
 # This ensures we don't falsely claim success
 validate_goal() {
@@ -141,6 +275,8 @@ printf '%s\n' "${BOLD}${GREEN}[PHASE 0] Initialization${NC}"
 
 if [[ ! -f "src/$BOT/iteration-history.md" ]]; then
     echo "No history file found. Running initialization..."
+    mkdir -p "$STATE_DIR"
+    combine_bot_code
     run_agent "game-init" "--bot $BOT --opponent $OPPONENT --maps $MAP"
 else
     echo "History file exists. Skipping initialization."
@@ -184,6 +320,7 @@ for i in $(seq 1 "$MAX_ITERS"); do
     # Step 1: Run Match & Analyze (fresh context)
     # ─────────────────────────────────────────────────────────────────────────────
     printf '%s\n' "${BOLD}${GREEN}[STEP 1] Run Match & Analyze${NC}"
+    generate_analyze_context
     run_agent "game-run-analyze" "--bot $BOT --opponent $OPPONENT --maps $MAP"
     echo ""
 
@@ -207,6 +344,7 @@ for i in $(seq 1 "$MAX_ITERS"); do
 
             # Generate final report
             printf '%s\n' "${BOLD}${GREEN}[FINAL] Generating Report${NC}"
+            generate_report_context
             run_agent "game-report" "--bot $BOT"
 
             echo ""
@@ -226,6 +364,7 @@ for i in $(seq 1 "$MAX_ITERS"); do
     # Step 3: Implement Improvement (fresh context)
     # ─────────────────────────────────────────────────────────────────────────────
     printf '%s\n' "${BOLD}${GREEN}[STEP 3] Implement Improvement${NC}"
+    generate_implement_context
     run_agent "game-implement" "--bot $BOT"
     echo ""
 
@@ -248,6 +387,7 @@ echo ""
 
 # Still generate a report
 printf '%s\n' "${BOLD}${GREEN}[FINAL] Generating Report${NC}"
+generate_report_context
 run_agent "game-report" "--bot $BOT"
 
 echo ""

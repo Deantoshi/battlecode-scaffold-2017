@@ -68,7 +68,7 @@ Read `HOW_TO_PLAY_BATTLE_CODE_2017.md` in the project root to understand:
 
 ## Step 4: Read Your Bot Code
 
-Glob `src/{BOT}/*.java`, then Read each file.
+Read `src/{BOT}/.state/all-bot-code.txt` which contains all Java files combined.
 
 Create analysis in your mind:
 - What units do you build?
