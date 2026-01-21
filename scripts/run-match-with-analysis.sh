@@ -433,6 +433,41 @@ if combat_rows:
 else:
     print("(No combat data)")
 
+# SHOTS BY UNIT TYPE
+print()
+print("Shots by Unit Type:")
+print("-" * 70)
+
+unit_shot_data = conn.execute("""
+    SELECT
+        team,
+        json_extract(details, '$.robot_type') as unit_type,
+        SUM(CASE WHEN json_extract(details, '$.shot_type') = 'single' THEN 1 ELSE 0 END) as single_shots,
+        SUM(CASE WHEN json_extract(details, '$.shot_type') = 'triad' THEN 1 ELSE 0 END) as triad_shots,
+        SUM(CASE WHEN json_extract(details, '$.shot_type') = 'pentad' THEN 1 ELSE 0 END) as pentad_shots,
+        COUNT(*) as total_shots,
+        SUM(json_extract(details, '$.cost')) as bullet_cost
+    FROM events
+    WHERE event_type = 'shoot'
+    GROUP BY team, unit_type
+    ORDER BY team, bullet_cost DESC
+""").fetchall()
+
+if unit_shot_data:
+    current_team = None
+    for row in unit_shot_data:
+        if row['team'] != current_team:
+            if current_team is not None:
+                print()
+            current_team = row['team']
+            print(f"Team {current_team}:")
+            print(f"  {'Unit':<12} {'Single':>8} {'Triad':>8} {'Pentad':>8} {'Total':>8} {'Bullets':>10}")
+
+        unit_name = row['unit_type'] or 'UNKNOWN'
+        print(f"  {unit_name:<12} {row['single_shots']:>8} {row['triad_shots']:>8} {row['pentad_shots']:>8} {row['total_shots']:>8} {int(row['bullet_cost']):>10}")
+else:
+    print("(No shot data by unit type)")
+
 # Friendly fire suspects
 ff_rows = conn.execute("""
     SELECT team, COUNT(*) as count
