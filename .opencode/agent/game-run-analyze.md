@@ -117,7 +117,7 @@ B_VP={number}
 
 ## Step 4: Read Context
 
-Read `HOW_TO_PLAY_BATTLE_CODE_2017.md` for game mechanics reference:
+You Must Read `HOW_TO_PLAY_BATTLE_CODE_2017.md` for game mechanics reference:
 - Victory conditions (1000 VP or destroy all enemy units)
 - Robot types, stats, and roles
 - Tree clearing methods
