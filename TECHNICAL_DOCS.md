@@ -20,7 +20,7 @@
 *   **Income Sources:**
     *   **Archons:** generate small passive income.
     *   **Bullet Trees:** Planted by Gardeners. Main source of income. Must be watered.
-    *   **Shaking:** Units can `rc.shake(treeID)` neutral or enemy trees to steal contained bullets.
+    *   **Shaking:** Units can `rc.shake(treeID)` neutral or enemy bullet trees to steal contained bullets.
 
 ## 4. Robot Types & Roles
 
@@ -251,8 +251,9 @@ src/<yourbotpackage>/
     *   **Dodging:** Before moving, check `rc.senseNearbyBullets()`. If a bullet will hit the robot next turn, move perpendicular to its path.
     *   **Targeting:** Focus fire on the enemy with the lowest HP (use `robotInfo.health`).
 3.  **Gardener Logic (Crucial):**
+    *   **Planting:** Use `rc.plantTree(Direction dir)` to plant a Bullet Tree adjacent to the Gardener.
+    *   **Harvesting:** Use `rc.shake(TreeID id)` to collect bullets from neutral or enemy trees.
     *   Gardeners must not block their own build direction.
-    *   Pattern: Build trees in a circle around the gardener.
     *   **Watering:** Always prioritize `rc.water()` on the tree with lowest health within range.
 
 ## 10. Engine References (Under the Hood)
