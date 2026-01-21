@@ -10,9 +10,9 @@ public strictfp class RobotPlayer {
     static RobotController rc;
 
     /**
-      * run() is the method that is called when a robot is instantiated in the Battlecode world.
-      * If this method returns, the robot dies!
-      **/
+       * run() is the method that is called when a robot is instantiated in the Battlecode world.
+       * If this method returns, the robot dies!
+       **/
     @SuppressWarnings("unused")
     public static void run(RobotController rc) throws GameActionException {
 
@@ -20,6 +20,7 @@ public strictfp class RobotPlayer {
         // and to get information on its current status.
         RobotPlayer.rc = rc;
         Navigation.init(rc);
+        Nav.init(rc);
 
         // Here, we've separated the controls into a different method for each RobotType.
         // You can add the missing ones or rewrite this into your own control structure.
@@ -43,6 +44,7 @@ public strictfp class RobotPlayer {
         System.out.println("I'm an archon!");
         Team enemy = rc.getTeam().opponent();
         MapLocation enemyArchonLoc = rc.getInitialArchonLocations(enemy)[0];
+        int gardenerCount = rc.readBroadcast(7);
 
         // The code you want your robot to perform every round should be in this loop
         while (true) {
@@ -56,10 +58,11 @@ public strictfp class RobotPlayer {
                 // Randomly attempt to build a gardener in this direction
                 if (rc.canHireGardener(dir) && Math.random() < .15) {
                     rc.hireGardener(dir);
+                    rc.broadcast(7, gardenerCount + 1);
                 }
 
                 // Move randomly to prioritize survival
-                Navigation.tryMove(randomDirection());
+                Nav.tryMove(rc.getLocation().add(randomDirection()));
 
                 // Broadcast archon's location for other robots on the team to know
                 MapLocation myLocation = rc.getLocation();
@@ -85,7 +88,10 @@ public strictfp class RobotPlayer {
             rc.broadcast(4, 0);
             rc.broadcast(5, 0);
             rc.broadcast(6, 0);
+            rc.broadcast(7, 0);
         }
+
+        int myLumberjacks = 0;
 
         // The code you want your robot to perform every round should be in this loop
         while (true) {
@@ -105,27 +111,60 @@ public strictfp class RobotPlayer {
                 int lumberjackCount = rc.readBroadcast(5);
                 int tankCount = rc.readBroadcast(4);
                 int soldierCount = rc.readBroadcast(6);
-                if (rc.getRoundNum() < 500) {
-                    float rand = (float) Math.random();
-                    if (rand < 0.6f && rc.canBuildRobot(RobotType.LUMBERJACK, dir) && rc.isBuildReady()) {
+                int gardenerCount = rc.readBroadcast(7);
+                if (rc.getRoundNum() < 500 && lumberjackCount < 4) {
+                    if (rc.canBuildRobot(RobotType.LUMBERJACK, dir) && rc.isBuildReady()) {
                         rc.buildRobot(RobotType.LUMBERJACK, dir);
                         rc.broadcast(5, lumberjackCount + 1);
-                    } else if (rand < 0.8f && rc.canBuildRobot(RobotType.TANK, dir) && rc.isBuildReady()) {
-                        rc.buildRobot(RobotType.TANK, dir);
-                        rc.broadcast(4, tankCount + 1);
-                    } else if (rc.canBuildRobot(RobotType.SOLDIER, dir) && rc.isBuildReady()) {
+                        myLumberjacks++;
+                    }
+                } else if (lumberjackCount < 2) {
+                    if (rc.canBuildRobot(RobotType.LUMBERJACK, dir) && rc.isBuildReady()) {
+                        rc.buildRobot(RobotType.LUMBERJACK, dir);
+                        rc.broadcast(5, lumberjackCount + 1);
+                        myLumberjacks++;
+                    }
+                } else if (soldierCount == 0) {
+                    if (rc.canBuildRobot(RobotType.SOLDIER, dir) && rc.isBuildReady()) {
                         rc.buildRobot(RobotType.SOLDIER, dir);
                         rc.broadcast(6, soldierCount + 1);
                     }
-                } else {
-                    float rand = (float) Math.random();
-                    if (rand < 0.6f && rc.canBuildRobot(RobotType.SOLDIER, dir) && rc.isBuildReady()) {
+                } else if (soldierCount < 10) {
+                    if (rc.canBuildRobot(RobotType.SOLDIER, dir) && rc.isBuildReady()) {
                         rc.buildRobot(RobotType.SOLDIER, dir);
                         rc.broadcast(6, soldierCount + 1);
-                    } else if (rand < 0.8f && rc.canBuildRobot(RobotType.LUMBERJACK, dir) && rc.isBuildReady()) {
+                    }
+                } else if (rc.getRoundNum() < 300 && myLumberjacks < 3) {
+                    if (rc.canBuildRobot(RobotType.LUMBERJACK, dir) && rc.isBuildReady()) {
                         rc.buildRobot(RobotType.LUMBERJACK, dir);
                         rc.broadcast(5, lumberjackCount + 1);
-                    } else if (rand < 1.0f && rc.canBuildRobot(RobotType.TANK, dir) && rc.isBuildReady()) {
+                        myLumberjacks++;
+                    }
+                } else if (rc.getRoundNum() < 500) {
+                    float soldierProb = 0.8f;
+                    float lumberjackProb = 0.15f;
+                    float rand = (float) Math.random();
+                    if (rand < soldierProb && rc.canBuildRobot(RobotType.SOLDIER, dir) && rc.isBuildReady()) {
+                        rc.buildRobot(RobotType.SOLDIER, dir);
+                        rc.broadcast(6, soldierCount + 1);
+                    } else if (rand < soldierProb + lumberjackProb && rc.canBuildRobot(RobotType.LUMBERJACK, dir) && rc.isBuildReady()) {
+                        rc.buildRobot(RobotType.LUMBERJACK, dir);
+                        rc.broadcast(5, lumberjackCount + 1);
+                        myLumberjacks++;
+                    } else if (rand < soldierProb + lumberjackProb + 0.05f && rc.canBuildRobot(RobotType.TANK, dir) && rc.isBuildReady()) {
+                        rc.buildRobot(RobotType.TANK, dir);
+                        rc.broadcast(4, tankCount + 1);
+                    }
+                } else {
+                    float rand = (float) Math.random();
+                    if (rand < 0.1f && rc.canBuildRobot(RobotType.SOLDIER, dir) && rc.isBuildReady()) {
+                        rc.buildRobot(RobotType.SOLDIER, dir);
+                        rc.broadcast(6, soldierCount + 1);
+                    } else if (rand < 0.9f && rc.canBuildRobot(RobotType.LUMBERJACK, dir) && rc.isBuildReady()) {
+                        rc.buildRobot(RobotType.LUMBERJACK, dir);
+                        rc.broadcast(5, lumberjackCount + 1);
+                        myLumberjacks++;
+                    } else if (rc.canBuildRobot(RobotType.TANK, dir) && rc.isBuildReady()) {
                         rc.buildRobot(RobotType.TANK, dir);
                         rc.broadcast(4, tankCount + 1);
                     }
@@ -143,15 +182,14 @@ public strictfp class RobotPlayer {
                     MapLocation quadrantCenter = getQuadrantCenter(quadrant);
                     if (rc.getLocation().distanceTo(quadrantCenter) > 5.0f) {
                         Direction toQuadrant = rc.getLocation().directionTo(quadrantCenter);
-                        boolean moved = Navigation.tryMove(toQuadrant);
-                        if (!moved) { Navigation.tryMove(randomDirection()); }
+                        Nav.tryMove(quadrantCenter);
                     } else {
                         // Already close, move randomly
-                        Navigation.tryMove(randomDirection());
+                        Nav.tryMove(rc.getLocation().add(randomDirection()));
                     }
                 } else {
                     // Enemies nearby, move randomly
-                    Navigation.tryMove(randomDirection());
+                    Nav.tryMove(rc.getLocation().add(randomDirection()));
                 }
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
@@ -179,6 +217,7 @@ public strictfp class RobotPlayer {
                 RobotInfo[] robots = rc.senseNearbyRobots(-1, enemy);
 
                 Direction desiredDir;
+                MapLocation moveTarget;
                 // If there are some...
                 if (robots.length > 0) {
                     // Find closest archon
@@ -192,7 +231,28 @@ public strictfp class RobotPlayer {
                     if (target == null) {
                         target = robots[0]; // closest enemy
                     }
-                    // Fire at target
+                    moveTarget = target.location;
+                    desiredDir = myLocation.directionTo(target.location);
+                } else {
+                    int enemyX = rc.readBroadcast(2);
+                    int enemyY = rc.readBroadcast(3);
+                    MapLocation enemyArchon = new MapLocation((float)enemyX, (float)enemyY);
+                    moveTarget = enemyArchon;
+                    desiredDir = myLocation.directionTo(enemyArchon);
+                }
+
+                // Fire at target
+                if (robots.length > 0) {
+                    RobotInfo target = null;
+                    for (RobotInfo r : robots) {
+                        if (r.type == RobotType.ARCHON) {
+                            target = r;
+                            break;
+                        }
+                    }
+                    if (target == null) {
+                        target = robots[0];
+                    }
                     Direction dir = rc.getLocation().directionTo(target.location);
                     int triadTargets = 0;
                     int pentadTargets = 0;
@@ -228,17 +288,14 @@ public strictfp class RobotPlayer {
                     } else if (rc.canFirePentadShot() && safeToFirePentad) {
                         rc.firePentadShot(dir);
                     }
-                    // Set desired direction towards the target
-                    desiredDir = myLocation.directionTo(target.location);
-                } else {
-                    int enemyX = rc.readBroadcast(2);
-                    int enemyY = rc.readBroadcast(3);
-                    MapLocation enemyArchon = new MapLocation((float)enemyX, (float)enemyY);
-                    // Sense trees blocking path to enemy archon
+                }
+
+                // Sense trees blocking path to enemy archon
+                if (robots.length == 0) {
                     TreeInfo[] trees = rc.senseNearbyTrees(-1, null);
                     TreeInfo targetTree = null;
                     float minDist = Float.MAX_VALUE;
-                    Direction toEnemy = myLocation.directionTo(enemyArchon);
+                    Direction toEnemy = myLocation.directionTo(moveTarget);
                     for (TreeInfo tree : trees) {
                         Direction toTree = myLocation.directionTo(tree.location);
                         if (Math.abs(toTree.radiansBetween(toEnemy)) < Math.PI / 12) { // within 15 degrees
@@ -266,21 +323,25 @@ public strictfp class RobotPlayer {
                             rc.fireSingleShot(treeDir);
                         }
                     }
-                    desiredDir = myLocation.directionTo(enemyArchon);
                 }
 
                 // Check for bullets to dodge
                 BulletInfo[] bullets = rc.senseNearbyBullets();
+                boolean dodged = false;
                 for (BulletInfo b : bullets) {
                     if (willCollideWithMe(b)) {
-                        // Dodge by moving perpendicular to bullet direction
                         desiredDir = b.dir.rotateLeftDegrees(90);
+                        dodged = true;
                         break; // dodge the first colliding bullet
                     }
                 }
 
                 // Move in the desired direction
-                Navigation.tryMove(desiredDir);
+                if (dodged) {
+                    Nav.tryMove(rc.getLocation().add(desiredDir));
+                } else {
+                    Nav.tryMove(moveTarget);
+                }
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();
@@ -363,7 +424,7 @@ public strictfp class RobotPlayer {
 
                     // If there is a robot, move towards it
                     if(robots.length > 0) {
-                        Navigation.tryMove(desiredDir);
+                        Nav.tryMove(target);
 
                     } else {
                         // Sense nearby trees
@@ -392,26 +453,24 @@ public strictfp class RobotPlayer {
                                     rc.chop(bestTree.ID);
                                 } else {
                                     Direction toTree = rc.getLocation().directionTo(bestTree.location);
-                                    Navigation.tryMove(toTree);
+                                    Nav.tryMove(rc.getLocation().add(toTree));
                                 }
                             } else {
                                 // No trees in direct path, move towards target if far away
                                 if (rc.getLocation().distanceTo(target) > 5.0f) {
-                                    boolean moved = Navigation.tryMove(desiredDir);
-                                    if (!moved) { Navigation.tryMove(randomDirection()); }
+                                    Nav.tryMove(target);
                                 } else {
                                     // Already close, move randomly
-                                    Navigation.tryMove(randomDirection());
+                                    Nav.tryMove(rc.getLocation().add(randomDirection()));
                                 }
                             }
                         } else {
                             // No trees nearby, move towards target if far away
                             if (rc.getLocation().distanceTo(target) > 5.0f) {
-                                boolean moved = Navigation.tryMove(desiredDir);
-                                if (!moved) { Navigation.tryMove(randomDirection()); }
+                                Nav.tryMove(target);
                             } else {
                                 // Already close, move randomly
-                                Navigation.tryMove(randomDirection());
+                                Nav.tryMove(rc.getLocation().add(randomDirection()));
                             }
                         }
                     }
@@ -449,20 +508,20 @@ public strictfp class RobotPlayer {
     }
 
     /**
-      * Returns a random Direction
-      * @return a random Direction
-      */
+       * Returns a random Direction
+       * @return a random Direction
+       */
     static Direction randomDirection() {
         return new Direction((float)Math.random() * 2 * (float)Math.PI);
     }
 
     /**
-      * A slightly more complicated example function, this returns true if the given bullet is on a collision
-      * course with the current robot. Doesn't take into account objects between the bullet and this robot.
-      *
-      * @param bullet The bullet in question
-      * @return True if the line of the bullet's path intersects with this robot's current position.
-      */
+        * A slightly more complicated example function, this returns true if the given bullet is on a collision
+        * course with the current robot. Doesn't take into account objects between the bullet and this robot.
+        *
+        * @param bullet The bullet in question
+        * @return True if the line of the bullet's path intersects with this robot's current position.
+        */
     static boolean willCollideWithMe(BulletInfo bullet) {
         MapLocation myLocation = rc.getLocation();
 

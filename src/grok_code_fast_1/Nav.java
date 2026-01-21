@@ -2,40 +2,18 @@ package grok_code_fast_1;
 import battlecode.common.*;
 import java.util.*;
 
-public class Navigation {
+public class Nav {
     static RobotController rc;
-    static MapLocation enemyCenter;
     static Map<Integer, Boolean> followingWall = new HashMap<>();
     static Map<Integer, Direction> bugDirection = new HashMap<>();
 
     public static void init(RobotController rc) {
-        Navigation.rc = rc;
+        Nav.rc = rc;
     }
 
-    public static boolean tryMove(Direction dir) throws GameActionException {
-        if (rc.canMove(dir)) {
-            rc.move(dir);
-            return true;
-        }
-        // Try rotated directions
-        for (int i = 1; i <= 3; i++) {
-            Direction left = dir.rotateLeftDegrees(i * 45);
-            if (rc.canMove(left)) {
-                rc.move(left);
-                return true;
-            }
-            Direction right = dir.rotateRightDegrees(i * 45);
-            if (rc.canMove(right)) {
-                rc.move(right);
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public static boolean tryMoveBug(MapLocation target) throws GameActionException {
+    public static boolean tryMove(MapLocation target) throws GameActionException {
         MapLocation current = rc.getLocation();
-        if (current.distanceTo(target) < 1) return false; // close enough
+        if (current.distanceTo(target) < 1) return false;
 
         int id = rc.getID();
         boolean isFollowingWall = followingWall.getOrDefault(id, false);
@@ -65,7 +43,7 @@ public class Navigation {
                 return true;
             } else {
                 // rotate
-                bugDirection.put(id, currentBugDir.rotateLeftDegrees(10));
+                bugDirection.put(id, currentBugDir.rotateLeftDegrees(45));
             }
         }
 
