@@ -3,47 +3,62 @@ package training_bot;
 import battlecode.common.*;
 
 /**
- * Gardener - Economy and production unit.
- * Key responsibilities:
- * - Plant and water Bullet Trees for income
- * - Build combat units (Soldiers, Lumberjacks, Scouts, Tanks)
- * - Balance economy vs military production
+ * Gardener - Economy and production unit (SHOWCASE MODE).
+ *
+ * This Gardener demonstrates ALL mechanics for LLMs to learn from:
+ * - Plants and waters Bullet Trees for income (2 trees)
+ * - Builds ONE of each combat unit type to showcase their behaviors:
+ *   1. LUMBERJACK - Tree clearing, shaking, strike AoE
+ *   2. SCOUT - Fast recon, harassment, tree shaking
+ *   3. TANK - Heavy siege, tree trampling (built early!)
+ *   4. SOLDIER - Main ranged combat, bullet dodging
+ *
+ * Build order is designed to show all unit types including the expensive Tank.
  */
 public strictfp class Gardener {
     private static RobotController rc;
-    private static boolean settled = false;
     private static int treesPlanted = 0;
-    private static final int MAX_TREES = 5;
+    private static final int MAX_TREES = 2; // Plant 2 trees for income
 
-    // Build order ratios
-    private static int soldiersBuild = 0;
+    // Track what we've built for showcase purposes
     private static int lumberjacksBuilt = 0;
     private static int scoutsBuilt = 0;
+    private static int soldiersBuilt = 0;
     private static int tanksBuilt = 0;
+
+    // Unit costs from TECHNICAL_DOCS (hardcoded for reliability)
+    private static final float LUMBERJACK_COST = 100f;
+    private static final float SCOUT_COST = 80f;
+    private static final float SOLDIER_COST = 100f;
+    private static final float TANK_COST = 300f;
 
     public static void run(RobotController rc) throws GameActionException {
         Gardener.rc = rc;
         Navigation.init(rc);
 
-        // Priority 1: Water nearby trees
+        int round = rc.getRoundNum();
+        float bullets = rc.getTeamBullets();
+
+        // PRIORITY 1: Always water trees first (maintains income)
         waterTrees();
 
-        // Priority 2: If not settled, find a good spot
-        if (!settled && treesPlanted == 0) {
-            findSettleLocation();
-        }
-
-        // Priority 3: Plant trees if we have space
+        // PRIORITY 2: Plant trees early for income (up to 2)
+        // Plant first 2 trees before heavy unit production
         if (treesPlanted < MAX_TREES) {
-            tryPlantTree();
+            boolean planted = tryPlantTree();
+            if (planted) {
+                return; // Focus on planting early
+            }
         }
 
-        // Priority 4: Build combat units
-        tryBuildUnits();
+        // PRIORITY 3: Build showcase units
+        tryBuildShowcaseUnits();
     }
 
     /**
      * Waters the lowest-health tree in range.
+     * MECHANIC: rc.water(treeID) heals trees - essential for Bullet Tree income.
+     * Trees generate ~1 bullet/turn when healthy, so watering is critical!
      */
     private static void waterTrees() throws GameActionException {
         TreeInfo[] trees = rc.senseNearbyTrees(2f, rc.getTeam());
@@ -52,7 +67,7 @@ public strictfp class Gardener {
             return;
         }
 
-        // Find tree with lowest health
+        // Find tree with lowest health (prioritize weakest)
         TreeInfo lowestHealthTree = null;
         float lowestHealth = Float.MAX_VALUE;
 
@@ -65,55 +80,25 @@ public strictfp class Gardener {
 
         if (lowestHealthTree != null) {
             rc.water(lowestHealthTree.ID);
-        }
-    }
-
-    /**
-     * Move to find a good location to settle and plant trees.
-     */
-    private static void findSettleLocation() throws GameActionException {
-        MapLocation myLoc = rc.getLocation();
-
-        // Check if current location is good (space for trees)
-        TreeInfo[] nearbyTrees = rc.senseNearbyTrees(3f);
-        RobotInfo[] nearbyRobots = rc.senseNearbyRobots(3f, rc.getTeam());
-
-        // Settle if we have space
-        if (nearbyTrees.length < 3 && nearbyRobots.length < 2) {
-            settled = true;
-            return;
-        }
-
-        // Move away from other units to find space
-        if (nearbyRobots.length > 0) {
-            float avgX = 0, avgY = 0;
-            for (RobotInfo robot : nearbyRobots) {
-                avgX += robot.location.x;
-                avgY += robot.location.y;
+            // Only log occasionally to reduce spam
+            if (rc.getRoundNum() % 100 == 0) {
+                System.out.println("GARDENER: Watering tree (health: " + lowestHealth + ")");
             }
-            avgX /= nearbyRobots.length;
-            avgY /= nearbyRobots.length;
-
-            Navigation.moveAwayFrom(new MapLocation(avgX, avgY));
-        } else {
-            Navigation.wander();
         }
     }
 
     /**
-     * Attempts to plant a tree in an available direction.
-     * Plants in a hexagonal pattern for efficiency.
+     * Plants a Bullet Tree for income.
+     * MECHANIC: rc.plantTree(dir) creates a tree that generates bullets over time.
+     * We plant 2 trees to boost economy before building expensive units like Tank.
+     *
+     * @return true if a tree was planted
      */
-    private static void tryPlantTree() throws GameActionException {
-        // Plant in 6 directions (hexagonal pattern), leaving 2 open for building
-        // Using radians: 0 = East, PI/2 = North, PI = West, 3PI/2 = South
+    private static boolean tryPlantTree() throws GameActionException {
+        // Plant in 6 directions (hexagonal pattern)
         float[] plantAngles = {
-            0,                          // East
-            (float) Math.PI / 3,        // 60 degrees
-            (float) (2 * Math.PI / 3),  // 120 degrees
-            (float) Math.PI,            // West
-            (float) (4 * Math.PI / 3),  // 240 degrees
-            (float) (5 * Math.PI / 3)   // 300 degrees
+            0, (float) Math.PI / 3, (float) (2 * Math.PI / 3),
+            (float) Math.PI, (float) (4 * Math.PI / 3), (float) (5 * Math.PI / 3)
         };
 
         for (float angle : plantAngles) {
@@ -121,86 +106,102 @@ public strictfp class Gardener {
             if (rc.canPlantTree(dir)) {
                 rc.plantTree(dir);
                 treesPlanted++;
-                settled = true;
-                return;
+                System.out.println("GARDENER R" + rc.getRoundNum() +
+                    ": Planted tree #" + treesPlanted + "/" + MAX_TREES + " for income");
+                return true;
             }
         }
+
+        return false;
     }
 
     /**
-     * Builds combat units based on game state and build order.
+     * Builds units in showcase order to demonstrate all unit types.
+     *
+     * SHOWCASE BUILD ORDER (with Tank early!):
+     * 1. LUMBERJACK - Clears trees, collects bullets, melee AoE combat
+     * 2. SCOUT - Fast movement, huge vision, harassment
+     * 3. TANK - Heavy damage, tree trampling, siege (300 bullets - built early!)
+     * 4. SOLDIER - Ranged combat, bullet dodging, main army unit
+     *
+     * MECHANIC: rc.buildRobot(type, dir) spawns a new unit.
+     *
+     * @return true if a unit was built this turn
      */
-    private static void tryBuildUnits() throws GameActionException {
-        // Determine what to build based on current counts and game state
-        RobotType toBuild = determineBuildType();
+    private static boolean tryBuildShowcaseUnits() throws GameActionException {
+        float bullets = rc.getTeamBullets();
+        int round = rc.getRoundNum();
 
-        if (toBuild == null) {
-            return;
+        // Determine what to build next in showcase order
+        RobotType toBuild = null;
+        String reason = "";
+
+        // SHOWCASE PHASE: Build one of each unit type
+        // Order: LUMBERJACK -> SCOUT -> TANK -> SOLDIER
+        if (lumberjacksBuilt < 1 && bullets >= LUMBERJACK_COST) {
+            toBuild = RobotType.LUMBERJACK;
+            reason = "LUMBERJACK #1 - demonstrates chop(), shake(), strike()";
+        }
+        else if (scoutsBuilt < 1 && bullets >= SCOUT_COST) {
+            toBuild = RobotType.SCOUT;
+            reason = "SCOUT #1 - demonstrates fast movement & harassment";
+        }
+        else if (tanksBuilt < 1 && bullets >= TANK_COST) {
+            // Build TANK early to showcase it!
+            toBuild = RobotType.TANK;
+            reason = "TANK #1 - demonstrates heavy combat & tree trampling";
+        }
+        else if (soldiersBuilt < 1 && bullets >= SOLDIER_COST) {
+            toBuild = RobotType.SOLDIER;
+            reason = "SOLDIER #1 - demonstrates ranged combat & dodging";
+        }
+        // After showcase complete: build more units
+        else if (bullets >= SOLDIER_COST + 50) {
+            int totalBuilt = lumberjacksBuilt + scoutsBuilt + soldiersBuilt + tanksBuilt;
+            switch (totalBuilt % 4) {
+                case 0: toBuild = RobotType.SOLDIER; reason = "Additional SOLDIER"; break;
+                case 1: toBuild = RobotType.LUMBERJACK; reason = "Additional LUMBERJACK"; break;
+                case 2: toBuild = RobotType.SOLDIER; reason = "Additional SOLDIER"; break;
+                case 3: toBuild = RobotType.SCOUT; reason = "Additional SCOUT"; break;
+            }
         }
 
-        // Try to build in available directions
+        if (toBuild == null) {
+            // Debug: why aren't we building?
+            if (round % 100 == 0) {
+                System.out.println("GARDENER R" + round + ": Saving bullets=" + (int)bullets +
+                    " (L=" + lumberjacksBuilt + " Sc=" + scoutsBuilt +
+                    " T=" + tanksBuilt + " So=" + soldiersBuilt + ")");
+            }
+            return false;
+        }
+
+        // Try to build in all 8 directions
         for (int i = 0; i < 8; i++) {
             Direction dir = new Direction(i * (float) Math.PI / 4);
             if (rc.canBuildRobot(toBuild, dir)) {
                 rc.buildRobot(toBuild, dir);
                 updateBuildCount(toBuild);
-                return;
+                System.out.println("GARDENER R" + round + ": Built " + reason);
+                return true;
             }
         }
+
+        // Couldn't build - maybe blocked? Try to move
+        if (!rc.hasMoved()) {
+            Navigation.wander();
+        }
+
+        return false;
     }
 
     /**
-     * Determines which unit type to build based on strategy.
-     */
-    private static RobotType determineBuildType() throws GameActionException {
-        float bullets = rc.getTeamBullets();
-        int round = rc.getRoundNum();
-
-        // Need minimum bullets to build
-        if (bullets < 100) {
-            return null;
-        }
-
-        // Early game: Build lumberjacks to clear trees
-        if (round < 100 && lumberjacksBuilt < 1) {
-            return RobotType.LUMBERJACK;
-        }
-
-        // Early scouts for harass and vision
-        if (round < 150 && scoutsBuilt < 1) {
-            return RobotType.SCOUT;
-        }
-
-        // Main army composition: Soldiers
-        if (soldiersBuild < 3) {
-            return RobotType.SOLDIER;
-        }
-
-        // Late game: Add tanks if we have economy
-        if (round > 500 && bullets > 400 && tanksBuilt < 2) {
-            return RobotType.TANK;
-        }
-
-        // Maintain lumberjack presence
-        if (lumberjacksBuilt < soldiersBuild / 3) {
-            return RobotType.LUMBERJACK;
-        }
-
-        // Default to soldiers
-        if (bullets > 150) {
-            return RobotType.SOLDIER;
-        }
-
-        return null;
-    }
-
-    /**
-     * Updates build counters.
+     * Updates build counters and broadcasts.
      */
     private static void updateBuildCount(RobotType type) throws GameActionException {
         switch (type) {
             case SOLDIER:
-                soldiersBuild++;
+                soldiersBuilt++;
                 Comms.incrementCounter(Comms.CHANNEL_SOLDIER_COUNT);
                 break;
             case LUMBERJACK:

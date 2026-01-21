@@ -13,6 +13,7 @@ public strictfp class Archon {
     private static RobotController rc;
     private static int gardenersHired = 0;
     private static Direction spawnDirection = Direction.NORTH;
+    private static boolean earlyDonationDone = false; // Track early VP showcase
 
     public static void run(RobotController rc) throws GameActionException {
         Archon.rc = rc;
@@ -29,14 +30,12 @@ public strictfp class Archon {
     }
 
     /**
-     * Attempts to hire a Gardener in an available direction.
+     * Attempts to hire exactly 1 Gardener at the start.
+     * This bot is a showcase - one gardener will build all unit types.
      */
     private static void tryHireGardener() throws GameActionException {
-        // Limit gardeners based on round number for economy balance
-        int maxGardeners = 1 + (rc.getRoundNum() / 200);
-        maxGardeners = Math.min(maxGardeners, 5);
-
-        if (gardenersHired >= maxGardeners) {
+        // SHOWCASE MODE: Only hire 1 gardener to demonstrate all mechanics
+        if (gardenersHired >= 1) {
             return;
         }
 
@@ -46,9 +45,8 @@ public strictfp class Archon {
             if (rc.canHireGardener(dir)) {
                 rc.hireGardener(dir);
                 gardenersHired++;
-                // Rotate spawn direction for next time
-                spawnDirection = spawnDirection.rotateRightDegrees(90);
                 Comms.incrementCounter(Comms.CHANNEL_GARDENER_COUNT);
+                System.out.println("ARCHON: Hired showcase Gardener to build all unit types");
                 return;
             }
         }
@@ -86,27 +84,57 @@ public strictfp class Archon {
     }
 
     /**
-     * Donate bullets for victory points when we have excess.
+     * Donate bullets for victory points.
+     * MECHANIC: rc.donate(bullets) converts bullets to VP at current exchange rate.
+     * Cost starts at 7.5 bullets/VP and increases over time.
+     *
+     * SHOWCASE: Donate a few VP early to demonstrate the mechanic!
      */
     private static void tryDonate() throws GameActionException {
         float bullets = rc.getTeamBullets();
         float vpCost = rc.getVictoryPointCost();
+        int round = rc.getRoundNum();
+        int currentVP = rc.getTeamVictoryPoints();
 
-        // Donate if we have lots of bullets or can win
-        int vpNeeded = GameConstants.VICTORY_POINTS_TO_WIN - rc.getTeamVictoryPoints();
-
-        // Win condition check
+        // Win condition check - go for the win!
+        int vpNeeded = GameConstants.VICTORY_POINTS_TO_WIN - currentVP;
         if (bullets >= vpNeeded * vpCost) {
             rc.donate(vpNeeded * vpCost);
+            System.out.println("ARCHON R" + round + ": Donating for VICTORY!");
             return;
         }
 
-        // Donate excess bullets late game
-        if (rc.getRoundNum() > 2500 && bullets > 500) {
-            rc.donate(bullets - 200);
-        } else if (bullets > 1000) {
-            // Donate some excess
-            rc.donate(100);
+        // SHOWCASE: Early VP donation to demonstrate the mechanic
+        // Donate a few points early when we have excess bullets
+        if (!earlyDonationDone && round > 50 && bullets > 200) {
+            // Buy 10 VP early to showcase the donation mechanic
+            float donationAmount = 10 * vpCost;
+            if (bullets >= donationAmount + 100) { // Keep 100 for unit building
+                rc.donate(donationAmount);
+                earlyDonationDone = true;
+                System.out.println("ARCHON R" + round + ": SHOWCASE - Donated for 10 VP! " +
+                    "(cost=" + (int)donationAmount + " bullets, rate=" + vpCost + "/VP)");
+                return;
+            }
+        }
+
+        // Periodic small donations when we have excess (after showcase units built)
+        // This shows ongoing VP accumulation strategy
+        if (round > 500 && bullets > 500 && round % 200 == 0) {
+            float donationAmount = 5 * vpCost;
+            rc.donate(donationAmount);
+            System.out.println("ARCHON R" + round + ": Periodic donation for 5 VP (total VP: " +
+                (currentVP + 5) + ")");
+        }
+
+        // Late game: more aggressive donations
+        if (round > 2000 && bullets > 300) {
+            float donationAmount = Math.min(bullets - 200, 20 * vpCost);
+            if (donationAmount > vpCost) {
+                rc.donate(donationAmount);
+                int vpGained = (int)(donationAmount / vpCost);
+                System.out.println("ARCHON R" + round + ": Late game donation for ~" + vpGained + " VP");
+            }
         }
     }
 }

@@ -3,15 +3,19 @@ package training_bot;
 import battlecode.common.*;
 
 /**
- * Lumberjack - Melee combat and tree clearing unit.
- * Key responsibilities:
- * - Clear trees to open pathways
- * - Collect bullets from neutral trees (shake)
- * - AoE damage with strike in combat
- * - Destroy enemy Bullet Trees
+ * Lumberjack - Melee combat and tree clearing unit (SHOWCASE MODE).
+ *
+ * MECHANICS DEMONSTRATED:
+ * - rc.chop(treeID) - Deals 5 damage to a tree
+ * - rc.shake(treeID) - Collects bullets from trees
+ * - rc.strike() - AoE damage to ALL units/trees within radius 2
+ *
+ * SHOWCASE BEHAVIOR: Actively moves toward enemy base, clearing trees
+ * and engaging enemies along the way.
  */
 public strictfp class Lumberjack {
     private static RobotController rc;
+    private static MapLocation targetLocation = null;
 
     public static void run(RobotController rc) throws GameActionException {
         Lumberjack.rc = rc;
@@ -19,45 +23,111 @@ public strictfp class Lumberjack {
 
         MapLocation myLoc = rc.getLocation();
 
-        // Priority 1: Check for enemies to strike
-        RobotInfo[] enemies = rc.senseNearbyRobots(RobotType.LUMBERJACK.bodyRadius + GameConstants.LUMBERJACK_STRIKE_RADIUS, rc.getTeam().opponent());
-        RobotInfo[] friendlies = rc.senseNearbyRobots(RobotType.LUMBERJACK.bodyRadius + GameConstants.LUMBERJACK_STRIKE_RADIUS, rc.getTeam());
-
-        // Strike if enemies in range and no friendly fire
-        if (enemies.length > 0 && friendlies.length == 0) {
-            if (rc.canStrike()) {
-                rc.strike();
+        // Set target to enemy Archon location
+        if (targetLocation == null) {
+            MapLocation[] enemyArchons = rc.getInitialArchonLocations(rc.getTeam().opponent());
+            if (enemyArchons.length > 0) {
+                targetLocation = enemyArchons[0];
             }
         }
 
-        // Priority 2: Shake neutral trees for bullets
-        TreeInfo[] neutralTrees = rc.senseNearbyTrees(2f, Team.NEUTRAL);
-        for (TreeInfo tree : neutralTrees) {
+        // Check for nearby enemies
+        RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
+        RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(
+            RobotType.LUMBERJACK.bodyRadius + GameConstants.LUMBERJACK_STRIKE_RADIUS,
+            rc.getTeam().opponent()
+        );
+        RobotInfo[] nearbyFriendlies = rc.senseNearbyRobots(
+            RobotType.LUMBERJACK.bodyRadius + GameConstants.LUMBERJACK_STRIKE_RADIUS,
+            rc.getTeam()
+        );
+
+        // PRIORITY 1: Strike if enemies in melee range and no friendly fire
+        if (nearbyEnemies.length > 0 && nearbyFriendlies.length == 0) {
+            if (rc.canStrike()) {
+                rc.strike();
+                System.out.println("LUMBERJACK: STRIKE! Hit " + nearbyEnemies.length + " enemies");
+            }
+        }
+
+        // PRIORITY 2: Chase visible enemies
+        if (enemies.length > 0) {
+            RobotInfo nearest = findNearest(enemies);
+            if (nearest != null) {
+                System.out.println("LUMBERJACK: Chasing " + nearest.type);
+                Navigation.moveToward(nearest.location);
+                // Try to chop any tree in range while chasing
+                tryChopTree();
+                return;
+            }
+        }
+
+        // PRIORITY 3: Shake trees for bullets while moving
+        TreeInfo[] nearbyTrees = rc.senseNearbyTrees(2f, Team.NEUTRAL);
+        for (TreeInfo tree : nearbyTrees) {
             if (tree.containedBullets > 0 && rc.canShake(tree.ID)) {
                 rc.shake(tree.ID);
+                System.out.println("LUMBERJACK: Shook tree for " + tree.containedBullets + " bullets");
                 break;
             }
         }
 
-        // Priority 3: Chop trees
-        boolean chopped = tryChopTree();
+        // PRIORITY 4: Move toward enemy base, chopping blocking trees
+        moveTowardEnemy();
 
-        // Priority 4: Move toward enemies or trees
-        if (!rc.hasMoved()) {
-            if (enemies.length > 0) {
-                // Chase enemies
-                RobotInfo nearest = findNearest(enemies);
-                Navigation.moveToward(nearest.location);
-            } else {
-                // Find trees to clear
-                moveTowardTrees();
+        // Chop any tree we're next to
+        tryChopTree();
+    }
+
+    /**
+     * Moves toward enemy base, the main objective.
+     * Will path around or through trees.
+     */
+    private static void moveTowardEnemy() throws GameActionException {
+        if (rc.hasMoved()) {
+            return;
+        }
+
+        // Update target from broadcasts
+        MapLocation broadcastedEnemy = Comms.getEnemyArchonLocation();
+        if (broadcastedEnemy != null) {
+            targetLocation = broadcastedEnemy;
+        }
+
+        if (targetLocation == null) {
+            Navigation.wander();
+            return;
+        }
+
+        Direction toTarget = rc.getLocation().directionTo(targetLocation);
+
+        // Try to move toward target
+        if (Navigation.tryMove(toTarget)) {
+            return;
+        }
+
+        // If blocked, check if a tree is in the way - chop it!
+        TreeInfo[] blockingTrees = rc.senseNearbyTrees(2f);
+        for (TreeInfo tree : blockingTrees) {
+            if (tree.team != rc.getTeam()) {
+                Direction toTree = rc.getLocation().directionTo(tree.location);
+                float angleDiff = Math.abs(toTarget.degreesBetween(toTree));
+                // Tree is roughly in our path
+                if (angleDiff < 45 && rc.canChop(tree.ID)) {
+                    rc.chop(tree.ID);
+                    System.out.println("LUMBERJACK: Chopping blocking tree");
+                    return;
+                }
             }
         }
+
+        // Try any direction if stuck
+        Navigation.wander();
     }
 
     /**
      * Attempts to chop a nearby tree.
-     * Priority: Enemy trees > Neutral trees blocking path > Any neutral tree
+     * Priority: Enemy trees > Neutral trees with bullets > Any neutral tree
      */
     private static boolean tryChopTree() throws GameActionException {
         // First, try enemy trees (denies economy)
@@ -65,14 +135,14 @@ public strictfp class Lumberjack {
         for (TreeInfo tree : enemyTrees) {
             if (rc.canChop(tree.ID)) {
                 rc.chop(tree.ID);
+                System.out.println("LUMBERJACK: Chopping ENEMY tree!");
                 return true;
             }
         }
 
-        // Then neutral trees
+        // Then neutral trees (shake first for bullets)
         TreeInfo[] neutralTrees = rc.senseNearbyTrees(2f, Team.NEUTRAL);
         for (TreeInfo tree : neutralTrees) {
-            // Shake first to collect bullets
             if (tree.containedBullets > 0 && rc.canShake(tree.ID)) {
                 rc.shake(tree.ID);
             }
@@ -83,49 +153,6 @@ public strictfp class Lumberjack {
         }
 
         return false;
-    }
-
-    /**
-     * Moves toward trees that need clearing.
-     */
-    private static void moveTowardTrees() throws GameActionException {
-        // Look for trees in sensor range
-        TreeInfo[] allTrees = rc.senseNearbyTrees();
-
-        // Prioritize: Enemy trees > Neutral with bullets > Any neutral
-        TreeInfo targetTree = null;
-        float bestScore = Float.MAX_VALUE;
-
-        for (TreeInfo tree : allTrees) {
-            if (tree.team == rc.getTeam()) {
-                continue; // Don't target our own trees
-            }
-
-            float score = rc.getLocation().distanceTo(tree.location);
-
-            // Prioritize enemy trees
-            if (tree.team == rc.getTeam().opponent()) {
-                score -= 100;
-            }
-
-            // Prioritize trees with bullets
-            if (tree.containedBullets > 0) {
-                score -= tree.containedBullets;
-            }
-
-            if (score < bestScore) {
-                bestScore = score;
-                targetTree = tree;
-            }
-        }
-
-        if (targetTree != null) {
-            Navigation.moveToward(targetTree.location);
-        } else {
-            // Move toward enemy base to find trees/enemies
-            Direction toEnemy = Navigation.towardEnemyArchons();
-            Navigation.tryMove(toEnemy);
-        }
     }
 
     /**
