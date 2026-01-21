@@ -59,6 +59,11 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 MATCH_FILE="$PROJECT_DIR/matches/${BOT}-vs-${OPPONENT}-on-${MAP}.bc17"
 DB_FILE="${MATCH_FILE%.bc17}.db"
+STATE_DIR="$PROJECT_DIR/src/$BOT/.state"
+JSON_FILE="$STATE_DIR/match-result.json"
+MAP_FILE="$PROJECT_DIR/maps/${MAP}.map17"
+
+mkdir -p "$STATE_DIR"
 
 echo "═══════════════════════════════════════════════════════════════════════════════"
 echo "MATCH: $BOT (A) vs $OPPONENT (B) on $MAP"
@@ -81,14 +86,34 @@ fi
 python3 "$SCRIPT_DIR/bc17_query.py" extract "$MATCH_FILE" "$DB_FILE" > /dev/null
 
 # Use Python for all database queries (no sqlite3 CLI dependency)
-python3 - "$DB_FILE" <<'PYEOF'
+python3 - "$DB_FILE" "$BOT" "$OPPONENT" "$MAP" "$MATCH_FILE" "$JSON_FILE" "$MAP_FILE" "$SCRIPT_DIR" <<'PYEOF'
 import sqlite3
 import sys
 import json
+import os
+import subprocess
 
 db_path = sys.argv[1]
+bot = sys.argv[2]
+opponent = sys.argv[3]
+map_name = sys.argv[4]
+match_file = sys.argv[5]
+json_path = sys.argv[6]
+map_path = sys.argv[7]
+script_dir = sys.argv[8]
 conn = sqlite3.connect(db_path)
 conn.row_factory = sqlite3.Row
+
+data = {
+    "schema_version": 1,
+    "match": {
+        "bot": bot,
+        "opponent": opponent,
+        "map": map_name,
+        "match_file": match_file,
+        "database": db_path,
+    },
+}
 
 # Get winner and total rounds
 winner = conn.execute("SELECT value FROM metadata WHERE key='winner'").fetchone()
@@ -124,6 +149,19 @@ if (won == "YES" and total_rounds <= 1500) or a_vp >= 1000:
     goal_met = "YES"
 else:
     goal_met = "NO"
+
+data["result"] = {
+    "winner": winner,
+    "outcome": outcome,
+    "won": won,
+    "rounds": int(total_rounds),
+    "target_rounds": 1500,
+    "goal_met": goal_met,
+    "final": {
+        "team_a": {"bullets": a_bullets, "vp": a_vp},
+        "team_b": {"bullets": b_bullets, "vp": b_vp},
+    },
+}
 
 print(f"OUTCOME={outcome}  ROUNDS={total_rounds}  TARGET=1500  GOAL_MET={goal_met}")
 print(f"FINAL: A={a_bullets}bullets/{a_vp}vp  B={b_bullets}bullets/{b_vp}vp")
@@ -181,6 +219,17 @@ ORDER BY Team,
     END
 """).fetchall()
 
+unit_summary = []
+for row in unit_data:
+    unit_summary.append({
+        "team": row["Team"],
+        "unit": row["Unit"],
+        "produced": int(row["Prod"]),
+        "lost": int(row["Lost"]),
+        "alive": int(row["Alive"]),
+    })
+data["unit_summary"] = unit_summary
+
 # Print as formatted table
 print(f"{'Team':<6} {'Unit':<12} {'Prod':<6} {'Lost':<6} {'Alive':<6}")
 print("-" * 40)
@@ -208,6 +257,19 @@ GROUP BY team, body_type
 ORDER BY team, body_type
 """).fetchall()
 
+unit_lifespan = []
+for row in lifespan_rows:
+    avg_life = row["avg_life"] if row["avg_life"] is not None else 0
+    unit_lifespan.append({
+        "team": row["team"],
+        "unit": row["body_type"],
+        "deaths": int(row["deaths"]),
+        "avg_rounds": float(avg_life),
+        "min_rounds": int(row["min_life"]) if row["min_life"] is not None else 0,
+        "max_rounds": int(row["max_life"]) if row["max_life"] is not None else 0,
+    })
+data["unit_lifespan"] = unit_lifespan
+
 if lifespan_rows:
     print(f"{'Team':<6} {'Unit':<12} {'Deaths':<7} {'Avg':<6} {'Min':<6} {'Max':<6}")
     print("-" * 46)
@@ -233,6 +295,7 @@ WHERE event_type='death'
 ORDER BY round_id ASC
 """).fetchall()
 
+early_deaths = {"A": [], "B": []}
 if early_rows:
     by_team = {'A': [], 'B': []}
     for row in early_rows:
@@ -242,6 +305,12 @@ if early_rows:
 
     for team in ['A', 'B']:
         entries = by_team[team]
+        for r in entries:
+            early_deaths[team].append({
+                "round": int(r["round_id"]),
+                "unit": r["body_type"],
+                "lifespan": int(r["lifespan"]) if r["lifespan"] is not None else 0,
+            })
         if entries:
             details = ", ".join(
                 f"R{r['round_id']}:{r['body_type']}(life {int(r['lifespan'])})"
@@ -252,6 +321,8 @@ if early_rows:
             print(f"Team {team}: (no deaths)")
 else:
     print("(no deaths recorded)")
+
+data["early_deaths"] = early_deaths
 
 # ECONOMY TIMELINE
 print()
@@ -283,6 +354,25 @@ WHERE r.round_id % 500 = 0 OR r.round_id = (SELECT MAX(round_id) FROM rounds)
 ORDER BY r.round_id
 """).fetchall()
 
+economy_timeline = []
+for row in econ_data:
+    economy_timeline.append({
+        "round": int(row["round_id"]),
+        "team_a": {
+            "bullets": int(row["team_a_bullets"]),
+            "vp": row["team_a_vp"],
+            "bullets_generated": int(row["a_gen"]),
+            "bullets_spent": int(row["a_spent"]),
+        },
+        "team_b": {
+            "bullets": int(row["team_b_bullets"]),
+            "vp": row["team_b_vp"],
+            "bullets_generated": int(row["b_gen"]),
+            "bullets_spent": int(row["b_spent"]),
+        },
+    })
+data["economy_timeline"] = economy_timeline
+
 for row in econ_data:
     line = f"R{row['round_id']:<4} | "
     line += f"A: {int(row['team_a_bullets']):>3}/{row['team_a_vp']:<3} "
@@ -306,6 +396,15 @@ FROM snapshots s
 WHERE s.round_id % 500 = 0 OR s.round_id = (SELECT MAX(round_id) FROM snapshots)
 ORDER BY s.round_id
 """).fetchall()
+
+tree_economy = []
+for row in tree_rows:
+    tree_economy.append({
+        "round": int(row["round_id"]),
+        "team_a_trees": int(row["a_trees"]),
+        "team_b_trees": int(row["b_trees"]),
+    })
+data["tree_economy"] = tree_economy
 
 if tree_rows:
     for row in tree_rows:
@@ -337,6 +436,15 @@ GROUP BY Period
 ORDER BY Period
 """).fetchall()
 
+combat_timeline = []
+for row in combat_data:
+    combat_timeline.append({
+        "period": row["Period"],
+        "team_a_deaths": int(row["A_Deaths"]),
+        "team_b_deaths": int(row["B_Deaths"]),
+    })
+data["combat_timeline"] = combat_timeline
+
 if combat_data:
     for row in combat_data:
         print(f"{row['Period']}: A:{row['A_Deaths']} B:{row['B_Deaths']}")
@@ -351,9 +459,13 @@ print("────────────────────────�
 
 # Get first and last snapshot rounds
 snapshots = conn.execute("SELECT round_id FROM snapshots ORDER BY round_id").fetchall()
+movement_analysis = {"insufficient_snapshots": True, "teams": {}}
 if len(snapshots) >= 2:
     early_round = snapshots[min(2, len(snapshots)-1)]['round_id']
     late_round = snapshots[-1]['round_id']
+    movement_analysis["insufficient_snapshots"] = False
+    movement_analysis["early_round"] = int(early_round)
+    movement_analysis["late_round"] = int(late_round)
 
     def get_quadrant_summary(round_id, team):
         rows = conn.execute("""
@@ -389,7 +501,7 @@ if len(snapshots) >= 2:
 
         return f"{total} units"
 
-    def detect_stuck_units(early, late, team_name):
+    def detect_stuck_units(early, late):
         stuck = []
         for quad in ['NW', 'NE', 'SW', 'SE']:
             early_units = early.get(quad, {})
@@ -400,9 +512,7 @@ if len(snapshots) >= 2:
                 if early_count > 0 and late_count >= early_count:
                     stuck.append(f"{late_count} {unit_type} in {quad}")
 
-        if stuck:
-            return f"{team_name} POTENTIAL STUCK: {', '.join(stuck)}"
-        return None
+        return stuck
 
     print(f"Comparing R{early_round} vs R{late_round}:")
     print()
@@ -411,15 +521,26 @@ if len(snapshots) >= 2:
         early = get_quadrant_summary(early_round, team)
         late = get_quadrant_summary(late_round, team)
 
-        print(f"  {team_name} at R{early_round}: {summarize_distribution(early)}")
-        print(f"  {team_name} at R{late_round}: {summarize_distribution(late)}")
+        early_summary = summarize_distribution(early)
+        late_summary = summarize_distribution(late)
 
-        stuck_msg = detect_stuck_units(early, late, team_name)
-        if stuck_msg:
+        print(f"  {team_name} at R{early_round}: {early_summary}")
+        print(f"  {team_name} at R{late_round}: {late_summary}")
+
+        stuck = detect_stuck_units(early, late)
+        movement_analysis["teams"][team] = {
+            "early": {"summary": early_summary, "quadrants": early},
+            "late": {"summary": late_summary, "quadrants": late},
+            "stuck": stuck,
+        }
+        if stuck:
+            stuck_msg = f"{team_name} POTENTIAL STUCK: {', '.join(stuck)}"
             print(f"  ⚠ {stuck_msg}")
         print()
 else:
     print("Insufficient snapshots for movement analysis")
+
+data["movement_analysis"] = movement_analysis
 
 # VP ACTIVITY
 print("───────────────────────────────────────────────────────────────────────────────")
@@ -427,6 +548,7 @@ print("VP ACTIVITY")
 print("───────────────────────────────────────────────────────────────────────────────")
 
 donate_count = conn.execute("SELECT COUNT(*) as cnt FROM events WHERE event_type='donate'").fetchone()['cnt']
+vp_activity = {"donations_total": int(donate_count), "by_team": []}
 if donate_count > 0:
     vp_data = conn.execute("""
         SELECT team, COUNT(*) as donations,
@@ -435,9 +557,16 @@ if donate_count > 0:
         GROUP BY team
     """).fetchall()
     for row in vp_data:
+        vp_activity["by_team"].append({
+            "team": row["team"],
+            "donations": int(row["donations"]),
+            "vp_gained": row["vp_gained"],
+        })
         print(f"Team {row['team']}: {row['donations']} donations, {row['vp_gained']} VP gained")
 else:
     print("(No VP donations)")
+
+data["vp_activity"] = vp_activity
 
 # BUILD ORDER
 print()
@@ -445,6 +574,7 @@ print("────────────────────────�
 print("BUILD ORDER (first 15 units per team)")
 print("───────────────────────────────────────────────────────────────────────────────")
 
+build_order = {"teams": {}}
 for t, team_name in [('A', 'Team A'), ('B', 'Team B')]:
     rows = conn.execute("""
         SELECT sequence, round_id, body_type
@@ -455,6 +585,17 @@ for t, team_name in [('A', 'Team A'), ('B', 'Team B')]:
     """, (t,)).fetchall()
 
     if rows:
+        build_order["teams"][t] = {
+            "units": [
+                {
+                    "sequence": int(r["sequence"]),
+                    "round": int(r["round_id"]),
+                    "unit": r["body_type"],
+                }
+                for r in rows
+            ],
+            "milestones": {},
+        }
         units = [f"R{r['round_id']}:{r['body_type']}" for r in rows]
         print(f"{team_name}: {', '.join(units)}")
 
@@ -468,8 +609,15 @@ for t, team_name in [('A', 'Team A'), ('B', 'Team B')]:
             milestones.append(f"1st LUMBERJACK R{first_lj['round_id']}")
         if milestones:
             print(f"  Milestones: {', '.join(milestones)}")
+        if first_soldier:
+            build_order["teams"][t]["milestones"]["first_soldier_round"] = int(first_soldier["round_id"])
+        if first_lj:
+            build_order["teams"][t]["milestones"]["first_lumberjack_round"] = int(first_lj["round_id"])
     else:
+        build_order["teams"][t] = {"units": [], "milestones": {}}
         print(f"{team_name}: (no build order data)")
+
+data["build_order"] = build_order
 
 # COMBAT ANALYSIS
 print()
@@ -482,6 +630,11 @@ first_combat = conn.execute("SELECT value FROM metadata WHERE key='first_combat_
 last_combat = conn.execute("SELECT value FROM metadata WHERE key='last_combat_round'").fetchone()
 first_combat = first_combat['value'] if first_combat else 'N/A'
 last_combat = last_combat['value'] if last_combat else 'N/A'
+combat_analysis = {
+    "combat_duration": {"first_round": first_combat, "last_round": last_combat},
+    "teams": {},
+    "warnings": [],
+}
 print(f"Combat Duration: R{first_combat} - R{last_combat}")
 print()
 
@@ -496,6 +649,28 @@ if combat_rows:
     b = stats.get('B')
 
     if a and b:
+        combat_analysis["teams"]["A"] = {
+            "shots_single": int(a["shots_single"]),
+            "shots_triad": int(a["shots_triad"]),
+            "shots_pentad": int(a["shots_pentad"]),
+            "lumberjack_strikes": int(a["lumberjack_strikes"]),
+            "chops": int(a["chops"]),
+            "total_bullet_cost": int(a["total_bullet_cost"]),
+            "enemy_kills": int(a["enemy_kills"]),
+            "total_deaths": int(a["total_deaths"]),
+            "bullets_per_kill": float(a["bullets_per_kill"]) if a["bullets_per_kill"] is not None else 0.0,
+        }
+        combat_analysis["teams"]["B"] = {
+            "shots_single": int(b["shots_single"]),
+            "shots_triad": int(b["shots_triad"]),
+            "shots_pentad": int(b["shots_pentad"]),
+            "lumberjack_strikes": int(b["lumberjack_strikes"]),
+            "chops": int(b["chops"]),
+            "total_bullet_cost": int(b["total_bullet_cost"]),
+            "enemy_kills": int(b["enemy_kills"]),
+            "total_deaths": int(b["total_deaths"]),
+            "bullets_per_kill": float(b["bullets_per_kill"]) if b["bullets_per_kill"] is not None else 0.0,
+        }
         print(f"{'Metric':<20} {'Team A':>10} {'Team B':>10}")
         print("-" * 42)
         print(f"{'Single shots':<20} {a['shots_single']:>10} {b['shots_single']:>10}")
@@ -509,17 +684,27 @@ if combat_rows:
         print(f"{'Own deaths':<20} {a['total_deaths']:>10} {b['total_deaths']:>10}")
         kd_a = a['enemy_kills'] / a['total_deaths'] if a['total_deaths'] > 0 else 0
         kd_b = b['enemy_kills'] / b['total_deaths'] if b['total_deaths'] > 0 else 0
+        combat_analysis["teams"]["A"]["kd_ratio"] = float(kd_a)
+        combat_analysis["teams"]["B"]["kd_ratio"] = float(kd_b)
         print(f"{'K/D ratio':<20} {kd_a:>10.2f} {kd_b:>10.2f}")
         print(f"{'Bullets/kill':<20} {a['bullets_per_kill']:>10.1f} {b['bullets_per_kill']:>10.1f}")
 
         # Efficiency warnings
         if a['bullets_per_kill'] > 0 and b['bullets_per_kill'] > 0:
             if a['bullets_per_kill'] > b['bullets_per_kill'] * 2:
+                combat_analysis["warnings"].append(
+                    f"Team A inefficient: {a['bullets_per_kill']:.1f} bullets/kill vs B {b['bullets_per_kill']:.1f}"
+                )
                 print(f"\n⚠ Team A inefficient: {a['bullets_per_kill']:.1f} bullets/kill vs B's {b['bullets_per_kill']:.1f}")
             elif b['bullets_per_kill'] > a['bullets_per_kill'] * 2:
+                combat_analysis["warnings"].append(
+                    f"Team B inefficient: {b['bullets_per_kill']:.1f} bullets/kill vs A {a['bullets_per_kill']:.1f}"
+                )
                 print(f"\n⚠ Team B inefficient: {b['bullets_per_kill']:.1f} bullets/kill vs A's {a['bullets_per_kill']:.1f}")
 else:
     print("(No combat data)")
+
+data["combat_analysis"] = combat_analysis
 
 # ACTION SUMMARY (NON-COMBAT)
 print()
@@ -535,6 +720,15 @@ WHERE event_type='action'
 GROUP BY team, action
 ORDER BY team, count DESC
 """).fetchall()
+
+action_summary = []
+for row in action_rows:
+    action_summary.append({
+        "team": row["team"],
+        "action": row["action"],
+        "count": int(row["count"]),
+    })
+data["action_summary"] = action_summary
 
 if action_rows:
     print(f"{'Team':<6} {'Action':<12} {'Count':<6}")
@@ -564,6 +758,19 @@ unit_shot_data = conn.execute("""
     ORDER BY team, bullet_cost DESC
 """).fetchall()
 
+shots_by_unit_type = []
+for row in unit_shot_data:
+    shots_by_unit_type.append({
+        "team": row["team"],
+        "unit": row["unit_type"] or "UNKNOWN",
+        "single_shots": int(row["single_shots"] or 0),
+        "triad_shots": int(row["triad_shots"] or 0),
+        "pentad_shots": int(row["pentad_shots"] or 0),
+        "total_shots": int(row["total_shots"] or 0),
+        "bullet_cost": int(row["bullet_cost"] or 0),
+    })
+data["shots_by_unit_type"] = shots_by_unit_type
+
 if unit_shot_data:
     current_team = None
     for row in unit_shot_data:
@@ -586,6 +793,7 @@ ff_rows = conn.execute("""
     GROUP BY team
 """).fetchall()
 
+friendly_fire = {"by_team": []}
 if ff_rows:
     print()
     print("Potential Friendly Fire:")
@@ -598,9 +806,23 @@ if ff_rows:
             ORDER BY round_id
             LIMIT 3
         """, (row['team'],)).fetchall()
+        incidents_data = []
         for inc in incidents:
             attacks = json.loads(inc['own_attacks']) if inc['own_attacks'] else []
+            attacks_unique = sorted(set(attacks))
+            incidents_data.append({
+                "round": int(inc["round_id"]),
+                "dead_unit_type": inc["dead_unit_type"],
+                "own_attacks": attacks_unique,
+            })
             print(f"    R{inc['round_id']}: {inc['dead_unit_type']} died (own attacks: {', '.join(set(attacks))})")
+        friendly_fire["by_team"].append({
+            "team": row["team"],
+            "count": int(row["count"]),
+            "incidents": incidents_data,
+        })
+
+data["friendly_fire"] = friendly_fire
 
 # ERROR / SELF-DESTRUCT ANALYSIS
 print()
@@ -617,10 +839,21 @@ action_rows = conn.execute("""
     ORDER BY team, body_type
 """).fetchall()
 
+error_analysis = {
+    "action_deaths": [],
+    "action_death_samples": [],
+    "error_logs": [],
+    "error_log_samples": [],
+}
 if action_rows:
     print("Action deaths (from engine actions):")
     for row in action_rows:
         team = row['team'] or '?'
+        error_analysis["action_deaths"].append({
+            "team": team,
+            "type": row["body_type"],
+            "count": int(row["count"]),
+        })
         print(f"  Team {team}: {row['body_type']} x{row['count']}")
 
     recent = conn.execute("""
@@ -634,6 +867,12 @@ if action_rows:
         print("  Sample incidents:")
         for r in recent:
             team = r['team'] or '?'
+            error_analysis["action_death_samples"].append({
+                "round": int(r["round_id"]),
+                "team": team,
+                "robot_id": int(r["robot_id"]),
+                "type": r["body_type"],
+            })
             print(f"    R{r['round_id']}: Team {team} robot {r['robot_id']} -> {r['body_type']}")
 else:
     print("No DIE_EXCEPTION / DIE_SUICIDE actions recorded.")
@@ -650,6 +889,10 @@ if error_rows:
     print("Error/exception logs:")
     for row in error_rows:
         team = row['team'] or '?'
+        error_analysis["error_logs"].append({
+            "team": team,
+            "count": int(row["count"]),
+        })
         print(f"  Team {team}: {row['count']} logs")
 
     samples = conn.execute("""
@@ -664,9 +907,33 @@ if error_rows:
         for s in samples:
             team = s['team'] or '?'
             msg = s['message'].replace("\n", " ").strip()
+            error_analysis["error_log_samples"].append({
+                "round": int(s["round_id"]),
+                "team": team,
+                "robot_type": s["robot_type"],
+                "robot_id": int(s["robot_id"]),
+                "message": msg,
+            })
             print(f"    R{s['round_id']}: Team {team} {s['robot_type']}#{s['robot_id']}: {msg}")
 else:
     print("No error/exception logs recorded.")
+
+data["error_analysis"] = error_analysis
+
+map_ascii = None
+if map_path and os.path.isfile(map_path):
+    try:
+        map_ascii = subprocess.check_output(
+            [sys.executable, os.path.join(script_dir, "map17_parser.py"), map_path, "--ascii"],
+            text=True,
+        ).rstrip("\n")
+    except Exception:
+        map_ascii = None
+
+data["map"] = {"file": map_path, "ascii": map_ascii}
+
+with open(json_path, "w", encoding="utf-8") as f:
+    json.dump(data, f, ensure_ascii=True, indent=2)
 
 print()
 print("═══════════════════════════════════════════════════════════════════════════════")
@@ -676,7 +943,6 @@ conn.close()
 PYEOF
 
 # ASCII MAP
-MAP_FILE="$PROJECT_DIR/maps/${MAP}.map17"
 if [[ -f "$MAP_FILE" ]]; then
     echo ""
     echo "───────────────────────────────────────────────────────────────────────────────"

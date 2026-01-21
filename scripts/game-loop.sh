@@ -175,6 +175,14 @@ generate_analyze_context() {
         echo ""
         echo "---"
         echo ""
+        echo "# Recent Code Changes (git diff from last iteration)"
+        echo ""
+        echo '```diff'
+        git diff HEAD -- "src/$BOT/"*.java 2>/dev/null | head -150 || echo "(No uncommitted changes)"
+        echo '```'
+        echo ""
+        echo "---"
+        echo ""
         echo "# Bot Code Snapshot (truncated)"
         echo ""
         local max_total_lines=1200
@@ -256,6 +264,14 @@ generate_implement_context() {
         else
             echo "(No iteration history yet)"
         fi
+        echo ""
+        echo "---"
+        echo ""
+        echo "## Recent Code Changes (uncommitted)"
+        echo ""
+        echo '```diff'
+        git diff HEAD -- "src/$BOT/"*.java 2>/dev/null | head -200 || echo "(No uncommitted changes)"
+        echo '```'
     } > "$output_file"
     printf '%s\n' "${GREEN}✓ Implement context saved to $output_file${NC}"
 }
@@ -303,14 +319,33 @@ generate_report_context() {
 validate_goal() {
     printf '%s\n' "${YELLOW}━━━ Validating Goal (running verification match) ━━━${NC}"
 
-    # Run the match and check for GOAL_MET=YES in output
-    if ./scripts/run-match-with-analysis.sh "$BOT" "$OPPONENT" "$MAP" 2>&1 | grep -q 'GOAL_MET=YES'; then
-        printf '%s\n' "${GREEN}✓ Validation PASSED: GOAL_MET=YES confirmed${NC}"
-        return 0
-    else
-        printf '%s\n' "${RED}✗ Validation FAILED: GOAL_MET=YES not found${NC}"
+    # Run the match and check goal status from JSON output
+    ./scripts/run-match-with-analysis.sh "$BOT" "$OPPONENT" "$MAP"
+
+    local json_file="$STATE_DIR/match-result.json"
+    if [[ ! -s "$json_file" ]]; then
+        printf '%s\n' "${RED}✗ Validation FAILED: Missing JSON output at $json_file${NC}"
         return 1
     fi
+
+    local goal_met
+    goal_met=$(python3 - "$json_file" <<'PYEOF'
+import json
+import sys
+
+with open(sys.argv[1], "r", encoding="utf-8") as f:
+    data = json.load(f)
+print(data.get("result", {}).get("goal_met", "NO"))
+PYEOF
+)
+
+    if [[ "$goal_met" == "YES" ]]; then
+        printf '%s\n' "${GREEN}✓ Validation PASSED: GOAL_MET=YES confirmed${NC}"
+        return 0
+    fi
+
+    printf '%s\n' "${RED}✗ Validation FAILED: GOAL_MET=YES not found${NC}"
+    return 1
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -369,6 +404,17 @@ for i in $(seq 1 "$MAX_ITERS"); do
     generate_analyze_context
     run_agent "game-run-analyze" "--bot $BOT --opponent $OPPONENT --maps $MAP"
     echo ""
+
+    match_json="$STATE_DIR/match-result.json"
+    match_summary="$STATE_DIR/match-summary.txt"
+    if [[ ! -s "$match_json" ]]; then
+        printf '%s\n' "${RED}Error: match JSON not found at $match_json${NC}"
+        exit 1
+    fi
+    if [[ ! -s "$match_summary" ]]; then
+        printf '%s\n' "${RED}Error: match summary not found at $match_summary${NC}"
+        exit 1
+    fi
 
     # ─────────────────────────────────────────────────────────────────────────────
     # Step 2: Check Goal Status

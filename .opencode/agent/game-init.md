@@ -96,6 +96,27 @@ Goal: Win in ≤1500 rounds
 - **Combat:** {targeting/movement}
 - **Win Strategy:** {current approach}
 
+## Metrics Over Time
+
+Track key performance indicators across iterations:
+
+| # | Result | Rounds | 1st Soldier | K/D Ratio | Bullets/Kill | A Units | B Units |
+|---|--------|--------|-------------|-----------|--------------|---------|---------|
+
+## Exhausted Strategies (DO NOT RETRY)
+
+Track approaches that have been thoroughly tested and failed. Before proposing a change, check this table to avoid repeating failed strategies.
+
+| Strategy Category | Specific Approach | Iterations Tried | Why It Failed |
+|-------------------|-------------------|------------------|---------------|
+
+**Categories to track:**
+- Build order variations (soldier-first vs lumberjack-first)
+- Production thresholds (e.g., "lumberjack threshold >10")
+- Navigation approaches
+- Economy strategies (trees vs no trees)
+- Combat tactics
+
 ## Iterations
 
 | # | Result | Rounds | Problem | Change Made |
