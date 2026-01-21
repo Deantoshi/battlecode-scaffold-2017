@@ -166,7 +166,7 @@ Based on match results, determine the PRIMARY issue:
 
 ---
 
-## Step 6: Create Improvement Plan
+## Step 6: Create Improvement Plan & Implement Changes
 
 Choose the **single most impactful** improvement.
 
@@ -238,6 +238,13 @@ Calculate the expected bullet economy for the proposed build order:
 ### Success Criteria
 {How to know if this change worked}
 ```
+
+**After writing the plan, IMPLEMENT the changes:**
+
+1. Read the file(s) specified in "Implementation Details"
+2. Make all code changes needed to achieve the proposed solution
+3. Ensure the changes compile (no syntax errors)
+4. Update `src/{BOT}/iteration-history.md` with a summary of what was changed
 
 **Write `CONTINUE` to `src/{BOT}/.state/goal-status.txt`**
 
