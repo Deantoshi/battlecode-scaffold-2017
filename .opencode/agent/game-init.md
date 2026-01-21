@@ -66,19 +66,7 @@ Read `HOW_TO_PLAY_BATTLE_CODE_2017.md` in the project root to understand:
 
 ---
 
-## Step 4: Read Opponent Code
-
-Glob `src/{OPPONENT}/*.java`, then Read each file.
-
-Create analysis in your mind:
-- What units do they build?
-- What is their economy strategy?
-- What are their combat tactics?
-- What are exploitable weaknesses?
-
----
-
-## Step 5: Read Your Bot Code
+## Step 4: Read Your Bot Code
 
 Glob `src/{BOT}/*.java`, then Read each file.
 
@@ -90,7 +78,7 @@ Create analysis in your mind:
 
 ---
 
-## Step 6: Create Iteration History File
+## Step 5: Create Iteration History File
 
 Write to `src/{BOT}/iteration-history.md`:
 
@@ -101,12 +89,6 @@ Map: {MAP}
 Goal: Win in ≤1500 rounds
 
 ## Code Analysis
-
-### Opponent ({OPPONENT})
-- **Units:** {what they build}
-- **Economy:** {tree/bullet strategy}
-- **Combat:** {targeting/movement}
-- **Weaknesses:** {exploitable gaps}
 
 ### Your Bot ({BOT})
 - **Units:** {what you build}
@@ -122,13 +104,13 @@ Goal: Win in ≤1500 rounds
 
 ---
 
-## Step 7: Write Init Status
+## Step 6: Write Init Status
 
 Write `DONE` to `src/{BOT}/.state/init-status.txt`
 
 ---
 
-## Step 8: Finish
+## Step 7: Finish
 
 Print:
 ```

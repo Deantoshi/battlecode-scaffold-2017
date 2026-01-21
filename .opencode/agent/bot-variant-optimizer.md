@@ -55,28 +55,7 @@ This workflow uses helper scripts in `scripts/`:
 
 ## PHASE 0: Setup & Analysis
 
-### 0.1 Read Opponent Code
-
-**IMPORTANT: Read ONLY these 3 files. Do NOT read any other opponent files.**
-
-Use the Read tool to read the 3 specified opponent's source files and understand their strategy:
-- `src/{OPPONENT}/RobotPlayer.java` (required)
-- `src/{OPPONENT}/Soldier.java` (if exists)
-- `src/{OPPONENT}/Nav.java` (if exists)
-
-**Do NOT explore or read additional files beyond these three.**
-
-**Document the opponent's key strategies:**
-```
-OPPONENT_ANALYSIS = {
-  targeting: "how they target enemies",
-  movement: "how they move/navigate",
-  priorities: "what they prioritize",
-  weaknesses: "exploitable weaknesses"
-}
-```
-
-### 0.2 Read Base Bot Code
+### 0.1 Read Base Bot Code
 
 Use the Read tool to read the base bot's current implementation:
 - `src/{BOT_NAME}/RobotPlayer.java`
@@ -102,11 +81,10 @@ This script:
 
 ## PHASE 2: Design 5 Unique Variants
 
-Based on the opponent analysis from Phase 0, design 5 DIFFERENT strategies for Soldier.java and Nav.java that specifically counter the opponent's weaknesses.
+Design 5 DIFFERENT strategies for Soldier.java and Nav.java to optimize your bot's performance.
 
 **Requirements:**
 - Each variant must be meaningfully different from the others
-- Each variant should exploit a specific weakness or counter a specific strength identified in the opponent
 - Consider variations in: targeting logic, movement patterns, engagement range, aggression level, positioning, and resource management
 
 **Design each variant with:**
@@ -220,11 +198,6 @@ Base Bot: {BOT_NAME}
 Opponent: {OPPONENT}
 Maps: {MAPS}
 
-OPPONENT ANALYSIS:
-  - Targeting: {description}
-  - Movement: {description}
-  - Weaknesses: {description}
-
 VARIANT STRATEGIES TESTED:
   original: Original Bot (unchanged)
   v1: {variant 1 name and strategy}
@@ -268,12 +241,11 @@ KEY CHANGES FROM ORIGINAL:
 
 ## Key Principles
 
-1. **Analyze opponent first** - Understand their weaknesses before designing counters
-2. **Diverse strategies** - Each variant should be meaningfully different
-3. **Data-driven selection** - Use script output, not intuition, to pick winner
-4. **Clean replacement** - Final bot replaces original with updated package names (unless original won)
-5. **Verify everything** - Compilation checks after every modification
-6. **Use unsafe-write** - Use the `unsafe-write` tool to write variant files. Do NOT use `sed` or `awk`.
+1. **Diverse strategies** - Each variant should be meaningfully different
+2. **Data-driven selection** - Use script output, not intuition, to pick winner
+3. **Clean replacement** - Final bot replaces original with updated package names (unless original won)
+4. **Verify everything** - Compilation checks after every modification
+5. **Use unsafe-write** - Use the `unsafe-write` tool to write variant files. Do NOT use `sed` or `awk`.
 
 ---
 

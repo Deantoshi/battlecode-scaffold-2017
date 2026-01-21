@@ -61,28 +61,7 @@ Parse for:
 
 ## PHASE 0: Setup & Analysis
 
-### 0.1 Read Opponent Code
-
-**IMPORTANT: Read ALL Java files in the opponent's source folder.**
-
-Use the Glob tool to find all Java files in `src/{OPPONENT}/`, then use the Read tool to read each one:
-```
-src/{OPPONENT}/*.java
-```
-
-**Document the opponent's key strategies:**
-```
-OPPONENT_ANALYSIS = {
-  unit_composition: "what units they build and when",
-  economy: "how they manage bullets/trees/victory points",
-  targeting: "how they target enemies",
-  movement: "how they move/navigate",
-  priorities: "what they prioritize (aggression vs economy vs VP)",
-  weaknesses: "exploitable weaknesses"
-}
-```
-
-### 0.2 Read Base Bot Code
+### 0.1 Read Base Bot Code
 
 Use the Glob tool to find all Java files in `src/{BOT_NAME}/`, then use the Read tool to read each one:
 ```
@@ -108,11 +87,10 @@ This script:
 
 ## PHASE 2: Design 5 Unique Variants
 
-Based on the opponent analysis from Phase 0, design 5 DIFFERENT strategies that specifically counter the opponent's weaknesses. **Each variant can modify ANY or ALL files in the bot folder.**
+Design 5 DIFFERENT strategies to optimize your bot's performance. **Each variant can modify ANY or ALL files in the bot folder.**
 
 **Requirements:**
 - Each variant must be meaningfully different from the others
-- Each variant should exploit a specific weakness or counter a specific strength identified in the opponent
 - Each variant MUST have a clear path to victory (elimination OR 1000 VP)
 - Consider variations in: unit composition, build order, economy management, targeting logic, movement patterns, engagement style, VP strategy
 
@@ -225,13 +203,6 @@ Base Bot: {BOT_NAME}
 Opponent: {OPPONENT}
 Maps: {MAPS}
 
-OPPONENT ANALYSIS:
-  - Unit Composition: {description}
-  - Economy: {description}
-  - Targeting: {description}
-  - Movement: {description}
-  - Weaknesses: {description}
-
 VARIANT STRATEGIES TESTED:
   original: Original Bot (unchanged)
   v1: {variant 1 name} - {win condition} - {strategy summary}
@@ -273,14 +244,13 @@ KEY CHANGES FROM ORIGINAL:
 
 ## Key Principles
 
-1. **Analyze opponent COMPLETELY** - Read ALL their files to understand their full strategy
-2. **Focus on win conditions** - Every variant MUST have a clear path to elimination OR 1000 VP
-3. **Diverse strategies** - Each variant should be meaningfully different
-4. **Open-ended modifications** - Modify ANY files needed, not just specific ones
-5. **Data-driven selection** - Use script output, not intuition, to pick winner
-6. **Clean replacement** - Final bot replaces original with updated package names (unless original won)
-7. **Verify everything** - Compilation checks after every modification
-8. **Use unsafe-write** - Use the `unsafe-write` tool to write variant files. Do NOT use `sed` or `awk`.
+1. **Focus on win conditions** - Every variant MUST have a clear path to elimination OR 1000 VP
+2. **Diverse strategies** - Each variant should be meaningfully different
+3. **Open-ended modifications** - Modify ANY files needed, not just specific ones
+4. **Data-driven selection** - Use script output, not intuition, to pick winner
+5. **Clean replacement** - Final bot replaces original with updated package names (unless original won)
+6. **Verify everything** - Compilation checks after every modification
+7. **Use unsafe-write** - Use the `unsafe-write` tool to write variant files. Do NOT use `sed` or `awk`.
 
 ---
 

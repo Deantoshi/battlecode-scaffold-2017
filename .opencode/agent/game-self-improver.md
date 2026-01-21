@@ -93,19 +93,7 @@ Read `TECHNICAL_DOCS.md` in the project root to understand:
 
 This provides essential context for understanding game mechanics before analyzing code.
 
-### 0.5.2 Read Opponent Code
-Glob `src/{OPPONENT}/*.java`, then Read each file.
-
-Document:
-```
-OPPONENT:
-- Units: {what they build}
-- Economy: {tree/bullet strategy}
-- Combat: {targeting/movement}
-- Weaknesses: {exploitable gaps}
-```
-
-### 0.5.3 Read Your Bot Code
+### 0.5.2 Read Your Bot Code
 Glob `src/{BOT}/*.java`, then Read each file.
 
 Document:
@@ -313,7 +301,7 @@ PHASE 0: Load/Create iteration history file
     ↓
     ├─→ History exists? → Skip to PHASE 1 (resume from previous session)
     ↓ No
-PHASE 0.5: Read opponent + own code (first run only)
+PHASE 0.5: Read own code (first run only)
     ↓
 PHASE 1: Run match → get data
     ↓
@@ -350,9 +338,8 @@ PHASE 4: Implement, compile, update history file
 - Kill the process
 
 **If bot keeps losing:**
-- Re-read opponent code for missed strategies
 - Try completely different approach (eco → aggro or vice versa)
-- Consider counter-unit compositions
+- Consider different unit compositions
 
 **If max iterations reached without goal:**
 - Report best result achieved
