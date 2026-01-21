@@ -58,7 +58,7 @@ Read `src/{BOT}/iteration-history.md`.
 
 ## Step 3: Read Technical Documentation
 
-Read `TECHNICAL_DOCS.md` in the project root to understand:
+Read `HOW_TO_PLAY_BATTLE_CODE_2017.md` in the project root to understand:
 - Victory conditions (VP vs elimination)
 - Robot types and their roles
 - Economy system

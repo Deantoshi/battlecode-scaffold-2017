@@ -190,3 +190,17 @@ Tree interactions:
 - `battlecode.common.RobotController` is the primary interface for sensing and acting.
 - `battlecode.common.MapLocation` and `battlecode.common.Direction` are the geometry primitives.
 - `battlecode.common.GameConstants` and `battlecode.common.RobotType` contain most numeric rules.
+
+## Recommended File Layout (Battlecode Bot)
+Common, effective project structure for a full bot package (Java 8):
+
+- `RobotPlayer.java`: Entry point; dispatches by `RobotType` to per-unit logic.
+- `Archon.java`: Archon strategy (hire timing, initial expansion, VP donation logic).
+- `Gardener.java`: Build order, tree farm management, unit production.
+- `Lumberjack.java`: Tree clearing, melee combat, early pressure.
+- `Soldier.java`: Core combat micro, targeting, firing decisions.
+- `Tank.java`: Heavy combat, tree body-ram tactics, frontline pushes.
+- `Scout.java`: Scouting, harassment, bullet collection, vision.
+- `Comms.java`: Broadcast channel schema, encoding/decoding, team state.
+- `Nav.java`: Movement, pathfinding, bullet dodging, obstacle avoidance.
+- `Utils.java`: Shared helpers (geometry, targeting utilities, randoms).
