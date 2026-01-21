@@ -456,6 +456,72 @@ if ff_rows:
             attacks = json.loads(inc['own_attacks']) if inc['own_attacks'] else []
             print(f"    R{inc['round_id']}: {inc['dead_unit_type']} died (own attacks: {', '.join(set(attacks))})")
 
+# ERROR / SELF-DESTRUCT ANALYSIS
+print()
+print("───────────────────────────────────────────────────────────────────────────────")
+print("ERROR / SELF-DESTRUCT ANALYSIS")
+print("───────────────────────────────────────────────────────────────────────────────")
+
+# Action-based deaths (exception/suicide)
+action_rows = conn.execute("""
+    SELECT team, body_type, COUNT(*) as count
+    FROM events
+    WHERE event_type='action' AND body_type IN ('DIE_EXCEPTION', 'DIE_SUICIDE')
+    GROUP BY team, body_type
+    ORDER BY team, body_type
+""").fetchall()
+
+if action_rows:
+    print("Action deaths (from engine actions):")
+    for row in action_rows:
+        team = row['team'] or '?'
+        print(f"  Team {team}: {row['body_type']} x{row['count']}")
+
+    recent = conn.execute("""
+        SELECT round_id, team, robot_id, body_type
+        FROM events
+        WHERE event_type='action' AND body_type IN ('DIE_EXCEPTION', 'DIE_SUICIDE')
+        ORDER BY round_id
+        LIMIT 10
+    """).fetchall()
+    if recent:
+        print("  Sample incidents:")
+        for r in recent:
+            team = r['team'] or '?'
+            print(f"    R{r['round_id']}: Team {team} robot {r['robot_id']} -> {r['body_type']}")
+else:
+    print("No DIE_EXCEPTION / DIE_SUICIDE actions recorded.")
+
+# Log-based errors/exceptions
+error_rows = conn.execute("""
+    SELECT team, COUNT(*) as count
+    FROM logs
+    WHERE lower(message) LIKE '%exception%' OR lower(message) LIKE '%error%'
+    GROUP BY team
+""").fetchall()
+
+if error_rows:
+    print("Error/exception logs:")
+    for row in error_rows:
+        team = row['team'] or '?'
+        print(f"  Team {team}: {row['count']} logs")
+
+    samples = conn.execute("""
+        SELECT round_id, team, robot_type, robot_id, message
+        FROM logs
+        WHERE lower(message) LIKE '%exception%' OR lower(message) LIKE '%error%'
+        ORDER BY round_id
+        LIMIT 10
+    """).fetchall()
+    if samples:
+        print("  Sample logs:")
+        for s in samples:
+            team = s['team'] or '?'
+            msg = s['message'].replace("\n", " ").strip()
+            print(f"    R{s['round_id']}: Team {team} {s['robot_type']}#{s['robot_id']}: {msg}")
+else:
+    print("No error/exception logs recorded.")
+
 print()
 print("═══════════════════════════════════════════════════════════════════════════════")
 print(f"Database: {db_path}")
