@@ -1,44 +1,50 @@
-## Map: Boxed
+## Map: Lanes
 
-**Dimensions:** 50 x 50
-**Origin:** (377.6, 474.5)
-**Max Corner:** (427.6, 524.5)
+**Dimensions:** 65 x 100
+**Origin:** (420.6, 145.0)
+**Max Corner:** (485.6, 245.0)
 
 ### Initial Units
-**Team B:** 2 units
-  - ARCHON at (382.5, 519.6)
-  - ARCHON at (422.8, 479.4)
+**Team B:** 6 units
+  - ARCHON at (428.1, 150.0)
+  - ARCHON at (453.1, 150.0)
+  - ARCHON at (478.1, 150.0)
+  - ARCHON at (428.1, 240.0)
+  - ARCHON at (453.1, 240.0)
+  - ARCHON at (478.1, 240.0)
 
 ### Neutral Trees
-**Total:** 154 trees
+**Total:** 80 trees
 
+**Total bullets in trees:** 400
+**Trees with bullets:** 80
 
 **Tree positions (x, y, radius, bullets):**
-  NW quadrant: 38 trees
-    (387.6, 523.5) r=1.0
-    (387.6, 521.5) r=1.0
-    (387.6, 519.5) r=1.0
-    (387.6, 517.5) r=1.0
-    (387.6, 509.5) r=1.0
-    ... and 33 more
-  NE quadrant: 41 trees
-    (417.6, 499.5) r=1.0
-    (417.6, 501.5) r=1.0
-    (417.6, 507.5) r=1.0
-    (417.6, 509.5) r=1.0
-    (417.6, 511.5) r=1.0
-    ... and 36 more
-  SW quadrant: 37 trees
-    (387.6, 497.5) r=1.0
-    (387.6, 491.5) r=1.0
-    (387.6, 489.5) r=1.0
-    (387.6, 487.5) r=1.0
-    (387.6, 481.5) r=1.0
-    ... and 32 more
-  SE quadrant: 38 trees
-    (404.6, 484.5) r=1.0
-    (402.6, 484.5) r=1.0
-    (410.6, 484.5) r=1.0
-    (412.6, 484.5) r=1.0
-    (414.6, 484.5) r=1.0
-    ... and 33 more
+  NW quadrant: 20 trees
+    (438.1, 242.5) r=2.5, 5b
+    (438.1, 237.5) r=2.5, 5b
+    (438.1, 227.5) r=2.5, 5b
+    (438.1, 222.5) r=2.5, 5b
+    (438.1, 232.5) r=2.5, 5b
+    ... and 15 more
+  NE quadrant: 20 trees
+    (463.1, 242.5) r=2.5, 5b
+    (463.1, 237.5) r=2.5, 5b
+    (463.1, 232.5) r=2.5, 5b
+    (463.1, 222.5) r=2.5, 5b
+    (463.1, 227.5) r=2.5, 5b
+    ... and 15 more
+  SW quadrant: 20 trees
+    (438.1, 147.5) r=2.5, 5b
+    (438.1, 152.5) r=2.5, 5b
+    (438.1, 162.5) r=2.5, 5b
+    (438.1, 167.5) r=2.5, 5b
+    (438.1, 157.5) r=2.5, 5b
+    ... and 15 more
+  SE quadrant: 20 trees
+    (463.1, 147.5) r=2.5, 5b
+    (463.1, 152.5) r=2.5, 5b
+    (463.1, 157.5) r=2.5, 5b
+    (463.1, 167.5) r=2.5, 5b
+    (463.1, 162.5) r=2.5, 5b
+    ... and 15 more

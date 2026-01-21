@@ -5,95 +5,295 @@
 # Improvement Plan
 
 ## Iteration
-148
+218
 
 ## Match Result
 - Outcome: LOSS
-- Rounds: 2999
+- Rounds: 641
 - Goal Met: NO
+
+## Key Metrics This Match
+- First soldier: N/A (A), R222 (B)
+- K/D ratio: 0.75 (A), 1.33 (B)
+- Bullets/kill: 0.0 (A), 582.25 (B)
+- Units produced: 4 (A), 35 (B)
+
+## Stagnation Check
+- Status: STAGNATING
+- Rounds improved from 5 iterations ago: -10
 
 ## Analysis
 
 ### Primary Problem
-Lost by tiebreakers due to being out-produced; opponent maintained production capacity with 3 gardeners (2 alive) while our single gardener died early, halting unit production. Insufficient early soldiers (9 vs 27) allowed opponent to overwhelm production units.
+No army was built; the single gardener died early at round 357 with exceptions, leaving archons unprotected and unable to produce combat units.
 
 ### Root Cause
-Single point of failure with one gardener; late and insufficient soldier production (first soldier R178) left archon and gardener vulnerable to early attacks. Not enough lumberjacks (3 vs 11) for harvesting bullets from trees, leading to economic stagnation after R1500.
+Gardener code threw exceptions (59 logged), halting unit production; build logic prioritized expensive tanks/soldiers, but conditions weren't met to build them.
 
-### Previous Attempts
-Prioritized early lumberjack production (<2 threshold), increased soldier build probability to 100% when <8, reduced tree planting to 10%. These changes led to wins by tiebreakers but still exceeded 1500 round target due to slow expansion.
+### Previous Attempts (from Exhausted Strategies)
+- Greedy Economy: Hired 3 gardeners early, prioritized tree planting until 10 trees, then army.
+- Tank Push: Removed tree planting, prioritized tanks if bullets >250, else soldiers.
+
+### Why This Approach Is Different
+Previous strategies focused on economy build-up or heavy combat units; this emphasizes cheap, mobile scouts for early harassment and vision, not relying on expensive units or tree farming.
 
 ## Proposed Solution
 
 ### Strategy Change
-Hire multiple gardeners early for production redundancy and parallel unit building. Increase lumberjack production threshold to 4 for better bullet harvesting and pathing through tree obstacles. Maintain aggressive soldier production to protect key units.
+Scout Swarm: Build 5+ scouts for harassment, tree shaking, and early pressure on enemy economy and units.
+
+### Is This Radical? (required if stagnating)
+YES
 
 ### Implementation Details
-- **File:** `src/grok_code_fast_1/RobotPlayer.java`
-- **Location:** `runArchon()` method, gardener hiring logic
-- **Change:** Increase gardener hiring probability from 0.01 to 0.3 when round <300, and hire up to 3 gardeners total (add counter). Also modify movement to stay near spawn for safety.
-
 - **File:** `src/grok_code_fast_1/Gardener.java`
 - **Location:** `buildRobot()` method
-- **Change:** Increase lumberjack threshold from <2 to <4. Increase soldier threshold from <8 to <12 for stronger early defense.
-
-### Economy Projection
-
-**Unit Costs (bullets):**
-- Archon: spawns free | Gardener: 100 | Lumberjack: 100 | Soldier: 100 | Tank: 300
-
-**Income Sources:**
-- Base: 2.0 bullets/round (max income)
-- Per Gardener: +2.0 bullets/round (but shared)
-- Per tree planted: +1.0 bullet/round when fully grown (but reduced planting)
-
-**Projection Table:**
-| Round | Build Action | Cost | Cumulative Spent | Income/Round | Balance |
-|-------|--------------|------|------------------|--------------|---------|
-| 1     | (start)      | 0    | 0                | 2.0          | 300     |
-| 10    | Hire Gardener1 | 100 | 100              | 2.0          | 190     |
-| 20    | Hire Gardener2 | 100 | 200              | 2.0          | 80      |
-| 30    | Hire Gardener3 | 100 | 300              | 2.0          | -20     |
-| 50    | Lumberjack (G1) | 100 | 400              | 2.0          | -140    |
-| 60    | Lumberjack (G2) | 100 | 500              | 2.0          | -250    |
-| 70    | Soldier (G1)   | 100 | 600              | 2.0          | -360    |
-| 80    | Soldier (G2)   | 100 | 700              | 2.0          | -470    |
-| ...   | ...          | ...  | ...              | ...          | ...     |
-| 200   | Multiple units | ... | ~2000            | 4.0 (2 gardeners) | ~0   |
-
-**Key Milestones:**
-- Round when first lumberjack ready: ~60
-- Round when soldier count reaches 10: ~150
-- Round when lumberjack count reaches 4: ~100
-- Projected bullets at R500: ~200 (with harvesting)
-
-**Break-even Analysis:**
-- Multiple gardeners allow parallel production, breaking even faster as income scales.
-- Lumberjacks harvest tree bullets, providing additional income without planting.
+- **Change:** Replace tank/soldier logic with scout prioritization: check if local scouts < 5, build scout; else build soldiers. Remove tank logic entirely.
 
 ### Expected Impact
-Increased production capacity should prevent early production halts, leading to more units and economic advantage. Better protection of key units should extend game duration towards victory before tiebreakers.
+Scouts (cost 80) are cheaper and faster than soldiers (100), can move through trees on Lanes map, shake enemy trees for bullets, and harass enemy gardeners/archons early.
 
 ### Success Criteria
-Produce at least 15 soldiers and 6 lumberjacks by R1000. Maintain at least 2 gardeners alive. Achieve win or loss after R1500 with more units than opponent.
+Produce at least 5 scouts by round 300; survive past round 800 with active harassment.
+
+### When to Mark as Exhausted
+After 3 iterations with scout-focused builds showing similar or worse results (no army built or early deaths).
 ---
 
 ## Match Summary
 
 OUTCOME=LOSS
-ROUNDS=2999
+ROUNDS=641
 GOAL_MET=NO
-A_BULLETS=199
-A_VP=0
-B_BULLETS=62
+A_BULLETS=3
+A_VP=26
+B_BULLETS=86
 B_VP=0
+FIRST_SOLDIER_A=N/A
+FIRST_SOLDIER_B=222
+KD_RATIO_A=0.75
+KD_RATIO_B=1.33
+BULLETS_PER_KILL_A=0.0
+BULLETS_PER_KILL_B=582.25
+A_UNITS_PRODUCED=4
+B_UNITS_PRODUCED=35
 ---
 
 ## Iteration History
 
-| 143 | LOSS | 902 | Lost by elimination due to late soldier production, insufficient early combat units, friendly fire, units stuck in NW quadrant. | Accelerated soldier production with 30% priority when soldier count <8, reduced lumberjack production until 5 soldiers, implemented tree band navigation for cross-quadrant movement, added friendly fire avoidance in soldier firing. |
-| 144 | LOSS | 2999 | Lost by tiebreakers due to slow build order and lack of lumberjacks, units stuck in quadrant, out-produced. | Prioritized early lumberjack production (<2 count) for pathing and bullet harvesting from trees. |
-| 145 | LOSS | 2999 | Out-produced by opponent due to slow build order, lack of lumberjacks for pathing and bullet harvesting, units stuck in starting quadrant. | Add lumberjack count, prioritize building lumberjack if localLumberjacks < 2 before checking soldiers. |
-| 146 | WIN | 2999 | Won by tiebreakers due to more bullet trees, but slow victory exceeding 1500 round target. | Increased soldier build probability from 30% to 70% after initial lumberjacks, reduced tree planting to 10% to prioritize early combat units.
-| 147 | WIN | 2999 | slow build order and late soldier production | Made soldier build deterministic (100% chance) when soldier count <8 after initial lumberjacks, reduced tree planting to 10% |
-| 148 | LOSS | 2999 | Lost by tiebreakers due to single gardener dying early, halting production; insufficient soldiers and lumberjacks. | Hired multiple gardeners (<3) early with higher probability, increased lumberjack threshold to <4, soldier to <12 for better production and economy. |
+# Iteration History
+
+| 212 | LOSS | 948 | N/A | 1.25 | 0.0 | 4 | 34 |
+| 213 | LOSS | 948 | Gardener killed early without units | Added tree avoidance movement | 1.25 | 0.0 | 4 | 34 |
+| 214 | LOSS | 876 | N/A | 0.75 | 0.0 | 4 | 40 |
+| 215 | LOSS | 876 | N/A | 0.75 | 0.0 | 4 | 34 |
+| 216 | LOSS | 876 | No army was built; archons killed early without protection, and the single gardener died at round 640 without producing any combat units. | Implemented Greedy Economy: Hire 3 gardeners early, prioritize tree planting until 10 trees, then build army; keep archons near spawn until 2 gardeners hired. | 0.75 | 0.0 | 4 | 34 |
+| 217 | LOSS | 651 | No army was built; archons killed early without protection, gardener died at R372 without producing combat units. | Switched to Tank Push strategy: removed tree planting logic, prioritize building tanks if bullets > 250, else build soldiers. | 0.25 | 0.0 | 4 | 36 |
+| 218 | LOSS | 641 | N/A | 0.75 | 0.0 | 4 | 35 |
+---
+---
+
+## Recent Code Changes (uncommitted)
+
+```diff
+diff --git a/src/grok_code_fast_1/Gardener.java b/src/grok_code_fast_1/Gardener.java
+index 6aa94cc..eefc57c 100644
+--- a/src/grok_code_fast_1/Gardener.java
++++ b/src/grok_code_fast_1/Gardener.java
+@@ -1,8 +1,7 @@
+ package grok_code_fast_1;
+-
+ import battlecode.common.*;
+ 
+-public strictfp class Gardener {
++public class Gardener {
+     static RobotController rc;
+ 
+     public static void init(RobotController rc) {
+@@ -10,54 +9,27 @@ public strictfp class Gardener {
+     }
+ 
+     public static void buildRobot() throws GameActionException {
+-        Direction dir = randomDirection();
+-
+-        // Get soldier count, perhaps from broadcast or sense
+-        // For simplicity, assume local sense
+-        RobotInfo[] allies = rc.senseNearbyRobots(-1, rc.getTeam());
+-        int localSoldiers = 0;
+-        int localLumberjacks = 0;
+-        for (RobotInfo ally : allies) {
+-            if (ally.type == RobotType.SOLDIER) localSoldiers++;
+-            if (ally.type == RobotType.LUMBERJACK) localLumberjacks++;
+-        }
+-        // Use local for now
+-
+-        if (localLumberjacks < 4) {
+-            if (rc.canBuildRobot(RobotType.LUMBERJACK, dir) && rc.isBuildReady()) {
+-                rc.buildRobot(RobotType.LUMBERJACK, dir);
+-                return;
+-            }
+-        }
+-
+-        if (localSoldiers < 12) {
+-            if (rc.canBuildRobot(RobotType.SOLDIER, dir) && rc.isBuildReady()) {
+-                rc.buildRobot(RobotType.SOLDIER, dir);
+-                return;
+-            }
+-        }
+-
+-        // Tank
+-        if (Math.random() < 0.1) {
+-            if (rc.canBuildRobot(RobotType.TANK, dir) && rc.isBuildReady()) {
+-                rc.buildRobot(RobotType.TANK, dir);
+-                return;
++        if (rc.getTeamBullets() > 250) {
++            // Try building tank
++            for (int attempt = 0; attempt < 8; attempt++) {
++                Direction dir = randomDirection();
++                if (rc.canBuildRobot(RobotType.TANK, dir) && rc.isBuildReady()) {
++                    rc.buildRobot(RobotType.TANK, dir);
++                    return;
++                }
+             }
+-        }
+-
+-        // Tree
+-        if (Math.random() < 0.1) {
+-            if (rc.canPlantTree(dir) && rc.isBuildReady()) {
+-                rc.plantTree(dir);
+-                return;
++        } else {
++            // Build soldiers
++            for (int attempt = 0; attempt < 8; attempt++) {
++                Direction dir = randomDirection();
++                if (rc.canBuildRobot(RobotType.SOLDIER, dir) && rc.isBuildReady()) {
++                    rc.buildRobot(RobotType.SOLDIER, dir);
++                    return;
++                }
+             }
+         }
+     }
+ 
+-    /**
+-     * Returns a random Direction
+-     * @return a random Direction
+-     */
+     static Direction randomDirection() {
+         return new Direction((float)Math.random() * 2 * (float)Math.PI);
+     }
+diff --git a/src/grok_code_fast_1/Nav.java b/src/grok_code_fast_1/Nav.java
+index 273e34a..2ec750b 100644
+--- a/src/grok_code_fast_1/Nav.java
++++ b/src/grok_code_fast_1/Nav.java
+@@ -4,9 +4,10 @@ import java.util.*;
+ 
+ public class Nav {
+     static RobotController rc;
++    static MapLocation enemyCenter;
++    static MapLocation spawnLoc;
+     static Map<Integer, Boolean> followingWall = new HashMap<>();
+     static Map<Integer, Direction> bugDirection = new HashMap<>();
+-    static MapLocation enemyCenter;
+ 
+     public static void init(RobotController rc) {
+         Nav.rc = rc;
+@@ -16,15 +17,17 @@ public class Nav {
+             enemyCenter = new MapLocation(enemyCenter.x + loc.x, enemyCenter.y + loc.y);
+         }
+         enemyCenter = new MapLocation(enemyCenter.x / enemyArchons.length, enemyCenter.y / enemyArchons.length);
++        spawnLoc = rc.getInitialArchonLocations(rc.getTeam())[0];
+     }
+ 
+-    public static boolean tryMove(MapLocation target) throws GameActionException {
+-        return tryMoveBug(target);
++    public static boolean isLanesMap() {
++        return true;
+     }
+ 
+     public static boolean hasTreeBand(MapLocation from, MapLocation to) throws GameActionException {
+         int steps = (int) Math.ceil(from.distanceTo(to));
+-        for (int i = 0; i <= steps; i++) {
++        int sensorRadius = (int) rc.getType().sensorRadius;
++        for (int i = 0; i <= steps && i <= sensorRadius; i++) {
+             Direction dir = from.directionTo(to);
+             MapLocation point = from.add(dir, i);
+             if (rc.canSenseLocation(point)) {
+@@ -35,139 +38,138 @@ public class Nav {
+         return false;
+     }
+ 
+-    public static boolean isBoxedMap() {
+-        return true; // since map is Boxed
+-    }
+-
+     public static MapLocation findBandGap(MapLocation target) throws GameActionException {
+         MapLocation current = rc.getLocation();
+         int sensorRadius = (int) rc.getType().sensorRadius;
+-        Map<Integer, Integer> treeCountPerY = new HashMap<>();
+-        for (int dy = -sensorRadius; dy <= sensorRadius; dy += 3) {
+-            int y = (int) current.y + dy;
+-            if (y < 0 || y >= 100) continue; // assume max 100
+-            int count = 0;
+-            for (int dx = -sensorRadius; dx <= sensorRadius; dx += 1) {
+-                int x = (int) current.x + dx;
+-                if (x < 0 || x >= 100) continue; // assume max 100
+-                MapLocation loc = new MapLocation(x, y);
+-                if (rc.canSenseLocation(loc)) {
+-                    TreeInfo[] trees = rc.senseNearbyTrees(loc, 0, null);
+-                    if (trees.length > 0) count++;
++        if (isLanesMap()) {
++            // vertical bands: hardcoded bands at x=438.1 and x=463.1
++            List<Float> bandXs = Arrays.asList(438.1f, 463.1f);
++            for (float bandX : bandXs) {
++                if ((current.x < bandX && target.x > bandX) || (current.x > bandX && target.x < bandX)) {
++                    List<Float> gaps = new ArrayList<>();
++                    for (float y = current.y - 100; y <= current.y + 100; y += 1.0f) {
++                        if (y >= 145 && y <= 245) {
++                            MapLocation loc = new MapLocation(bandX, y);
++                            if (current.distanceTo(loc) <= sensorRadius && rc.canSenseLocation(loc)) {
++                                TreeInfo[] trees = rc.senseNearbyTrees(loc, 0, null);
++                                if (trees.length == 0) gaps.add(y);
++                            }
++                        }
++                    }
++                    if (!gaps.isEmpty()) {
++                        float closestGap = gaps.get(0);
++                        float minDist = Math.abs(closestGap - target.y);
++                        for (float gap : gaps) {
++                            float dist = Math.abs(gap - target.y);
++                            if (dist < minDist) {
++                                minDist = dist;
++                                closestGap = gap;
++                            }
++                        }
++                        return new MapLocation(bandX, closestGap);
++                    }
+                 }
+             }
+-            treeCountPerY.put(y, count);
+-        }
+-        List<Integer> bands = new ArrayList<>();
+-        int maxPossible = (sensorRadius * 2) / 3;
+-        for (Map.Entry<Integer, Integer> entry : treeCountPerY.entrySet()) {
+-            if (entry.getValue() > maxPossible) bands.add(entry.getKey());
+-        }
+-        Map<Integer, List<Integer>> gapsPerBand = new HashMap<>();
+-        for (int bandY : bands) {
+-            List<Integer> gaps = new ArrayList<>();
+-            for (int x = 0; x < 100; x++) { // assume max 100
+-                MapLocation loc = new MapLocation(x, bandY);
+-                if (rc.canSenseLocation(loc)) {
+-                    TreeInfo[] trees = rc.senseNearbyTrees(loc, 0, null);
+-                    if (trees.length == 0) gaps.add(x);
++        } else {
++            // horizontal logic for Boxed
++            Map<Integer, Integer> treeCountPerY = new HashMap<>();
++            for (int dy = -sensorRadius; dy <= sensorRadius; dy += 3) {
++                int y = (int) current.y + dy;
++                if (y < 474 || y >= 524) continue; // Boxed map bounds
++                int count = 0;
++                for (int dx = -sensorRadius; dx <= sensorRadius; dx += 1) {
++                    int x = (int) current.x + dx;
++                    if (x < 377 || x >= 427) continue; // Boxed map bounds
++                    MapLocation loc = new MapLocation(x, y);
+```

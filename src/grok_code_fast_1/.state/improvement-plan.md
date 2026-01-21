@@ -1,66 +1,56 @@
 # Improvement Plan
 
 ## Iteration
-150
+218
 
 ## Match Result
 - Outcome: LOSS
-- Rounds: 2999
+- Rounds: 641
 - Goal Met: NO
+
+## Key Metrics This Match
+- First soldier: N/A (A), R222 (B)
+- K/D ratio: 0.75 (A), 1.33 (B)
+- Bullets/kill: 0.0 (A), 582.25 (B)
+- Units produced: 4 (A), 35 (B)
+
+## Stagnation Check
+- Status: STAGNATING
+- Rounds improved from 5 iterations ago: -10
 
 ## Analysis
 
 ### Primary Problem
-Late soldier production (first soldier at round 339) and insufficient gardeners (only 2 produced), leading to out-production by opponent who had 16 soldiers and 5 gardeners.
+No army was built; the single gardener died early at round 357 with exceptions, leaving archons unprotected and unable to produce combat units.
 
 ### Root Cause
-Gardener hiring probability too low (0.3 in previous iteration), resulting in slow unit production; build order still prioritizes lumberjacks over early soldiers.
+Gardener code threw exceptions (59 logged), halting unit production; build logic prioritized expensive tanks/soldiers, but conditions weren't met to build them.
 
-### Previous Attempts
-Iterations 143-149 attempted to accelerate soldier production and increase gardener hiring (to 0.3), but first soldier still late and gardener count low.
+### Previous Attempts (from Exhausted Strategies)
+- Greedy Economy: Hired 3 gardeners early, prioritized tree planting until 10 trees, then army.
+- Tank Push: Removed tree planting, prioritized tanks if bullets >250, else soldiers.
+
+### Why This Approach Is Different
+Previous strategies focused on economy build-up or heavy combat units; this emphasizes cheap, mobile scouts for early harassment and vision, not relying on expensive units or tree farming.
 
 ## Proposed Solution
 
 ### Strategy Change
-Increase gardener hiring probability to 0.5 for early game (<300 rounds) and hire up to 4 gardeners to boost production capacity.
+Scout Swarm: Build 5+ scouts for harassment, tree shaking, and early pressure on enemy economy and units.
+
+### Is This Radical? (required if stagnating)
+YES
 
 ### Implementation Details
-- **File:** `src/grok_code_fast_1/Archon.java`
-- **Location:** Gardener hiring logic (probability and count check)
-- **Change:** Change hiring probability from 0.3 to 0.5, max gardeners from 3 to 4 for rounds <300.
-
-### Economy Projection
-
-**Unit Costs (bullets):**
-- Archon: spawns free | Gardener: 100 | Soldier: 100 | Lumberjack: 100
-
-**Income Sources:**
-- Base: 1.0 bullet/round (passive)
-- Per Archon: +2.0 bullets/round
-
-**Projection Table:**
-| Round | Build Action | Cost | Cumulative Spent | Income/Round | Balance |
-|-------|--------------|------|------------------|--------------|---------|
-| 1     | (start)      | 0    | 0                | 3.0          | 300     |
-| 10    | Gardener     | 100  | 100              | 3.0          | 200     |
-| 20    | Gardener     | 100  | 200              | 3.0          | 100     |
-| 30    | Gardener     | 100  | 300              | 3.0          | 0       |
-| 40    | Gardener     | 100  | 400              | 3.0          | -100    |
-| 50    | Gardener     | 100  | 500              | 5.0          | -100    |
-| 60    | Soldier      | 100  | 600              | 5.0          | -200    |
-| 70    | Soldier      | 100  | 700              | 5.0          | -300    |
-| 80    | Soldier      | 100  | 800              | 5.0          | -400    |
-
-**Key Milestones:**
-- Round when first combat unit ready: ~80 (soldiers inactive first 20 rounds)
-- Round when army size reaches 5: ~120
-- Projected bullets at R500: ~500 (assuming more trees/income)
-
-**Break-even Analysis:**
-- Each additional gardener costs 100 but adds +2.0 income/round, breaks even at round ~50 after build.
+- **File:** `src/grok_code_fast_1/Gardener.java`
+- **Location:** `buildRobot()` method
+- **Change:** Replace tank/soldier logic with scout prioritization: check if local scouts < 5, build scout; else build soldiers. Remove tank logic entirely.
 
 ### Expected Impact
-More gardeners will enable faster production of soldiers and lumberjacks, leading to earlier combat engagement and better economy.
+Scouts (cost 80) are cheaper and faster than soldiers (100), can move through trees on Lanes map, shake enemy trees for bullets, and harass enemy gardeners/archons early.
 
 ### Success Criteria
-First soldier produced before round 100, achieve win in ≤1500 rounds.
+Produce at least 5 scouts by round 300; survive past round 800 with active harassment.
+
+### When to Mark as Exhausted
+After 3 iterations with scout-focused builds showing similar or worse results (no army built or early deaths).

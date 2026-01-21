@@ -1,7 +1,11 @@
-| 143 | LOSS | 902 | Lost by elimination due to late soldier production, insufficient early combat units, friendly fire, units stuck in NW quadrant. | Accelerated soldier production with 30% priority when soldier count <8, reduced lumberjack production until 5 soldiers, implemented tree band navigation for cross-quadrant movement, added friendly fire avoidance in soldier firing. |
-| 144 | LOSS | 2999 | Lost by tiebreakers due to slow build order and lack of lumberjacks, units stuck in quadrant, out-produced. | Prioritized early lumberjack production (<2 count) for pathing and bullet harvesting from trees. |
-| 145 | LOSS | 2999 | Out-produced by opponent due to slow build order, lack of lumberjacks for pathing and bullet harvesting, units stuck in starting quadrant. | Add lumberjack count, prioritize building lumberjack if localLumberjacks < 2 before checking soldiers. |
-| 146 | WIN | 2999 | Won by tiebreakers due to more bullet trees, but slow victory exceeding 1500 round target. | Increased soldier build probability from 30% to 70% after initial lumberjacks, reduced tree planting to 10% to prioritize early combat units.
-| 147 | WIN | 2999 | slow build order and late soldier production | Made soldier build deterministic (100% chance) when soldier count <8 after initial lumberjacks, reduced tree planting to 10% |
-| 148 | LOSS | 2999 | Lost by tiebreakers due to single gardener dying early, halting production; insufficient soldiers and lumberjacks. | Hired multiple gardeners (<3) early with higher probability, increased lumberjack threshold to <4, soldier to <12 for better production and economy. |
-| 149 | LOSS | 2999 | Lost by tiebreakers due to single gardener dying early, halting production | Increased gardener hiring probability to 0.3 for rounds <300, hire up to 3 gardeners; modified archon movement to stay near spawn for safety; increased lumberjack threshold to <4, soldier to <12 |
+# Iteration History
+
+| 212 | LOSS | 948 | N/A | 1.25 | 0.0 | 4 | 34 |
+| 213 | LOSS | 948 | Gardener killed early without units | Added tree avoidance movement | 1.25 | 0.0 | 4 | 34 |
+| 214 | LOSS | 876 | N/A | 0.75 | 0.0 | 4 | 40 |
+| 215 | LOSS | 876 | N/A | 0.75 | 0.0 | 4 | 34 |
+| 216 | LOSS | 876 | No army was built; archons killed early without protection, and the single gardener died at round 640 without producing any combat units. | Implemented Greedy Economy: Hire 3 gardeners early, prioritize tree planting until 10 trees, then build army; keep archons near spawn until 2 gardeners hired. | 0.75 | 0.0 | 4 | 34 |
+| 217 | LOSS | 651 | No army was built; archons killed early without protection, gardener died at R372 without producing combat units. | Switched to Tank Push strategy: removed tree planting logic, prioritize building tanks if bullets > 250, else build soldiers. | 0.25 | 0.0 | 4 | 36 |
+| 218 | LOSS | 641 | N/A | 0.75 | 0.0 | 4 | 35 |
+| 219 | LOSS | 641 | No army was built; the single gardener died early at round 357 with exceptions, leaving archons unprotected and unable to produce combat units. | Implemented Scout Swarm strategy: prioritize building scouts if less than 5 local scouts, else build soldiers; removed tank logic. | 0.75 | 1.33 | 4 | 35 |
+---

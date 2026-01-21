@@ -1,0 +1,573 @@
+{
+  "schema_version": 1,
+  "match": {
+    "bot": "grok_code_fast_1",
+    "opponent": "training_bot",
+    "map": "Lanes",
+    "match_file": "/home/ddean/battlecode-scaffold-2017/matches/grok_code_fast_1-vs-training_bot-on-Lanes.bc17",
+    "database": "/home/ddean/battlecode-scaffold-2017/matches/grok_code_fast_1-vs-training_bot-on-Lanes.db"
+  },
+  "result": {
+    "winner": "B",
+    "outcome": "LOSS",
+    "won": "NO",
+    "rounds": 641,
+    "target_rounds": 1500,
+    "goal_met": "NO",
+    "final": {
+      "team_a": {
+        "bullets": 3,
+        "vp": 26
+      },
+      "team_b": {
+        "bullets": 132,
+        "vp": 0
+      }
+    }
+  },
+  "unit_summary": [
+    {
+      "team": "A",
+      "unit": "ARCHON",
+      "produced": 3,
+      "lost": 3,
+      "alive": 0
+    },
+    {
+      "team": "A",
+      "unit": "GARDENER",
+      "produced": 1,
+      "lost": 1,
+      "alive": 0
+    },
+    {
+      "team": "B",
+      "unit": "ARCHON",
+      "produced": 3,
+      "lost": 0,
+      "alive": 3
+    },
+    {
+      "team": "B",
+      "unit": "GARDENER",
+      "produced": 3,
+      "lost": 0,
+      "alive": 3
+    },
+    {
+      "team": "B",
+      "unit": "SOLDIER",
+      "produced": 10,
+      "lost": 0,
+      "alive": 10
+    },
+    {
+      "team": "B",
+      "unit": "LUMBERJACK",
+      "produced": 7,
+      "lost": 0,
+      "alive": 7
+    },
+    {
+      "team": "B",
+      "unit": "SCOUT",
+      "produced": 7,
+      "lost": 1,
+      "alive": 6
+    },
+    {
+      "team": "B",
+      "unit": "TREE",
+      "produced": 6,
+      "lost": 0,
+      "alive": 6
+    }
+  ],
+  "unit_lifespan": [
+    {
+      "team": "A",
+      "unit": "ARCHON",
+      "deaths": 3,
+      "avg_rounds": 515.3333333333334,
+      "min_rounds": 419,
+      "max_rounds": 641
+    },
+    {
+      "team": "A",
+      "unit": "GARDENER",
+      "deaths": 1,
+      "avg_rounds": 356.0,
+      "min_rounds": 356,
+      "max_rounds": 356
+    },
+    {
+      "team": "B",
+      "unit": "SCOUT",
+      "deaths": 1,
+      "avg_rounds": 208.0,
+      "min_rounds": 208,
+      "max_rounds": 208
+    }
+  ],
+  "early_deaths": {
+    "A": [
+      {
+        "round": 357,
+        "unit": "GARDENER",
+        "lifespan": 356
+      },
+      {
+        "round": 419,
+        "unit": "ARCHON",
+        "lifespan": 419
+      },
+      {
+        "round": 486,
+        "unit": "ARCHON",
+        "lifespan": 486
+      },
+      {
+        "round": 641,
+        "unit": "ARCHON",
+        "lifespan": 641
+      }
+    ],
+    "B": [
+      {
+        "round": 490,
+        "unit": "SCOUT",
+        "lifespan": 208
+      }
+    ]
+  },
+  "economy_timeline": [
+    {
+      "round": 500,
+      "team_a": {
+        "bullets": 3,
+        "vp": 26,
+        "bullets_generated": 299,
+        "bullets_spent": 100
+      },
+      "team_b": {
+        "bullets": 107,
+        "vp": 0,
+        "bullets_generated": 2207,
+        "bullets_spent": 2100
+      }
+    },
+    {
+      "round": 641,
+      "team_a": {
+        "bullets": 3,
+        "vp": 26,
+        "bullets_generated": 299,
+        "bullets_spent": 100
+      },
+      "team_b": {
+        "bullets": 132,
+        "vp": 0,
+        "bullets_generated": 2992,
+        "bullets_spent": 2860
+      }
+    }
+  ],
+  "tree_economy": [
+    {
+      "round": 500,
+      "team_a_trees": 0,
+      "team_b_trees": 6
+    },
+    {
+      "round": 641,
+      "team_a_trees": 0,
+      "team_b_trees": 6
+    }
+  ],
+  "combat_timeline": [
+    {
+      "period": "R1-500",
+      "team_a_deaths": 3,
+      "team_b_deaths": 1
+    },
+    {
+      "period": "R501-1000",
+      "team_a_deaths": 1,
+      "team_b_deaths": 0
+    }
+  ],
+  "movement_analysis": {
+    "insufficient_snapshots": false,
+    "teams": {
+      "A": {
+        "early": {
+          "summary": "Spread across quadrants (SW:3, SE:1)",
+          "quadrants": {
+            "NW": {},
+            "NE": {},
+            "SW": {
+              "ARCHON": 2,
+              "GARDENER": 1
+            },
+            "SE": {
+              "ARCHON": 1
+            }
+          }
+        },
+        "late": {
+          "summary": "No units tracked",
+          "quadrants": {
+            "NW": {},
+            "NE": {},
+            "SW": {},
+            "SE": {}
+          }
+        },
+        "stuck": []
+      },
+      "B": {
+        "early": {
+          "summary": "Spread across quadrants (NW:3, NE:3)",
+          "quadrants": {
+            "NW": {
+              "ARCHON": 2,
+              "GARDENER": 1
+            },
+            "NE": {
+              "ARCHON": 1,
+              "GARDENER": 2
+            },
+            "SW": {},
+            "SE": {}
+          }
+        },
+        "late": {
+          "summary": "Spread across quadrants (SE:11, NE:4, SW:4, NW:3)",
+          "quadrants": {
+            "NW": {
+              "ARCHON": 1,
+              "GARDENER": 1,
+              "SOLDIER": 1
+            },
+            "NE": {
+              "ARCHON": 1,
+              "GARDENER": 2,
+              "LUMBERJACK": 1
+            },
+            "SW": {
+              "LUMBERJACK": 2,
+              "SOLDIER": 2
+            },
+            "SE": {
+              "LUMBERJACK": 3,
+              "SCOUT": 4,
+              "SOLDIER": 4
+            }
+          }
+        },
+        "stuck": [
+          "1 GARDENER in NW",
+          "2 GARDENER in NE",
+          "1 ARCHON in NE"
+        ]
+      }
+    },
+    "early_round": 300,
+    "late_round": 641
+  },
+  "vp_activity": {
+    "donations_total": 232,
+    "by_team": [
+      {
+        "team": "A",
+        "donations": 232,
+        "vp_gained": 26
+      }
+    ]
+  },
+  "build_order": {
+    "teams": {
+      "A": {
+        "units": [
+          {
+            "sequence": 1,
+            "round": 1,
+            "unit": "GARDENER"
+          }
+        ],
+        "milestones": {}
+      },
+      "B": {
+        "units": [
+          {
+            "sequence": 1,
+            "round": 1,
+            "unit": "GARDENER"
+          },
+          {
+            "sequence": 2,
+            "round": 1,
+            "unit": "GARDENER"
+          },
+          {
+            "sequence": 3,
+            "round": 1,
+            "unit": "GARDENER"
+          },
+          {
+            "sequence": 4,
+            "round": 170,
+            "unit": "SCOUT"
+          },
+          {
+            "sequence": 5,
+            "round": 193,
+            "unit": "LUMBERJACK"
+          },
+          {
+            "sequence": 6,
+            "round": 210,
+            "unit": "SCOUT"
+          },
+          {
+            "sequence": 7,
+            "round": 222,
+            "unit": "SOLDIER"
+          },
+          {
+            "sequence": 8,
+            "round": 234,
+            "unit": "LUMBERJACK"
+          },
+          {
+            "sequence": 9,
+            "round": 248,
+            "unit": "SCOUT"
+          },
+          {
+            "sequence": 10,
+            "round": 253,
+            "unit": "LUMBERJACK"
+          },
+          {
+            "sequence": 11,
+            "round": 266,
+            "unit": "SOLDIER"
+          },
+          {
+            "sequence": 12,
+            "round": 282,
+            "unit": "SCOUT"
+          },
+          {
+            "sequence": 13,
+            "round": 296,
+            "unit": "SOLDIER"
+          },
+          {
+            "sequence": 14,
+            "round": 305,
+            "unit": "SOLDIER"
+          },
+          {
+            "sequence": 15,
+            "round": 324,
+            "unit": "LUMBERJACK"
+          }
+        ],
+        "milestones": {
+          "first_soldier_round": 222,
+          "first_lumberjack_round": 193
+        }
+      }
+    }
+  },
+  "combat_analysis": {
+    "combat_duration": {
+      "first_round": "262",
+      "last_round": "641"
+    },
+    "teams": {
+      "A": {
+        "shots_single": 0,
+        "shots_triad": 0,
+        "shots_pentad": 0,
+        "lumberjack_strikes": 0,
+        "chops": 0,
+        "total_bullet_cost": 0,
+        "enemy_kills": 1,
+        "total_deaths": 4,
+        "bullets_per_kill": 0.0,
+        "kd_ratio": 0.25
+      },
+      "B": {
+        "shots_single": 723,
+        "shots_triad": 345,
+        "shots_pentad": 0,
+        "lumberjack_strikes": 163,
+        "chops": 843,
+        "total_bullet_cost": 1758,
+        "enemy_kills": 4,
+        "total_deaths": 1,
+        "bullets_per_kill": 439.5,
+        "kd_ratio": 4.0
+      }
+    },
+    "warnings": []
+  },
+  "action_summary": [
+    {
+      "team": "A",
+      "action": "SPAWN_UNIT",
+      "count": 1
+    },
+    {
+      "team": "B",
+      "action": "WATER_TREE",
+      "count": 1672
+    },
+    {
+      "team": "B",
+      "action": "CHOP",
+      "count": 843
+    },
+    {
+      "team": "B",
+      "action": "SHAKE_TREE",
+      "count": 60
+    },
+    {
+      "team": "B",
+      "action": "SPAWN_UNIT",
+      "count": 27
+    },
+    {
+      "team": "B",
+      "action": "PLANT_TREE",
+      "count": 6
+    }
+  ],
+  "shots_by_unit_type": [
+    {
+      "team": "B",
+      "unit": "SCOUT",
+      "single_shots": 713,
+      "triad_shots": 0,
+      "pentad_shots": 0,
+      "total_shots": 713,
+      "bullet_cost": 713
+    },
+    {
+      "team": "B",
+      "unit": "SOLDIER",
+      "single_shots": 10,
+      "triad_shots": 115,
+      "pentad_shots": 0,
+      "total_shots": 125,
+      "bullet_cost": 470
+    }
+  ],
+  "friendly_fire": {
+    "by_team": [
+      {
+        "team": "B",
+        "count": 1,
+        "incidents": [
+          {
+            "round": 490,
+            "dead_unit_type": "SCOUT",
+            "own_attacks": [
+              "STRIKE"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "error_analysis": {
+    "action_deaths": [],
+    "action_death_samples": [],
+    "error_logs": [
+      {
+        "team": "A",
+        "count": 242
+      }
+    ],
+    "error_log_samples": [
+      {
+        "round": 105,
+        "team": "A",
+        "robot_type": "GARDENER",
+        "robot_id": 10743,
+        "message": "Gardener Exception"
+      },
+      {
+        "round": 106,
+        "team": "A",
+        "robot_type": "GARDENER",
+        "robot_id": 10743,
+        "message": "Gardener Exception"
+      },
+      {
+        "round": 107,
+        "team": "A",
+        "robot_type": "GARDENER",
+        "robot_id": 10743,
+        "message": "Gardener Exception"
+      },
+      {
+        "round": 108,
+        "team": "A",
+        "robot_type": "GARDENER",
+        "robot_id": 10743,
+        "message": "Gardener Exception"
+      },
+      {
+        "round": 109,
+        "team": "A",
+        "robot_type": "GARDENER",
+        "robot_id": 10743,
+        "message": "Gardener Exception"
+      },
+      {
+        "round": 110,
+        "team": "A",
+        "robot_type": "GARDENER",
+        "robot_id": 10743,
+        "message": "Gardener Exception"
+      },
+      {
+        "round": 111,
+        "team": "A",
+        "robot_type": "GARDENER",
+        "robot_id": 10743,
+        "message": "Gardener Exception"
+      },
+      {
+        "round": 113,
+        "team": "A",
+        "robot_type": "GARDENER",
+        "robot_id": 10743,
+        "message": "Gardener Exception"
+      },
+      {
+        "round": 114,
+        "team": "A",
+        "robot_type": "GARDENER",
+        "robot_id": 10743,
+        "message": "Gardener Exception"
+      },
+      {
+        "round": 115,
+        "team": "A",
+        "robot_type": "GARDENER",
+        "robot_id": 10743,
+        "message": "Gardener Exception"
+      }
+    ]
+  },
+  "map": {
+    "file": "/home/ddean/battlecode-scaffold-2017/maps/Lanes.map17",
+    "ascii": null
+  }
+}

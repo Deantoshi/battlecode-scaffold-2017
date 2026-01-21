@@ -62,11 +62,11 @@ public class Navigation {
         Map<Integer, Integer> treeCountPerY = new HashMap<>();
         for (int dy = -sensorRadius; dy <= sensorRadius; dy += 3) {
             int y = (int) current.y + dy;
-            if (y < 0 || y >= 100) continue; // assume max 100
+            if (y < 474 || y >= 524) continue; // Boxed map bounds
             int count = 0;
             for (int dx = -sensorRadius; dx <= sensorRadius; dx += 1) {
                 int x = (int) current.x + dx;
-                if (x < 0 || x >= 100) continue; // assume max 100
+                if (x < 377 || x >= 427) continue; // Boxed map bounds
                 MapLocation loc = new MapLocation(x, y);
                 if (rc.canSenseLocation(loc)) {
                     TreeInfo[] trees = rc.senseNearbyTrees(loc, 0, null);
@@ -83,7 +83,7 @@ public class Navigation {
         Map<Integer, List<Integer>> gapsPerBand = new HashMap<>();
         for (int bandY : bands) {
             List<Integer> gaps = new ArrayList<>();
-            for (int x = 0; x < 100; x++) { // assume max 100
+            for (int x = 377; x < 427; x++) { // Boxed map bounds
                 MapLocation loc = new MapLocation(x, bandY);
                 if (rc.canSenseLocation(loc)) {
                     TreeInfo[] trees = rc.senseNearbyTrees(loc, 0, null);
@@ -121,7 +121,7 @@ public class Navigation {
 
         Direction toTarget = current.directionTo(target);
         if (!isFollowingWall) {
-            if (isBoxedMap() && current.x < 25 && target.x > 25 && hasTreeBand(current, target)) {
+            if (isBoxedMap() && current.x < 402 && target.x > 402 && hasTreeBand(current, target)) {
                 if (rc.canMove(Direction.getSouth())) {
                     rc.move(Direction.getSouth());
                     return true;

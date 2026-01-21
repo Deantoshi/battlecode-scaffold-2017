@@ -1,11 +1,11 @@
 package grok_code_fast_1;
 import battlecode.common.*;
 
-public class Soldier {
+public class Tank {
     static RobotController rc;
 
     public static void init(RobotController rc) {
-        Soldier.rc = rc;
+        Tank.rc = rc;
     }
 
     public static void fire() throws GameActionException {
@@ -19,16 +19,10 @@ public class Soldier {
             float dist = rc.getLocation().distanceTo(enemyLoc);
             Direction dir = rc.getLocation().directionTo(enemyLoc);
 
-            // Check for friendly robots near the enemy location to avoid friendly fire
-            RobotInfo[] friendlies = rc.senseNearbyRobots(enemyLoc, 3, rc.getTeam());
-            if (friendlies.length > 0) {
-                return; // Don't shoot if friendlies are near
-            }
-
-            // Use area shots when close for efficiency
-            if (dist < 5 && rc.canFirePentadShot()) {
+            // Use area shots when close for efficiency, adapted for tank range
+            if (dist <= 2 && rc.canFirePentadShot()) {
                 rc.firePentadShot(dir);
-            } else if (dist < 7 && rc.canFireTriadShot()) {
+            } else if (dist <= 3 && rc.canFireTriadShot()) {
                 rc.fireTriadShot(dir);
             } else if (rc.canFireSingleShot()) {
                 rc.fireSingleShot(dir);

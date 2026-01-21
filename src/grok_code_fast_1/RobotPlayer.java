@@ -19,6 +19,7 @@ public strictfp class RobotPlayer {
         // Initialize classes
         Gardener.init(rc);
         Soldier.init(rc);
+        Tank.init(rc);
         Nav.init(rc);
 
         // Here, we've separated the controls into a different method for each RobotType.
@@ -35,6 +36,9 @@ public strictfp class RobotPlayer {
                 break;
             case LUMBERJACK:
                 runLumberjack();
+                break;
+            case TANK:
+                runTank();
                 break;
         }
 	}
@@ -53,23 +57,28 @@ public strictfp class RobotPlayer {
                 // Generate a random direction
                 Direction dir = randomDirection();
 
-                // Randomly attempt to build a gardener in this direction
-                if (rc.canHireGardener(dir) && gardenersHired < 3 && rc.getRoundNum() < 300 && Math.random() < 0.3) {
+                // Hire up to 3 gardeners in first 100 rounds
+                if (rc.getRoundNum() < 100 && gardenersHired < 3 && rc.canHireGardener(dir)) {
                     rc.hireGardener(dir);
                     gardenersHired++;
                 }
 
-                // Move to stay near spawn for safety
-                if (rc.getLocation().distanceTo(spawnLoc) > 10) {
-                    tryMove(rc.getLocation().directionTo(spawnLoc));
-                } else {
-                    tryMove(randomDirection());
-                }
+                // Broadcast gardeners hired
+                rc.broadcast(2, gardenersHired);
+
+                // Move
+                MapLocation target = (gardenersHired >= 2) ? Nav.enemyCenter : spawnLoc;
+                Nav.tryMoveBug(target);
 
                 // Broadcast archon's location for other robots on the team to know
                 MapLocation myLocation = rc.getLocation();
                 rc.broadcast(0,(int)myLocation.x);
                 rc.broadcast(1,(int)myLocation.y);
+
+                // VP donation logic
+                if (rc.getTeamBullets() > 0.5f * rc.getVictoryPointCost()) {
+                    rc.donate(rc.getTeamBullets());
+                }
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();
@@ -97,6 +106,12 @@ public strictfp class RobotPlayer {
 
                 // Generate a random direction
                 Direction dir = randomDirection();
+
+                // Check for nearby trees blocking build areas
+                TreeInfo[] nearbyTrees = rc.senseNearbyTrees(5.0f, null);
+                if (nearbyTrees.length > 0) {
+                    tryMove(randomDirection());
+                }
 
                 // Attempt to build robots
                 Gardener.buildRobot();
@@ -126,16 +141,52 @@ public strictfp class RobotPlayer {
                 MapLocation myLocation = rc.getLocation();
 
                 // Fire
-                Soldier.fireSingleShot();
+                Soldier.fire();
 
                 // Move towards enemy center
-                Nav.tryMove(Nav.enemyCenter);
+                Nav.tryMoveBug(Nav.enemyCenter);
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();
 
             } catch (Exception e) {
                 System.out.println("Soldier Exception");
+                e.printStackTrace();
+            }
+        }
+    }
+
+    static void runTank() throws GameActionException {
+        System.out.println("I'm an tank!");
+        Team enemy = rc.getTeam().opponent();
+
+        // The code you want your robot to perform every round should be in this loop
+        while (true) {
+
+            // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
+            try {
+                MapLocation myLocation = rc.getLocation();
+
+                // See if there are any nearby enemy robots
+                RobotInfo[] robots = rc.senseNearbyRobots(-1, enemy);
+
+                // Fire at enemies
+                Tank.fire();
+
+                // Determine target location
+                MapLocation targetLoc = Nav.enemyCenter;
+                if (robots.length > 0) {
+                    targetLoc = robots[0].location;
+                }
+
+                // Move towards target, tanks can move through trees
+                Nav.tryMoveBug(targetLoc);
+
+                // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
+                Clock.yield();
+
+            } catch (Exception e) {
+                System.out.println("Tank Exception");
                 e.printStackTrace();
             }
         }
@@ -170,7 +221,7 @@ public strictfp class RobotPlayer {
                         tryMove(toEnemy);
                     } else {
                         // Move towards enemy center
-                        Nav.tryMove(Nav.enemyCenter);
+                        Nav.tryMoveBug(Nav.enemyCenter);
                     }
                 }
 
