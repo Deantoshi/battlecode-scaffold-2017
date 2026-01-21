@@ -1,8 +1,8 @@
 ═══════════════════════════════════════════════════════════════════════════════
-MATCH: grok_code_fast_1 (A) vs copy_bot (B) on MagicWood
+MATCH: grok_code_fast_1 (A) vs copy_bot (B) on Boxed
 ═══════════════════════════════════════════════════════════════════════════════
 [server] -------------------- Match Starting --------------------
-[server] grok_code_fast_1 vs. copy_bot on MagicWood
+[server] grok_code_fast_1 vs. copy_bot on Boxed
 [server]                    copy_bot (B) wins (round 2999)
 [server] Reason: The winning team won on tiebreakers (more bullet supply, includings cost of active robots)
 [server] -------------------- Match Finished --------------------
@@ -11,7 +11,7 @@ MATCH: grok_code_fast_1 (A) vs copy_bot (B) on MagicWood
 RESULT
 ───────────────────────────────────────────────────────────────────────────────
 OUTCOME=LOSS  ROUNDS=2999  TARGET=1500  GOAL_MET=NO
-FINAL: A=199bullets/0vp  B=36bullets/0vp
+FINAL: A=199bullets/0vp  B=195bullets/0vp
 
 ───────────────────────────────────────────────────────────────────────────────
 UNIT SUMMARY (Produced / Lost / Alive)
@@ -19,44 +19,73 @@ UNIT SUMMARY (Produced / Lost / Alive)
 Team   Unit         Prod   Lost   Alive 
 ----------------------------------------
 A      ARCHON       1      1      0     
-A      GARDENER     4      4      0     
-A      SOLDIER      9      5      4     
-A      LUMBERJACK   2      2      0     
-B      ARCHON       1      0      1     
-B      GARDENER     7      0      7     
-B      SOLDIER      27     5      22    
-B      LUMBERJACK   17     5      12    
-B      TANK         3      3      0     
-B      SCOUT        4      4      0     
+A      GARDENER     2      2      0     
+A      SOLDIER      5      5      0     
+A      LUMBERJACK   14     13     1     
+A      TREE         11     11     0     
+B      ARCHON       1      1      0     
+B      GARDENER     5      4      1     
+B      SOLDIER      16     8      8     
+B      LUMBERJACK   11     8      3     
+
+───────────────────────────────────────────────────────────────────────────────
+UNIT LIFESPAN (avg/min/max rounds alive)
+───────────────────────────────────────────────────────────────────────────────
+Team   Unit         Deaths  Avg    Min    Max   
+----------------------------------------------
+A      ARCHON       1       2172   2172   2172  
+A      GARDENER     2       1372   1007   1738  
+A      LUMBERJACK   13      407    71     1066  
+A      SOLDIER      5       617    350    1109  
+A      TREE_BULLET  11      179    176    180   
+B      ARCHON       1       1763   1763   1763  
+B      GARDENER     4       958    56     1867  
+B      LUMBERJACK   8       744    135    1452  
+B      SOLDIER      8       410    41     1332  
+
+───────────────────────────────────────────────────────────────────────────────
+EARLY DEATHS (first 5 per team)
+───────────────────────────────────────────────────────────────────────────────
+Team A: R237:TREE_BULLET(life 180), R265:TREE_BULLET(life 180), R315:TREE_BULLET(life 180), R343:TREE_BULLET(life 180), R389:TREE_BULLET(life 180)
+Team B: R1017:SOLDIER(life 1003), R1045:LUMBERJACK(life 887), R1054:SOLDIER(life 312), R1056:LUMBERJACK(life 690), R1065:SOLDIER(life 409)
 
 ───────────────────────────────────────────────────────────────────────────────
 ECONOMY TIMELINE (current bullets/vp | cumulative generated/spent)
 ───────────────────────────────────────────────────────────────────────────────
-R500  | A:  84/0   (gen: 984 spent: 900)  B:  80/0   (gen:2140 spent:2060)
-R1000 | A:  89/0   (gen:1489 spent:1400)  B:  92/0   (gen:3612 spent:3520)
-R1500 | A: 198/0   (gen:1698 spent:1500)  B:  51/0   (gen:4271 spent:4220)
-R2000 | A: 199/0   (gen:1699 spent:1500)  B:  61/0   (gen:4881 spent:4820)
-R2500 | A: 199/0   (gen:1699 spent:1500)  B:   8/0   (gen:5628 spent:5620)
-R2999 | A: 199/0   (gen:1699 spent:1500)  B:  36/0   (gen:6356 spent:6320)
+R500  | A:  80/0   (gen:1230 spent:1150)  B:  84/0   (gen: 984 spent: 900)
+R1000 | A: 172/0   (gen:1622 spent:1450)  B:  76/0   (gen:1376 spent:1300)
+R1500 | A:  71/0   (gen:2221 spent:2150)  B:  58/0   (gen:1858 spent:1800)
+R2000 | A: 193/0   (gen:2843 spent:2650)  B:  89/0   (gen:2489 spent:2400)
+R2500 | A: 199/0   (gen:2849 spent:2650)  B:  34/0   (gen:3034 spent:3000)
+R2999 | A: 199/0   (gen:2849 spent:2650)  B: 195/0   (gen:3395 spent:3200)
+
+───────────────────────────────────────────────────────────────────────────────
+TREE ECONOMY SNAPSHOT (trees alive at key rounds)
+───────────────────────────────────────────────────────────────────────────────
+R500  | A trees:   0  B trees:   0
+R1000 | A trees:   0  B trees:   0
+R1500 | A trees:   2  B trees:   0
+R2000 | A trees:   0  B trees:   0
+R2500 | A trees:   0  B trees:   0
+R2999 | A trees:   0  B trees:   0
 
 ───────────────────────────────────────────────────────────────────────────────
 COMBAT TIMELINE (deaths by period)
 ───────────────────────────────────────────────────────────────────────────────
-R1-500: A:1 B:5
-R1001-1500: A:3 B:2
-R501-1000: A:8 B:10
+R1001-1500: A:16 B:12
+R1501-2000: A:4 B:9
+R2001+: A:1 B:0
 
 ───────────────────────────────────────────────────────────────────────────────
 MOVEMENT ANALYSIS (unit distribution changes)
 ───────────────────────────────────────────────────────────────────────────────
 Comparing R300 vs R2999:
 
-  Team A at R300: CONCENTRATED in SW (1 ARCHON, 3 GARDENER, 2 LUMBERJACK, 1 SOLDIER)
-  Team A at R2999: CONCENTRATED in NW (4 SOLDIER)
+  Team A at R300: CONCENTRATED in NW (1 ARCHON, 2 GARDENER, 2 LUMBERJACK)
+  Team A at R2999: CONCENTRATED in SE (1 LUMBERJACK)
 
-  Team B at R300: CONCENTRATED in NE (1 ARCHON, 2 GARDENER, 2 LUMBERJACK, 1 SOLDIER)
-  Team B at R2999: Spread across quadrants (SW:29, NE:5, NW:3)
-  ⚠ Team B POTENTIAL STUCK: 2 LUMBERJACK in NW, 3 GARDENER in NE, 2 SOLDIER in NE
+  Team B at R300: CONCENTRATED in SE (1 ARCHON, 2 GARDENER, 2 LUMBERJACK, 1 SOLDIER)
+  Team B at R2999: Spread across quadrants (NE:7, NW:5)
 
 ───────────────────────────────────────────────────────────────────────────────
 VP ACTIVITY
@@ -66,37 +95,63 @@ VP ACTIVITY
 ───────────────────────────────────────────────────────────────────────────────
 BUILD ORDER (first 15 units per team)
 ───────────────────────────────────────────────────────────────────────────────
-Team A: R3:GARDENER, R4:LUMBERJACK, R15:GARDENER, R79:LUMBERJACK, R146:GARDENER, R149:SOLDIER, R226:SOLDIER, R311:SOLDIER, R406:SOLDIER, R516:GARDENER, R585:SOLDIER, R671:SOLDIER, R766:SOLDIER, R902:SOLDIER, R1012:SOLDIER
-  Milestones: 1st SOLDIER R149, 1st LUMBERJACK R4
-Team B: R1:GARDENER, R2:LUMBERJACK, R12:LUMBERJACK, R54:GARDENER, R77:SOLDIER, R157:LUMBERJACK, R224:SCOUT, R224:LUMBERJACK, R226:SOLDIER, R259:LUMBERJACK, R261:GARDENER, R285:SCOUT, R319:SOLDIER, R330:TANK, R429:LUMBERJACK
-  Milestones: 1st SOLDIER R77, 1st LUMBERJACK R2
+Team A: R2:GARDENER, R4:LUMBERJACK, R13:GARDENER, R187:LUMBERJACK, R240:LUMBERJACK, R284:LUMBERJACK, R339:SOLDIER, R385:LUMBERJACK, R451:SOLDIER, R534:SOLDIER, R653:SOLDIER, R855:SOLDIER, R1060:LUMBERJACK, R1095:LUMBERJACK, R1252:LUMBERJACK
+  Milestones: 1st SOLDIER R339, 1st LUMBERJACK R4
+Team B: R13:GARDENER, R14:SOLDIER, R24:LUMBERJACK, R89:GARDENER, R158:LUMBERJACK, R227:SOLDIER, R297:LUMBERJACK, R366:LUMBERJACK, R456:LUMBERJACK, R518:GARDENER, R587:LUMBERJACK, R656:SOLDIER, R742:SOLDIER, R1093:LUMBERJACK, R1190:LUMBERJACK
+  Milestones: 1st SOLDIER R14, 1st LUMBERJACK R24
 
 ───────────────────────────────────────────────────────────────────────────────
 COMBAT ANALYSIS (shots, efficiency, friendly fire)
 ───────────────────────────────────────────────────────────────────────────────
-Combat Duration: R101 - R2062
+Combat Duration: R482 - R2258
 
 Metric                   Team A     Team B
 ------------------------------------------
-Single shots                364       1022
+Single shots                 71        747
 Triad shots (3b)              0          0
 Pentad shots (5b)             0          0
-Lumberjack strikes           46        136
-Tree chops                   55       4971
-BULLET COST                 364       1022
+Lumberjack strikes          616        131
+Tree chops                    0       2283
+BULLET COST                  71        747
 
-Enemy kills                  17         12
-K/D ratio                  1.42       0.71
-Bullets/kill               21.4       85.2
+Enemy kills                  21         32
+Own deaths                   32         21
+K/D ratio                  0.66       1.52
+Bullets/kill                3.4       23.3
 
-⚠ Team B inefficient: 85.2 bullets/kill vs A's 21.4
+⚠ Team B inefficient: 23.3 bullets/kill vs A's 3.4
+
+───────────────────────────────────────────────────────────────────────────────
+ACTION SUMMARY (non-combat actions)
+───────────────────────────────────────────────────────────────────────────────
+Team   Action       Count 
+----------------------------
+A      SPAWN_UNIT   21    
+A      PLANT_TREE   11    
+B      CHOP         2283  
+B      SPAWN_UNIT   32    
+
+Shots by Unit Type:
+----------------------------------------------------------------------
+Team A:
+  Unit           Single    Triad   Pentad    Total    Bullets
+  SOLDIER            71        0        0       71         71
+
+Team B:
+  Unit           Single    Triad   Pentad    Total    Bullets
+  SOLDIER           747        0        0      747        747
 
 Potential Friendly Fire:
-  Team A: 1 incidents
-    R484: SOLDIER died (own attacks: FIRE)
-  Team B: 2 incidents
-    R351: TANK died (own attacks: FIRE)
-    R1063: SOLDIER died (own attacks: STRIKE, FIRE)
+  Team A: 5 incidents
+    R1611: TREE_BULLET died (own attacks: STRIKE)
+    R1636: LUMBERJACK died (own attacks: STRIKE)
+    R1655: TREE_BULLET died (own attacks: STRIKE)
+
+───────────────────────────────────────────────────────────────────────────────
+ERROR / SELF-DESTRUCT ANALYSIS
+───────────────────────────────────────────────────────────────────────────────
+No DIE_EXCEPTION / DIE_SUICIDE actions recorded.
+No error/exception logs recorded.
 
 ═══════════════════════════════════════════════════════════════════════════════
-Database: /Users/danieldean/Documents/work_code/battlecode-scaffold-2017/matches/grok_code_fast_1-vs-copy_bot-on-MagicWood.db
+Database: /home/ddean/battlecode-scaffold-2017/matches/grok_code_fast_1-vs-copy_bot-on-Boxed.db
