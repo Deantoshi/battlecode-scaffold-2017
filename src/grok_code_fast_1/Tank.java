@@ -15,7 +15,18 @@ public class Tank {
 
         // If there are some...
         if (robots.length > 0) {
-            MapLocation enemyLoc = robots[0].location;
+            // Prioritize archons
+            RobotInfo target = null;
+            for (RobotInfo robot : robots) {
+                if (robot.type == RobotType.ARCHON) {
+                    target = robot;
+                    break;
+                }
+            }
+            if (target == null) {
+                target = robots[0];
+            }
+            MapLocation enemyLoc = target.location;
             float dist = rc.getLocation().distanceTo(enemyLoc);
             Direction dir = rc.getLocation().directionTo(enemyLoc);
 

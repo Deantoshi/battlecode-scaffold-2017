@@ -1,11 +1,11 @@
 package grok_code_fast_1;
 import battlecode.common.*;
 
-public class Soldier {
+public class Scout {
     static RobotController rc;
 
     public static void init(RobotController rc) {
-        Soldier.rc = rc;
+        Scout.rc = rc;
     }
 
     public static void fire() throws GameActionException {
@@ -34,12 +34,8 @@ public class Soldier {
             RobotInfo[] friendlies = rc.senseNearbyRobots(enemyLoc, 3, rc.getTeam());
             boolean hasFriendliesNear = friendlies.length > 0;
 
-            // Use area shots when close for efficiency, but only if no friendlies near
-            if (dist < 5 && rc.canFirePentadShot() && !hasFriendliesNear) {
-                rc.firePentadShot(dir);
-            } else if (dist < 7 && rc.canFireTriadShot() && !hasFriendliesNear) {
-                rc.fireTriadShot(dir);
-            } else if (rc.canFireSingleShot()) {
+            // Scouts can only fire single shot
+            if (rc.canFireSingleShot()) {
                 rc.fireSingleShot(dir);
             }
         }

@@ -2,25 +2,25 @@
   "schema_version": 1,
   "match": {
     "bot": "grok_code_fast_1",
-    "opponent": "training_bot",
+    "opponent": "copy_bot",
     "map": "Lanes",
-    "match_file": "/home/ddean/battlecode-scaffold-2017/matches/grok_code_fast_1-vs-training_bot-on-Lanes.bc17",
-    "database": "/home/ddean/battlecode-scaffold-2017/matches/grok_code_fast_1-vs-training_bot-on-Lanes.db"
+    "match_file": "/home/ddean/battlecode-scaffold-2017/matches/grok_code_fast_1-vs-copy_bot-on-Lanes.bc17",
+    "database": "/home/ddean/battlecode-scaffold-2017/matches/grok_code_fast_1-vs-copy_bot-on-Lanes.db"
   },
   "result": {
-    "winner": "B",
-    "outcome": "LOSS",
-    "won": "NO",
-    "rounds": 641,
+    "winner": "A",
+    "outcome": "WIN",
+    "won": "YES",
+    "rounds": 2999,
     "target_rounds": 1500,
     "goal_met": "NO",
     "final": {
       "team_a": {
-        "bullets": 3,
+        "bullets": 11,
         "vp": 26
       },
       "team_b": {
-        "bullets": 132,
+        "bullets": 72,
         "vp": 0
       }
     }
@@ -30,8 +30,8 @@
       "team": "A",
       "unit": "ARCHON",
       "produced": 3,
-      "lost": 3,
-      "alive": 0
+      "lost": 2,
+      "alive": 1
     },
     {
       "team": "A",
@@ -50,93 +50,74 @@
     {
       "team": "B",
       "unit": "GARDENER",
-      "produced": 3,
+      "produced": 13,
       "lost": 0,
-      "alive": 3
+      "alive": 13
     },
     {
       "team": "B",
       "unit": "SOLDIER",
-      "produced": 10,
-      "lost": 0,
-      "alive": 10
+      "produced": 20,
+      "lost": 1,
+      "alive": 19
     },
     {
       "team": "B",
       "unit": "LUMBERJACK",
-      "produced": 7,
+      "produced": 11,
       "lost": 0,
-      "alive": 7
-    },
-    {
-      "team": "B",
-      "unit": "SCOUT",
-      "produced": 7,
-      "lost": 1,
-      "alive": 6
-    },
-    {
-      "team": "B",
-      "unit": "TREE",
-      "produced": 6,
-      "lost": 0,
-      "alive": 6
+      "alive": 11
     }
   ],
   "unit_lifespan": [
     {
       "team": "A",
       "unit": "ARCHON",
-      "deaths": 3,
-      "avg_rounds": 515.3333333333334,
-      "min_rounds": 419,
-      "max_rounds": 641
+      "deaths": 2,
+      "avg_rounds": 1137.0,
+      "min_rounds": 974,
+      "max_rounds": 1300
     },
     {
       "team": "A",
       "unit": "GARDENER",
       "deaths": 1,
-      "avg_rounds": 356.0,
-      "min_rounds": 356,
-      "max_rounds": 356
+      "avg_rounds": 1326.0,
+      "min_rounds": 1326,
+      "max_rounds": 1326
     },
     {
       "team": "B",
-      "unit": "SCOUT",
+      "unit": "SOLDIER",
       "deaths": 1,
-      "avg_rounds": 208.0,
-      "min_rounds": 208,
-      "max_rounds": 208
+      "avg_rounds": 627.0,
+      "min_rounds": 627,
+      "max_rounds": 627
     }
   ],
   "early_deaths": {
     "A": [
       {
-        "round": 357,
+        "round": 974,
+        "unit": "ARCHON",
+        "lifespan": 974
+      },
+      {
+        "round": 1300,
+        "unit": "ARCHON",
+        "lifespan": 1300
+      },
+      {
+        "round": 1327,
         "unit": "GARDENER",
-        "lifespan": 356
-      },
-      {
-        "round": 419,
-        "unit": "ARCHON",
-        "lifespan": 419
-      },
-      {
-        "round": 486,
-        "unit": "ARCHON",
-        "lifespan": 486
-      },
-      {
-        "round": 641,
-        "unit": "ARCHON",
-        "lifespan": 641
+        "lifespan": 1326
       }
     ],
     "B": [
       {
-        "round": 490,
-        "unit": "SCOUT",
-        "lifespan": 208
+        "round": 1320,
+        "unit": "SOLDIER",
+        "lifespan": 627
       }
     ]
   },
@@ -150,14 +131,29 @@
         "bullets_spent": 100
       },
       "team_b": {
-        "bullets": 107,
+        "bullets": 78,
         "vp": 0,
-        "bullets_generated": 2207,
-        "bullets_spent": 2100
+        "bullets_generated": 1078,
+        "bullets_spent": 1000
       }
     },
     {
-      "round": 641,
+      "round": 1000,
+      "team_a": {
+        "bullets": 2,
+        "vp": 26,
+        "bullets_generated": 297,
+        "bullets_spent": 100
+      },
+      "team_b": {
+        "bullets": 90,
+        "vp": 0,
+        "bullets_generated": 1690,
+        "bullets_spent": 1600
+      }
+    },
+    {
+      "round": 1500,
       "team_a": {
         "bullets": 3,
         "vp": 26,
@@ -165,10 +161,55 @@
         "bullets_spent": 100
       },
       "team_b": {
-        "bullets": 132,
+        "bullets": 75,
         "vp": 0,
-        "bullets_generated": 2992,
-        "bullets_spent": 2860
+        "bullets_generated": 2275,
+        "bullets_spent": 2200
+      }
+    },
+    {
+      "round": 2000,
+      "team_a": {
+        "bullets": 3,
+        "vp": 26,
+        "bullets_generated": 299,
+        "bullets_spent": 100
+      },
+      "team_b": {
+        "bullets": 94,
+        "vp": 0,
+        "bullets_generated": 2994,
+        "bullets_spent": 2900
+      }
+    },
+    {
+      "round": 2500,
+      "team_a": {
+        "bullets": 3,
+        "vp": 26,
+        "bullets_generated": 299,
+        "bullets_spent": 100
+      },
+      "team_b": {
+        "bullets": 51,
+        "vp": 0,
+        "bullets_generated": 3751,
+        "bullets_spent": 3700
+      }
+    },
+    {
+      "round": 2999,
+      "team_a": {
+        "bullets": 11,
+        "vp": 26,
+        "bullets_generated": 306,
+        "bullets_spent": 100
+      },
+      "team_b": {
+        "bullets": 72,
+        "vp": 0,
+        "bullets_generated": 4472,
+        "bullets_spent": 4400
       }
     }
   ],
@@ -176,18 +217,38 @@
     {
       "round": 500,
       "team_a_trees": 0,
-      "team_b_trees": 6
+      "team_b_trees": 0
     },
     {
-      "round": 641,
+      "round": 1000,
       "team_a_trees": 0,
-      "team_b_trees": 6
+      "team_b_trees": 0
+    },
+    {
+      "round": 1500,
+      "team_a_trees": 0,
+      "team_b_trees": 0
+    },
+    {
+      "round": 2000,
+      "team_a_trees": 0,
+      "team_b_trees": 0
+    },
+    {
+      "round": 2500,
+      "team_a_trees": 0,
+      "team_b_trees": 0
+    },
+    {
+      "round": 2999,
+      "team_a_trees": 0,
+      "team_b_trees": 0
     }
   ],
   "combat_timeline": [
     {
-      "period": "R1-500",
-      "team_a_deaths": 3,
+      "period": "R1001-1500",
+      "team_a_deaths": 2,
       "team_b_deaths": 1
     },
     {
@@ -215,72 +276,78 @@
           }
         },
         "late": {
-          "summary": "No units tracked",
+          "summary": "CONCENTRATED in SE (1 ARCHON)",
           "quadrants": {
             "NW": {},
             "NE": {},
             "SW": {},
-            "SE": {}
+            "SE": {
+              "ARCHON": 1
+            }
           }
         },
-        "stuck": []
+        "stuck": [
+          "1 ARCHON in SE"
+        ]
       },
       "B": {
         "early": {
           "summary": "Spread across quadrants (NW:3, NE:3)",
           "quadrants": {
             "NW": {
-              "ARCHON": 2,
-              "GARDENER": 1
+              "GARDENER": 2,
+              "LUMBERJACK": 1
             },
             "NE": {
               "ARCHON": 1,
-              "GARDENER": 2
+              "GARDENER": 1,
+              "LUMBERJACK": 1
             },
             "SW": {},
             "SE": {}
           }
         },
         "late": {
-          "summary": "Spread across quadrants (SE:11, NE:4, SW:4, NW:3)",
+          "summary": "Spread across quadrants (SW:29, NW:8, NE:4, SE:4)",
           "quadrants": {
             "NW": {
-              "ARCHON": 1,
-              "GARDENER": 1,
-              "SOLDIER": 1
+              "GARDENER": 7,
+              "LUMBERJACK": 1
             },
             "NE": {
-              "ARCHON": 1,
-              "GARDENER": 2,
+              "GARDENER": 3,
               "LUMBERJACK": 1
             },
             "SW": {
-              "LUMBERJACK": 2,
-              "SOLDIER": 2
+              "ARCHON": 1,
+              "GARDENER": 1,
+              "LUMBERJACK": 8,
+              "SOLDIER": 19
             },
             "SE": {
-              "LUMBERJACK": 3,
-              "SCOUT": 4,
-              "SOLDIER": 4
+              "ARCHON": 2,
+              "GARDENER": 1,
+              "LUMBERJACK": 1
             }
           }
         },
         "stuck": [
-          "1 GARDENER in NW",
-          "2 GARDENER in NE",
-          "1 ARCHON in NE"
+          "7 GARDENER in NW",
+          "1 LUMBERJACK in NW",
+          "3 GARDENER in NE",
+          "1 LUMBERJACK in NE"
         ]
       }
     },
     "early_round": 300,
-    "late_round": 641
+    "late_round": 2999
   },
   "vp_activity": {
-    "donations_total": 232,
+    "donations_total": 801,
     "by_team": [
       {
         "team": "A",
-        "donations": 232,
+        "donations": 801,
         "vp_gained": 26
       }
     ]
@@ -301,91 +368,91 @@
         "units": [
           {
             "sequence": 1,
-            "round": 1,
+            "round": 2,
             "unit": "GARDENER"
           },
           {
             "sequence": 2,
-            "round": 1,
-            "unit": "GARDENER"
+            "round": 4,
+            "unit": "LUMBERJACK"
           },
           {
             "sequence": 3,
-            "round": 1,
+            "round": 7,
             "unit": "GARDENER"
           },
           {
             "sequence": 4,
-            "round": 170,
-            "unit": "SCOUT"
-          },
-          {
-            "sequence": 5,
-            "round": 193,
+            "round": 75,
             "unit": "LUMBERJACK"
           },
           {
+            "sequence": 5,
+            "round": 144,
+            "unit": "GARDENER"
+          },
+          {
             "sequence": 6,
-            "round": 210,
-            "unit": "SCOUT"
+            "round": 208,
+            "unit": "LUMBERJACK"
           },
           {
             "sequence": 7,
-            "round": 222,
-            "unit": "SOLDIER"
+            "round": 272,
+            "unit": "LUMBERJACK"
           },
           {
             "sequence": 8,
-            "round": 234,
+            "round": 333,
             "unit": "LUMBERJACK"
           },
           {
             "sequence": 9,
-            "round": 248,
-            "unit": "SCOUT"
+            "round": 398,
+            "unit": "LUMBERJACK"
           },
           {
             "sequence": 10,
-            "round": 253,
+            "round": 461,
             "unit": "LUMBERJACK"
           },
           {
             "sequence": 11,
-            "round": 266,
-            "unit": "SOLDIER"
+            "round": 518,
+            "unit": "GARDENER"
           },
           {
             "sequence": 12,
-            "round": 282,
-            "unit": "SCOUT"
+            "round": 575,
+            "unit": "LUMBERJACK"
           },
           {
             "sequence": 13,
-            "round": 296,
-            "unit": "SOLDIER"
+            "round": 631,
+            "unit": "GARDENER"
           },
           {
             "sequence": 14,
-            "round": 305,
+            "round": 693,
             "unit": "SOLDIER"
           },
           {
             "sequence": 15,
-            "round": 324,
-            "unit": "LUMBERJACK"
+            "round": 753,
+            "unit": "GARDENER"
           }
         ],
         "milestones": {
-          "first_soldier_round": 222,
-          "first_lumberjack_round": 193
+          "first_soldier_round": 693,
+          "first_lumberjack_round": 4
         }
       }
     }
   },
   "combat_analysis": {
     "combat_duration": {
-      "first_round": "262",
-      "last_round": "641"
+      "first_round": "656",
+      "last_round": "1326"
     },
     "teams": {
       "A": {
@@ -396,21 +463,21 @@
         "chops": 0,
         "total_bullet_cost": 0,
         "enemy_kills": 1,
-        "total_deaths": 4,
+        "total_deaths": 3,
         "bullets_per_kill": 0.0,
-        "kd_ratio": 0.25
+        "kd_ratio": 0.3333333333333333
       },
       "B": {
-        "shots_single": 723,
-        "shots_triad": 345,
+        "shots_single": 443,
+        "shots_triad": 0,
         "shots_pentad": 0,
-        "lumberjack_strikes": 163,
-        "chops": 843,
-        "total_bullet_cost": 1758,
-        "enemy_kills": 4,
+        "lumberjack_strikes": 26,
+        "chops": 4922,
+        "total_bullet_cost": 443,
+        "enemy_kills": 3,
         "total_deaths": 1,
-        "bullets_per_kill": 439.5,
-        "kd_ratio": 4.0
+        "bullets_per_kill": 147.66666666666666,
+        "kd_ratio": 3.0
       }
     },
     "warnings": []
@@ -423,48 +490,24 @@
     },
     {
       "team": "B",
-      "action": "WATER_TREE",
-      "count": 1672
-    },
-    {
-      "team": "B",
       "action": "CHOP",
-      "count": 843
-    },
-    {
-      "team": "B",
-      "action": "SHAKE_TREE",
-      "count": 60
+      "count": 4922
     },
     {
       "team": "B",
       "action": "SPAWN_UNIT",
-      "count": 27
-    },
-    {
-      "team": "B",
-      "action": "PLANT_TREE",
-      "count": 6
+      "count": 44
     }
   ],
   "shots_by_unit_type": [
     {
       "team": "B",
-      "unit": "SCOUT",
-      "single_shots": 713,
+      "unit": "SOLDIER",
+      "single_shots": 443,
       "triad_shots": 0,
       "pentad_shots": 0,
-      "total_shots": 713,
-      "bullet_cost": 713
-    },
-    {
-      "team": "B",
-      "unit": "SOLDIER",
-      "single_shots": 10,
-      "triad_shots": 115,
-      "pentad_shots": 0,
-      "total_shots": 125,
-      "bullet_cost": 470
+      "total_shots": 443,
+      "bullet_cost": 443
     }
   ],
   "friendly_fire": {
@@ -474,10 +517,10 @@
         "count": 1,
         "incidents": [
           {
-            "round": 490,
-            "dead_unit_type": "SCOUT",
+            "round": 1320,
+            "dead_unit_type": "SOLDIER",
             "own_attacks": [
-              "STRIKE"
+              "FIRE"
             ]
           }
         ]
@@ -487,84 +530,8 @@
   "error_analysis": {
     "action_deaths": [],
     "action_death_samples": [],
-    "error_logs": [
-      {
-        "team": "A",
-        "count": 242
-      }
-    ],
-    "error_log_samples": [
-      {
-        "round": 105,
-        "team": "A",
-        "robot_type": "GARDENER",
-        "robot_id": 10743,
-        "message": "Gardener Exception"
-      },
-      {
-        "round": 106,
-        "team": "A",
-        "robot_type": "GARDENER",
-        "robot_id": 10743,
-        "message": "Gardener Exception"
-      },
-      {
-        "round": 107,
-        "team": "A",
-        "robot_type": "GARDENER",
-        "robot_id": 10743,
-        "message": "Gardener Exception"
-      },
-      {
-        "round": 108,
-        "team": "A",
-        "robot_type": "GARDENER",
-        "robot_id": 10743,
-        "message": "Gardener Exception"
-      },
-      {
-        "round": 109,
-        "team": "A",
-        "robot_type": "GARDENER",
-        "robot_id": 10743,
-        "message": "Gardener Exception"
-      },
-      {
-        "round": 110,
-        "team": "A",
-        "robot_type": "GARDENER",
-        "robot_id": 10743,
-        "message": "Gardener Exception"
-      },
-      {
-        "round": 111,
-        "team": "A",
-        "robot_type": "GARDENER",
-        "robot_id": 10743,
-        "message": "Gardener Exception"
-      },
-      {
-        "round": 113,
-        "team": "A",
-        "robot_type": "GARDENER",
-        "robot_id": 10743,
-        "message": "Gardener Exception"
-      },
-      {
-        "round": 114,
-        "team": "A",
-        "robot_type": "GARDENER",
-        "robot_id": 10743,
-        "message": "Gardener Exception"
-      },
-      {
-        "round": 115,
-        "team": "A",
-        "robot_type": "GARDENER",
-        "robot_id": 10743,
-        "message": "Gardener Exception"
-      }
-    ]
+    "error_logs": [],
+    "error_log_samples": []
   },
   "map": {
     "file": "/home/ddean/battlecode-scaffold-2017/maps/Lanes.map17",

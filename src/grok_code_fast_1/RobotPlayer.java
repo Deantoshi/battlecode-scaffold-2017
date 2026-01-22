@@ -20,6 +20,7 @@ public strictfp class RobotPlayer {
         Gardener.init(rc);
         Soldier.init(rc);
         Tank.init(rc);
+        Scout.init(rc);
         Nav.init(rc);
 
         // Here, we've separated the controls into a different method for each RobotType.
@@ -39,6 +40,9 @@ public strictfp class RobotPlayer {
                 break;
             case TANK:
                 runTank();
+                break;
+            case SCOUT:
+                runScout();
                 break;
         }
 	}
@@ -230,6 +234,33 @@ public strictfp class RobotPlayer {
 
             } catch (Exception e) {
                 System.out.println("Lumberjack Exception");
+                e.printStackTrace();
+            }
+        }
+    }
+
+    static void runScout() throws GameActionException {
+        System.out.println("I'm a scout!");
+        Team enemy = rc.getTeam().opponent();
+
+        // The code you want your robot to perform every round should be in this loop
+        while (true) {
+
+            // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
+            try {
+                MapLocation myLocation = rc.getLocation();
+
+                // Fire
+                Scout.fire();
+
+                // Move towards enemy center
+                Nav.tryMoveBug(Nav.enemyCenter);
+
+                // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
+                Clock.yield();
+
+            } catch (Exception e) {
+                System.out.println("Scout Exception");
                 e.printStackTrace();
             }
         }

@@ -127,17 +127,11 @@ public class Nav {
 
     public static boolean tryMoveBug(MapLocation target) throws GameActionException {
         if (rc.getType() == RobotType.ARCHON) {
-            int gardenersHired = rc.readBroadcast(2);
-            if (gardenersHired < 2) {
-                // Stay near spawn
-                if (rc.getLocation().distanceTo(spawnLoc) > 5) {
-                    return tryMove(rc.getLocation().directionTo(spawnLoc));
-                } else {
-                    return false;
-                }
+            // Stay near spawn
+            if (rc.getLocation().distanceTo(spawnLoc) > 5) {
+                return tryMove(rc.getLocation().directionTo(spawnLoc));
             } else {
-                // Move cautiously toward enemy center
-                return tryMove(rc.getLocation().directionTo(enemyCenter));
+                return false;
             }
         } else {
             // Original random movement for other units
