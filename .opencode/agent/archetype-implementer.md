@@ -97,9 +97,37 @@ After ALL changes are complete, run:
 
 **DO NOT EXIT until compilation succeeds.**
 
+## MANDATORY: Verify Economy Output
+
+After compilation succeeds, run the economy simulator to verify your implementation produces the expected unit composition:
+
+```bash
+python3 simulate_economy.py src/{BOT}_v{N}/
+```
+
+**Review the output and check:**
+1. **Army Composition** - Does the unit mix match the archetype's `unit_priority`?
+   - If archetype prioritizes SOLDIER, you should see mostly soldiers
+   - If archetype prioritizes TANK, you should see tanks being built
+   - If archetype prioritizes LUMBERJACK, verify lumberjacks are in the build order
+2. **Build Order** - Does the initial build sequence align with the strategy?
+   - Aggressive archetypes should build combat units early
+   - Economy-focused archetypes should have more trees/gardeners
+3. **Production Rate** - Is the economy efficient?
+   - Check "Average build rate" in the output
+   - More gardeners/trees = higher long-term production
+
+**If the economy output doesn't match expectations:**
+1. Identify what's wrong (wrong units, wrong order, too slow, etc.)
+2. Modify the relevant Java files (usually Gardener.java or Archon.java)
+3. Re-compile and re-run the simulator
+4. Repeat until the economy matches the archetype's intent
+
+**DO NOT EXIT until the economy output aligns with the archetype strategy.**
+
 ## Output Summary
 
-After successful compilation, output:
+After successful compilation AND economy verification, output:
 
 ```
 ═══════════════════════════════════════════════════════════════════════════════
@@ -118,6 +146,17 @@ Key Changes Implemented:
 ✓ {change 1}
 ✓ {change 2}
 ✓ {change 3}
+
+Economy Simulation (3000 rounds):
+  Gardeners: {N}
+  Soldiers: {N}
+  Tanks: {N}
+  Lumberjacks: {N}
+  Scouts: {N}
+  Trees: {N}
+  Build Rate: {X.XX} units per 100 rounds
+
+Economy Assessment: {MATCHES ARCHETYPE / ADJUSTED}
 
 Compilation: SUCCESS
 ═══════════════════════════════════════════════════════════════════════════════
@@ -173,4 +212,5 @@ if (rc.canMove(toEnemy)) {
 - **Be creative** in your implementation
 - **Stay true** to the archetype's strategy
 - **Compile successfully** before exiting
+- **Run economy simulation** to verify unit output matches archetype expectations
 - **Package name** must be `{BOT}_v{N}`
