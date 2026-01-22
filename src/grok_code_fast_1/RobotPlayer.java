@@ -75,14 +75,14 @@ public strictfp class RobotPlayer {
                 rc.broadcast(0,(int)myLocation.x);
                 rc.broadcast(1,(int)myLocation.y);
 
-                // VP donation logic: aggressive after economy stabilizes for VP rush
+                // VP donation logic: moderate donation only when tanks are built (from round 600)
                 float bullets = rc.getTeamBullets();
                 int round = rc.getRoundNum();
                 if (round < 600) {
                     // Early: don't donate, focus on economy
-                } else if (round <= 1500) {
-                    // Mid: moderate donation
-                    if (bullets > 150) {
+                } else if (round <= 1800) {
+                    // Mid: moderate donation when tanks are built
+                    if (bullets > 200) {
                         rc.donate(bullets - 100);
                     }
                 } else {
@@ -102,7 +102,7 @@ public strictfp class RobotPlayer {
         }
     }
 
-   	static void runGardener() throws GameActionException {
+	static void runGardener() throws GameActionException {
         System.out.println("I'm a gardener!");
 
         // The code you want your robot to perform every round should be in this loop
@@ -310,7 +310,7 @@ public strictfp class RobotPlayer {
                 rc.move(dir.rotateRightDegrees(degreeOffset*currentCheck));
                 return true;
             }
-            // No move performed, try slightly further
+            // No move performed, so try slightly further
             currentCheck++;
         }
 

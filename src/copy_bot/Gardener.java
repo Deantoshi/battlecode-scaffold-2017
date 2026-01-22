@@ -15,18 +15,23 @@ public class Gardener {
         System.out.println("Gardener bullets: " + rc.getTeamBullets());
         System.out.println("Build counter: " + buildCounter);
 
-        // Dynamic build order based on round for hybrid strategy
+        // Economic Timing: Delay military builds, focus on GARDENER and trees first 600 rounds. Minimal army until late, then all-in on VP.
         int round = rc.getRoundNum();
         RobotType[] currentBuildOrder;
-        if (round < 500) {
-            // Early defensive: prioritize LUMBERJACK and TANK
-            currentBuildOrder = new RobotType[]{RobotType.LUMBERJACK, RobotType.TANK};
-        } else if (round < 1000) {
-            // Mid game: mixed defense and attack
-            currentBuildOrder = new RobotType[]{RobotType.LUMBERJACK, RobotType.TANK, RobotType.SOLDIER, RobotType.SCOUT};
+        if (round < 600) {
+            // Early: delay military builds, occasional LUMBERJACK for clearing
+            if (buildCounter % 2 == 0) {
+                currentBuildOrder = new RobotType[]{RobotType.LUMBERJACK};
+            } else {
+                // Focus on trees, skip military builds
+                return;
+            }
+        } else if (round <= 2000) {
+            // Mid: build priority LUMBERJACK, TANK, SOLDIER
+            currentBuildOrder = new RobotType[]{RobotType.LUMBERJACK, RobotType.TANK, RobotType.SOLDIER};
         } else {
-            // Late game: focus on army push
-            currentBuildOrder = new RobotType[]{RobotType.SOLDIER, RobotType.TANK, RobotType.SOLDIER, RobotType.SCOUT};
+            // Late: all-in on VP, no more robot builds
+            return;
         }
 
         int orderLength = currentBuildOrder.length;

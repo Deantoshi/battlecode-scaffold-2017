@@ -6,9 +6,9 @@ public strictfp class RobotPlayer {
     static int gardenersHired = 0;
 
     /**
-       * run() is the method that is called when a robot is instantiated in the Battlecode world.
-       * If this method returns, the robot dies!
-       **/
+        * run() is the method that is called when a robot is instantiated in the Battlecode world.
+        * If this method returns, the robot dies!
+        **/
     @SuppressWarnings("unused")
     public static void run(RobotController rc) throws GameActionException {
 
@@ -75,19 +75,21 @@ public strictfp class RobotPlayer {
                 rc.broadcast(0,(int)myLocation.x);
                 rc.broadcast(1,(int)myLocation.y);
 
-                // VP donation logic: adjust for hybrid strategy
+                // VP donation logic: aggressive after economy stabilizes for VP rush
                 float bullets = rc.getTeamBullets();
-                if (rc.getRoundNum() <= 1000) {
-                    // Early: keep reserve
-                    if (bullets > 200) {
+                int round = rc.getRoundNum();
+                if (round < 600) {
+                    // Early: don't donate, focus on economy
+                } else if (round <= 1500) {
+                    // Mid: moderate donation
+                    if (bullets > 150) {
                         rc.donate(bullets - 100);
                     }
                 } else {
-                    // Late: aggressive donation if behind (simplified: if bullets low)
-                    if (bullets > 300) {
-                        rc.donate(bullets - 200); // donate more
+                    // Late: aggressive donation for VP rush
+                    if (bullets > 50) {
+                        rc.donate(bullets - 0);
                     }
-                    // If ahead, keep building army, less donation
                 }
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
@@ -100,7 +102,7 @@ public strictfp class RobotPlayer {
         }
     }
 
-  	static void runGardener() throws GameActionException {
+   	static void runGardener() throws GameActionException {
         System.out.println("I'm a gardener!");
 
         // The code you want your robot to perform every round should be in this loop
@@ -258,33 +260,33 @@ public strictfp class RobotPlayer {
     }
 
     /**
-       * Returns a random Direction
-       * @return a random Direction
-       */
+        * Returns a random Direction
+        * @return a random Direction
+        */
     static Direction randomDirection() {
         return new Direction((float)Math.random() * 2 * (float)Math.PI);
     }
 
     /**
-       * Attempts to move in a given direction, while avoiding small obstacles directly in the path.
-       *
-       * @param dir The intended direction of movement
-       * @return true if a move was performed
-       * @throws GameActionException
-       */
+        * Attempts to move in a given direction, while avoiding small obstacles directly in the path.
+        *
+        * @param dir The intended direction of movement
+        * @return true if a move was performed
+        * @throws GameActionException
+        */
     static boolean tryMove(Direction dir) throws GameActionException {
         return tryMove(dir,20,3);
     }
 
     /**
-       * Attempts to move in a given direction, while avoiding small obstacles direction in the path.
-       *
-       * @param dir The intended direction of movement
-       * @param degreeOffset Spacing between checked directions (degrees)
-       * @param checksPerSide Number of extra directions checked on each side, if intended direction was unavailable
-       * @return true if a move was performed
-       * @throws GameActionException
-       */
+        * Attempts to move in a given direction, while avoiding small obstacles direction in the path.
+        *
+        * @param dir The intended direction of movement
+        * @param degreeOffset Spacing between checked directions (degrees)
+        * @param checksPerSide Number of extra directions checked on each side, if intended direction was unavailable
+        * @return true if a move was performed
+        * @throws GameActionException
+        */
     static boolean tryMove(Direction dir, float degreeOffset, int checksPerSide) throws GameActionException {
 
         // First, try intended direction
