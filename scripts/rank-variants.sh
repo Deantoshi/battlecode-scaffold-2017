@@ -1,5 +1,5 @@
 #!/bin/bash
-# rank-variants.sh - Analyzes match results and ranks variants
+# rank-variants.sh - Analyzes match results, ranks variants, and promotes winner
 #
 # Usage: ./scripts/rank-variants.sh <bot> <opponent> <map>
 #
@@ -8,6 +8,7 @@
 #   All other cases:     SCORE = 10000 - rounds + (enemy_kills * 10) + (bullets_generated / 100)
 #
 # Output: src/<bot>/.state/variant-results.json
+# Action: Promotes winning variant to original if it scores higher
 
 set -e
 
@@ -265,3 +266,79 @@ PYEOF
 
 echo ""
 echo "Results saved to: $RESULTS_FILE"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PROMOTE WINNER IF APPLICABLE
+# ═══════════════════════════════════════════════════════════════════════════════
+
+SHOULD_PROMOTE=$(python3 -c "
+import json
+with open('$RESULTS_FILE', 'r') as f:
+    data = json.load(f)
+print('YES' if data.get('should_promote', False) else 'NO')
+")
+
+WINNER=$(python3 -c "
+import json
+with open('$RESULTS_FILE', 'r') as f:
+    data = json.load(f)
+print(data.get('winner', 'original'))
+")
+
+if [[ "$SHOULD_PROMOTE" == "YES" && "$WINNER" != "original" ]]; then
+    echo ""
+    echo "Promoting $WINNER to original..."
+
+    WINNER_DIR="src/${BOT}_${WINNER}"
+    if [[ ! -d "$WINNER_DIR" ]]; then
+        echo "Error: Winner folder not found: $WINNER_DIR"
+        exit 1
+    fi
+
+    # Backup state directory
+    if [[ -d "$STATE_DIR" ]]; then
+        mv "$STATE_DIR" "/tmp/${BOT}_state_backup_$$"
+    fi
+
+    # Copy winner Java files to original (excluding .state)
+    for java_file in "$WINNER_DIR"/*.java; do
+        if [[ -f "$java_file" ]]; then
+            filename=$(basename "$java_file")
+            # Update package declaration back to original
+            sed "s/^package ${BOT}_${WINNER};/package ${BOT};/" "$java_file" > "src/$BOT/$filename"
+        fi
+    done
+
+    # Restore state directory
+    if [[ -d "/tmp/${BOT}_state_backup_$$" ]]; then
+        mv "/tmp/${BOT}_state_backup_$$" "$STATE_DIR"
+    fi
+
+    echo "✓ Promoted $WINNER to $BOT"
+
+    # Record promotion in history
+    HISTORY_FILE="$STATE_DIR/promotion-history.txt"
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - Promoted $WINNER to original" >> "$HISTORY_FILE"
+else
+    echo ""
+    echo "No promotion needed (original is best or tied)"
+fi
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CLEANUP
+# ═══════════════════════════════════════════════════════════════════════════════
+
+echo ""
+echo "Cleaning up variant folders and match files..."
+
+for v in $(seq 1 $NUM_VARIANTS); do
+    if [[ -d "src/${BOT}_v${v}" ]]; then
+        rm -rf "src/${BOT}_v${v}"
+    fi
+done
+
+rm -f "$MATCHES_DIR"/${BOT}*.bc17 2>/dev/null || true
+rm -f "$MATCHES_DIR"/${BOT}*.db 2>/dev/null || true
+rm -f "$MATCHES_DIR"/${BOT}*.log 2>/dev/null || true
+
+echo "✓ Cleanup complete"

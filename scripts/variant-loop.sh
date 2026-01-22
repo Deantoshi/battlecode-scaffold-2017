@@ -192,9 +192,9 @@ else:
     echo ""
 
     # ─────────────────────────────────────────────────────────────────────────────
-    # Step 4: Rank results and determine winner
+    # Step 4: Rank results, promote winner, cleanup
     # ─────────────────────────────────────────────────────────────────────────────
-    printf '%s\n' "${BOLD}${GREEN}[STEP 4] Ranking results${NC}"
+    printf '%s\n' "${BOLD}${GREEN}[STEP 4] Ranking results and promoting winner${NC}"
     ./scripts/rank-variants.sh "$BOT" "$OPPONENT" "$MAP"
 
     # Read results
@@ -230,14 +230,7 @@ print(data.get('goal_met', 'NO'))
     printf '%s\n' "${CYAN}Winner: $WINNER (Score: $WINNER_SCORE)${NC}"
 
     # ─────────────────────────────────────────────────────────────────────────────
-    # Step 5: Promote winner if better than original
-    # ─────────────────────────────────────────────────────────────────────────────
-    printf '%s\n' "${BOLD}${GREEN}[STEP 5] Promoting winner if applicable${NC}"
-    ./scripts/promote-winner.sh "$BOT"
-    echo ""
-
-    # ─────────────────────────────────────────────────────────────────────────────
-    # Step 6: Check if goal achieved
+    # Step 5: Check if goal achieved
     # ─────────────────────────────────────────────────────────────────────────────
     if [[ "$GOAL_MET" == "YES" ]]; then
         printf '%s\n' "${BOLD}${GREEN}"
