@@ -5,7 +5,7 @@
 #
 # Scoring:
 #   Win in ≤1500 rounds: SCORE = 20000 - rounds (goal met - pure speed)
-#   All other cases:     SCORE = 10000 - rounds + (enemy_kills * 10) + (bullets_generated / 100)
+#   All other cases:     SCORE = 10000 - rounds + (enemy_kills * 10) + (victory_points * 10) + (bullets_generated / 100)
 #
 # Output: src/<bot>/.state/variant-results.json
 # Action: Promotes winning variant to original if it scores higher
@@ -56,6 +56,7 @@ def analyze_match(match_name):
         'rounds': 3000,
         'enemy_kills': 0,
         'bullets_generated': 0,
+        'victory_points': 0,
         'parsed': False,
         'source': 'none'
     }
@@ -99,6 +100,16 @@ def analyze_match(match_name):
             except:
                 result['bullets_generated'] = 0
 
+            # Get Team A victory points
+            try:
+                vp_row = conn.execute("""
+                    SELECT COALESCE(MAX(team_a_victory_points), 0) as vp
+                    FROM snapshots
+                """).fetchone()
+                result['victory_points'] = int(vp_row['vp']) if vp_row else 0
+            except:
+                result['victory_points'] = 0
+
             conn.close()
 
             if winner:
@@ -141,21 +152,22 @@ def analyze_match(match_name):
     return result
 
 
-def calculate_score(won, rounds, enemy_kills=0, bullets_generated=0):
+def calculate_score(won, rounds, enemy_kills=0, bullets_generated=0, victory_points=0):
     """Calculate score for ranking.
 
     Scoring:
       Win in ≤1500 rounds: 20000 - rounds (goal met - pure speed)
-      All other cases:     10000 - rounds + (kills * 10) + (bullets / 100)
+      All other cases:     10000 - rounds + (kills * 10) + (bullets / 100) + (vp * 10)
     """
     if won and rounds <= 1500:
         # Goal met - pure round optimization
         return 20000 - rounds
     else:
-        # All other cases - reward kills and economy
+        # All other cases - reward kills, economy, and victory points
         kill_bonus = enemy_kills * 10
         econ_bonus = int(bullets_generated / 100)
-        return 10000 - rounds + kill_bonus + econ_bonus
+        vp_bonus = victory_points * 10
+        return 10000 - rounds + kill_bonus + econ_bonus + vp_bonus
 
 
 # Collect results
@@ -167,7 +179,8 @@ score = calculate_score(
     match_result['won'],
     match_result['rounds'],
     match_result['enemy_kills'],
-    match_result['bullets_generated']
+    match_result['bullets_generated'],
+    match_result['victory_points']
 )
 results.append({
     'name': 'original',
@@ -175,6 +188,7 @@ results.append({
     'rounds': match_result['rounds'],
     'enemy_kills': match_result['enemy_kills'],
     'bullets_generated': match_result['bullets_generated'],
+    'victory_points': match_result['victory_points'],
     'score': score,
     'source': match_result['source']
 })
@@ -187,7 +201,8 @@ for v in range(1, num_variants + 1):
             match_result['won'],
             match_result['rounds'],
             match_result['enemy_kills'],
-            match_result['bullets_generated']
+            match_result['bullets_generated'],
+            match_result['victory_points']
         )
         results.append({
             'name': f'v{v}',
@@ -195,6 +210,7 @@ for v in range(1, num_variants + 1):
             'rounds': match_result['rounds'],
             'enemy_kills': match_result['enemy_kills'],
             'bullets_generated': match_result['bullets_generated'],
+            'victory_points': match_result['victory_points'],
             'score': score,
             'source': match_result['source']
         })
@@ -240,13 +256,14 @@ print("═" * 80)
 print("RESULTS TABLE")
 print("═" * 80)
 print("")
-print(f"{'Variant':<10} {'Won':<5} {'Rounds':<7} {'Kills':<6} {'Bullets':<9} {'Score':<8}")
-print("-" * 55)
+print(f"{'Variant':<10} {'Won':<5} {'Rounds':<7} {'Kills':<6} {'VP':<5} {'Bullets':<9} {'Score':<8}")
+print("-" * 60)
 for r in results:
     won_str = "YES" if r['won'] else "NO"
     kills = r.get('enemy_kills', 0)
+    vp = r.get('victory_points', 0)
     bullets = r.get('bullets_generated', 0)
-    print(f"{r['name']:<10} {won_str:<5} {r['rounds']:<7} {kills:<6} {bullets:<9} {r['score']:<8}")
+    print(f"{r['name']:<10} {won_str:<5} {r['rounds']:<7} {kills:<6} {vp:<5} {bullets:<9} {r['score']:<8}")
 
 print("")
 print("═" * 80)
@@ -259,7 +276,7 @@ else:
 print("")
 print("Scoring formula:")
 print("  Win ≤1500 rounds:  20000 - rounds")
-print("  All other cases:   10000 - rounds + (kills*10) + (bullets/100)")
+print("  All other cases:   10000 - rounds + (kills*10) + (vp*10) + (bullets/100)")
 print("═" * 80)
 
 PYEOF
