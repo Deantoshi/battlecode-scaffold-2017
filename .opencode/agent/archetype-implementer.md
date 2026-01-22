@@ -105,11 +105,12 @@ After compilation succeeds, run the economy simulator to verify your implementat
 python3 simulate_economy.py src/{BOT}_v{N}/
 ```
 
-**Review the output and check:**
+**CRITICAL Review the output and check:**
 1. **Army Composition** - Does the unit mix match the archetype's `unit_priority`?
    - If archetype prioritizes SOLDIER, you should see mostly soldiers
    - If archetype prioritizes TANK, you should see tanks being built
    - If archetype prioritizes LUMBERJACK, verify lumberjacks are in the build order
+   - **WARNING:** `Initial Build Order: []` DOES NOT mean that units will be created. You MUST review the `ARMY COMPOSITION:` section to ensure it builds the units you intended.
 2. **Build Order** - Does the initial build sequence align with the strategy?
    - Aggressive archetypes should build combat units early
    - Economy-focused archetypes should have more trees/gardeners
@@ -117,9 +118,10 @@ python3 simulate_economy.py src/{BOT}_v{N}/
    - Check "Average build rate" in the output
    - More gardeners/trees = higher long-term production
 
-**If the economy output doesn't match expectations:**
+**CRITICAL If the economy output doesn't match expectations:**
 1. Identify what's wrong (wrong units, wrong order, too slow, etc.)
 2. Modify the relevant Java files (usually Gardener.java or Archon.java)
+   - If `ARMY COMPOSITION:` is wrong or missing intended units, redo your Gardener/Archon logic for spawning units or donating to VP to ensure the economy builds what you need.
 3. Re-compile and re-run the simulator
 4. Repeat until the economy matches the archetype's intent
 
