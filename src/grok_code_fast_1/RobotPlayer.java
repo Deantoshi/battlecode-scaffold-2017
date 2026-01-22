@@ -6,9 +6,9 @@ public strictfp class RobotPlayer {
     static int gardenersHired = 0;
 
     /**
-     * run() is the method that is called when a robot is instantiated in the Battlecode world.
-     * If this method returns, the robot dies!
-     **/
+      * run() is the method that is called when a robot is instantiated in the Battlecode world.
+      * If this method returns, the robot dies!
+      **/
     @SuppressWarnings("unused")
     public static void run(RobotController rc) throws GameActionException {
 
@@ -135,8 +135,8 @@ public strictfp class RobotPlayer {
                 // Plant trees
                 Gardener.plantTree();
 
-                // Move randomly
-                tryMove(randomDirection());
+                // Move towards enemy center for early pressure
+                Nav.tryMoveBug(Nav.enemyCenter);
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();
@@ -155,15 +155,15 @@ public strictfp class RobotPlayer {
         // The code you want your robot to perform every round should be in this loop
         while (true) {
 
-            // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
+            // Try/catch blocks stop unhandled exceptions, which cause your robot to perform this loop again
             try {
                 MapLocation myLocation = rc.getLocation();
 
                 // Fire
                 Soldier.fire();
 
-                // Move randomly, minimal aggression
-                tryMove(randomDirection());
+                // Move towards enemy center for coordinated pushes
+                Nav.tryMoveBug(Nav.enemyCenter);
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();
@@ -182,7 +182,7 @@ public strictfp class RobotPlayer {
         // The code you want your robot to perform every round should be in this loop
         while (true) {
 
-            // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
+            // Try/catch blocks stop unhandled exceptions, which cause your robot to perform this loop again
             try {
                 MapLocation myLocation = rc.getLocation();
 
@@ -192,8 +192,8 @@ public strictfp class RobotPlayer {
                 // Fire at enemies
                 Tank.fire();
 
-                // Move randomly, minimal aggression
-                tryMove(randomDirection());
+                // Move towards enemy center for coordinated assaults
+                Nav.tryMoveBug(Nav.enemyCenter);
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();
@@ -212,7 +212,7 @@ public strictfp class RobotPlayer {
         // The code you want your robot to perform every round should be in this loop
         while (true) {
 
-            // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
+            // Try/catch blocks stop unhandled exceptions, which cause your robot to perform this loop again
             try {
 
                 // See if there are any enemy robots within striking range (distance 1 from lumberjack's radius)
@@ -222,20 +222,8 @@ public strictfp class RobotPlayer {
                     // Use strike() to hit all nearby robots!
                     rc.strike();
                 } else {
-                    // No close robots, so search for robots within sight radius
-                    robots = rc.senseNearbyRobots(-1,enemy);
-
-                    // If there is a robot, move towards it
-                    if(robots.length > 0) {
-                        MapLocation myLocation = rc.getLocation();
-                        MapLocation enemyLocation = robots[0].getLocation();
-                        Direction toEnemy = myLocation.directionTo(enemyLocation);
-
-                        tryMove(toEnemy);
-                    } else {
-                        // Move randomly
-                        tryMove(randomDirection());
-                    }
+                    // Move towards enemy center for coordinated pushes
+                    Nav.tryMoveBug(Nav.enemyCenter);
                 }
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
@@ -262,8 +250,8 @@ public strictfp class RobotPlayer {
                 // Fire
                 Scout.fire();
 
-                // Move randomly, minimal aggression
-                tryMove(randomDirection());
+                // Move towards enemy center for scouting and harassment
+                Nav.tryMoveBug(Nav.enemyCenter);
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();
@@ -276,33 +264,33 @@ public strictfp class RobotPlayer {
     }
 
     /**
-     * Returns a random Direction
-     * @return a random Direction
-     */
+      * Returns a random Direction
+      * @return a random Direction
+      */
     static Direction randomDirection() {
         return new Direction((float)Math.random() * 2 * (float)Math.PI);
     }
 
     /**
-     * Attempts to move in a given direction, while avoiding small obstacles directly in the path.
-     *
-     * @param dir The intended direction of movement
-     * @return true if a move was performed
-     * @throws GameActionException
-     */
+      * Attempts to move in a given direction, while avoiding small obstacles directly in the path.
+      *
+      * @param dir The intended direction of movement
+      * @return true if a move was performed
+      * @throws GameActionException
+      */
     static boolean tryMove(Direction dir) throws GameActionException {
         return tryMove(dir,20,3);
     }
 
     /**
-     * Attempts to move in a given direction, while avoiding small obstacles direction in the path.
-     *
-     * @param dir The intended direction of movement
-     * @param degreeOffset Spacing between checked directions (degrees)
-     * @param checksPerSide Number of extra directions checked on each side, if intended direction was unavailable
-     * @return true if a move was performed
-     * @throws GameActionException
-     */
+      * Attempts to move in a given direction, while avoiding small obstacles direction in the path.
+      *
+      * @param dir The intended direction of movement
+      * @param degreeOffset Spacing between checked directions (degrees)
+      * @param checksPerSide Number of extra directions checked on each side, if intended direction was unavailable
+      * @return true if a move was performed
+      * @throws GameActionException
+      */
     static boolean tryMove(Direction dir, float degreeOffset, int checksPerSide) throws GameActionException {
 
         // First, try intended direction

@@ -127,21 +127,78 @@ public class Nav {
 
     public static boolean tryMoveBug(MapLocation target) throws GameActionException {
         if (rc.getType() == RobotType.ARCHON) {
-            // Stay near spawn
-            if (rc.getLocation().distanceTo(spawnLoc) > 5) {
+            // Stay near spawn if early
+            if (rc.getRoundNum() < 100 && rc.getLocation().distanceTo(spawnLoc) > 5) {
                 return tryMove(rc.getLocation().directionTo(spawnLoc));
             } else {
-                return false;
+                return tryMove(rc.getLocation().directionTo(target));
             }
         } else {
-            // Original random movement for other units
-            for (int i = 0; i < 8; i++) {
-                Direction dir = new Direction((float) Math.random() * 2 * (float) Math.PI);
-                if (rc.canMove(dir)) {
-                    rc.move(dir);
+            // Coordinated movement with band navigation for assaults
+            MapLocation current = rc.getLocation();
+            if (current.distanceTo(target) < 1) return false; // close enough
+
+            int id = rc.getID();
+            boolean isFollowingWall = followingWall.getOrDefault(id, false);
+            Direction currentBugDir = bugDirection.get(id);
+
+            Direction toTarget = current.directionTo(target);
+            if (!isFollowingWall) {
+                if (hasTreeBand(current, target)) {
+                    // For Lanes map, try to navigate band by moving North or South
+                    if (rc.canMove(Direction.getSouth())) {
+                        rc.move(Direction.getSouth());
+                        return true;
+                    }
+                    if (rc.canMove(Direction.getNorth())) {
+                        rc.move(Direction.getNorth());
+                        return true;
+                    }
+                    // If not, find gap
+                    MapLocation gap = findBandGap(target);
+                    if (gap != null) {
+                        Direction toGap = current.directionTo(gap);
+                        if (rc.canMove(toGap)) {
+                            rc.move(toGap);
+                            return true;
+                        }
+                        return tryMove(toGap);
+                    } else {
+                        // fallback to random
+                        for (int i = 0; i < 8; i++) {
+                            Direction dir = new Direction((float) Math.random() * 2 * (float) Math.PI);
+                            if (rc.canMove(dir)) {
+                                rc.move(dir);
+                                return true;
+                            }
+                        }
+                    }
+                } else if (rc.canMove(toTarget)) {
+                    rc.move(toTarget);
                     return true;
+                } else {
+                    followingWall.put(id, true);
+                    bugDirection.put(id, toTarget.rotateLeftDegrees(90)); // follow left
                 }
             }
+
+            if (isFollowingWall) {
+                if (rc.canMove(currentBugDir)) {
+                    rc.move(currentBugDir);
+                    // check if can now move towards target
+                    MapLocation newLoc = current.add(currentBugDir);
+                    Direction newToTarget = newLoc.directionTo(target);
+                    if (rc.canMove(newToTarget)) {
+                        followingWall.put(id, false);
+                        bugDirection.remove(id);
+                    }
+                    return true;
+                } else {
+                    // rotate
+                    bugDirection.put(id, currentBugDir.rotateLeftDegrees(10));
+                }
+            }
+
             return false;
         }
     }

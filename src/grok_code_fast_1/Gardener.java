@@ -3,7 +3,9 @@ import battlecode.common.*;
 
 public class Gardener {
     static RobotController rc;
-    static int lumberjacksBuilt = 0;
+    static int lumberjacksBuilt = 0; // keep for tracking, but not limit
+    static int buildCounter = 0;
+    static RobotType[] buildOrder = {RobotType.LUMBERJACK, RobotType.SOLDIER, RobotType.TANK, RobotType.SCOUT};
 
     public static void init(RobotController rc) {
         Gardener.rc = rc;
@@ -11,21 +13,27 @@ public class Gardener {
 
     public static void buildRobot() throws GameActionException {
         System.out.println("Gardener bullets: " + rc.getTeamBullets());
-        System.out.println("Lumberjacks built: " + lumberjacksBuilt);
+        System.out.println("Build counter: " + buildCounter);
 
-        // Build lumberjacks for defense
-        if (lumberjacksBuilt < 50 && rc.getTeamBullets() >= 100) {
-            System.out.println("Attempting to build lumberjack");
+        int typeIndex = buildCounter % 4;
+        RobotType type = buildOrder[typeIndex];
+        int cost = type.bulletCost;
+
+        if (rc.getTeamBullets() >= cost && rc.isBuildReady()) {
+            System.out.println("Attempting to build " + type);
             for (int attempt = 0; attempt < 8; attempt++) {
                 Direction dir = Direction.getNorth().rotateLeftDegrees(attempt * 45);
-                if (rc.canBuildRobot(RobotType.LUMBERJACK, dir) && rc.isBuildReady()) {
-                    rc.buildRobot(RobotType.LUMBERJACK, dir);
-                    lumberjacksBuilt++;
-                    System.out.println("Built lumberjack successfully");
+                if (rc.canBuildRobot(type, dir)) {
+                    rc.buildRobot(type, dir);
+                    if (type == RobotType.LUMBERJACK) {
+                        lumberjacksBuilt++;
+                    }
+                    buildCounter++;
+                    System.out.println("Built " + type + " successfully");
                     return;
                 }
             }
-            System.out.println("Failed to build lumberjack in all attempts");
+            System.out.println("Failed to build " + type + " in all attempts");
         }
     }
 
