@@ -44,9 +44,15 @@ echo "Updating package declarations to 'copy_bot'..."
 for file in "$DEST_DIR"/*.java; do
     if [ -f "$file" ]; then
         # Replace package declaration (handles various package names)
-        sed -i '' "s/^package $SOURCE_NAME;/package copy_bot;/" "$file"
-        # Also handle cases where package might have different formatting
-        sed -i '' "s/^package  *[a-zA-Z_][a-zA-Z0-9_]*  *;/package copy_bot;/" "$file"
+        if sed --version >/dev/null 2>&1; then
+            sed -i "s/^package $SOURCE_NAME;/package copy_bot;/" "$file"
+            # Also handle cases where package might have different formatting
+            sed -i "s/^package  *[a-zA-Z_][a-zA-Z0-9_]*  *;/package copy_bot;/" "$file"
+        else
+            sed -i '' "s/^package $SOURCE_NAME;/package copy_bot;/" "$file"
+            # Also handle cases where package might have different formatting
+            sed -i '' "s/^package  *[a-zA-Z_][a-zA-Z0-9_]*  *;/package copy_bot;/" "$file"
+        fi
     fi
 done
 
