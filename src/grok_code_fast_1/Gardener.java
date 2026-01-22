@@ -15,8 +15,23 @@ public class Gardener {
         System.out.println("Gardener bullets: " + rc.getTeamBullets());
         System.out.println("Build counter: " + buildCounter);
 
-        int typeIndex = buildCounter % 4;
-        RobotType type = buildOrder[typeIndex];
+        // Dynamic build order based on round for hybrid strategy
+        int round = rc.getRoundNum();
+        RobotType[] currentBuildOrder;
+        if (round < 500) {
+            // Early defensive: prioritize LUMBERJACK and TANK
+            currentBuildOrder = new RobotType[]{RobotType.LUMBERJACK, RobotType.TANK};
+        } else if (round < 1000) {
+            // Mid game: mixed defense and attack
+            currentBuildOrder = new RobotType[]{RobotType.LUMBERJACK, RobotType.TANK, RobotType.SOLDIER, RobotType.SCOUT};
+        } else {
+            // Late game: focus on army push
+            currentBuildOrder = new RobotType[]{RobotType.SOLDIER, RobotType.TANK, RobotType.SOLDIER, RobotType.SCOUT};
+        }
+
+        int orderLength = currentBuildOrder.length;
+        int typeIndex = buildCounter % orderLength;
+        RobotType type = currentBuildOrder[typeIndex];
         int cost = type.bulletCost;
 
         if (rc.getTeamBullets() >= cost && rc.isBuildReady()) {

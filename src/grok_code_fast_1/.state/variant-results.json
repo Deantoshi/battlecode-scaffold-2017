@@ -1,0 +1,91 @@
+{
+  "winner": "v10",
+  "winner_score": 18808,
+  "winner_won": true,
+  "winner_rounds": 1192,
+  "goal_met": "YES",
+  "should_promote": true,
+  "original_score": 8893,
+  "results": [
+    {
+      "name": "v10",
+      "won": true,
+      "rounds": 1192,
+      "enemy_kills": 9,
+      "bullets_generated": 19298,
+      "victory_points": 0,
+      "score": 18808,
+      "source": "database"
+    },
+    {
+      "name": "v3",
+      "won": true,
+      "rounds": 1225,
+      "enemy_kills": 12,
+      "bullets_generated": 19577,
+      "victory_points": 0,
+      "score": 18775,
+      "source": "database"
+    },
+    {
+      "name": "original",
+      "won": true,
+      "rounds": 1503,
+      "enemy_kills": 17,
+      "bullets_generated": 22691,
+      "victory_points": 0,
+      "score": 8893,
+      "source": "database"
+    },
+    {
+      "name": "v5",
+      "won": true,
+      "rounds": 1601,
+      "enemy_kills": 8,
+      "bullets_generated": 20282,
+      "victory_points": 0,
+      "score": 8681,
+      "source": "database"
+    },
+    {
+      "name": "v9",
+      "won": true,
+      "rounds": 1601,
+      "enemy_kills": 8,
+      "bullets_generated": 20282,
+      "victory_points": 0,
+      "score": 8681,
+      "source": "database"
+    },
+    {
+      "name": "v4",
+      "won": true,
+      "rounds": 2226,
+      "enemy_kills": 25,
+      "bullets_generated": 34153,
+      "victory_points": 0,
+      "score": 8365,
+      "source": "database"
+    },
+    {
+      "name": "v8",
+      "won": true,
+      "rounds": 2999,
+      "enemy_kills": 2,
+      "bullets_generated": 5339,
+      "victory_points": 0,
+      "score": 7074,
+      "source": "database"
+    },
+    {
+      "name": "v2",
+      "won": true,
+      "rounds": 2999,
+      "enemy_kills": 4,
+      "bullets_generated": 299,
+      "victory_points": 0,
+      "score": 7043,
+      "source": "database"
+    }
+  ]
+}

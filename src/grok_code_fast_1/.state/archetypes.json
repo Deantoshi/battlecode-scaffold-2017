@@ -1,0 +1,144 @@
+{
+  "archetypes": [
+    {
+      "id": 1,
+      "name": "Soldier Rush",
+      "win_condition": "elimination",
+      "philosophy": "Focus on early game unit production to overwhelm the opponent before they can build defenses or economy.",
+      "key_changes": [
+        "Change Gardener.buildOrder to prioritize SOLDIER: RobotType.SOLDIER repeatedly, limiting other units to 1-2.",
+        "Modify Archon hiring to hire more Gardeners early: change limit from 20 to unlimited, but adjust movement to stay closer to spawn for faster expansion.",
+        "Increase Gardener build speed by reducing plantTree and waterTree calls, prioritizing buildRobot.",
+        "Alter Soldier movement to aggressive pursuit: modify Nav.tryMoveBug to always move directly towards enemy locations sensed."
+      ],
+      "unit_priority": ["SOLDIER", "SOLDIER", "GARDENER", "SOLDIER"],
+      "engagement_style": "Aggressive early pushes with direct rushes towards enemy positions, using all available firepower."
+    },
+    {
+      "id": 2,
+      "name": "VP Farmer",
+      "win_condition": "vp_rush",
+      "philosophy": "Maximize tree farming and bullet donation to achieve victory points quickly while minimal army defends.",
+      "key_changes": [
+        "Shift Gardener priority to tree planting and watering: call plantTree and waterTree before buildRobot.",
+        "Disable most unit building: modify buildOrder to only build one SOLDIER early, then focus on economy.",
+        "Increase Archon VP donation threshold: change from 100 to 0, donating all excess bullets immediately.",
+        "Modify Gardeners to stay in place after planting initial trees: remove tryMoveBug calls, make them stationary farms."
+      ],
+      "unit_priority": ["GARDENER", "GARDENER", "SOLDIER"],
+      "engagement_style": "Defensive positioning around tree farms, only engaging enemies that threaten the economy."
+    },
+    {
+      "id": 3,
+      "name": "Tank Fortress",
+      "win_condition": "hybrid",
+      "philosophy": "Build tank defenses around expanding tree farms to protect VP accumulation while capable of offense.",
+      "key_changes": [
+        "Prioritize TANK in buildOrder: start with LUMBERJACK, then TANK, then GARDENER repeats.",
+        "Add tank clustering around Archons: modify Tank run method to move towards nearest friendly Archon location from broadcasts.",
+        "Balance economy and defense: ensure Gardeners plant trees while Tanks position defensively.",
+        "Adjust Tank firing to focus on area damage at medium range to cover forts."
+      ],
+      "unit_priority": ["TANK", "GARDENER", "LUMBERJACK", "TANK"],
+      "engagement_style": "Static defensive positions with tanks protecting archons and gardeners, counter-attacking threats."
+    },
+    {
+      "id": 4,
+      "name": "Scout Harassment",
+      "win_condition": "elimination",
+      "philosophy": "Use fast, cheap Scouts to disrupt enemy economy by killing gardeners and archons early.",
+      "key_changes": [
+        "Change buildOrder to heavily favor SCOUT: prioritize SCOUT after initial LUMBERJACK.",
+        "Modify Scout movement to hunt specific targets: add logic to sense and move towards enemy Gardeners and Archons.",
+        "Increase Scout build frequency: make buildRobot cycle faster by removing delays in Gardener.",
+        "Add Scout avoidance of combat: scouts flee if outnumbered, focus on harassment."
+      ],
+      "unit_priority": ["SCOUT", "LUMBERJACK", "SCOUT", "GARDENER"],
+      "engagement_style": "Hit-and-run tactics, targeting vulnerable economic units and fleeing from strong defenses."
+    },
+    {
+      "id": 5,
+      "name": "Lumberjack Blitz",
+      "win_condition": "elimination",
+      "philosophy": "Rapid forest clearing and pathing to enable fast assaults through lanes or obstacles.",
+      "key_changes": [
+        "Prioritize LUMBERJACK in buildOrder: start with multiple LUMBERJACKs to clear paths.",
+        "Modify Lumberjack run to focus on chopping trees towards enemy center.",
+        "Integrate pathfinding: use Nav.findBandGap actively in movement to exploit map features like Lanes.",
+        "After clearing, have Lumberjacks escort Soldiers towards enemy base."
+      ],
+      "unit_priority": ["LUMBERJACK", "LUMBERJACK", "SOLDIER", "LUMBERJACK"],
+      "engagement_style": "Aggressive path clearing and direct assaults, using strikes against enemies and chops for mobility."
+    },
+    {
+      "id": 6,
+      "name": "Balanced Macro",
+      "win_condition": "hybrid",
+      "philosophy": "Maintain balanced unit composition and steady expansion for mid-game adaptability.",
+      "key_changes": [
+        "Keep standard buildOrder but adjust proportions: more Gardeners for economy, balanced army.",
+        "Add macro management: Gardeners build army when VP cost rises, focus economy early.",
+        "Modify Archon movement: stay near base until sufficient army built, then push with Nav.tryMoveBug.",
+        "Balance Soldier and Tank roles: Soldiers for mobility, Tanks for anchor points."
+      ],
+      "unit_priority": ["LUMBERJACK", "SOLDIER", "TANK", "GARDENER"],
+      "engagement_style": "Coordinated pushes with mixed units, adapting to enemy composition and map control."
+    },
+    {
+      "id": 7,
+      "name": "Early Pressure",
+      "win_condition": "elimination",
+      "philosophy": "Constant early aggression to prevent opponent from establishing economy or defenses.",
+      "key_changes": [
+        "Speed up build cycles: reduce checks in buildRobot, build as soon as possible.",
+        "Modify all units to move aggressively early: change Soldier, Tank, Scout to prioritize movement towards enemy.",
+        "Limit tree planting: have Gardeners build units instead of planting until round 200.",
+        "Disable VP donation until late game: keep bullets for army."
+      ],
+      "unit_priority": ["SOLDIER", "SOLDIER", "LUMBERJACK", "TANK"],
+      "engagement_style": "All-in rushes and harassment from multiple directions, overwhelming with numbers."
+    },
+    {
+      "id": 8,
+      "name": "Economic Scaling",
+      "win_condition": "vp_rush",
+      "philosophy": "Invest heavily in tree farming early, scale VP donations as costs increase.",
+      "key_changes": [
+        "Increase tree farming: double plantTree calls in Gardener loop.",
+        "Delay army building: build army only after VP cost > certain threshold.",
+        "Optimize watering: prioritize watering lowest health trees first.",
+        "Cluster Gardeners: modify movement to group Gardeners for larger farms."
+      ],
+      "unit_priority": ["GARDENER", "GARDENER", "GARDENER", "SOLDIER"],
+      "engagement_style": "Passive defense with minimal army, only attacking threats to farms."
+    },
+    {
+      "id": 9,
+      "name": "Roaming Assault",
+      "win_condition": "elimination",
+      "philosophy": "Mobile army that roams the map, hunting down enemy units and avoiding fortified positions.",
+      "key_changes": [
+        "Favor mobile units: SCOUT and SOLDIER priority in buildOrder.",
+        "Modify movement to roam: add random offsets to Nav.enemyCenter target.",
+        "Use Scouts for scouting: broadcast enemy positions to coordinate roams.",
+        "Engage opportunistically: attack when advantage, flee otherwise."
+      ],
+      "unit_priority": ["SCOUT", "SOLDIER", "SCOUT", "TANK"],
+      "engagement_style": "Nomadic warfare, striking vulnerable groups and retreating to safe areas."
+    },
+    {
+      "id": 10,
+      "name": "Late Game Dominance",
+      "win_condition": "hybrid",
+      "philosophy": "Turtle early game, survive with defenses, then scale economy and army for late domination.",
+      "key_changes": [
+        "Early defensive build: prioritize LUMBERJACK and TANK for protection.",
+        "Scale based on round: after round 1000, switch to VP focus if behind, army push if ahead.",
+        "Stationary Archons: remove Archon movement until late game.",
+        "Dynamic buildOrder: change buildOrder array based on round number in Gardener."
+      ],
+      "unit_priority": ["LUMBERJACK", "TANK", "GARDENER", "SOLDIER"],
+      "engagement_style": "Defensive early, transitioning to aggressive pushes or VP rushes as game progresses."
+    }
+  ]
+}

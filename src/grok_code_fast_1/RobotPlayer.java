@@ -70,16 +70,18 @@ public strictfp class RobotPlayer {
                 // Broadcast gardeners hired
                 rc.broadcast(2, gardenersHired);
 
-                // Move
-                RobotInfo[] enemies = rc.senseNearbyRobots(10, rc.getTeam().opponent());
-                if (enemies.length > 0) {
-                    System.out.println("Archon fleeing from " + enemies.length + " enemies");
-                    MapLocation enemyLoc = enemies[0].location;
-                    Direction away = rc.getLocation().directionTo(enemyLoc).opposite();
-                    tryMove(away);
-                } else {
-                    MapLocation target = (gardenersHired >= 2) ? Nav.enemyCenter : spawnLoc;
-                    Nav.tryMoveBug(target);
+                // Move - stationary until late game
+                if (rc.getRoundNum() > 1000) {
+                    RobotInfo[] enemies = rc.senseNearbyRobots(10, rc.getTeam().opponent());
+                    if (enemies.length > 0) {
+                        System.out.println("Archon fleeing from " + enemies.length + " enemies");
+                        MapLocation enemyLoc = enemies[0].location;
+                        Direction away = rc.getLocation().directionTo(enemyLoc).opposite();
+                        tryMove(away);
+                    } else {
+                        MapLocation target = (gardenersHired >= 2) ? Nav.enemyCenter : spawnLoc;
+                        Nav.tryMoveBug(target);
+                    }
                 }
 
                 // Broadcast archon's location for other robots on the team to know
@@ -87,10 +89,19 @@ public strictfp class RobotPlayer {
                 rc.broadcast(0,(int)myLocation.x);
                 rc.broadcast(1,(int)myLocation.y);
 
-                // VP donation logic: donate all bullets over 100
-                if (rc.getTeamBullets() > 100) {
-                    float donateAmount = rc.getTeamBullets() - 100;
-                    rc.donate(donateAmount);
+                // VP donation logic: adjust for hybrid strategy
+                float bullets = rc.getTeamBullets();
+                if (rc.getRoundNum() <= 1000) {
+                    // Early: keep reserve
+                    if (bullets > 200) {
+                        rc.donate(bullets - 100);
+                    }
+                } else {
+                    // Late: aggressive donation if behind (simplified: if bullets low)
+                    if (bullets > 300) {
+                        rc.donate(bullets - 200); // donate more
+                    }
+                    // If ahead, keep building army, less donation
                 }
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
@@ -103,7 +114,7 @@ public strictfp class RobotPlayer {
         }
     }
 
-	static void runGardener() throws GameActionException {
+ 	static void runGardener() throws GameActionException {
         System.out.println("I'm a gardener!");
 
         // The code you want your robot to perform every round should be in this loop
