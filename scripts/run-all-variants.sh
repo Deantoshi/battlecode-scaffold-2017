@@ -56,34 +56,73 @@ run_match() {
     fi
 }
 
-# Array to track PIDs for parallel execution
+# Parallelism limit - only run this many matches at once
+MAX_PARALLEL=${MAX_PARALLEL:-2}
+
+# Arrays to track PIDs for parallel execution
 declare -a PIDS=()
 declare -a MATCH_NAMES=()
+declare -a ALL_NAMES=()
+FAILED=0
+
+# Function to wait for a slot to become available
+wait_for_slot() {
+    while [[ ${#PIDS[@]} -ge $MAX_PARALLEL ]]; do
+        # Wait for any job to finish
+        for i in "${!PIDS[@]}"; do
+            pid="${PIDS[$i]}"
+            if ! kill -0 "$pid" 2>/dev/null; then
+                # Process finished, check exit status
+                if wait "$pid"; then
+                    echo "  ✓ ${MATCH_NAMES[$i]} completed"
+                else
+                    echo "  ✗ ${MATCH_NAMES[$i]} failed"
+                    FAILED=$((FAILED + 1))
+                fi
+                # Remove from arrays
+                unset 'PIDS[i]'
+                unset 'MATCH_NAMES[i]'
+                # Reindex arrays
+                PIDS=("${PIDS[@]}")
+                MATCH_NAMES=("${MATCH_NAMES[@]}")
+                return
+            fi
+        done
+        sleep 0.5
+    done
+}
+
+# Function to start a match with parallelism control
+start_match() {
+    local team_a="$1"
+    local match_name="$2"
+    local display_name="$3"
+
+    wait_for_slot
+    echo "Starting: $display_name ($team_a vs $OPPONENT)"
+    run_match "$team_a" "$OPPONENT" "$MAP" "$match_name" &
+    PIDS+=($!)
+    MATCH_NAMES+=("$display_name")
+    ALL_NAMES+=("$display_name")
+}
 
 # Run original bot
-echo "Starting: original ($BOT vs $OPPONENT)"
-run_match "$BOT" "$OPPONENT" "$MAP" "${BOT}_original" &
-PIDS+=($!)
-MATCH_NAMES+=("original")
+start_match "$BOT" "${BOT}_original" "original"
 
 # Run all variants
 for v in $(seq 1 $NUM_VARIANTS); do
     VARIANT="${BOT}_v${v}"
     if [[ -d "src/$VARIANT" ]]; then
-        echo "Starting: v$v ($VARIANT vs $OPPONENT)"
-        run_match "$VARIANT" "$OPPONENT" "$MAP" "${BOT}_v${v}" &
-        PIDS+=($!)
-        MATCH_NAMES+=("v$v")
+        start_match "$VARIANT" "${BOT}_v${v}" "v$v"
     else
         echo "Skipping: v$v (folder not found)"
     fi
 done
 
 echo ""
-echo "Waiting for ${#PIDS[@]} matches to complete..."
+echo "Waiting for remaining matches to complete..."
 
-# Wait for all matches and report status
-FAILED=0
+# Wait for remaining matches
 for i in "${!PIDS[@]}"; do
     pid="${PIDS[$i]}"
     name="${MATCH_NAMES[$i]}"
