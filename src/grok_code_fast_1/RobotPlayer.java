@@ -6,9 +6,9 @@ public strictfp class RobotPlayer {
     static int gardenersHired = 0;
 
     /**
-      * run() is the method that is called when a robot is instantiated in the Battlecode world.
-      * If this method returns, the robot dies!
-      **/
+       * run() is the method that is called when a robot is instantiated in the Battlecode world.
+       * If this method returns, the robot dies!
+       **/
     @SuppressWarnings("unused")
     public static void run(RobotController rc) throws GameActionException {
 
@@ -70,20 +70,6 @@ public strictfp class RobotPlayer {
                 // Broadcast gardeners hired
                 rc.broadcast(2, gardenersHired);
 
-                // Move - stationary until late game
-                if (rc.getRoundNum() > 1000) {
-                    RobotInfo[] enemies = rc.senseNearbyRobots(10, rc.getTeam().opponent());
-                    if (enemies.length > 0) {
-                        System.out.println("Archon fleeing from " + enemies.length + " enemies");
-                        MapLocation enemyLoc = enemies[0].location;
-                        Direction away = rc.getLocation().directionTo(enemyLoc).opposite();
-                        tryMove(away);
-                    } else {
-                        MapLocation target = (gardenersHired >= 2) ? Nav.enemyCenter : spawnLoc;
-                        Nav.tryMoveBug(target);
-                    }
-                }
-
                 // Broadcast archon's location for other robots on the team to know
                 MapLocation myLocation = rc.getLocation();
                 rc.broadcast(0,(int)myLocation.x);
@@ -114,13 +100,13 @@ public strictfp class RobotPlayer {
         }
     }
 
- 	static void runGardener() throws GameActionException {
+  	static void runGardener() throws GameActionException {
         System.out.println("I'm a gardener!");
 
         // The code you want your robot to perform every round should be in this loop
         while (true) {
 
-            // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
+            // Try/catch blocks stop unhandled exceptions, which cause your robot to perform this loop again
             try {
 
                 // Listen for home archon's location
@@ -145,9 +131,6 @@ public strictfp class RobotPlayer {
 
                 // Plant trees
                 Gardener.plantTree();
-
-                // Move towards enemy center for early pressure
-                Nav.tryMoveBug(Nav.enemyCenter);
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();
@@ -203,8 +186,8 @@ public strictfp class RobotPlayer {
                 // Fire at enemies
                 Tank.fire();
 
-                // Move towards enemy center for coordinated assaults
-                Nav.tryMoveBug(Nav.enemyCenter);
+                // Move to defensive position around base
+                Tank.defensiveMove();
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();
@@ -275,33 +258,33 @@ public strictfp class RobotPlayer {
     }
 
     /**
-      * Returns a random Direction
-      * @return a random Direction
-      */
+       * Returns a random Direction
+       * @return a random Direction
+       */
     static Direction randomDirection() {
         return new Direction((float)Math.random() * 2 * (float)Math.PI);
     }
 
     /**
-      * Attempts to move in a given direction, while avoiding small obstacles directly in the path.
-      *
-      * @param dir The intended direction of movement
-      * @return true if a move was performed
-      * @throws GameActionException
-      */
+       * Attempts to move in a given direction, while avoiding small obstacles directly in the path.
+       *
+       * @param dir The intended direction of movement
+       * @return true if a move was performed
+       * @throws GameActionException
+       */
     static boolean tryMove(Direction dir) throws GameActionException {
         return tryMove(dir,20,3);
     }
 
     /**
-      * Attempts to move in a given direction, while avoiding small obstacles direction in the path.
-      *
-      * @param dir The intended direction of movement
-      * @param degreeOffset Spacing between checked directions (degrees)
-      * @param checksPerSide Number of extra directions checked on each side, if intended direction was unavailable
-      * @return true if a move was performed
-      * @throws GameActionException
-      */
+       * Attempts to move in a given direction, while avoiding small obstacles direction in the path.
+       *
+       * @param dir The intended direction of movement
+       * @param degreeOffset Spacing between checked directions (degrees)
+       * @param checksPerSide Number of extra directions checked on each side, if intended direction was unavailable
+       * @return true if a move was performed
+       * @throws GameActionException
+       */
     static boolean tryMove(Direction dir, float degreeOffset, int checksPerSide) throws GameActionException {
 
         // First, try intended direction
