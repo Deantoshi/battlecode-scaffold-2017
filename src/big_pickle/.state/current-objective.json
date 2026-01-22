@@ -1,0 +1,13 @@
+{
+  "name": "defend-trees-from-lumberjacks",
+  "description": "Protect bullet trees from enemy lumberjack destruction",
+  "blocking_issue": "We're losing 91% of our trees (235/257) to lumberjacks, destroying our economy and tanking K/D ratio",
+  "how_this_helps": "Defending trees preserves economy for faster unit production, prevents unit loss penalties, and enables victory in ≤1500 rounds instead of 2999",
+  "metric_path": "trees_at_round.500.A",
+  "operator": ">=",
+  "threshold": 15,
+  "max_attempts": 4,
+  "attempts": 3,
+  "best_result": 0,
+  "created_iteration": 5
+}

@@ -328,5 +328,35 @@
     "decomposed_from": "build-tanks",
     "completed_iteration": 100,
     "locked": true
+  },
+  {
+    "name": "build-gardener",
+    "description": "Build at least one gardener to enable production of other units",
+    "blocking_issue": "Cannot build scouts without a gardener",
+    "how_this_helps": "Gardener can build scouts and other units for faster victory",
+    "metric_path": "unit_produced.A.GARDENER",
+    "operator": ">=",
+    "threshold": 1,
+    "max_attempts": 3,
+    "attempts": 1,
+    "best_result": 0,
+    "decomposed_from": "build-scouts",
+    "completed_iteration": 1,
+    "locked": true
+  },
+  {
+    "name": "prerequisite-gardener",
+    "description": "Build at least one gardener before planting trees",
+    "blocking_issue": "Can't plant trees without a gardener",
+    "how_this_helps": "Gardener plants and maintains trees for bullet income",
+    "metric_path": "unit_produced.A.GARDENER",
+    "operator": ">=",
+    "threshold": 1,
+    "max_attempts": 3,
+    "attempts": 0,
+    "best_result": 0,
+    "decomposed_from": "establish-tree-economy",
+    "completed_iteration": 8,
+    "locked": true
   }
 ]

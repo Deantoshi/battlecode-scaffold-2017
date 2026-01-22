@@ -17,8 +17,20 @@ public class Gardener {
         System.out.println("Scouts built: " + scoutsBuilt);
         System.out.println("Tanks built: " + tanksBuilt);
 
-        // Prioritize building tanks when affordable, then scouts for protection
-        if (tanksBuilt < 5 && rc.getTeamBullets() >= 300) {
+        // Prioritize building lumberjacks for defense, then tanks, then scouts
+        if (lumberjacksBuilt < 10 && rc.getTeamBullets() >= 100) {
+            System.out.println("Attempting to build lumberjack");
+            for (int attempt = 0; attempt < 8; attempt++) {
+                Direction dir = Direction.getNorth().rotateLeftDegrees(attempt * 45);
+                if (rc.canBuildRobot(RobotType.LUMBERJACK, dir) && rc.isBuildReady()) {
+                    rc.buildRobot(RobotType.LUMBERJACK, dir);
+                    lumberjacksBuilt++;
+                    System.out.println("Built lumberjack successfully");
+                    return;
+                }
+            }
+            System.out.println("Failed to build lumberjack in all attempts");
+        } else if (tanksBuilt < 5 && rc.getTeamBullets() >= 300) {
             System.out.println("Bullets >=300, attempting to build tank");
             for (int attempt = 0; attempt < 8; attempt++) {
                 Direction dir = Direction.getNorth().rotateLeftDegrees(attempt * 45);
@@ -36,7 +48,7 @@ public class Gardener {
                 }
             }
             System.out.println("Failed to build tank in all directions");
-        } else if (scoutsBuilt < 15 && rc.getTeamBullets() >= 80) {
+        } else if (scoutsBuilt < 15 && rc.getTeamBullets() >= 100) {
             System.out.println("Attempting to build scout");
             for (int attempt = 0; attempt < 8; attempt++) {
                 Direction dir = Direction.getNorth().rotateLeftDegrees(attempt * 45);
@@ -53,9 +65,18 @@ public class Gardener {
 
     public static void plantTree() throws GameActionException {
         System.out.println("Trying to plant tree, bullets: " + rc.getTeamBullets());
-        if (rc.getTeamBullets() >= 50 && rc.getTeamBullets() < 80) {
-            for (int attempt = 0; attempt < 8; attempt++) {
-                Direction dir = randomDirection();
+        if (rc.getTeamBullets() >= 50) {
+            Direction[] dirs = {
+                Direction.getNorth(),
+                Direction.getEast(),
+                Direction.getSouth(),
+                Direction.getWest(),
+                Direction.getNorth().rotateRightDegrees(45), // NE
+                Direction.getEast().rotateRightDegrees(45), // SE
+                Direction.getSouth().rotateRightDegrees(45), // SW
+                Direction.getWest().rotateRightDegrees(45) // NW
+            };
+            for (Direction dir : dirs) {
                 if (rc.canPlantTree(dir)) {
                     rc.plantTree(dir);
                     System.out.println("Planted tree!");

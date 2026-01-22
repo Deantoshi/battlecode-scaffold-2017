@@ -2,17 +2,17 @@
 
 ## YOUR CURRENT OBJECTIVE
 {
-  "name": "build-gardener",
-  "description": "Build at least one gardener to enable production of other units",
-  "blocking_issue": "Cannot build scouts without a gardener",
-  "how_this_helps": "Gardener can build scouts and other units for faster victory",
-  "metric_path": "unit_produced.A.GARDENER",
+  "name": "protect-archon",
+  "description": "Keep archons alive to maintain production",
+  "blocking_issue": "Lost 2 archons, limiting unit production",
+  "how_this_helps": "Alive archons produce more units, enabling faster victory",
+  "metric_path": "unit_alive.A.ARCHON",
   "operator": ">=",
-  "threshold": 1,
-  "max_attempts": 3,
-  "attempts": 1,
+  "threshold": 3,
+  "max_attempts": 4,
+  "attempts": 4,
   "best_result": 0,
-  "decomposed_from": "build-scouts"
+  "created_iteration": 1
 }
 
 ## Latest Match Metrics
@@ -29,7 +29,7 @@
       "vp": 26
     },
     "team_b": {
-      "bullets": 72,
+      "bullets": 76,
       "vp": 0
     }
   }
@@ -61,49 +61,72 @@ Unit Summary:
   {
     "team": "B",
     "unit": "GARDENER",
-    "produced": 13,
+    "produced": 16,
     "lost": 0,
-    "alive": 13
+    "alive": 16
   },
   {
     "team": "B",
     "unit": "SOLDIER",
-    "produced": 20,
+    "produced": 13,
     "lost": 1,
-    "alive": 19
+    "alive": 12
   },
   {
     "team": "B",
     "unit": "LUMBERJACK",
-    "produced": 11,
-    "lost": 0,
-    "alive": 11
+    "produced": 16,
+    "lost": 1,
+    "alive": 15
   }
 ]
 
 ## Objective History
-### Attempt 4 for "build-scouts"
-
-**Current Value:** 0
-**Target:** unit_produced.A.SCOUT >= 3
-**Change Made:** Added runScout() method in RobotPlayer.java, added case SCOUT in switch statement, added scout building logic to runArchon(), removed random movement from runGardener() to prevent gardener death.
-**File Modified:** RobotPlayer.java
-**Rationale:** Scouts were being built but had no run method, causing them to die immediately. Archon now builds scouts to supplement gardener production. Gardener stays put to survive and build more.
-### Attempt 5 for "build-scouts"
-
-**Current Value:** 0
-**Target:** unit_produced.A.SCOUT >= 3
-**Change Made:** Added Scout.init(rc) in RobotPlayer.java, added case SCOUT in switch statement, added runScout() method that fires and moves towards enemy center.
-**File Modified:** RobotPlayer.java
-**Rationale:** Scouts were being built by gardener but had no run method, causing immediate death. This adds the missing scout logic to make them functional units.
-
-### Objective Reassessment: build-scouts
+### Objective Reassessment: establish-tree-economy
 
 **Status:** DECOMPOSED
 **Best Result:** 0 / 3
 **Attempts Used:** 5
-**Reason:** No progress made, best result 0. Cannot build scouts without a gardener first.
-**Next Step:** New objective "build-gardener" to produce at least 1 gardener.
+**Reason:** No progress made, best result 0. Cannot plant trees without first building a gardener.
+**Next Step:** New objective "prerequisite-gardener" to produce at least 1 gardener.
+
+### Iteration 1: New Objective Proposed
+
+**Objective:** protect-archon
+**Metric:** unit_alive.A.ARCHON >= 3
+**Rationale:** Lost 2 archons, limiting unit production → Alive archons produce more units, enabling faster victory
+
+### Attempt 2 for "protect-archon"
+
+**Current Value:** 0
+**Target:** unit_alive.A.ARCHON >= 3
+**Change Made:** Added enemy avoidance to archons (move away if enemy within 5 distance) and prioritized building lumberjacks in gardeners for defense.
+**File Modified:** RobotPlayer.java, Gardener.java
+**Rationale:** Archons will avoid nearby enemies to survive, and lumberjacks can attack enemies threatening the archons.
+
+### Attempt 3 for "protect-archon"
+
+**Current Value:** 0
+**Target:** unit_alive.A.ARCHON >= 3
+**Change Made:** Prioritized lumberjacks over tanks in gardener build order (up to 10 lumberjacks), increased archon avoidance distance to 10, increased gardener avoidance to 5, made lumberjacks move towards archon location when no enemies nearby.
+**File Modified:** Gardener.java, RobotPlayer.java
+**Rationale:** More lumberjacks built earlier for better defense, archons and gardeners avoid enemies at greater distance, lumberjacks cluster around archons to protect them.
+
+### Attempt 4 for "protect-archon"
+
+**Current Value:** 0
+**Target:** unit_alive.A.ARCHON >= 3
+**Change Made:** Made archons stay near spawn location instead of moving towards enemy center to avoid danger.
+**File Modified:** RobotPlayer.java
+**Rationale:** Keeping archons in a safe area should prevent them from being killed by enemy units, allowing all 3 to survive.
+
+### Attempt 5 for "protect-archon"
+
+**Current Value:** 0
+**Target:** unit_alive.A.ARCHON >= 3
+**Change Made:** Modified archon movement to prioritize fleeing from nearby enemies within 10 distance over other movements.
+**File Modified:** RobotPlayer.java
+**Rationale:** Archons will now actively move away from threats, hopefully surviving longer to maintain unit production.
 ## Bot Code
 
 ### Gardener.java
@@ -127,8 +150,20 @@ public class Gardener {
         System.out.println("Scouts built: " + scoutsBuilt);
         System.out.println("Tanks built: " + tanksBuilt);
 
-        // Prioritize building tanks when affordable, then scouts for protection
-        if (tanksBuilt < 5 && rc.getTeamBullets() >= 300) {
+        // Prioritize building lumberjacks for defense, then tanks, then scouts
+        if (lumberjacksBuilt < 10 && rc.getTeamBullets() >= 100) {
+            System.out.println("Attempting to build lumberjack");
+            for (int attempt = 0; attempt < 8; attempt++) {
+                Direction dir = Direction.getNorth().rotateLeftDegrees(attempt * 45);
+                if (rc.canBuildRobot(RobotType.LUMBERJACK, dir) && rc.isBuildReady()) {
+                    rc.buildRobot(RobotType.LUMBERJACK, dir);
+                    lumberjacksBuilt++;
+                    System.out.println("Built lumberjack successfully");
+                    return;
+                }
+            }
+            System.out.println("Failed to build lumberjack in all attempts");
+        } else if (tanksBuilt < 5 && rc.getTeamBullets() >= 300) {
             System.out.println("Bullets >=300, attempting to build tank");
             for (int attempt = 0; attempt < 8; attempt++) {
                 Direction dir = Direction.getNorth().rotateLeftDegrees(attempt * 45);
@@ -146,7 +181,7 @@ public class Gardener {
                 }
             }
             System.out.println("Failed to build tank in all directions");
-        } else if (scoutsBuilt < 15 && rc.getTeamBullets() >= 80) {
+        } else if (scoutsBuilt < 15 && rc.getTeamBullets() >= 100) {
             System.out.println("Attempting to build scout");
             for (int attempt = 0; attempt < 8; attempt++) {
                 Direction dir = Direction.getNorth().rotateLeftDegrees(attempt * 45);
@@ -163,9 +198,18 @@ public class Gardener {
 
     public static void plantTree() throws GameActionException {
         System.out.println("Trying to plant tree, bullets: " + rc.getTeamBullets());
-        if (rc.getTeamBullets() >= 50 && rc.getTeamBullets() < 80) {
-            for (int attempt = 0; attempt < 8; attempt++) {
-                Direction dir = randomDirection();
+        if (rc.getTeamBullets() >= 50) {
+            Direction[] dirs = {
+                Direction.getNorth(),
+                Direction.getEast(),
+                Direction.getSouth(),
+                Direction.getWest(),
+                Direction.getNorth().rotateRightDegrees(45), // NE
+                Direction.getEast().rotateRightDegrees(45), // SE
+                Direction.getSouth().rotateRightDegrees(45), // SW
+                Direction.getWest().rotateRightDegrees(45) // NW
+            };
+            for (Direction dir : dirs) {
                 if (rc.canPlantTree(dir)) {
                     rc.plantTree(dir);
                     System.out.println("Planted tree!");
@@ -630,8 +674,16 @@ public strictfp class RobotPlayer {
                 rc.broadcast(2, gardenersHired);
 
                 // Move
-                MapLocation target = (gardenersHired >= 2) ? Nav.enemyCenter : spawnLoc;
-                Nav.tryMoveBug(target);
+                RobotInfo[] enemies = rc.senseNearbyRobots(10, rc.getTeam().opponent());
+                if (enemies.length > 0) {
+                    System.out.println("Archon fleeing from " + enemies.length + " enemies");
+                    MapLocation enemyLoc = enemies[0].location;
+                    Direction away = rc.getLocation().directionTo(enemyLoc).opposite();
+                    tryMove(away);
+                } else {
+                    MapLocation target = (gardenersHired >= 2) ? Nav.enemyCenter : spawnLoc;
+                    Nav.tryMoveBug(target);
+                }
 
                 // Broadcast archon's location for other robots on the team to know
                 MapLocation myLocation = rc.getLocation();
@@ -805,7 +857,7 @@ public strictfp class RobotPlayer {
         // The code you want your robot to perform every round should be in this loop
         while (true) {
 
-            // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
+            // Try/catch blocks stop unhandled exceptions, which cause your robot to perform this loop again
             try {
                 MapLocation myLocation = rc.getLocation();
 

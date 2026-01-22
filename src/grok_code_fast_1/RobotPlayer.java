@@ -71,8 +71,16 @@ public strictfp class RobotPlayer {
                 rc.broadcast(2, gardenersHired);
 
                 // Move
-                MapLocation target = (gardenersHired >= 2) ? Nav.enemyCenter : spawnLoc;
-                Nav.tryMoveBug(target);
+                RobotInfo[] enemies = rc.senseNearbyRobots(10, rc.getTeam().opponent());
+                if (enemies.length > 0) {
+                    System.out.println("Archon fleeing from " + enemies.length + " enemies");
+                    MapLocation enemyLoc = enemies[0].location;
+                    Direction away = rc.getLocation().directionTo(enemyLoc).opposite();
+                    tryMove(away);
+                } else {
+                    MapLocation target = (gardenersHired >= 2) ? Nav.enemyCenter : spawnLoc;
+                    Nav.tryMoveBug(target);
+                }
 
                 // Broadcast archon's location for other robots on the team to know
                 MapLocation myLocation = rc.getLocation();
@@ -246,7 +254,7 @@ public strictfp class RobotPlayer {
         // The code you want your robot to perform every round should be in this loop
         while (true) {
 
-            // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
+            // Try/catch blocks stop unhandled exceptions, which cause your robot to perform this loop again
             try {
                 MapLocation myLocation = rc.getLocation();
 

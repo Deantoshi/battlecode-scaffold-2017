@@ -4,8 +4,8 @@
     "bot": "grok_code_fast_1",
     "opponent": "copy_bot",
     "map": "Lanes",
-    "match_file": "/home/ddean/battlecode-scaffold-2017/matches/grok_code_fast_1-vs-copy_bot-on-Lanes.bc17",
-    "database": "/home/ddean/battlecode-scaffold-2017/matches/grok_code_fast_1-vs-copy_bot-on-Lanes.db"
+    "match_file": "/Users/danieldean/Documents/work_code/battlecode-scaffold-2017/matches/grok_code_fast_1-vs-copy_bot-on-Lanes.bc17",
+    "database": "/Users/danieldean/Documents/work_code/battlecode-scaffold-2017/matches/grok_code_fast_1-vs-copy_bot-on-Lanes.db"
   },
   "result": {
     "winner": "A",
@@ -20,7 +20,7 @@
         "vp": 26
       },
       "team_b": {
-        "bullets": 72,
+        "bullets": 76,
         "vp": 0
       }
     }
@@ -50,23 +50,23 @@
     {
       "team": "B",
       "unit": "GARDENER",
-      "produced": 13,
+      "produced": 16,
       "lost": 0,
-      "alive": 13
+      "alive": 16
     },
     {
       "team": "B",
       "unit": "SOLDIER",
-      "produced": 20,
+      "produced": 13,
       "lost": 1,
-      "alive": 19
+      "alive": 12
     },
     {
       "team": "B",
       "unit": "LUMBERJACK",
-      "produced": 11,
-      "lost": 0,
-      "alive": 11
+      "produced": 16,
+      "lost": 1,
+      "alive": 15
     }
   ],
   "unit_lifespan": [
@@ -74,50 +74,63 @@
       "team": "A",
       "unit": "ARCHON",
       "deaths": 2,
-      "avg_rounds": 1137.0,
-      "min_rounds": 974,
-      "max_rounds": 1300
+      "avg_rounds": 1122.0,
+      "min_rounds": 940,
+      "max_rounds": 1304
     },
     {
       "team": "A",
       "unit": "GARDENER",
       "deaths": 1,
-      "avg_rounds": 1326.0,
-      "min_rounds": 1326,
-      "max_rounds": 1326
+      "avg_rounds": 1242.0,
+      "min_rounds": 1242,
+      "max_rounds": 1242
+    },
+    {
+      "team": "B",
+      "unit": "LUMBERJACK",
+      "deaths": 1,
+      "avg_rounds": 563.0,
+      "min_rounds": 563,
+      "max_rounds": 563
     },
     {
       "team": "B",
       "unit": "SOLDIER",
       "deaths": 1,
-      "avg_rounds": 627.0,
-      "min_rounds": 627,
-      "max_rounds": 627
+      "avg_rounds": 487.0,
+      "min_rounds": 487,
+      "max_rounds": 487
     }
   ],
   "early_deaths": {
     "A": [
       {
-        "round": 974,
+        "round": 940,
         "unit": "ARCHON",
-        "lifespan": 974
+        "lifespan": 940
       },
       {
-        "round": 1300,
-        "unit": "ARCHON",
-        "lifespan": 1300
-      },
-      {
-        "round": 1327,
+        "round": 1243,
         "unit": "GARDENER",
-        "lifespan": 1326
+        "lifespan": 1242
+      },
+      {
+        "round": 1304,
+        "unit": "ARCHON",
+        "lifespan": 1304
       }
     ],
     "B": [
       {
-        "round": 1320,
+        "round": 835,
+        "unit": "LUMBERJACK",
+        "lifespan": 563
+      },
+      {
+        "round": 1180,
         "unit": "SOLDIER",
-        "lifespan": 627
+        "lifespan": 487
       }
     ]
   },
@@ -146,10 +159,10 @@
         "bullets_spent": 100
       },
       "team_b": {
-        "bullets": 90,
+        "bullets": 29,
         "vp": 0,
-        "bullets_generated": 1690,
-        "bullets_spent": 1600
+        "bullets_generated": 1729,
+        "bullets_spent": 1700
       }
     },
     {
@@ -161,10 +174,10 @@
         "bullets_spent": 100
       },
       "team_b": {
-        "bullets": 75,
+        "bullets": 24,
         "vp": 0,
-        "bullets_generated": 2275,
-        "bullets_spent": 2200
+        "bullets_generated": 2324,
+        "bullets_spent": 2300
       }
     },
     {
@@ -176,10 +189,10 @@
         "bullets_spent": 100
       },
       "team_b": {
-        "bullets": 94,
+        "bullets": 85,
         "vp": 0,
-        "bullets_generated": 2994,
-        "bullets_spent": 2900
+        "bullets_generated": 3085,
+        "bullets_spent": 3000
       }
     },
     {
@@ -191,10 +204,10 @@
         "bullets_spent": 100
       },
       "team_b": {
-        "bullets": 51,
+        "bullets": 35,
         "vp": 0,
-        "bullets_generated": 3751,
-        "bullets_spent": 3700
+        "bullets_generated": 3835,
+        "bullets_spent": 3800
       }
     },
     {
@@ -206,10 +219,10 @@
         "bullets_spent": 100
       },
       "team_b": {
-        "bullets": 72,
+        "bullets": 76,
         "vp": 0,
-        "bullets_generated": 4472,
-        "bullets_spent": 4400
+        "bullets_generated": 4576,
+        "bullets_spent": 4500
       }
     }
   ],
@@ -254,7 +267,7 @@
     {
       "period": "R501-1000",
       "team_a_deaths": 1,
-      "team_b_deaths": 0
+      "team_b_deaths": 1
     }
   ],
   "movement_analysis": {
@@ -308,34 +321,31 @@
           }
         },
         "late": {
-          "summary": "Spread across quadrants (SW:29, NW:8, NE:4, SE:4)",
+          "summary": "Spread across quadrants (SW:21, NW:9, NE:7, SE:7)",
           "quadrants": {
             "NW": {
               "GARDENER": 7,
-              "LUMBERJACK": 1
+              "LUMBERJACK": 2
             },
             "NE": {
-              "GARDENER": 3,
-              "LUMBERJACK": 1
+              "GARDENER": 7
             },
             "SW": {
               "ARCHON": 1,
-              "GARDENER": 1,
-              "LUMBERJACK": 8,
-              "SOLDIER": 19
+              "LUMBERJACK": 9,
+              "SOLDIER": 11
             },
             "SE": {
               "ARCHON": 2,
               "GARDENER": 1,
-              "LUMBERJACK": 1
+              "LUMBERJACK": 4
             }
           }
         },
         "stuck": [
+          "2 LUMBERJACK in NW",
           "7 GARDENER in NW",
-          "1 LUMBERJACK in NW",
-          "3 GARDENER in NE",
-          "1 LUMBERJACK in NE"
+          "7 GARDENER in NE"
         ]
       }
     },
@@ -451,8 +461,8 @@
   },
   "combat_analysis": {
     "combat_duration": {
-      "first_round": "656",
-      "last_round": "1326"
+      "first_round": "636",
+      "last_round": "1303"
     },
     "teams": {
       "A": {
@@ -462,22 +472,22 @@
         "lumberjack_strikes": 0,
         "chops": 0,
         "total_bullet_cost": 0,
-        "enemy_kills": 1,
+        "enemy_kills": 2,
         "total_deaths": 3,
         "bullets_per_kill": 0.0,
-        "kd_ratio": 0.3333333333333333
+        "kd_ratio": 0.6666666666666666
       },
       "B": {
-        "shots_single": 443,
+        "shots_single": 390,
         "shots_triad": 0,
         "shots_pentad": 0,
-        "lumberjack_strikes": 26,
-        "chops": 4922,
-        "total_bullet_cost": 443,
+        "lumberjack_strikes": 120,
+        "chops": 6202,
+        "total_bullet_cost": 390,
         "enemy_kills": 3,
-        "total_deaths": 1,
-        "bullets_per_kill": 147.66666666666666,
-        "kd_ratio": 3.0
+        "total_deaths": 2,
+        "bullets_per_kill": 130.0,
+        "kd_ratio": 1.5
       }
     },
     "warnings": []
@@ -491,33 +501,40 @@
     {
       "team": "B",
       "action": "CHOP",
-      "count": 4922
+      "count": 6202
     },
     {
       "team": "B",
       "action": "SPAWN_UNIT",
-      "count": 44
+      "count": 45
     }
   ],
   "shots_by_unit_type": [
     {
       "team": "B",
       "unit": "SOLDIER",
-      "single_shots": 443,
+      "single_shots": 390,
       "triad_shots": 0,
       "pentad_shots": 0,
-      "total_shots": 443,
-      "bullet_cost": 443
+      "total_shots": 390,
+      "bullet_cost": 390
     }
   ],
   "friendly_fire": {
     "by_team": [
       {
         "team": "B",
-        "count": 1,
+        "count": 2,
         "incidents": [
           {
-            "round": 1320,
+            "round": 835,
+            "dead_unit_type": "LUMBERJACK",
+            "own_attacks": [
+              "FIRE"
+            ]
+          },
+          {
+            "round": 1180,
             "dead_unit_type": "SOLDIER",
             "own_attacks": [
               "FIRE"
@@ -534,7 +551,7 @@
     "error_log_samples": []
   },
   "map": {
-    "file": "/home/ddean/battlecode-scaffold-2017/maps/Lanes.map17",
+    "file": "/Users/danieldean/Documents/work_code/battlecode-scaffold-2017/maps/Lanes.map17",
     "ascii": null
   }
 }

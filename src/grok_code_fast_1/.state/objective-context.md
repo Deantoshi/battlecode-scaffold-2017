@@ -31,34 +31,36 @@ Win the match in ≤1500 rounds
 - produce-gardener: unit_produced.A.GARDENER >= 1
 - establish-tree-economy: trees_at_round.500.A >= 3
 - build-gardener: unit_produced.A.GARDENER >= 1
+- build-gardener: unit_produced.A.GARDENER >= 1
+- prerequisite-gardener: unit_produced.A.GARDENER >= 1
 
 ## Match Metrics (from last match)
 ### Unit Summary (Team A = us)
 - ARCHON: produced=3, alive=1, lost=2
-- GARDENER: produced=3, alive=1, lost=2
-- TREE: produced=9, alive=1, lost=8
+- GARDENER: produced=1, alive=0, lost=1
 
 ### Economy
-- R2500: bullets=20, generated=8367, spent=750
-- R2999: bullets=5, generated=9717, spent=750
+- R2500: bullets=3, generated=299, spent=100
+- R2999: bullets=11, generated=306, spent=100
 
 ### Trees
-- R500: A=3, B=0
-- R1000: A=2, B=0
-- R1500: A=2, B=0
-- R2000: A=1, B=0
-- R2500: A=1, B=0
-- R2999: A=1, B=0
+- R500: A=0, B=0
+- R1000: A=0, B=0
+- R1500: A=0, B=0
+- R2000: A=0, B=0
+- R2500: A=0, B=0
+- R2999: A=0, B=0
 
 ### Combat
-- Enemy kills: 2
-- Our deaths: 12
-- K/D ratio: 0.16666666666666666
+- Enemy kills: 1
+- Our deaths: 3
+- K/D ratio: 0.3333333333333333
 
 ## Bot Code Files
 - Gardener.java
 - Nav.java
 - Navigation.java
 - RobotPlayer.java
+- Scout.java
 - Soldier.java
 - Tank.java
