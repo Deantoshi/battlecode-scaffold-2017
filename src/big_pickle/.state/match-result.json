@@ -16,11 +16,11 @@
     "goal_met": "NO",
     "final": {
       "team_a": {
-        "bullets": 42,
+        "bullets": 67,
         "vp": 0
       },
       "team_b": {
-        "bullets": 42,
+        "bullets": 38,
         "vp": 0
       }
     }
@@ -36,23 +36,23 @@
     {
       "team": "A",
       "unit": "GARDENER",
-      "produced": 9,
+      "produced": 6,
       "lost": 0,
-      "alive": 9
+      "alive": 6
     },
     {
       "team": "A",
       "unit": "SOLDIER",
-      "produced": 26,
-      "lost": 1,
-      "alive": 25
+      "produced": 39,
+      "lost": 0,
+      "alive": 39
     },
     {
       "team": "A",
       "unit": "TREE",
-      "produced": 281,
-      "lost": 249,
-      "alive": 32
+      "produced": 164,
+      "lost": 151,
+      "alive": 13
     },
     {
       "team": "B",
@@ -64,65 +64,33 @@
     {
       "team": "B",
       "unit": "GARDENER",
-      "produced": 10,
-      "lost": 1,
+      "produced": 9,
+      "lost": 0,
       "alive": 9
     },
     {
       "team": "B",
       "unit": "SOLDIER",
-      "produced": 16,
-      "lost": 1,
-      "alive": 15
+      "produced": 12,
+      "lost": 0,
+      "alive": 12
     },
     {
       "team": "B",
       "unit": "LUMBERJACK",
-      "produced": 16,
-      "lost": 2,
-      "alive": 14
+      "produced": 21,
+      "lost": 0,
+      "alive": 21
     }
   ],
   "unit_lifespan": [
     {
       "team": "A",
-      "unit": "SOLDIER",
-      "deaths": 1,
-      "avg_rounds": 528.0,
-      "min_rounds": 528,
-      "max_rounds": 528
-    },
-    {
-      "team": "A",
       "unit": "TREE_BULLET",
-      "deaths": 249,
-      "avg_rounds": 179.26104417670683,
-      "min_rounds": 70,
+      "deaths": 151,
+      "avg_rounds": 180.0,
+      "min_rounds": 180,
       "max_rounds": 180
-    },
-    {
-      "team": "B",
-      "unit": "GARDENER",
-      "deaths": 1,
-      "avg_rounds": 2903.0,
-      "min_rounds": 2903,
-      "max_rounds": 2903
-    },
-    {
-      "team": "B",
-      "unit": "LUMBERJACK",
-      "deaths": 2,
-      "avg_rounds": 1118.5,
-      "min_rounds": 194,
-      "max_rounds": 2043
-    },
-    {
-      "team": "B",
-      "unit": "SOLDIER",
-      "deaths": 1,
-      "avg_rounds": 303.0,
-      "min_rounds": 303,
-      "max_rounds": 303
     }
   ],
   "early_deaths": {
@@ -148,122 +116,101 @@
         "lifespan": 180
       },
       {
-        "round": 379,
+        "round": 415,
         "unit": "TREE_BULLET",
         "lifespan": 180
       }
     ],
-    "B": [
-      {
-        "round": 2371,
-        "unit": "SOLDIER",
-        "lifespan": 303
-      },
-      {
-        "round": 2401,
-        "unit": "LUMBERJACK",
-        "lifespan": 194
-      },
-      {
-        "round": 2882,
-        "unit": "LUMBERJACK",
-        "lifespan": 2043
-      },
-      {
-        "round": 2907,
-        "unit": "GARDENER",
-        "lifespan": 2903
-      }
-    ]
+    "B": []
   },
   "economy_timeline": [
     {
       "round": 500,
       "team_a": {
-        "bullets": 32,
+        "bullets": 41,
         "vp": 0,
-        "bullets_generated": 1532,
-        "bullets_spent": 1500
+        "bullets_generated": 1441,
+        "bullets_spent": 1400
       },
       "team_b": {
-        "bullets": 47,
+        "bullets": 50,
         "vp": 0,
-        "bullets_generated": 847,
+        "bullets_generated": 850,
         "bullets_spent": 800
       }
     },
     {
       "round": 1000,
       "team_a": {
-        "bullets": 86,
+        "bullets": 31,
         "vp": 0,
-        "bullets_generated": 3286,
-        "bullets_spent": 3200
+        "bullets_generated": 3081,
+        "bullets_spent": 3050
       },
       "team_b": {
-        "bullets": 120,
+        "bullets": 25,
         "vp": 0,
-        "bullets_generated": 1520,
-        "bullets_spent": 1400
+        "bullets_generated": 1525,
+        "bullets_spent": 1500
       }
     },
     {
       "round": 1500,
       "team_a": {
-        "bullets": 39,
+        "bullets": 22,
         "vp": 0,
-        "bullets_generated": 5839,
-        "bullets_spent": 5800
+        "bullets_generated": 5122,
+        "bullets_spent": 5100
       },
       "team_b": {
-        "bullets": 20,
+        "bullets": 106,
         "vp": 0,
-        "bullets_generated": 2220,
-        "bullets_spent": 2200
+        "bullets_generated": 2206,
+        "bullets_spent": 2100
       }
     },
     {
       "round": 2000,
       "team_a": {
-        "bullets": 93,
+        "bullets": 15,
         "vp": 0,
-        "bullets_generated": 9293,
-        "bullets_spent": 9200
+        "bullets_generated": 7565,
+        "bullets_spent": 7550
       },
       "team_b": {
-        "bullets": 114,
+        "bullets": 108,
         "vp": 0,
-        "bullets_generated": 2914,
+        "bullets_generated": 2908,
         "bullets_spent": 2800
       }
     },
     {
       "round": 2500,
       "team_a": {
-        "bullets": 18,
+        "bullets": 44,
         "vp": 0,
-        "bullets_generated": 13118,
-        "bullets_spent": 13100
+        "bullets_generated": 10094,
+        "bullets_spent": 10050
       },
       "team_b": {
-        "bullets": 68,
+        "bullets": 85,
         "vp": 0,
-        "bullets_generated": 3568,
+        "bullets_generated": 3585,
         "bullets_spent": 3500
       }
     },
     {
       "round": 2999,
       "team_a": {
-        "bullets": 42,
+        "bullets": 67,
         "vp": 0,
-        "bullets_generated": 17592,
-        "bullets_spent": 17550
+        "bullets_generated": 12767,
+        "bullets_spent": 12700
       },
       "team_b": {
-        "bullets": 42,
+        "bullets": 38,
         "vp": 0,
-        "bullets_generated": 4242,
+        "bullets_generated": 4238,
         "bullets_spent": 4200
       }
     }
@@ -271,42 +218,36 @@
   "tree_economy": [
     {
       "round": 500,
-      "team_a_trees": 13,
+      "team_a_trees": 8,
       "team_b_trees": 0
     },
     {
       "round": 1000,
-      "team_a_trees": 11,
+      "team_a_trees": 6,
       "team_b_trees": 0
     },
     {
       "round": 1500,
-      "team_a_trees": 16,
+      "team_a_trees": 12,
       "team_b_trees": 0
     },
     {
       "round": 2000,
-      "team_a_trees": 20,
+      "team_a_trees": 14,
       "team_b_trees": 0
     },
     {
       "round": 2500,
-      "team_a_trees": 20,
+      "team_a_trees": 11,
       "team_b_trees": 0
     },
     {
       "round": 2999,
-      "team_a_trees": 32,
+      "team_a_trees": 13,
       "team_b_trees": 0
     }
   ],
-  "combat_timeline": [
-    {
-      "period": "R2001+",
-      "team_a_deaths": 1,
-      "team_b_deaths": 4
-    }
-  ],
+  "combat_timeline": [],
   "movement_analysis": {
     "insufficient_snapshots": false,
     "teams": {
@@ -327,26 +268,30 @@
           }
         },
         "late": {
-          "summary": "Spread across quadrants (SW:23, SE:13)",
+          "summary": "Spread across quadrants (SE:23, SW:18, NE:2, NW:1)",
           "quadrants": {
-            "NW": {},
-            "NE": {},
+            "NW": {
+              "SOLDIER": 1
+            },
+            "NE": {
+              "SOLDIER": 2
+            },
             "SW": {
               "ARCHON": 2,
-              "GARDENER": 6,
-              "SOLDIER": 15
+              "GARDENER": 2,
+              "SOLDIER": 14
             },
             "SE": {
               "ARCHON": 1,
               "GARDENER": 3,
-              "SOLDIER": 9
+              "SOLDIER": 19
             }
           }
         },
         "stuck": [
-          "15 SOLDIER in SW",
+          "14 SOLDIER in SW",
           "2 ARCHON in SW",
-          "6 GARDENER in SW"
+          "2 GARDENER in SW"
         ]
       },
       "B": {
@@ -367,32 +312,31 @@
           }
         },
         "late": {
-          "summary": "Spread across quadrants (NE:19, NW:16, SE:1)",
+          "summary": "Spread across quadrants (NW:19, NE:18, SE:1)",
           "quadrants": {
             "NW": {
               "ARCHON": 1,
-              "GARDENER": 4,
-              "LUMBERJACK": 6,
-              "SOLDIER": 5
+              "GARDENER": 5,
+              "LUMBERJACK": 9,
+              "SOLDIER": 4
             },
             "NE": {
-              "ARCHON": 2,
-              "GARDENER": 5,
-              "LUMBERJACK": 3,
-              "SOLDIER": 9
+              "ARCHON": 1,
+              "GARDENER": 3,
+              "LUMBERJACK": 9,
+              "SOLDIER": 5
             },
             "SW": {},
             "SE": {
-              "LUMBERJACK": 1
+              "SOLDIER": 1
             }
           }
         },
         "stuck": [
           "1 ARCHON in NW",
-          "4 GARDENER in NW",
-          "9 SOLDIER in NE",
-          "2 ARCHON in NE",
-          "5 GARDENER in NE"
+          "5 GARDENER in NW",
+          "5 SOLDIER in NE",
+          "3 GARDENER in NE"
         ]
       }
     },
@@ -424,62 +368,62 @@
           },
           {
             "sequence": 4,
-            "round": 315,
-            "unit": "GARDENER"
+            "round": 219,
+            "unit": "SOLDIER"
           },
           {
             "sequence": 5,
-            "round": 316,
+            "round": 268,
             "unit": "SOLDIER"
           },
           {
             "sequence": 6,
-            "round": 587,
-            "unit": "SOLDIER"
+            "round": 305,
+            "unit": "GARDENER"
           },
           {
             "sequence": 7,
-            "round": 608,
+            "round": 493,
             "unit": "SOLDIER"
           },
           {
             "sequence": 8,
-            "round": 621,
+            "round": 528,
             "unit": "SOLDIER"
           },
           {
             "sequence": 9,
-            "round": 631,
+            "round": 550,
             "unit": "SOLDIER"
           },
           {
             "sequence": 10,
-            "round": 646,
+            "round": 573,
             "unit": "SOLDIER"
           },
           {
             "sequence": 11,
-            "round": 907,
-            "unit": "GARDENER"
+            "round": 615,
+            "unit": "SOLDIER"
           },
           {
             "sequence": 12,
-            "round": 1007,
+            "round": 806,
             "unit": "SOLDIER"
           },
           {
             "sequence": 13,
-            "round": 1028,
-            "unit": "GARDENER"
+            "round": 858,
+            "unit": "SOLDIER"
           },
           {
             "sequence": 14,
-            "round": 1117,
+            "round": 879,
             "unit": "SOLDIER"
           },
           {
             "sequence": 15,
-            "round": 1171,
+            "round": 917,
             "unit": "GARDENER"
           }
         ],
@@ -516,107 +460,105 @@
           },
           {
             "sequence": 6,
-            "round": 336,
-            "unit": "GARDENER"
-          },
-          {
-            "sequence": 7,
-            "round": 415,
+            "round": 328,
             "unit": "SOLDIER"
           },
           {
+            "sequence": 7,
+            "round": 399,
+            "unit": "LUMBERJACK"
+          },
+          {
             "sequence": 8,
-            "round": 475,
+            "round": 480,
             "unit": "LUMBERJACK"
           },
           {
             "sequence": 9,
-            "round": 557,
+            "round": 547,
             "unit": "GARDENER"
           },
           {
             "sequence": 10,
-            "round": 626,
-            "unit": "LUMBERJACK"
-          },
-          {
-            "sequence": 11,
-            "round": 702,
+            "round": 631,
             "unit": "GARDENER"
           },
           {
+            "sequence": 11,
+            "round": 699,
+            "unit": "SOLDIER"
+          },
+          {
             "sequence": 12,
-            "round": 767,
-            "unit": "LUMBERJACK"
+            "round": 768,
+            "unit": "GARDENER"
           },
           {
             "sequence": 13,
-            "round": 839,
+            "round": 838,
             "unit": "LUMBERJACK"
           },
           {
             "sequence": 14,
-            "round": 911,
-            "unit": "SOLDIER"
+            "round": 917,
+            "unit": "LUMBERJACK"
           },
           {
             "sequence": 15,
-            "round": 1003,
-            "unit": "GARDENER"
+            "round": 994,
+            "unit": "SOLDIER"
           }
         ],
         "milestones": {
           "first_soldier_round": 190,
-          "first_lumberjack_round": 475
+          "first_lumberjack_round": 399
         }
       }
     }
   },
   "combat_analysis": {
     "combat_duration": {
-      "first_round": "2243",
-      "last_round": "2906"
+      "first_round": "2440",
+      "last_round": "2999"
     },
     "teams": {
       "A": {
-        "shots_single": 50,
-        "shots_triad": 57,
+        "shots_single": 0,
+        "shots_triad": 0,
         "shots_pentad": 0,
         "lumberjack_strikes": 0,
         "chops": 0,
-        "total_bullet_cost": 221,
-        "enemy_kills": 4,
-        "total_deaths": 250,
-        "bullets_per_kill": 55.25,
-        "kd_ratio": 0.016
+        "total_bullet_cost": 0,
+        "enemy_kills": 0,
+        "total_deaths": 151,
+        "bullets_per_kill": 0.0,
+        "kd_ratio": 0.0
       },
       "B": {
-        "shots_single": 55,
+        "shots_single": 26,
         "shots_triad": 0,
         "shots_pentad": 0,
-        "lumberjack_strikes": 42,
+        "lumberjack_strikes": 560,
         "chops": 0,
-        "total_bullet_cost": 55,
-        "enemy_kills": 250,
-        "total_deaths": 4,
-        "bullets_per_kill": 0.22,
-        "kd_ratio": 62.5
+        "total_bullet_cost": 26,
+        "enemy_kills": 151,
+        "total_deaths": 0,
+        "bullets_per_kill": 0.17218543046357615,
+        "kd_ratio": 0.0
       }
     },
-    "warnings": [
-      "Team A inefficient: 55.2 bullets/kill vs B 0.2"
-    ]
+    "warnings": []
   },
   "action_summary": [
     {
       "team": "A",
       "action": "PLANT_TREE",
-      "count": 281
+      "count": 164
     },
     {
       "team": "A",
       "action": "SPAWN_UNIT",
-      "count": 35
+      "count": 45
     },
     {
       "team": "B",
@@ -626,81 +568,99 @@
   ],
   "shots_by_unit_type": [
     {
-      "team": "A",
-      "unit": "SOLDIER",
-      "single_shots": 50,
-      "triad_shots": 19,
-      "pentad_shots": 0,
-      "total_shots": 69,
-      "bullet_cost": 126
-    },
-    {
       "team": "B",
       "unit": "SOLDIER",
-      "single_shots": 55,
+      "single_shots": 26,
       "triad_shots": 0,
       "pentad_shots": 0,
-      "total_shots": 55,
-      "bullet_cost": 55
+      "total_shots": 26,
+      "bullet_cost": 26
     }
   ],
   "friendly_fire": {
-    "by_team": [
-      {
-        "team": "A",
-        "count": 5,
-        "incidents": [
-          {
-            "round": 2884,
-            "dead_unit_type": "TREE_BULLET",
-            "own_attacks": [
-              "FIRE"
-            ]
-          },
-          {
-            "round": 2890,
-            "dead_unit_type": "TREE_BULLET",
-            "own_attacks": [
-              "FIRE"
-            ]
-          },
-          {
-            "round": 2894,
-            "dead_unit_type": "TREE_BULLET",
-            "own_attacks": [
-              "FIRE"
-            ]
-          }
-        ]
-      },
-      {
-        "team": "B",
-        "count": 2,
-        "incidents": [
-          {
-            "round": 2371,
-            "dead_unit_type": "SOLDIER",
-            "own_attacks": [
-              "FIRE",
-              "STRIKE"
-            ]
-          },
-          {
-            "round": 2401,
-            "dead_unit_type": "LUMBERJACK",
-            "own_attacks": [
-              "STRIKE"
-            ]
-          }
-        ]
-      }
-    ]
+    "by_team": []
   },
   "error_analysis": {
     "action_deaths": [],
     "action_death_samples": [],
-    "error_logs": [],
-    "error_log_samples": []
+    "error_logs": [
+      {
+        "team": "A",
+        "count": 1730
+      }
+    ],
+    "error_log_samples": [
+      {
+        "round": 2451,
+        "team": "A",
+        "robot_type": "SOLDIER",
+        "robot_id": 11769,
+        "message": "Soldier Exception"
+      },
+      {
+        "round": 2451,
+        "team": "A",
+        "robot_type": "SOLDIER",
+        "robot_id": 10991,
+        "message": "Soldier Exception"
+      },
+      {
+        "round": 2451,
+        "team": "A",
+        "robot_type": "SOLDIER",
+        "robot_id": 14047,
+        "message": "Soldier Exception"
+      },
+      {
+        "round": 2452,
+        "team": "A",
+        "robot_type": "SOLDIER",
+        "robot_id": 11769,
+        "message": "Soldier Exception"
+      },
+      {
+        "round": 2452,
+        "team": "A",
+        "robot_type": "SOLDIER",
+        "robot_id": 10991,
+        "message": "Soldier Exception"
+      },
+      {
+        "round": 2452,
+        "team": "A",
+        "robot_type": "SOLDIER",
+        "robot_id": 14047,
+        "message": "Soldier Exception"
+      },
+      {
+        "round": 2453,
+        "team": "A",
+        "robot_type": "SOLDIER",
+        "robot_id": 11769,
+        "message": "Soldier Exception"
+      },
+      {
+        "round": 2453,
+        "team": "A",
+        "robot_type": "SOLDIER",
+        "robot_id": 10991,
+        "message": "Soldier Exception"
+      },
+      {
+        "round": 2453,
+        "team": "A",
+        "robot_type": "SOLDIER",
+        "robot_id": 14047,
+        "message": "Soldier Exception"
+      },
+      {
+        "round": 2454,
+        "team": "A",
+        "robot_type": "SOLDIER",
+        "robot_id": 11769,
+        "message": "Soldier Exception"
+      }
+    ]
   },
   "map": {
     "file": "/Users/danieldean/Documents/work_code/battlecode-scaffold-2017/maps/Lanes.map17",

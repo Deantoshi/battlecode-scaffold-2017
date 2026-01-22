@@ -1,0 +1,219 @@
+#!/bin/bash
+# rank-variants.sh - Analyzes match results and ranks variants
+#
+# Usage: ./scripts/rank-variants.sh <bot> <opponent> <map>
+#
+# Scoring:
+#   Win in ≤1500 rounds: SCORE = 20000 - rounds (goal met)
+#   Win in >1500 rounds: SCORE = 10000 - rounds
+#   Loss: SCORE = -rounds
+#
+# Output: src/<bot>/.state/variant-results.json
+
+set -e
+
+BOT="${1:-}"
+OPPONENT="${2:-}"
+MAP="${3:-MagicWood}"
+NUM_VARIANTS=10
+
+if [[ -z "$BOT" || -z "$OPPONENT" ]]; then
+    echo "Usage: $0 <bot> <opponent> [map]"
+    exit 1
+fi
+
+STATE_DIR="src/$BOT/.state"
+MATCHES_DIR="matches"
+RESULTS_FILE="$STATE_DIR/variant-results.json"
+
+mkdir -p "$STATE_DIR"
+
+echo "Analyzing match results..."
+echo ""
+
+# Python script to analyze matches using database files
+python3 << 'PYEOF' - "$BOT" "$OPPONENT" "$MAP" "$NUM_VARIANTS" "$MATCHES_DIR" "$RESULTS_FILE"
+import sys
+import json
+import os
+import sqlite3
+
+bot = sys.argv[1]
+opponent = sys.argv[2]
+map_name = sys.argv[3]
+num_variants = int(sys.argv[4])
+matches_dir = sys.argv[5]
+results_file = sys.argv[6]
+
+
+def analyze_match(match_name):
+    """Analyze a match from its database file."""
+    db_file = os.path.join(matches_dir, f"{match_name}.db")
+    log_file = os.path.join(matches_dir, f"{match_name}.log")
+
+    result = {
+        'won': False,
+        'rounds': 3000,
+        'parsed': False,
+        'source': 'none'
+    }
+
+    # Try database first (most reliable)
+    if os.path.exists(db_file):
+        try:
+            conn = sqlite3.connect(db_file)
+            conn.row_factory = sqlite3.Row
+
+            # Get winner
+            winner_row = conn.execute(
+                "SELECT value FROM metadata WHERE key='winner'"
+            ).fetchone()
+            winner = winner_row['value'] if winner_row else None
+
+            # Get total rounds
+            rounds_row = conn.execute(
+                "SELECT MAX(round_id) as max_round FROM rounds"
+            ).fetchone()
+            total_rounds = rounds_row['max_round'] if rounds_row and rounds_row['max_round'] else 3000
+
+            conn.close()
+
+            if winner:
+                result['won'] = (winner == 'A')
+                result['rounds'] = int(total_rounds)
+                result['parsed'] = True
+                result['source'] = 'database'
+                return result
+        except Exception as e:
+            pass
+
+    # Fallback: parse log file
+    if os.path.exists(log_file):
+        try:
+            with open(log_file, 'r') as f:
+                content = f.read()
+
+            # Look for winner patterns
+            if 'winner=A' in content or 'Team A wins' in content:
+                result['won'] = True
+                result['parsed'] = True
+                result['source'] = 'log'
+            elif 'winner=B' in content or 'Team B wins' in content:
+                result['won'] = False
+                result['parsed'] = True
+                result['source'] = 'log'
+
+            # Look for round count
+            import re
+            for line in content.split('\n'):
+                # Match patterns like "Round 1234" or "rounds: 1234"
+                round_match = re.search(r'round[s]?\s*[:#=]?\s*(\d+)', line, re.IGNORECASE)
+                if round_match:
+                    r = int(round_match.group(1))
+                    if 1 <= r <= 3000:
+                        result['rounds'] = max(result['rounds'], r) if result['rounds'] < 3000 else r
+        except Exception:
+            pass
+
+    return result
+
+
+def calculate_score(won, rounds):
+    """Calculate score for ranking."""
+    if won:
+        if rounds <= 1500:
+            return 20000 - rounds  # Goal met - highest priority
+        else:
+            return 10000 - rounds  # Won but not in target rounds
+    else:
+        return -rounds  # Lost
+
+
+# Collect results
+results = []
+
+# Original
+match_result = analyze_match(f"{bot}_original")
+score = calculate_score(match_result['won'], match_result['rounds'])
+results.append({
+    'name': 'original',
+    'won': match_result['won'],
+    'rounds': match_result['rounds'],
+    'score': score,
+    'source': match_result['source']
+})
+
+# Variants
+for v in range(1, num_variants + 1):
+    match_result = analyze_match(f"{bot}_v{v}")
+    if match_result['parsed'] or os.path.exists(os.path.join(matches_dir, f"{bot}_v{v}.db")):
+        score = calculate_score(match_result['won'], match_result['rounds'])
+        results.append({
+            'name': f'v{v}',
+            'won': match_result['won'],
+            'rounds': match_result['rounds'],
+            'score': score,
+            'source': match_result['source']
+        })
+
+# Sort by score descending
+results.sort(key=lambda x: x['score'], reverse=True)
+
+# Determine winner and goal status
+if not results:
+    print("ERROR: No match results found!")
+    sys.exit(1)
+
+winner = results[0]['name']
+winner_score = results[0]['score']
+winner_won = results[0]['won']
+winner_rounds = results[0]['rounds']
+
+goal_met = 'YES' if (winner_won and winner_rounds <= 1500) else 'NO'
+
+# Check if winner beats original
+original_result = next((r for r in results if r['name'] == 'original'), None)
+original_score = original_result['score'] if original_result else -9999
+
+should_promote = (winner != 'original' and winner_score > original_score)
+
+# Output
+output = {
+    'winner': winner,
+    'winner_score': winner_score,
+    'winner_won': winner_won,
+    'winner_rounds': winner_rounds,
+    'goal_met': goal_met,
+    'should_promote': should_promote,
+    'original_score': original_score,
+    'results': results
+}
+
+with open(results_file, 'w') as f:
+    json.dump(output, f, indent=2)
+
+# Print table
+print("═" * 60)
+print("RESULTS TABLE")
+print("═" * 60)
+print("")
+print(f"{'Variant':<12} {'Won':<6} {'Rounds':<8} {'Score':<10} {'Source':<10}")
+print("-" * 50)
+for r in results:
+    won_str = "YES" if r['won'] else "NO"
+    print(f"{r['name']:<12} {won_str:<6} {r['rounds']:<8} {r['score']:<10} {r.get('source', 'N/A'):<10}")
+
+print("")
+print("═" * 60)
+print(f"WINNER: {winner} (Score: {winner_score})")
+print(f"GOAL MET: {goal_met}")
+if should_promote:
+    print(f"ACTION: PROMOTE {winner} -> original (score {winner_score} > {original_score})")
+else:
+    print(f"ACTION: Keep original (best or tied)")
+print("═" * 60)
+
+PYEOF
+
+echo ""
+echo "Results saved to: $RESULTS_FILE"

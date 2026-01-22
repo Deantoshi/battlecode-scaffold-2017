@@ -22,6 +22,22 @@
 **File Modified:** RobotPlayer.java
 **Rationale:** The previous tree-defense system wasn't aggressive enough - with 91% tree loss rate (235/257 trees), we need extreme priority on lumberjack elimination. By massively increasing priority scores, expanding detection ranges, and using more powerful triad shots against tree threats, soldiers should focus exclusively on protecting our economy.
 
+### Attempt 3 for "defend-trees-from-lumberjacks"
+
+**Current Value:** 0
+**Target:** trees_at_round.500.A >= 15
+**Change Made:** Drastically improved soldier deployment speed and tree defense focus. Lowered soldier build threshold from 100 to 60 bullets for 40% faster deployment, made gardeners build soldiers aggressively when we have >3 trees to protect, simplified soldier targeting to focus purely on lumberjack threats (10000+ priority score for tree-threatening lumberjacks), improved patrol logic to protect vulnerable trees, and made soldiers use triad shots against high-value tree threats.
+**File Modified:** RobotPlayer.java
+**Rationale:** The root issue was that soldiers weren't being built fast enough to protect trees - with a 91% loss rate, we need immediate military response. By lowering the build cost threshold by 40%, prioritizing soldiers when we have trees to defend, and making soldiers laser-focused on lumberjack elimination, we should get defensive units deployed much faster and keep our tree economy intact.
+
+### Attempt 4 for "defend-trees-from-lumberjacks"
+
+**Current Value:** 0
+**Target:** trees_at_round.500.A >= 15
+**Change Made:** Implemented emergency tree defense system. Changed defense trigger from >3 trees to ANY trees (immediate protection), reduced soldier build threshold to 40 bullets for 33% faster deployment, added preemptive soldier building before trees appear, stopped tree planting once trees exist to focus exclusively on defense, and increased tree planting bullet requirement from 50 to 80 to delay expansion until defense is ready.
+**File Modified:** RobotPlayer.java
+**Rationale:** The fundamental issue was waiting too long to build soldiers - by the time we had >3 trees, lumberjacks were already destroying them. Now soldiers are built immediately for ANY tree defense (0+ trees), at a much lower cost threshold (40 vs 60 bullets), and we even build preemptively before trees appear. This should create immediate protection the moment a tree is planted, preventing the massive 92% loss rate.
+
 ## Current Session Log
 
 ### Iteration 1: New Objective Proposed

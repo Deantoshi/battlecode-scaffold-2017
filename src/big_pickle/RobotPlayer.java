@@ -82,18 +82,33 @@ public strictfp class RobotPlayer {
                 int yPos = rc.readBroadcast(1);
                 MapLocation archonLoc = new MapLocation(xPos,yPos);
 
+                // Check how many trees we have to defend
+                TreeInfo[] myTrees = rc.senseNearbyTrees(20f, rc.getTeam());
+                boolean haveAnyTrees = myTrees.length > 0; // ANY trees need immediate defense
+                boolean manyTrees = myTrees.length > 3; // Critical mass needs more defense
+                
                 // Generate a random direction
                 Direction dir = randomDirection();
 
-                // Prioritize building soldiers if we have enough bullets
-                if (rc.canBuildRobot(RobotType.SOLDIER, dir) && rc.getTeamBullets() >= 100) {
+                // URGENT PRIORITY: Build soldiers immediately for ANY tree defense
+                // Much lower threshold (40 bullets) for fastest possible deployment
+                int soldierBuildCost = 40; // Further reduced for immediate response
+                boolean canAffordSoldier = rc.getTeamBullets() >= soldierBuildCost;
+                
+                // EMERGENCY DEFENSE: Build soldiers immediately if we have any trees and can afford them
+                if (haveAnyTrees && canAffordSoldier && rc.canBuildRobot(RobotType.SOLDIER, dir)) {
                     rc.buildRobot(RobotType.SOLDIER, dir);
-                    System.out.println("Built a soldier! Bullets: " + rc.getTeamBullets());
+                    System.out.println("EMERGENCY: Built soldier to defend " + myTrees.length + " trees! Bullets: " + rc.getTeamBullets());
                 }
-                // Plant trees if we have enough bullets
-                else if (rc.getTeamBullets() > 50 && rc.canPlantTree(dir)) {
+                // NORMAL DEFENSE: Build soldiers even if no trees yet (preemptive protection)
+                else if (canAffordSoldier && rc.canBuildRobot(RobotType.SOLDIER, dir)) {
+                    rc.buildRobot(RobotType.SOLDIER, dir);
+                    System.out.println("PREEMPTIVE: Built soldier before trees appear! Bullets: " + rc.getTeamBullets());
+                }
+                // CRITICAL: Only plant trees if we have enough bullets AND no trees to defend yet
+                else if (rc.getTeamBullets() > 80 && rc.canPlantTree(dir) && !haveAnyTrees) {
                     rc.plantTree(dir);
-                    System.out.println("Planted a tree! Bullets: " + rc.getTeamBullets());
+                    System.out.println("First tree planted! Will start soldier production immediately. Bullets: " + rc.getTeamBullets());
                 }
                 // Randomly attempt to build a lumberjack in this direction
                 else if (rc.canBuildRobot(RobotType.LUMBERJACK, dir) && Math.random() < .01 && rc.isBuildReady()) {
@@ -134,61 +149,58 @@ public strictfp class RobotPlayer {
                     System.out.println("Soldier bullets: " + rc.getTeamBullets() + ", Nearby trees: " + myTrees.length);
                 }
 
-                // If there are enemies...
+                // SIMPLIFIED TREE DEFENSE: Focus exclusively on lumberjack threats
                 if (robots.length > 0) {
                     System.out.println("Soldier sees " + robots.length + " enemies!");
                     
-                    // PRIORITY TARGETING: Lumberjacks near our trees are #1 priority (they destroy K/D ratio)
+                    // Find highest priority target: Lumberjacks near trees > everything else
                     RobotInfo highestPriorityTarget = null;
                     float highestPriorityScore = -9999f;
                     
-                    // Increased tree detection range for better threat assessment
+                    // Scan for our trees to assess threats
                     TreeInfo[] nearbyTrees = rc.senseNearbyTrees(15f, myTeam);
                     System.out.println("Tree defense scan: " + nearbyTrees.length + " trees in range");
                     
                     for (RobotInfo enemyRobot : robots) {
                         float score = 0f;
                         
-                        // LUMBERJACKS get MASSIVE priority if near our trees
+                        // LUMBERJACKS get MASSIVE priority if near our trees (they destroy our economy)
                         if (enemyRobot.type == RobotType.LUMBERJACK) {
-                            // Count trees near this lumberjack - increased threat radius
-                            int treesNearLumberjack = 0;
+                            // Count trees this lumberjack threatens
+                            int treesThreatened = 0;
                             float minTreeDist = 999f;
                             for (TreeInfo tree : nearbyTrees) {
                                 float distToTree = enemyRobot.location.distanceTo(tree.location);
-                                if (distToTree < 8f) { // Increased threat radius from 6f to 8f
-                                    treesNearLumberjack++;
+                                if (distToTree < 8f) { // Lumberjack attack range + buffer
+                                    treesThreatened++;
                                     if (distToTree < minTreeDist) {
                                         minTreeDist = distToTree;
                                     }
                                 }
                             }
-                            // MASSIVELY increased priority score - lumberjacks near trees are CRITICAL threat
-                            score += 5000f + (treesNearLumberjack * 2000f) - (minTreeDist * 100f);
-                            System.out.println("CRITICAL: LUMBERJACK near " + treesNearLumberjack + " trees! Closest tree: " + minTreeDist + " Priority score: " + score);
+                            // MASSIVE priority for tree-destroying lumberjacks
+                            score += 10000f + (treesThreatened * 5000f) - (minTreeDist * 200f);
+                            System.out.println("CRITICAL THREAT: LUMBERJACK threatening " + treesThreatened + " trees! Score: " + score);
                         }
                         
                         // ARCHONS get high priority (victory condition)
                         else if (enemyRobot.type == RobotType.ARCHON) {
-                            score += 500f;
+                            score += 1000f;
                         }
                         
                         // GARDENERS get good priority (economy)
                         else if (enemyRobot.type == RobotType.GARDENER) {
-                            score += 200f;
+                            score += 500f;
                         }
                         
                         // SOLDIERS get base priority
                         else if (enemyRobot.type == RobotType.SOLDIER) {
-                            score += 100f;
+                            score += 200f;
                         }
                         
                         // Distance factor (closer = higher priority)
                         float distance = myLocation.distanceTo(enemyRobot.location);
-                        score -= distance * 10f;
-                        
-                        // Health factor (lower health = slightly higher priority - easier kill)
-                        score += (100f - enemyRobot.health) * 0.5f;
+                        score -= distance * 50f;
                         
                         if (score > highestPriorityScore) {
                             highestPriorityScore = score;
@@ -200,63 +212,47 @@ public strictfp class RobotPlayer {
                     float closestDist = myLocation.distanceTo(target.location);
                     Direction toEnemy = myLocation.directionTo(target.location);
                     
-                    System.out.println("TARGETING: " + target.type + " with priority score: " + highestPriorityScore + " Distance: " + closestDist);
+                    System.out.println("TARGETING: " + target.type + " Priority: " + highestPriorityScore + " Distance: " + closestDist);
                     
-                    // Get much closer for better accuracy - significantly reduced threshold
-                    float moveThreshold = rc.getType().bodyRadius + 0.3f; // Very aggressive positioning
+                    // AGGRESSIVE positioning: Get very close for maximum accuracy
+                    float moveThreshold = rc.getType().bodyRadius + 0.1f; // Extremely aggressive
                     
-                    // Move first to get closer, then fire (improved accuracy)
+                    // Move first if not in optimal range
                     boolean hasMoved = false;
                     if (closestDist > moveThreshold) {
-                        // Try multiple directions to get closer
                         if (tryMove(toEnemy)) {
                             hasMoved = true;
-                            System.out.println("Soldier moved closer, distance: " + closestDist);
+                            System.out.println("Soldier moved aggressively, distance: " + closestDist);
                         } else {
-                            // If direct movement fails, try aggressive angled approaches
-                            for (int i = 10; i <= 30; i += 10) {
+                            // Try flanking if direct approach fails
+                            for (int i = 15; i <= 45; i += 15) {
                                 if (tryMove(toEnemy.rotateLeftDegrees(i)) || tryMove(toEnemy.rotateRightDegrees(i))) {
                                     hasMoved = true;
-                                    System.out.println("Soldier moved aggressively to engage");
+                                    System.out.println("Soldier flanked to engage");
                                     break;
                                 }
                             }
                         }
                     }
                     
-                    // After moving (or if already close), fire if possible
-                    // PRIORITIZE TRIAD SHOTS against lumberjacks (they're high-value tree-destroying targets)
-                    // INCREASED triad usage - use at longer range and with more lenient bullet requirements
-                    if (target.type == RobotType.LUMBERJACK && closestDist < 6f && rc.canFireTriadShot() && rc.getTeamBullets() >= 25) {
+                    // Fire with priority: Use triad shots against high-value lumberjack threats
+                    if (target.type == RobotType.LUMBERJACK && highestPriorityScore > 10000 && closestDist < 6f && rc.canFireTriadShot() && rc.getTeamBullets() >= 25) {
                         rc.fireTriadShot(toEnemy);
-                        System.out.println("Soldier FIRED TRIAD at LUMBERJACK threatening trees! Distance: " + closestDist + " Health: " + target.health);
+                        System.out.println("URGENT: FIRED TRIAD at tree-threatening LUMBERJACK! Distance: " + closestDist);
                     }
-                    // Also use triad against lumberjacks at even closer range
-                    else if (target.type == RobotType.LUMBERJACK && closestDist < 3f && rc.canFireTriadShot() && rc.getTeamBullets() >= 20) {
-                        rc.fireTriadShot(toEnemy);
-                        System.out.println("Soldier FIRED CLOSE TRIAD at LUMBERJACK! Distance: " + closestDist + " Health: " + target.health);
-                    }
-                    // Otherwise use single shots for bullet economy
+                    // Regular single shots for normal combat
                     else if (rc.canFireSingleShot() && rc.getTeamBullets() >= 10) {
                         rc.fireSingleShot(toEnemy);
-                        System.out.println("Soldier FIRED at " + target.type + "! Distance: " + closestDist + " Health: " + target.health);
+                        System.out.println("FIRED at " + target.type + "! Distance: " + closestDist);
                     }
-                    // Use triad in crowded situations too
-                    else if (closestDist < 3 && robots.length >= 3 && rc.canFireTriadShot() && rc.getTeamBullets() >= 25) {
+                    // Triad shots for crowded combat
+                    else if (closestDist < 4f && robots.length >= 3 && rc.canFireTriadShot() && rc.getTeamBullets() >= 25) {
                         rc.fireTriadShot(toEnemy);
-                        System.out.println("Soldier FIRED TRIAD (crowded) at " + target.type);
-                    }
-                    
-                    // If we couldn't move and are still far, try flanking
-                    if (!hasMoved && closestDist > moveThreshold + 0.5f) {
-                        Direction flankDir = toEnemy.rotateLeftDegrees(90);
-                        if (!tryMove(flankDir)) {
-                            tryMove(toEnemy.rotateRightDegrees(90));
-                        }
+                        System.out.println("FIRED TRIAD (crowded) at " + target.type);
                     }
                 } else {
-                    // No enemies, patrol near our trees to protect them
-                    TreeInfo[] nearbyTrees = rc.senseNearbyTrees(15f, myTeam); // Increased patrol range
+                    // No enemies, prioritize tree protection patrol
+                    TreeInfo[] nearbyTrees = rc.senseNearbyTrees(20f, myTeam); // Increased patrol range
                     boolean dodged = false;
                     
                     // First check for bullets and try to dodge
@@ -264,7 +260,6 @@ public strictfp class RobotPlayer {
                     if (bullets.length > 0) {
                         for (BulletInfo bullet : bullets) {
                             if (willCollideWithMe(bullet)) {
-                                // Try to dodge the bullet
                                 Direction dodgeDir = bullet.dir.rotateLeftDegrees(90);
                                 if (!rc.canMove(dodgeDir)) {
                                     dodgeDir = bullet.dir.rotateRightDegrees(90);
@@ -278,24 +273,36 @@ public strictfp class RobotPlayer {
                         }
                     }
                     
-                    // If no bullets to dodge, move toward trees to protect them
+                    // If no bullets to dodge, patrol strategically around trees
                     if (!dodged) {
                         if (nearbyTrees.length > 0) {
-                            // Move toward the furthest tree to spread out protection
-                            TreeInfo furthestTree = nearbyTrees[0];
-                            float maxDist = myLocation.distanceTo(furthestTree.location);
+                            // Find the most isolated tree that needs protection
+                            TreeInfo mostVulnerableTree = null;
+                            float maxDistFromOthers = -1f;
+                            
                             for (TreeInfo tree : nearbyTrees) {
-                                float dist = myLocation.distanceTo(tree.location);
-                                if (dist > maxDist) {
-                                    maxDist = dist;
-                                    furthestTree = tree;
+                                float minDistToOtherTrees = 999f;
+                                for (TreeInfo otherTree : nearbyTrees) {
+                                    if (tree != otherTree) {
+                                        float dist = tree.location.distanceTo(otherTree.location);
+                                        if (dist < minDistToOtherTrees) {
+                                            minDistToOtherTrees = dist;
+                                        }
+                                    }
+                                }
+                                if (minDistToOtherTrees > maxDistFromOthers) {
+                                    maxDistFromOthers = minDistToOtherTrees;
+                                    mostVulnerableTree = tree;
                                 }
                             }
-                            Direction toTree = myLocation.directionTo(furthestTree.location);
-                            tryMove(toTree);
-                            System.out.println("Soldier patrolling to protect " + nearbyTrees.length + " trees");
+                            
+                            if (mostVulnerableTree != null) {
+                                Direction toVulnerableTree = myLocation.directionTo(mostVulnerableTree.location);
+                                tryMove(toVulnerableTree);
+                                System.out.println("Patrolling to protect vulnerable tree (" + nearbyTrees.length + " total)");
+                            }
                         } else {
-                            // No trees nearby, move randomly
+                            // No trees nearby, move toward likely tree locations
                             tryMove(randomDirection());
                         }
                     }
