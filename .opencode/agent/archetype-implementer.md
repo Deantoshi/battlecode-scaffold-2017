@@ -110,11 +110,7 @@ python3 simulate_economy.py src/{BOT}_v{N}/
    - If archetype prioritizes SOLDIER, you should see mostly soldiers
    - If archetype prioritizes TANK, you should see tanks being built
    - If archetype prioritizes LUMBERJACK, verify lumberjacks are in the build order
-   - **WARNING:** `Initial Build Order: []` DOES NOT mean that units will be created. You MUST review the `ARMY COMPOSITION:` section to ensure it builds the units you intended.
-2. **Build Order** - Does the initial build sequence align with the strategy?
-   - Aggressive archetypes should build combat units early
-   - Economy-focused archetypes should have more trees/gardeners
-3. **Production Rate** - Is the economy efficient?
+2. **Production Rate** - Is the economy efficient?
    - Check "Average build rate" in the output
    - More gardeners/trees = higher long-term production
 

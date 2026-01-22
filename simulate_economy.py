@@ -483,8 +483,6 @@ def print_report(profile: BotProfile, state: GameState, verbose: bool = False):
     print("BOT PROFILE (extracted from source):")
     print(f"  Max Gardeners: {profile.max_gardeners}")
     print(f"  Trees per Gardener: {profile.max_trees_per_gardener}")
-    print(f"  Initial Build Order: {profile.initial_build_order}")
-    print(f"  Cycle Pattern: {profile.cycle_pattern}")
     print(f"  Waters Trees: {profile.waters_trees}")
     if profile.donation_rules:
         print("  Donation Rules:")
