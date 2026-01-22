@@ -1,7 +1,7 @@
 ---
 description: Implements a specific archetype into a Battlecode bot variant
 mode: primary
-temperature: 0.8
+temperature: 1
 permission:
   bash: allow
   read: allow
