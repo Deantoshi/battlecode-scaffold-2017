@@ -5,7 +5,8 @@
 #
 # Scoring:
 #   Win in ≤1500 rounds: SCORE = 20000 - rounds (goal met - pure speed)
-#   All other cases:     SCORE = 10000 - rounds + (enemy_kills * 10) + (victory_points * 2.5) + (bullets_generated / 100)
+#   Win in >1500 rounds: SCORE = 10000 - rounds + (enemy_kills * 10) + (victory_points * 2.5) + (bullets_generated / 100)
+#   Loss:                SCORE = 10000 - rounds + (enemy_kills * 10) + (victory_points * 2.5) + (bullets_generated / 100) - 5000
 #
 # Output: src/<bot>/.state/variant-results.json
 # Action: Promotes winning variant to original if it scores higher
@@ -157,7 +158,8 @@ def calculate_score(won, rounds, enemy_kills=0, bullets_generated=0, victory_poi
 
     Scoring:
       Win in ≤1500 rounds: 20000 - rounds (goal met - pure speed)
-      All other cases:     10000 - rounds + (kills * 10) + (bullets / 100) + (vp * 2.5)
+      Win in >1500 rounds: 10000 - rounds + bonuses
+      Loss:                10000 - rounds + bonuses - 5000
     """
     if won and rounds <= 1500:
         # Goal met - pure round optimization
@@ -167,7 +169,11 @@ def calculate_score(won, rounds, enemy_kills=0, bullets_generated=0, victory_poi
         kill_bonus = enemy_kills * 10
         econ_bonus = int(bullets_generated / 100)
         vp_bonus = int(victory_points * 2.5)
-        return 10000 - rounds + kill_bonus + econ_bonus + vp_bonus
+        base_score = 10000 - rounds + kill_bonus + econ_bonus + vp_bonus
+        # Penalty for losing
+        if not won:
+            base_score -= 5000
+        return base_score
 
 
 # Collect results
@@ -276,7 +282,8 @@ else:
 print("")
 print("Scoring formula:")
 print("  Win ≤1500 rounds:  20000 - rounds")
-print("  All other cases:   10000 - rounds + (kills*10) + (vp*2.5) + (bullets/100)")
+print("  Win >1500 rounds:  10000 - rounds + (kills*10) + (vp*2.5) + (bullets/100)")
+print("  Loss:              10000 - rounds + (kills*10) + (vp*2.5) + (bullets/100) - 5000")
 print("═" * 80)
 
 PYEOF
