@@ -1,14 +1,14 @@
 {
-  "winner": "v10",
+  "winner": "original",
   "winner_score": 18808,
   "winner_won": true,
   "winner_rounds": 1192,
   "goal_met": "YES",
-  "should_promote": true,
-  "original_score": 8893,
+  "should_promote": false,
+  "original_score": 18808,
   "results": [
     {
-      "name": "v10",
+      "name": "original",
       "won": true,
       "rounds": 1192,
       "enemy_kills": 9,
@@ -18,53 +18,83 @@
       "source": "database"
     },
     {
-      "name": "v3",
+      "name": "v7",
       "won": true,
-      "rounds": 1225,
-      "enemy_kills": 12,
-      "bullets_generated": 19577,
+      "rounds": 1230,
+      "enemy_kills": 2,
+      "bullets_generated": 21942,
       "victory_points": 0,
-      "score": 18775,
-      "source": "database"
-    },
-    {
-      "name": "original",
-      "won": true,
-      "rounds": 1503,
-      "enemy_kills": 17,
-      "bullets_generated": 22691,
-      "victory_points": 0,
-      "score": 8893,
-      "source": "database"
-    },
-    {
-      "name": "v5",
-      "won": true,
-      "rounds": 1601,
-      "enemy_kills": 8,
-      "bullets_generated": 20282,
-      "victory_points": 0,
-      "score": 8681,
+      "score": 18770,
       "source": "database"
     },
     {
       "name": "v9",
       "won": true,
-      "rounds": 1601,
-      "enemy_kills": 8,
-      "bullets_generated": 20282,
+      "rounds": 1361,
+      "enemy_kills": 17,
+      "bullets_generated": 22316,
       "victory_points": 0,
-      "score": 8681,
+      "score": 18639,
       "source": "database"
     },
     {
       "name": "v4",
       "won": true,
-      "rounds": 2226,
-      "enemy_kills": 25,
-      "bullets_generated": 34153,
+      "rounds": 1436,
+      "enemy_kills": 12,
+      "bullets_generated": 26257,
       "victory_points": 0,
-      "score": 8365,
+      "score": 18564,
+      "source": "database"
+    },
+    {
+      "name": "v3",
+      "won": true,
+      "rounds": 1713,
+      "enemy_kills": 29,
+      "bullets_generated": 33710,
+      "victory_points": 0,
+      "score": 8914,
+      "source": "database"
+    },
+    {
+      "name": "v6",
+      "won": true,
+      "rounds": 1788,
+      "enemy_kills": 26,
+      "bullets_generated": 27008,
+      "victory_points": 0,
+      "score": 8742,
+      "source": "database"
+    },
+    {
+      "name": "v2",
+      "won": true,
+      "rounds": 2396,
+      "enemy_kills": 17,
+      "bullets_generated": 24886,
+      "victory_points": 0,
+      "score": 8022,
+      "source": "database"
+    },
+    {
+      "name": "v10",
+      "won": true,
+      "rounds": 2999,
+      "enemy_kills": 2,
+      "bullets_generated": 5441,
+      "victory_points": 0,
+      "score": 7075,
+      "source": "database"
+    },
+    {
+      "name": "v1",
+      "won": true,
+      "rounds": 2999,
+      "enemy_kills": 1,
+      "bullets_generated": 6090,
+      "victory_points": 0,
+      "score": 7071,
       "source": "database"
     },
     {
@@ -72,19 +102,19 @@
       "won": true,
       "rounds": 2999,
       "enemy_kills": 2,
-      "bullets_generated": 5339,
+      "bullets_generated": 844,
       "victory_points": 0,
-      "score": 7074,
+      "score": 7029,
       "source": "database"
     },
     {
-      "name": "v2",
-      "won": true,
+      "name": "v5",
+      "won": false,
       "rounds": 2999,
-      "enemy_kills": 4,
-      "bullets_generated": 299,
+      "enemy_kills": 9,
+      "bullets_generated": 4248,
       "victory_points": 0,
-      "score": 7043,
+      "score": 2133,
       "source": "database"
     }
   ]

@@ -10,88 +10,105 @@ public class Navigation {
 
     public static void init(RobotController rc) {
         Navigation.rc = rc;
+        MapLocation[] enemyArchons = rc.getInitialArchonLocations(rc.getTeam().opponent());
+        enemyCenter = new MapLocation(0,0);
+        for (MapLocation loc : enemyArchons) {
+            enemyCenter = new MapLocation(enemyCenter.x + loc.x, enemyCenter.y + loc.y);
+        }
+        enemyCenter = new MapLocation(enemyCenter.x / enemyArchons.length, enemyCenter.y / enemyArchons.length);
     }
 
     public static boolean tryMove(Direction dir) throws GameActionException {
-        return tryMove(dir, 20, 3);
+        if (rc.canMove(dir)) {
+            rc.move(dir);
+            return true;
+        }
+        // Try rotated directions
+        for (int i = 1; i <= 3; i++) {
+            Direction left = dir.rotateLeftDegrees(i * 45);
+            if (rc.canMove(left)) {
+                rc.move(left);
+                return true;
+            }
+            Direction right = dir.rotateRightDegrees(i * 45);
+            if (rc.canMove(right)) {
+                rc.move(right);
+                return true;
+            }
+        }
+        return false;
     }
 
-    public static boolean tryMove(Direction dir, float degreeOffset, int checksPerSide) throws GameActionException {
-        MapLocation[] archons = rc.getInitialArchonLocations(rc.getTeam());
-        float sumX = 0, sumY = 0;
-        for (MapLocation loc : archons) {
-            sumX += loc.x;
-            sumY += loc.y;
-        }
-        MapLocation center = new MapLocation(25,25); // Assuming 50x50 map
-        boolean isMagicWood = true; // hardcoded for MagicWood map
-
-        MapLocation current = rc.getLocation();
-
-        // Calculate enemy center if not already
-        if (enemyCenter == null) {
-            MapLocation[] enemyArchons = rc.getInitialArchonLocations(rc.getTeam().opponent());
-            sumX = 0; sumY = 0;
-            for (MapLocation loc : enemyArchons) {
-                sumX += loc.x;
-                sumY += loc.y;
+    public static boolean hasTreeBand(MapLocation from, MapLocation to) throws GameActionException {
+        int steps = (int) Math.ceil(from.distanceTo(to));
+        for (int i = 0; i <= steps; i++) {
+            Direction dir = from.directionTo(to);
+            MapLocation point = from.add(dir, i);
+            if (rc.canSenseLocation(point)) {
+                TreeInfo[] trees = rc.senseNearbyTrees(point, 1, null);
+                if (trees.length > 5) return true;
             }
-            enemyCenter = new MapLocation(sumX / enemyArchons.length, sumY / enemyArchons.length);
         }
+        return false;
+    }
 
-        // Collect directions to try
-        List<Direction> directionsToTry = new ArrayList<>();
-        directionsToTry.add(dir);
-        for (int i = 1; i <= checksPerSide; i++) {
-            directionsToTry.add(dir.rotateLeftDegrees(degreeOffset * i));
-            directionsToTry.add(dir.rotateRightDegrees(degreeOffset * i));
+    public static boolean isBoxedMap() {
+        return true; // since map is Boxed
+    }
+
+    public static MapLocation findBandGap(MapLocation target) throws GameActionException {
+        MapLocation current = rc.getLocation();
+        int sensorRadius = (int) rc.getType().sensorRadius;
+        Map<Integer, Integer> treeCountPerY = new HashMap<>();
+        for (int dy = -sensorRadius; dy <= sensorRadius; dy += 3) {
+            int y = (int) current.y + dy;
+            if (y < 474 || y >= 524) continue; // Boxed map bounds
+            int count = 0;
+            for (int dx = -sensorRadius; dx <= sensorRadius; dx += 1) {
+                int x = (int) current.x + dx;
+                if (x < 377 || x >= 427) continue; // Boxed map bounds
+                MapLocation loc = new MapLocation(x, y);
+                if (rc.canSenseLocation(loc)) {
+                    TreeInfo[] trees = rc.senseNearbyTrees(loc, 0, null);
+                    if (trees.length > 0) count++;
+                }
+            }
+            treeCountPerY.put(y, count);
         }
-
-        // Sort directions by quadrant preference (favor SE), then by distance to enemy center
-        directionsToTry.sort(Comparator.comparing((Direction d) -> {
-            MapLocation target = current.add(d);
-            int quadrantScore = (target.x >= center.x ? 1 : 0) + (target.y >= center.y ? 1 : 0);
-            return -quadrantScore; // descending
-        }).thenComparing(d -> {
-            MapLocation target = current.add(d);
-            return target.distanceTo(enemyCenter);
-        }));
-
-        // Try directions in sorted order
-        for (Direction checkDir : directionsToTry) {
-            MapLocation target = current.add(checkDir);
-            if ((!isMagicWood || !(target.x < center.x && target.y < center.y)) && rc.canMove(checkDir)) {
-                rc.move(checkDir);
-                return true;
-            } else if (rc.getType() == RobotType.LUMBERJACK) {
-                // For lumberjacks, prioritize clearing trees along path to enemy quadrant
-                TreeInfo[] nearbyTrees = rc.senseNearbyTrees();
-                TreeInfo bestTree = null;
-                float bestDist = Float.MAX_VALUE;
-                for (TreeInfo tree : nearbyTrees) {
-                    if (tree.team == Team.NEUTRAL && rc.canChop(tree.ID) && tree.location.distanceTo(enemyCenter) < current.distanceTo(enemyCenter)) {
-                        float dist = current.distanceTo(tree.location);
-                        if (dist < bestDist) {
-                            bestDist = dist;
-                            bestTree = tree;
-                        }
+        List<Integer> bands = new ArrayList<>();
+        int maxPossible = (sensorRadius * 2) / 3;
+        for (Map.Entry<Integer, Integer> entry : treeCountPerY.entrySet()) {
+            if (entry.getValue() > maxPossible) bands.add(entry.getKey());
+        }
+        Map<Integer, List<Integer>> gapsPerBand = new HashMap<>();
+        for (int bandY : bands) {
+            List<Integer> gaps = new ArrayList<>();
+            for (int x = 377; x < 427; x++) { // Boxed map bounds
+                MapLocation loc = new MapLocation(x, bandY);
+                if (rc.canSenseLocation(loc)) {
+                    TreeInfo[] trees = rc.senseNearbyTrees(loc, 0, null);
+                    if (trees.length == 0) gaps.add(x);
+                }
+            }
+            gapsPerBand.put(bandY, gaps);
+        }
+        for (int bandY : bands) {
+            if ((current.y < bandY && target.y > bandY) || (current.y > bandY && target.y < bandY)) {
+                List<Integer> gaps = gapsPerBand.get(bandY);
+                if (gaps.isEmpty()) continue;
+                int closestGap = gaps.get(0);
+                int minDist = Math.abs(closestGap - (int) target.x);
+                for (int gap : gaps) {
+                    int dist = Math.abs(gap - (int) target.x);
+                    if (dist < minDist) {
+                        minDist = dist;
+                        closestGap = gap;
                     }
                 }
-                if (bestTree != null) {
-                    rc.chop(bestTree.ID);
-                    return true;
-                }
-                // Fallback: try to chop blocking trees at target
-                TreeInfo tree = rc.senseTreeAtLocation(target);
-                if (tree != null && tree.team == Team.NEUTRAL && rc.canChop(tree.ID)) {
-                    rc.chop(tree.ID);
-                    return true; // Action taken (chopped), even if not moved
-                }
+                return new MapLocation(closestGap, bandY);
             }
         }
-
-        // A move never happened, so return false.
-        return false;
+        return null;
     }
 
     public static boolean tryMoveBug(MapLocation target) throws GameActionException {
@@ -104,6 +121,44 @@ public class Navigation {
 
         Direction toTarget = current.directionTo(target);
         if (!isFollowingWall) {
+            if (isBoxedMap() && current.x < 402 && target.x > 402 && hasTreeBand(current, target)) {
+                if (rc.canMove(Direction.getSouth())) {
+                    rc.move(Direction.getSouth());
+                    return true;
+                }
+                if (rc.canMove(Direction.getNorth())) {
+                    rc.move(Direction.getNorth());
+                    return true;
+                }
+            } else if (isBoxedMap() && hasTreeBand(current, target)) {
+                MapLocation gap = findBandGap(target);
+                if (gap != null) {
+                    Direction toGap = current.directionTo(gap);
+                    if (rc.canMove(toGap)) {
+                        rc.move(toGap);
+                        return true;
+                    }
+                    return tryMove(toGap);
+                } else {
+                    if (rc.canMove(Direction.getSouth())) {
+                        rc.move(Direction.getSouth());
+                        return true;
+                    }
+                    if (rc.canMove(Direction.getNorth())) {
+                        rc.move(Direction.getNorth());
+                        return true;
+                    }
+                }
+            } else if (hasTreeBand(current, target)) {
+                if (rc.canMove(Direction.getSouth())) {
+                    rc.move(Direction.getSouth());
+                    return true;
+                }
+                if (rc.canMove(Direction.getNorth())) {
+                    rc.move(Direction.getNorth());
+                    return true;
+                }
+            }
             if (rc.canMove(toTarget)) {
                 rc.move(toTarget);
                 return true;

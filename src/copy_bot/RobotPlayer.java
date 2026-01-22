@@ -1,13 +1,9 @@
 package copy_bot;
 import battlecode.common.*;
-import java.util.*;
 
-/**
- * 
- * @author 
- */
 public strictfp class RobotPlayer {
     static RobotController rc;
+    static int gardenersHired = 0;
 
     /**
       * run() is the method that is called when a robot is instantiated in the Battlecode world.
@@ -19,7 +15,13 @@ public strictfp class RobotPlayer {
         // This is the RobotController object. You use it to perform actions from this robot,
         // and to get information on its current status.
         RobotPlayer.rc = rc;
-        Navigation.init(rc);
+
+        // Initialize classes
+        Gardener.init(rc);
+        Soldier.init(rc);
+        Tank.init(rc);
+        Scout.init(rc);
+        Nav.init(rc);
 
         // Here, we've separated the controls into a different method for each RobotType.
         // You can add the missing ones or rewrite this into your own control structure.
@@ -36,13 +38,19 @@ public strictfp class RobotPlayer {
             case LUMBERJACK:
                 runLumberjack();
                 break;
+            case TANK:
+                runTank();
+                break;
+            case SCOUT:
+                runScout();
+                break;
         }
 	}
 
     static void runArchon() throws GameActionException {
         System.out.println("I'm an archon!");
-        Team enemy = rc.getTeam().opponent();
-        MapLocation enemyArchonLoc = rc.getInitialArchonLocations(enemy)[0];
+
+        MapLocation spawnLoc = rc.getLocation();
 
         // The code you want your robot to perform every round should be in this loop
         while (true) {
@@ -53,20 +61,48 @@ public strictfp class RobotPlayer {
                 // Generate a random direction
                 Direction dir = randomDirection();
 
-                // Randomly attempt to build a gardener in this direction
-                if (rc.canHireGardener(dir) && Math.random() < .15) {
+                // Hire up to 20 gardeners indefinitely
+                if (gardenersHired < 20 && rc.canHireGardener(dir)) {
                     rc.hireGardener(dir);
+                    gardenersHired++;
                 }
 
-                // Move randomly to prioritize survival
-                Navigation.tryMove(randomDirection());
+                // Broadcast gardeners hired
+                rc.broadcast(2, gardenersHired);
+
+                // Move - stationary until late game
+                if (rc.getRoundNum() > 1000) {
+                    RobotInfo[] enemies = rc.senseNearbyRobots(10, rc.getTeam().opponent());
+                    if (enemies.length > 0) {
+                        System.out.println("Archon fleeing from " + enemies.length + " enemies");
+                        MapLocation enemyLoc = enemies[0].location;
+                        Direction away = rc.getLocation().directionTo(enemyLoc).opposite();
+                        tryMove(away);
+                    } else {
+                        MapLocation target = (gardenersHired >= 2) ? Nav.enemyCenter : spawnLoc;
+                        Nav.tryMoveBug(target);
+                    }
+                }
 
                 // Broadcast archon's location for other robots on the team to know
                 MapLocation myLocation = rc.getLocation();
                 rc.broadcast(0,(int)myLocation.x);
                 rc.broadcast(1,(int)myLocation.y);
-                rc.broadcast(2,(int)enemyArchonLoc.x);
-                rc.broadcast(3,(int)enemyArchonLoc.y);
+
+                // VP donation logic: adjust for hybrid strategy
+                float bullets = rc.getTeamBullets();
+                if (rc.getRoundNum() <= 1000) {
+                    // Early: keep reserve
+                    if (bullets > 200) {
+                        rc.donate(bullets - 100);
+                    }
+                } else {
+                    // Late: aggressive donation if behind (simplified: if bullets low)
+                    if (bullets > 300) {
+                        rc.donate(bullets - 200); // donate more
+                    }
+                    // If ahead, keep building army, less donation
+                }
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();
@@ -78,14 +114,8 @@ public strictfp class RobotPlayer {
         }
     }
 
-	static void runGardener() throws GameActionException {
+ 	static void runGardener() throws GameActionException {
         System.out.println("I'm a gardener!");
-
-        if (rc.getRoundNum() == 1) {
-            rc.broadcast(4, 0);
-            rc.broadcast(5, 0);
-            rc.broadcast(6, 0);
-        }
 
         // The code you want your robot to perform every round should be in this loop
         while (true) {
@@ -101,58 +131,23 @@ public strictfp class RobotPlayer {
                 // Generate a random direction
                 Direction dir = randomDirection();
 
-                // Prioritize early lumberjack production for path clearing
-                int lumberjackCount = rc.readBroadcast(5);
-                int tankCount = rc.readBroadcast(4);
-                int soldierCount = rc.readBroadcast(6);
-                if (rc.getRoundNum() < 500) {
-                    float rand = (float) Math.random();
-                    if (rand < 0.6f && rc.canBuildRobot(RobotType.LUMBERJACK, dir) && rc.isBuildReady()) {
-                        rc.buildRobot(RobotType.LUMBERJACK, dir);
-                        rc.broadcast(5, lumberjackCount + 1);
-                    } else if (rand < 0.8f && rc.canBuildRobot(RobotType.TANK, dir) && rc.isBuildReady()) {
-                        rc.buildRobot(RobotType.TANK, dir);
-                        rc.broadcast(4, tankCount + 1);
-                    } else if (rc.canBuildRobot(RobotType.SOLDIER, dir) && rc.isBuildReady()) {
-                        rc.buildRobot(RobotType.SOLDIER, dir);
-                        rc.broadcast(6, soldierCount + 1);
-                    }
-                } else {
-                    float rand = (float) Math.random();
-                    if (rand < 0.6f && rc.canBuildRobot(RobotType.SOLDIER, dir) && rc.isBuildReady()) {
-                        rc.buildRobot(RobotType.SOLDIER, dir);
-                        rc.broadcast(6, soldierCount + 1);
-                    } else if (rand < 0.8f && rc.canBuildRobot(RobotType.LUMBERJACK, dir) && rc.isBuildReady()) {
-                        rc.buildRobot(RobotType.LUMBERJACK, dir);
-                        rc.broadcast(5, lumberjackCount + 1);
-                    } else if (rand < 1.0f && rc.canBuildRobot(RobotType.TANK, dir) && rc.isBuildReady()) {
-                        rc.buildRobot(RobotType.TANK, dir);
-                        rc.broadcast(4, tankCount + 1);
-                    }
+                // Check for nearby trees blocking build areas
+                TreeInfo[] nearbyTrees = rc.senseNearbyTrees(5.0f, null);
+                if (nearbyTrees.length > 0) {
+                    tryMove(randomDirection());
                 }
 
-                if (rc.canPlantTree(dir) && Math.random() < 0.0) {
-                    rc.plantTree(dir);
-                }
+                // Attempt to build robots
+                Gardener.buildRobot();
 
-                // Check for nearby enemies
-                RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
-                if (enemies.length == 0) {
-                    // No enemies nearby, move towards quadrant center if far away
-                    int quadrant = rc.getID() % 4;
-                    MapLocation quadrantCenter = getQuadrantCenter(quadrant);
-                    if (rc.getLocation().distanceTo(quadrantCenter) > 5.0f) {
-                        Direction toQuadrant = rc.getLocation().directionTo(quadrantCenter);
-                        boolean moved = Navigation.tryMove(toQuadrant);
-                        if (!moved) { Navigation.tryMove(randomDirection()); }
-                    } else {
-                        // Already close, move randomly
-                        Navigation.tryMove(randomDirection());
-                    }
-                } else {
-                    // Enemies nearby, move randomly
-                    Navigation.tryMove(randomDirection());
-                }
+                // Water trees
+                Gardener.waterTree();
+
+                // Plant trees
+                Gardener.plantTree();
+
+                // Move towards enemy center for early pressure
+                Nav.tryMoveBug(Nav.enemyCenter);
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();
@@ -171,122 +166,51 @@ public strictfp class RobotPlayer {
         // The code you want your robot to perform every round should be in this loop
         while (true) {
 
-            // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
+            // Try/catch blocks stop unhandled exceptions, which cause your robot to perform this loop again
             try {
                 MapLocation myLocation = rc.getLocation();
 
-                // See if there are any nearby enemy robots
-                RobotInfo[] robots = rc.senseNearbyRobots(-1, enemy);
+                // Fire
+                Soldier.fire();
 
-                Direction desiredDir;
-                // If there are some...
-                if (robots.length > 0) {
-                    // Find closest archon
-                    RobotInfo target = null;
-                    for (RobotInfo r : robots) {
-                        if (r.type == RobotType.ARCHON) {
-                            target = r;
-                            break; // since sorted by distance, first archon is closest
-                        }
-                    }
-                    if (target == null) {
-                        target = robots[0]; // closest enemy
-                    }
-                    // Fire at target
-                    Direction dir = rc.getLocation().directionTo(target.location);
-                    int triadTargets = 0;
-                    int pentadTargets = 0;
-                    for (RobotInfo r : robots) {
-                        Direction enemyDir = rc.getLocation().directionTo(r.location);
-                        float angle = Math.abs(dir.radiansBetween(enemyDir));
-                        if (angle <= Math.toRadians(20)) triadTargets++;
-                        if (angle <= Math.toRadians(30)) pentadTargets++;
-                    }
-                    // Check for friendly fire
-                    boolean safeToFireSingle = true;
-                    boolean safeToFireTriad = true;
-                    boolean safeToFirePentad = true;
-                    RobotInfo[] friendlies = rc.senseNearbyRobots(-1, rc.getTeam());
-                    for (RobotInfo friendly : friendlies) {
-                        Direction toFriendly = rc.getLocation().directionTo(friendly.location);
-                        float angleDiff = Math.abs(dir.radiansBetween(toFriendly));
-                        float dist = rc.getLocation().distanceTo(friendly.location);
-                        if (dist < 5.0f) {
-                            if (angleDiff < Math.toRadians(10)) safeToFireSingle = false;
-                            if (angleDiff < Math.toRadians(20)) safeToFireTriad = false;
-                            if (angleDiff < Math.toRadians(30)) safeToFirePentad = false;
-                        }
-                    }
-                    if (rc.canFireSingleShot() && safeToFireSingle) {
-                        rc.fireSingleShot(dir);
-                    } else if (rc.canFireTriadShot() && triadTargets >= 2 && safeToFireTriad) {
-                        rc.fireTriadShot(dir);
-                    } else if (rc.canFirePentadShot() && pentadTargets >= 4 && safeToFirePentad) {
-                        rc.firePentadShot(dir);
-                    } else if (rc.canFireTriadShot() && safeToFireTriad) {
-                        rc.fireTriadShot(dir);
-                    } else if (rc.canFirePentadShot() && safeToFirePentad) {
-                        rc.firePentadShot(dir);
-                    }
-                    // Set desired direction towards the target
-                    desiredDir = myLocation.directionTo(target.location);
-                } else {
-                    int enemyX = rc.readBroadcast(2);
-                    int enemyY = rc.readBroadcast(3);
-                    MapLocation enemyArchon = new MapLocation((float)enemyX, (float)enemyY);
-                    // Sense trees blocking path to enemy archon
-                    TreeInfo[] trees = rc.senseNearbyTrees(-1, null);
-                    TreeInfo targetTree = null;
-                    float minDist = Float.MAX_VALUE;
-                    Direction toEnemy = myLocation.directionTo(enemyArchon);
-                    for (TreeInfo tree : trees) {
-                        Direction toTree = myLocation.directionTo(tree.location);
-                        if (Math.abs(toTree.radiansBetween(toEnemy)) < Math.PI / 12) { // within 15 degrees
-                            float dist = myLocation.distanceTo(tree.location);
-                            if (dist <= 3.0f && dist < minDist) { // within firing range
-                                minDist = dist;
-                                targetTree = tree;
-                            }
-                        }
-                    }
-                    if (targetTree != null && rc.canFireSingleShot()) {
-                        Direction treeDir = myLocation.directionTo(targetTree.location);
-                        boolean safeToFireTree = true;
-                        RobotInfo[] friendlies = rc.senseNearbyRobots(-1, rc.getTeam());
-                        for (RobotInfo friendly : friendlies) {
-                            Direction toFriendly = myLocation.directionTo(friendly.location);
-                            float angleDiff = Math.abs(treeDir.radiansBetween(toFriendly));
-                            float dist = myLocation.distanceTo(friendly.location);
-                            if (dist < 5.0f && angleDiff < Math.toRadians(10)) {
-                                safeToFireTree = false;
-                                break;
-                            }
-                        }
-                        if (safeToFireTree) {
-                            rc.fireSingleShot(treeDir);
-                        }
-                    }
-                    desiredDir = myLocation.directionTo(enemyArchon);
-                }
-
-                // Check for bullets to dodge
-                BulletInfo[] bullets = rc.senseNearbyBullets();
-                for (BulletInfo b : bullets) {
-                    if (willCollideWithMe(b)) {
-                        // Dodge by moving perpendicular to bullet direction
-                        desiredDir = b.dir.rotateLeftDegrees(90);
-                        break; // dodge the first colliding bullet
-                    }
-                }
-
-                // Move in the desired direction
-                Navigation.tryMove(desiredDir);
+                // Move towards enemy center for coordinated pushes
+                Nav.tryMoveBug(Nav.enemyCenter);
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();
 
             } catch (Exception e) {
                 System.out.println("Soldier Exception");
+                e.printStackTrace();
+            }
+        }
+    }
+
+    static void runTank() throws GameActionException {
+        System.out.println("I'm an tank!");
+        Team enemy = rc.getTeam().opponent();
+
+        // The code you want your robot to perform every round should be in this loop
+        while (true) {
+
+            // Try/catch blocks stop unhandled exceptions, which cause your robot to perform this loop again
+            try {
+                MapLocation myLocation = rc.getLocation();
+
+                // See if there are any nearby enemy robots
+                RobotInfo[] robots = rc.senseNearbyRobots(-1, enemy);
+
+                // Fire at enemies
+                Tank.fire();
+
+                // Move towards enemy center for coordinated assaults
+                Nav.tryMoveBug(Nav.enemyCenter);
+
+                // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
+                Clock.yield();
+
+            } catch (Exception e) {
+                System.out.println("Tank Exception");
                 e.printStackTrace();
             }
         }
@@ -299,122 +223,18 @@ public strictfp class RobotPlayer {
         // The code you want your robot to perform every round should be in this loop
         while (true) {
 
-            // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
+            // Try/catch blocks stop unhandled exceptions, which cause your robot to perform this loop again
             try {
-                int enemyX = rc.readBroadcast(2);
-                int enemyY = rc.readBroadcast(3);
-                MapLocation enemyArchon = new MapLocation((float)enemyX, (float)enemyY);
-
-                // Prioritize chopping trees on path to enemy archon
-                TreeInfo[] pathTrees = rc.senseNearbyTrees(-1, null);
-                TreeInfo targetTree = null;
-                float minDist = Float.MAX_VALUE;
-                for (TreeInfo tree : pathTrees) {
-                    if (rc.getLocation().distanceTo(tree.location) <= 2.0f && lineIntersectsCircle(rc.getLocation(), enemyArchon, tree.location, tree.radius)) {
-                        float dist = rc.getLocation().distanceTo(tree.location);
-                        if (dist < minDist) {
-                            minDist = dist;
-                            targetTree = tree;
-                        }
-                    }
-                }
-                if (targetTree != null) {
-                    if (targetTree.containedRobot != null && rc.canShake(targetTree.ID)) {
-                        rc.shake(targetTree.ID);
-                    } else if (rc.canChop(targetTree.ID)) {
-                        rc.chop(targetTree.ID);
-                    }
-                }
 
                 // See if there are any enemy robots within striking range (distance 1 from lumberjack's radius)
-                RobotInfo[] robots = rc.senseNearbyRobots(GameConstants.LUMBERJACK_STRIKE_RADIUS, enemy);
-                RobotInfo[] friendlies = rc.senseNearbyRobots(2.0f, rc.getTeam());
+                RobotInfo[] robots = rc.senseNearbyRobots(RobotType.LUMBERJACK.bodyRadius+GameConstants.LUMBERJACK_STRIKE_RADIUS, enemy);
 
-                if(robots.length > 0 && friendlies.length == 0 && !rc.hasAttacked()) {
+                if(robots.length > 0 && !rc.hasAttacked()) {
                     // Use strike() to hit all nearby robots!
                     rc.strike();
                 } else {
-                    // No close robots, so search for robots within sight radius
-                    robots = rc.senseNearbyRobots(-1,enemy);
-
-                    Direction desiredDir;
-                    MapLocation target;
-                    if(robots.length > 0) {
-                        target = robots[0].getLocation();
-                        desiredDir = rc.getLocation().directionTo(target);
-                    } else {
-                        target = enemyArchon;
-                        desiredDir = rc.getLocation().directionTo(target);
-                    }
-
-                    // Proactively clear blocking trees in desired direction
-                    TreeInfo[] nearbyTrees = rc.senseNearbyTrees(3.0f, null);
-                    for (TreeInfo tree : nearbyTrees) {
-                        Direction toTree = rc.getLocation().directionTo(tree.location);
-                        float angleDiff = Math.abs(desiredDir.radiansBetween(toTree));
-                        if (angleDiff < Math.PI / 6) { // within 30 degrees
-                            if (tree.containedRobot != null && rc.canShake(tree.ID)) {
-                                rc.shake(tree.ID);
-                            } else if (rc.canChop(tree.ID)) {
-                                rc.chop(tree.ID);
-                            }
-                        }
-                    }
-
-                    // If there is a robot, move towards it
-                    if(robots.length > 0) {
-                        Navigation.tryMove(desiredDir);
-
-                    } else {
-                        // Sense nearby trees
-                        TreeInfo[] trees = rc.senseNearbyTrees(-1, null);
-                        if (trees.length > 0) {
-                            // Find the tree with smallest angle to target direction within direct path
-                            TreeInfo bestTree = null;
-                            float minAngle = Float.MAX_VALUE;
-                            float maxAngle = (float)Math.PI; // 180 degrees threshold
-                            for (TreeInfo t : trees) {
-                                if (t.containedRobot != null) {
-                                    minAngle = 0;
-                                    bestTree = t;
-                                } else {
-                                    Direction toTree = rc.getLocation().directionTo(t.location);
-                                    float angleDiff = Math.abs(desiredDir.radiansBetween(toTree));
-                                    if (angleDiff < maxAngle && angleDiff < minAngle) {
-                                        minAngle = angleDiff;
-                                        bestTree = t;
-                                    }
-                                }
-                            }
-                            // Chop the best tree if possible, otherwise move towards it
-                            if (bestTree != null) {
-                                if (rc.canChop(bestTree.ID)) {
-                                    rc.chop(bestTree.ID);
-                                } else {
-                                    Direction toTree = rc.getLocation().directionTo(bestTree.location);
-                                    Navigation.tryMove(toTree);
-                                }
-                            } else {
-                                // No trees in direct path, move towards target if far away
-                                if (rc.getLocation().distanceTo(target) > 5.0f) {
-                                    boolean moved = Navigation.tryMove(desiredDir);
-                                    if (!moved) { Navigation.tryMove(randomDirection()); }
-                                } else {
-                                    // Already close, move randomly
-                                    Navigation.tryMove(randomDirection());
-                                }
-                            }
-                        } else {
-                            // No trees nearby, move towards target if far away
-                            if (rc.getLocation().distanceTo(target) > 5.0f) {
-                                boolean moved = Navigation.tryMove(desiredDir);
-                                if (!moved) { Navigation.tryMove(randomDirection()); }
-                            } else {
-                                // Already close, move randomly
-                                Navigation.tryMove(randomDirection());
-                            }
-                        }
-                    }
+                    // Move towards enemy center for coordinated pushes
+                    Nav.tryMoveBug(Nav.enemyCenter);
                 }
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
@@ -427,24 +247,30 @@ public strictfp class RobotPlayer {
         }
     }
 
-    static MapLocation getQuadrantCenter(int quadrant) {
-        MapLocation[] ownArchons = rc.getInitialArchonLocations(rc.getTeam());
-        float avgX = 0, avgY = 0;
-        for (MapLocation loc : ownArchons) {
-            avgX += loc.x;
-            avgY += loc.y;
-        }
-        avgX /= ownArchons.length;
-        avgY /= ownArchons.length;
-        MapLocation mapCenter = new MapLocation(avgX, avgY);
-        float offsetX = 80.0f / 4.0f;
-        float offsetY = 80.0f / 4.0f;
-        switch(quadrant) {
-            case 0: return new MapLocation(mapCenter.x - offsetX, mapCenter.y + offsetY); // NW
-            case 1: return new MapLocation(mapCenter.x + offsetX, mapCenter.y + offsetY); // NE
-            case 2: return new MapLocation(mapCenter.x + offsetX, mapCenter.y - offsetY); // SE
-            case 3: return new MapLocation(mapCenter.x - offsetX, mapCenter.y - offsetY); // SW
-            default: return rc.getLocation(); // shouldn't happen
+    static void runScout() throws GameActionException {
+        System.out.println("I'm a scout!");
+        Team enemy = rc.getTeam().opponent();
+
+        // The code you want your robot to perform every round should be in this loop
+        while (true) {
+
+            // Try/catch blocks stop unhandled exceptions, which cause your robot to perform this loop again
+            try {
+                MapLocation myLocation = rc.getLocation();
+
+                // Fire
+                Scout.fire();
+
+                // Move towards enemy center for scouting and harassment
+                Nav.tryMoveBug(Nav.enemyCenter);
+
+                // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
+                Clock.yield();
+
+            } catch (Exception e) {
+                System.out.println("Scout Exception");
+                e.printStackTrace();
+            }
         }
     }
 
@@ -457,48 +283,53 @@ public strictfp class RobotPlayer {
     }
 
     /**
-      * A slightly more complicated example function, this returns true if the given bullet is on a collision
-      * course with the current robot. Doesn't take into account objects between the bullet and this robot.
+      * Attempts to move in a given direction, while avoiding small obstacles directly in the path.
       *
-      * @param bullet The bullet in question
-      * @return True if the line of the bullet's path intersects with this robot's current position.
+      * @param dir The intended direction of movement
+      * @return true if a move was performed
+      * @throws GameActionException
       */
-    static boolean willCollideWithMe(BulletInfo bullet) {
-        MapLocation myLocation = rc.getLocation();
-
-        // Get relevant bullet information
-        Direction propagationDirection = bullet.dir;
-        MapLocation bulletLocation = bullet.location;
-
-        // Calculate bullet relations to this robot
-        Direction directionToRobot = bulletLocation.directionTo(myLocation);
-        float distToRobot = bulletLocation.distanceTo(myLocation);
-        float theta = propagationDirection.radiansBetween(directionToRobot);
-
-        // If theta > 90 degrees, then the bullet is traveling away from us and we can break early
-        if (Math.abs(theta) > Math.PI/2) {
-            return false;
-        }
-
-        // distToRobot is our hypotenuse, theta is our angle, and we want to know this length of the opposite leg.
-        // This corresponds to the smallest radius circle centered at our location that would intersect with the
-        // line that is the path of the bullet.
-        float perpendicularDist = (float)Math.abs(distToRobot * Math.sin(theta)); // soh cah toa :)
-
-        return (perpendicularDist <= rc.getType().bodyRadius);
+    static boolean tryMove(Direction dir) throws GameActionException {
+        return tryMove(dir,20,3);
     }
 
-    static boolean lineIntersectsCircle(MapLocation start, MapLocation end, MapLocation center, float radius) {
-        float dx = end.x - start.x;
-        float dy = end.y - start.y;
-        float cx = center.x - start.x;
-        float cy = center.y - start.y;
-        float len2 = dx*dx + dy*dy;
-        if (len2 == 0) return start.distanceTo(center) <= radius;
-        float t = Math.max(0, Math.min(1, (cx*dx + cy*dy) / len2));
-        float projx = start.x + t * dx;
-        float projy = start.y + t * dy;
-        MapLocation proj = new MapLocation(projx, projy);
-        return proj.distanceTo(center) <= radius;
+    /**
+      * Attempts to move in a given direction, while avoiding small obstacles direction in the path.
+      *
+      * @param dir The intended direction of movement
+      * @param degreeOffset Spacing between checked directions (degrees)
+      * @param checksPerSide Number of extra directions checked on each side, if intended direction was unavailable
+      * @return true if a move was performed
+      * @throws GameActionException
+      */
+    static boolean tryMove(Direction dir, float degreeOffset, int checksPerSide) throws GameActionException {
+
+        // First, try intended direction
+        if (rc.canMove(dir)) {
+            rc.move(dir);
+            return true;
+        }
+
+        // Now try a bunch of similar angles
+        boolean moved = false;
+        int currentCheck = 1;
+
+        while(currentCheck<=checksPerSide) {
+            // Try the offset of the left side
+            if(rc.canMove(dir.rotateLeftDegrees(degreeOffset*currentCheck))) {
+                rc.move(dir.rotateLeftDegrees(degreeOffset*currentCheck));
+                return true;
+            }
+            // Try the offset on the right side
+            if(rc.canMove(dir.rotateRightDegrees(degreeOffset*currentCheck))) {
+                rc.move(dir.rotateRightDegrees(degreeOffset*currentCheck));
+                return true;
+            }
+            // No move performed, try slightly further
+            currentCheck++;
+        }
+
+        // A move never happened, so return false.
+        return false;
     }
 }

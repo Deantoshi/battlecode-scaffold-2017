@@ -2,143 +2,153 @@
   "archetypes": [
     {
       "id": 1,
-      "name": "Soldier Rush",
-      "win_condition": "elimination",
-      "philosophy": "Focus on early game unit production to overwhelm the opponent before they can build defenses or economy.",
+      "name": "Bullet Surge",
+      "win_condition": "vp_rush",
+      "philosophy": "Focus on rapid tree planting and aggressive bullet donation to achieve Victory Points early, using minimal army for defense while maximizing economic output.",
       "key_changes": [
-        "Change Gardener.buildOrder to prioritize SOLDIER: RobotType.SOLDIER repeatedly, limiting other units to 1-2.",
-        "Modify Archon hiring to hire more Gardeners early: change limit from 20 to unlimited, but adjust movement to stay closer to spawn for faster expansion.",
-        "Increase Gardener build speed by reducing plantTree and waterTree calls, prioritizing buildRobot.",
-        "Alter Soldier movement to aggressive pursuit: modify Nav.tryMoveBug to always move directly towards enemy locations sensed."
+        "In Gardener.java, remove all robot building and prioritize planting trees in every direction, increasing density.",
+        "In Archon.java, set donation threshold to 0 bullets, donating immediately to rush VP even with low reserves.",
+        "In Gardener.java, add logic to water trees only when necessary, freeing up actions for planting.",
+        "Modify Nav.java to keep units stationary near archons for maximum tree farming efficiency.",
+        "In RobotPlayer.java, limit archon hiring to focus on 3-4 gardeners for clustered tree farms."
       ],
-      "unit_priority": ["SOLDIER", "SOLDIER", "GARDENER", "SOLDIER"],
-      "engagement_style": "Aggressive early pushes with direct rushes towards enemy positions, using all available firepower."
+      "unit_priority": ["SCOUT", "LUMBERJACK"],
+      "engagement_style": "Passive defense with scouts intercepting threats, otherwise fully focused on economy"
     },
     {
       "id": 2,
-      "name": "VP Farmer",
-      "win_condition": "vp_rush",
-      "philosophy": "Maximize tree farming and bullet donation to achieve victory points quickly while minimal army defends.",
+      "name": "Infantry Onslaught",
+      "win_condition": "elimination",
+      "philosophy": "Spam cheap soldiers early to overwhelm enemy before they can establish their economy, leveraging map edges for flanking attacks.",
       "key_changes": [
-        "Shift Gardener priority to tree planting and watering: call plantTree and waterTree before buildRobot.",
-        "Disable most unit building: modify buildOrder to only build one SOLDIER early, then focus on economy.",
-        "Increase Archon VP donation threshold: change from 100 to 0, donating all excess bullets immediately.",
-        "Modify Gardeners to stay in place after planting initial trees: remove tryMoveBug calls, make them stationary farms."
+        "In Gardener.java, set buildOrder to {RobotType.SOLDIER} exclusively for the first 800 rounds.",
+        "Modify Nav.java tryMoveBug to aggressively cross Lanes tree bands by finding gaps and moving North/South when blocked.",
+        "In Soldier.java fire(), add kiting logic to maintain distance from enemy tanks while firing triad shots.",
+        "In Archon.java, reduce gardener hiring to 2-3 and increase donation only after soldiers are produced.",
+        "Add soldier clustering in RobotPlayer.java to coordinate pushes through broadcasted waypoints."
       ],
-      "unit_priority": ["GARDENER", "GARDENER", "SOLDIER"],
-      "engagement_style": "Defensive positioning around tree farms, only engaging enemies that threaten the economy."
+      "unit_priority": ["SOLDIER", "SOLDIER", "SOLDIER"],
+      "engagement_style": "Aggressive all-in pushes, targeting enemy archons and gardeners first"
     },
     {
       "id": 3,
-      "name": "Tank Fortress",
+      "name": "Armored Citadel",
       "win_condition": "hybrid",
-      "philosophy": "Build tank defenses around expanding tree farms to protect VP accumulation while capable of offense.",
+      "philosophy": "Build defensive tank formations to protect expanding tree farms, using tanks to body-ram through trees and control territory.",
       "key_changes": [
-        "Prioritize TANK in buildOrder: start with LUMBERJACK, then TANK, then GARDENER repeats.",
-        "Add tank clustering around Archons: modify Tank run method to move towards nearest friendly Archon location from broadcasts.",
-        "Balance economy and defense: ensure Gardeners plant trees while Tanks position defensively.",
-        "Adjust Tank firing to focus on area damage at medium range to cover forts."
+        "In Gardener.java, prioritize TANK builds in buildOrder for early and mid game.",
+        "In Tank.java, implement patrol patterns around gardener clusters to block enemy access.",
+        "Modify Nav.java for tanks to use body-ramming trees when navigating to positions.",
+        "In Gardener.java, make gardeners plant trees in circular formations around tanks for protected farming.",
+        "In Archon.java, adjust donation to maintain 500 bullet reserve for emergency builds."
       ],
-      "unit_priority": ["TANK", "GARDENER", "LUMBERJACK", "TANK"],
-      "engagement_style": "Static defensive positions with tanks protecting archons and gardeners, counter-attacking threats."
+      "unit_priority": ["TANK", "SCOUT", "LUMBERJACK"],
+      "engagement_style": "Defensive turtling with occasional snipe opportunities, tanks leading territorial expansions"
     },
     {
       "id": 4,
-      "name": "Scout Harassment",
+      "name": "Vision Raiders",
       "win_condition": "elimination",
-      "philosophy": "Use fast, cheap Scouts to disrupt enemy economy by killing gardeners and archons early.",
+      "philosophy": "Deploy scout swarms to harass enemy gardeners and gather intel, disrupting economy while main army advances through cleared paths.",
       "key_changes": [
-        "Change buildOrder to heavily favor SCOUT: prioritize SCOUT after initial LUMBERJACK.",
-        "Modify Scout movement to hunt specific targets: add logic to sense and move towards enemy Gardeners and Archons.",
-        "Increase Scout build frequency: make buildRobot cycle faster by removing delays in Gardener.",
-        "Add Scout avoidance of combat: scouts flee if outnumbered, focus on harassment."
+        "In Gardener.java, set buildOrder to mostly SCOUT for first 600 rounds.",
+        "In Scout.java, add gardener-hunting behavior: move towards enemy archon locations and prioritize firing at gardeners.",
+        "Implement scout coordination in Nav.java: scouts broadcast tree gap locations to team for army routing.",
+        "In Soldier.java, add support for following scout-marked paths through Lanes bands.",
+        "Reduce tree planting in Gardener.java to free up build cooldowns for more scout production."
       ],
-      "unit_priority": ["SCOUT", "LUMBERJACK", "SCOUT", "GARDENER"],
-      "engagement_style": "Hit-and-run tactics, targeting vulnerable economic units and fleeing from strong defenses."
+      "unit_priority": ["SCOUT", "SCOUT", "SOLDIER"],
+      "engagement_style": "Hit-and-run harassment tactics, scouts kiting away from danger while army pushes"
     },
     {
       "id": 5,
-      "name": "Lumberjack Blitz",
+      "name": "Tree Cleaver Rush",
       "win_condition": "elimination",
-      "philosophy": "Rapid forest clearing and pathing to enable fast assaults through lanes or obstacles.",
+      "philosophy": "Rush lumberjacks to clear tree bands quickly, attacking enemy base directly through forest gaps with melee superiority.",
       "key_changes": [
-        "Prioritize LUMBERJACK in buildOrder: start with multiple LUMBERJACKs to clear paths.",
-        "Modify Lumberjack run to focus on chopping trees towards enemy center.",
-        "Integrate pathfinding: use Nav.findBandGap actively in movement to exploit map features like Lanes.",
-        "After clearing, have Lumberjacks escort Soldiers towards enemy base."
+        "In Gardener.java, buildOrder = {RobotType.LUMBERJACK} until 400 rounds.",
+        "In Lumberjack.java, modify movement to aggressively chop towards enemy archons, using band navigation to flank.",
+        "Add lumberjack strike priority for archons in RobotPlayer.java runLumberjack.",
+        "In Nav.java, disable tree collision avoidance for lumberjacks to charge through dense areas.",
+        "In Gardener.java, disable tree planting to maximize lumberjack production speed."
       ],
-      "unit_priority": ["LUMBERJACK", "LUMBERJACK", "SOLDIER", "LUMBERJACK"],
-      "engagement_style": "Aggressive path clearing and direct assaults, using strikes against enemies and chops for mobility."
+      "unit_priority": ["LUMBERJACK", "LUMBERJACK", "LUMBERJACK"],
+      "engagement_style": "Direct charging attacks through cleared paths, targeting high-value units"
     },
     {
       "id": 6,
-      "name": "Balanced Macro",
+      "name": "Economic Escalator",
       "win_condition": "hybrid",
-      "philosophy": "Maintain balanced unit composition and steady expansion for mid-game adaptability.",
+      "philosophy": "Early survival with tree farming, then explosive late-game scaling with massive army production to dominate.",
       "key_changes": [
-        "Keep standard buildOrder but adjust proportions: more Gardeners for economy, balanced army.",
-        "Add macro management: Gardeners build army when VP cost rises, focus economy early.",
-        "Modify Archon movement: stay near base until sufficient army built, then push with Nav.tryMoveBug.",
-        "Balance Soldier and Tank roles: Soldiers for mobility, Tanks for anchor points."
+        "In Gardener.java, no building before round 800, focus entirely on tree planting and watering.",
+        "After round 800, switch to pure SOLDIER builds in massive quantities.",
+        "In Archon.java, conserve bullets early (donate only when >1000), spend freely late.",
+        "Modify Gardener movement to be stationary until late game, then move towards enemy.",
+        "Add late-game build acceleration by reducing plant attempts in favor of quick builds."
       ],
-      "unit_priority": ["LUMBERJACK", "SOLDIER", "TANK", "GARDENER"],
-      "engagement_style": "Coordinated pushes with mixed units, adapting to enemy composition and map control."
+      "unit_priority": ["LUMBERJACK", "SCOUT", "SOLDIER"],
+      "engagement_style": "Stationary turtle early, all-out offensive push late with overwhelming numbers"
     },
     {
       "id": 7,
-      "name": "Early Pressure",
-      "win_condition": "elimination",
-      "philosophy": "Constant early aggression to prevent opponent from establishing economy or defenses.",
+      "name": "Versatile Vanguard",
+      "win_condition": "hybrid",
+      "philosophy": "Maintain balanced unit composition with tanks for frontline, soldiers for damage, and scouts for vision, adapting to opponent strategy.",
       "key_changes": [
-        "Speed up build cycles: reduce checks in buildRobot, build as soon as possible.",
-        "Modify all units to move aggressively early: change Soldier, Tank, Scout to prioritize movement towards enemy.",
-        "Limit tree planting: have Gardeners build units instead of planting until round 200.",
-        "Disable VP donation until late game: keep bullets for army."
+        "In Gardener.java, fixed buildOrder = {RobotType.TANK, RobotType.SOLDIER, RobotType.SCOUT}.",
+        "In Tank.java, implement formation logic to protect soldiers from behind.",
+        "Add scout intel broadcasting for enemy positions to coordinate team movement.",
+        "In Soldier.java, fire triad/pentad when tanks provide cover, avoiding friendly fire.",
+        "Adjust movement in Nav.java to maintain unit spacing for effective formations."
       ],
-      "unit_priority": ["SOLDIER", "SOLDIER", "LUMBERJACK", "TANK"],
-      "engagement_style": "All-in rushes and harassment from multiple directions, overwhelming with numbers."
+      "unit_priority": ["TANK", "SOLDIER", "SCOUT"],
+      "engagement_style": "Coordinated mixed-unit advances, using complementary strengths for breakthroughs"
     },
     {
       "id": 8,
-      "name": "Economic Scaling",
+      "name": "Garden Overgrowth",
       "win_condition": "vp_rush",
-      "philosophy": "Invest heavily in tree farming early, scale VP donations as costs increase.",
+      "philosophy": "Spawn excessive gardeners to create vast tree forests, donating bullets at maximum speed for Victory Point victory.",
       "key_changes": [
-        "Increase tree farming: double plantTree calls in Gardener loop.",
-        "Delay army building: build army only after VP cost > certain threshold.",
-        "Optimize watering: prioritize watering lowest health trees first.",
-        "Cluster Gardeners: modify movement to group Gardeners for larger farms."
+        "In Archon.java, remove hiring limit, hire gardeners continuously if possible.",
+        "In Gardener.java, disable robot building entirely, only plant and water trees.",
+        "Add garden clustering: gardeners broadcast locations to group together for dense planting.",
+        "In Archon.java, donate all bullets above 50 for immediate VP gains.",
+        "Disable all unit movement, keeping everything stationary for optimal tree growth."
       ],
-      "unit_priority": ["GARDENER", "GARDENER", "GARDENER", "SOLDIER"],
-      "engagement_style": "Passive defense with minimal army, only attacking threats to farms."
+      "unit_priority": ["SCOUT"],
+      "engagement_style": "Completely passive, relying on economy to win before enemy can attack"
     },
     {
       "id": 9,
-      "name": "Roaming Assault",
+      "name": "Mobile Marauders",
       "win_condition": "elimination",
-      "philosophy": "Mobile army that roams the map, hunting down enemy units and avoiding fortified positions.",
+      "philosophy": "Fast moving scout-soldier groups roam the map, attacking isolated enemy units and disrupting supply lines.",
       "key_changes": [
-        "Favor mobile units: SCOUT and SOLDIER priority in buildOrder.",
-        "Modify movement to roam: add random offsets to Nav.enemyCenter target.",
-        "Use Scouts for scouting: broadcast enemy positions to coordinate roams.",
-        "Engage opportunistically: attack when advantage, flee otherwise."
+        "In Gardener.java, buildOrder focusing on SCOUT and SOLDIER mobility.",
+        "In Nav.java, implement randomized roaming patterns for exploration and harassment.",
+        "Add unit grouping logic: broadcast positions to form 2-3 unit squads.",
+        "In Scout.java, prioritize shaking trees for bullet collection while moving.",
+        "Modify engagement to flee when outnumbered, attacking only weak targets."
       ],
-      "unit_priority": ["SCOUT", "SOLDIER", "SCOUT", "TANK"],
-      "engagement_style": "Nomadic warfare, striking vulnerable groups and retreating to safe areas."
+      "unit_priority": ["SCOUT", "SOLDIER"],
+      "engagement_style": "Guerrilla warfare with hit-and-run tactics across the map"
     },
     {
       "id": 10,
-      "name": "Late Game Dominance",
-      "win_condition": "hybrid",
-      "philosophy": "Turtle early game, survive with defenses, then scale economy and army for late domination.",
+      "name": "Donation Dash",
+      "win_condition": "vp_rush",
+      "philosophy": "Minimal investment in units or trees, focus on acquiring and donating bullets as fast as possible for rapid VP gain.",
       "key_changes": [
-        "Early defensive build: prioritize LUMBERJACK and TANK for protection.",
-        "Scale based on round: after round 1000, switch to VP focus if behind, army push if ahead.",
-        "Stationary Archons: remove Archon movement until late game.",
-        "Dynamic buildOrder: change buildOrder array based on round number in Gardener."
+        "In Archon.java, donate immediately even with 10 bullets, prioritizing speed over reserve.",
+        "In Gardener.java, build only 1 SCOUT per gardener, no trees or other units.",
+        "Disable watering and reduce planting to 1 tree per gardener for minimal income.",
+        "Make all units stationary to conserve bytecode, scouts only for shaking nearby trees.",
+        "In Soldier.java, avoid combat, move only to collect bullets from neutral trees."
       ],
-      "unit_priority": ["LUMBERJACK", "TANK", "GARDENER", "SOLDIER"],
-      "engagement_style": "Defensive early, transitioning to aggressive pushes or VP rushes as game progresses."
+      "unit_priority": ["SCOUT"],
+      "engagement_style": "Minimal engagement, fleeing all threats to focus on economic goals"
     }
   ]
 }
