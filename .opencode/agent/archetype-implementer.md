@@ -72,11 +72,14 @@ Implement the archetype's strategy by modifying the variant's code. You have cre
 
 ## Code Modification Process
 
+**IMPORTANT: DO NOT USE `sed`, `awk`, or any bash text manipulation commands.**
+**ALWAYS use the `unsafe-write` tool to write complete files.**
+
 For each file you need to modify:
 
 1. **Read the file** first to understand current implementation
 2. **Plan your changes** - identify specific lines/methods to modify
-3. **Write the complete modified file** using unsafe-write
+3. **Write the complete modified file** using `unsafe-write` (NOT sed, NOT bash, NOT echo)
 4. **Verify package name** is `{BOT}_v{N}` (not the original bot name)
 
 ## MANDATORY: Verify Compilation
@@ -166,6 +169,7 @@ if (rc.canMove(toEnemy)) {
 
 ## Remember
 
+- **NEVER use sed/awk/bash** for file editing - ALWAYS use `unsafe-write`
 - **Be creative** in your implementation
 - **Stay true** to the archetype's strategy
 - **Compile successfully** before exiting
