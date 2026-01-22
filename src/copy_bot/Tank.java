@@ -40,4 +40,58 @@ public class Tank {
             }
         }
     }
+
+    public static void defensiveMove() throws GameActionException {
+        Team enemy = rc.getTeam().opponent();
+        RobotInfo[] enemies = rc.senseNearbyRobots(-1, enemy);
+        
+        // If enemies nearby, stay and defend
+        if (enemies.length > 0) {
+            return;
+        }
+        
+        // Read archon location
+        int x = rc.readBroadcast(0);
+        int y = rc.readBroadcast(1);
+        MapLocation archonLoc = new MapLocation(x, y);
+        
+        MapLocation myLoc = rc.getLocation();
+        
+        // Calculate defensive position: circle around archon
+        int id = rc.getID();
+        float angle = (id % 6) * 60; // 6 positions around circle
+        float radius = 10f;
+        Direction dirFromArchon = Direction.getEast().rotateRightDegrees(angle);
+        MapLocation defensivePos = archonLoc.add(dirFromArchon, radius);
+        
+        // Move towards defensive position
+        Direction toDef = myLoc.directionTo(defensivePos);
+        if (rc.canMove(toDef)) {
+            rc.move(toDef);
+        } else {
+            // Try to move closer or adjust
+            tryMove(toDef);
+        }
+    }
+    
+    private static boolean tryMove(Direction dir) throws GameActionException {
+        if (rc.canMove(dir)) {
+            rc.move(dir);
+            return true;
+        }
+        // Try slight rotations
+        for (int i = 1; i <= 3; i++) {
+            Direction left = dir.rotateLeftDegrees(i * 45);
+            if (rc.canMove(left)) {
+                rc.move(left);
+                return true;
+            }
+            Direction right = dir.rotateRightDegrees(i * 45);
+            if (rc.canMove(right)) {
+                rc.move(right);
+                return true;
+            }
+        }
+        return false;
+    }
 }
