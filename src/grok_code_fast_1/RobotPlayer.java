@@ -24,7 +24,7 @@ public strictfp class RobotPlayer {
         Nav.init(rc);
 
         // Here, we've separated the controls into a different method for each RobotType.
-        // You can add the missing ones or rewrite this into your own control structure.
+        // You can add the missing ones or rewrite this into your control structure.
         switch (rc.getType()) {
             case ARCHON:
                 runArchon();
@@ -55,7 +55,7 @@ public strictfp class RobotPlayer {
         // The code you want your robot to perform every round should be in this loop
         while (true) {
 
-            // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
+            // Try/catch blocks stop unhandled exceptions, which cause your robot to perform this loop again
             try {
 
                 // Generate a random direction
@@ -75,20 +75,28 @@ public strictfp class RobotPlayer {
                 rc.broadcast(0,(int)myLocation.x);
                 rc.broadcast(1,(int)myLocation.y);
 
-                // VP donation logic: moderate donation only when tanks are built (from round 600)
+                // VP donation logic: start earlier for accumulation, focus on scaling VP late game
                 float bullets = rc.getTeamBullets();
                 int round = rc.getRoundNum();
-                if (round < 600) {
-                    // Early: don't donate, focus on economy
-                } else if (round <= 1800) {
-                    // Mid: moderate donation when tanks are built
-                    if (bullets > 200) {
-                        rc.donate(bullets - 100);
+                if (round >= 300 && bullets > 200) {
+                    // Early: start donating to accumulate VP sooner
+                    float donateAmount = bullets - 100;
+                    float cost = rc.getVictoryPointCost();
+                    if (donateAmount >= cost) {
+                        int pointsToBuy = (int)(donateAmount / cost);
+                        float actualDonate = pointsToBuy * cost;
+                        if (actualDonate >= cost) {
+                            rc.donate(actualDonate);
+                        }
                     }
-                } else {
-                    // Late: aggressive donation for VP rush
+                } else if (round > 1800) {
+                    // Late: aggressive donation for VP rush if economy is scaled
                     if (bullets > 50) {
-                        rc.donate(bullets - 0);
+                        float donateAmount = bullets - 0;
+                        float cost = rc.getVictoryPointCost();
+                        if (donateAmount >= cost) {
+                            rc.donate(donateAmount);
+                        }
                     }
                 }
 
@@ -158,8 +166,11 @@ public strictfp class RobotPlayer {
                 // Fire
                 Soldier.fire();
 
-                // Move towards enemy center for coordinated pushes
-                Nav.tryMoveBug(Nav.enemyCenter);
+                // Static defense: stay near archon base instead of moving towards enemy
+                MapLocation archonLoc = new MapLocation(rc.readBroadcast(0), rc.readBroadcast(1));
+                if (myLocation.distanceTo(archonLoc) > 10) {
+                    Nav.tryMoveBug(archonLoc);
+                }
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();
@@ -218,8 +229,12 @@ public strictfp class RobotPlayer {
                     // Use strike() to hit all nearby robots!
                     rc.strike();
                 } else {
-                    // Move towards enemy center for coordinated pushes
-                    Nav.tryMoveBug(Nav.enemyCenter);
+                    // Static defense: stay near archon base instead of moving towards enemy
+                    MapLocation archonLoc = new MapLocation(rc.readBroadcast(0), rc.readBroadcast(1));
+                    MapLocation myLoc = rc.getLocation();
+                    if (myLoc.distanceTo(archonLoc) > 8) {
+                        Nav.tryMoveBug(archonLoc);
+                    }
                 }
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
@@ -238,7 +253,6 @@ public strictfp class RobotPlayer {
 
         // The code you want your robot to perform every round should be in this loop
         while (true) {
-
             // Try/catch blocks stop unhandled exceptions, which cause your robot to perform this loop again
             try {
                 MapLocation myLocation = rc.getLocation();
@@ -246,8 +260,14 @@ public strictfp class RobotPlayer {
                 // Fire
                 Scout.fire();
 
-                // Move towards enemy center for scouting and harassment
-                Nav.tryMoveBug(Nav.enemyCenter);
+                // Static defense: patrol near archon base instead of moving towards enemy
+                MapLocation archonLoc = new MapLocation(rc.readBroadcast(0), rc.readBroadcast(1));
+                if (myLocation.distanceTo(archonLoc) > 15) {
+                    Nav.tryMoveBug(archonLoc);
+                } else {
+                    // Patrol around base
+                    Nav.tryMoveBug(Nav.spawnLoc);
+                }
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();

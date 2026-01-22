@@ -57,10 +57,10 @@ public class Tank {
         
         MapLocation myLoc = rc.getLocation();
         
-        // Calculate defensive position: circle around archon
+        // Calculate defensive position: tighter circle around archon
         int id = rc.getID();
-        float angle = (id % 6) * 60; // 6 positions around circle
-        float radius = 10f;
+        float angle = (id % 8) * 45; // 8 positions for tighter formation
+        float radius = 5f; // tighter radius
         Direction dirFromArchon = Direction.getEast().rotateRightDegrees(angle);
         MapLocation defensivePos = archonLoc.add(dirFromArchon, radius);
         

@@ -15,23 +15,20 @@ public class Gardener {
         System.out.println("Gardener bullets: " + rc.getTeamBullets());
         System.out.println("Build counter: " + buildCounter);
 
-        // Economic Timing: Delay military builds, focus on GARDENER and trees first 600 rounds. Minimal army until late, then all-in on VP.
+        // Late Game Scaling: Delay military builds past round 1000, prioritize economy scaling with few insurance units
         int round = rc.getRoundNum();
         RobotType[] currentBuildOrder;
-        if (round < 600) {
-            // Early: delay military builds, occasional LUMBERJACK for clearing
-            if (buildCounter % 2 == 0) {
+        if (round < 1000) {
+            // Early: focus on tree economy, build minimal LUMBERJACK occasionally for protection
+            if (buildCounter % 5 == 0) {  // Very rare, every 5th attempt
                 currentBuildOrder = new RobotType[]{RobotType.LUMBERJACK};
             } else {
-                // Focus on trees, skip military builds
+                // Focus entirely on trees
                 return;
             }
-        } else if (round <= 2000) {
-            // Mid: build priority LUMBERJACK, TANK, SOLDIER
-            currentBuildOrder = new RobotType[]{RobotType.LUMBERJACK, RobotType.TANK, RobotType.SOLDIER};
         } else {
-            // Late: all-in on VP, no more robot builds
-            return;
+            // Late: build insurance units LUMBERJACK and TANK to protect scaling economy
+            currentBuildOrder = new RobotType[]{RobotType.LUMBERJACK, RobotType.TANK};
         }
 
         int orderLength = currentBuildOrder.length;
@@ -82,11 +79,17 @@ public class Gardener {
 
     public static void waterTree() throws GameActionException {
         TreeInfo[] nearbyTrees = rc.senseNearbyTrees(2, rc.getTeam());
+        // For optimization, water the tree with lowest health if possible.
+        TreeInfo bestTree = null;
+        float lowestHealth = Float.MAX_VALUE;
         for (TreeInfo tree : nearbyTrees) {
-            if (rc.canWater(tree.ID)) {
-                rc.water(tree.ID);
-                return;
+            if (rc.canWater(tree.ID) && tree.health < lowestHealth) {
+                lowestHealth = tree.health;
+                bestTree = tree;
             }
+        }
+        if (bestTree != null) {
+            rc.water(bestTree.ID);
         }
     }
 
