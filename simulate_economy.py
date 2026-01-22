@@ -44,9 +44,22 @@ TREE_WATER_HEAL = 5.0  # healing per water action
 BUILD_COOLDOWN = 10
 
 
+# Victory Points
+VP_BASE_COST = 7.5
+VP_INCREASE_PER_ROUND = 12.5 / 3000.0
+VICTORY_VP = 1000.0
+
+
 # ============================================================================
 # DATA STRUCTURES
 # ============================================================================
+
+@dataclass
+class DonationRule:
+    min_round: int = 0
+    max_round: int = MAX_ROUNDS
+    trigger_bullets: float = 1000.0
+    keep_bullets: float = 0.0
 
 @dataclass
 class Tree:
@@ -108,12 +121,16 @@ class BotProfile:
     # Flags
     waters_trees: bool = True
 
+    # Donation logic
+    donation_rules: List[DonationRule] = field(default_factory=list)
+
 
 @dataclass
 class GameState:
     """Current simulation state."""
     round_num: int = 0
     bullets: float = INITIAL_BULLETS
+    vp: float = 0.0
 
     units: List[Unit] = field(default_factory=list)
     trees: List[Tree] = field(default_factory=list)
@@ -146,14 +163,29 @@ def parse_bot(bot_dir: str) -> BotProfile:
 
     archon_file = os.path.join(bot_dir, 'Archon.java')
     gardener_file = os.path.join(bot_dir, 'Gardener.java')
+    robot_player_file = os.path.join(bot_dir, 'RobotPlayer.java')
 
-    # Parse Archon for gardener limits
+    # Read source files
+    archon_code = ""
     if os.path.exists(archon_file):
         with open(archon_file, 'r') as f:
             archon_code = f.read()
 
+    gardener_code = ""
+    if os.path.exists(gardener_file):
+        with open(gardener_file, 'r') as f:
+            gardener_code = f.read()
+
+    robot_player_code = ""
+    if os.path.exists(robot_player_file):
+        with open(robot_player_file, 'r') as f:
+            robot_player_code = f.read()
+
+    # --- Parse Archon/Gardener Limits ---
+    
+    # Parse Archon for gardener limits
+    if archon_code:
         # Look for gardener limit patterns
-        # Pattern: gardenersHired >= N or gardenersHired < N
         match = re.search(r'gardenersHired\s*>=\s*(\d+)', archon_code)
         if match:
             profile.max_gardeners = int(match.group(1))
@@ -162,16 +194,12 @@ def parse_bot(bot_dir: str) -> BotProfile:
         if match:
             profile.max_gardeners = int(match.group(1))
 
-        # Check for MAX_GARDENERS constant
         match = re.search(r'(?:MAX_GARDENERS|maxGardeners)\s*=\s*(\d+)', archon_code)
         if match:
             profile.max_gardeners = int(match.group(1))
 
     # Parse Gardener for tree/unit logic
-    if os.path.exists(gardener_file):
-        with open(gardener_file, 'r') as f:
-            gardener_code = f.read()
-
+    if gardener_code:
         # Look for max trees
         match = re.search(r'MAX_TREES\s*=\s*(\d+)', gardener_code)
         if match:
@@ -186,10 +214,7 @@ def parse_bot(bot_dir: str) -> BotProfile:
             profile.max_trees_per_gardener = int(match.group(1))
 
         # Extract build order from conditionals
-        # Look for patterns like: if (lumberjacksBuilt < 1 && bullets >= ...)
         build_order = []
-
-        # Pattern for "typeBuilt < N"
         unit_patterns = [
             (r'lumberjacksBuilt\s*<\s*(\d+)', 'LUMBERJACK'),
             (r'scoutsBuilt\s*<\s*(\d+)', 'SCOUT'),
@@ -197,21 +222,17 @@ def parse_bot(bot_dir: str) -> BotProfile:
             (r'tanksBuilt\s*<\s*(\d+)', 'TANK'),
         ]
 
-        # Find the order by looking at else-if chain positions
         for pattern, unit_type in unit_patterns:
             match = re.search(pattern, gardener_code)
             if match:
                 count = int(match.group(1))
-                # Find position in file to determine order
                 pos = match.start()
                 build_order.append((unit_type, count, pos))
 
-        # Sort by position in file (order of if-else chain)
         build_order.sort(key=lambda x: x[2])
         profile.initial_build_order = [(t, c) for t, c, _ in build_order]
 
-        # Look for cycling pattern in switch statements or modulo logic
-        # Pattern: totalBuilt % N -> case 0: SOLDIER, case 1: LUMBERJACK, etc.
+        # Look for cycling pattern
         cycle_match = re.search(
             r'switch\s*\([^)]*%\s*\d+\)\s*\{([^}]+)\}',
             gardener_code,
@@ -231,6 +252,59 @@ def parse_bot(bot_dir: str) -> BotProfile:
     # Default cycle if none found
     if not profile.cycle_pattern:
         profile.cycle_pattern = ['SOLDIER']
+
+    # --- Parse Donation Logic (RobotPlayer or Archon) ---
+    combined_code = archon_code + "\n" + robot_player_code
+    
+    if 'donate(' in combined_code:
+        # Look for round limits and bullet thresholds
+        round_limits = sorted([int(m) for m in re.findall(r'round\s*[<]=?\s*(\d+)', combined_code)])
+        bullet_thresholds = [int(m) for m in re.findall(r'bullets\s*>\s*(\d+)', combined_code)]
+        
+        # Simple heuristic mapping for typical "phase" bots
+        if round_limits and bullet_thresholds:
+            # Assume phases define increasing aggression (lower thresholds later)
+            # Sort thresholds descending (assuming later game = lower threshold/more aggressive)
+            bullet_thresholds.sort(reverse=True)
+            
+            # Logic:
+            # If we have [600, 1500] and [150, 50]
+            # 600-1500 -> 150
+            # 1500-MAX -> 50
+            
+            if len(round_limits) >= 2 and len(bullet_thresholds) >= 2:
+                 # 600-1500 -> 150
+                 profile.donation_rules.append(DonationRule(
+                     min_round=round_limits[0],
+                     max_round=round_limits[1],
+                     trigger_bullets=bullet_thresholds[0],
+                     keep_bullets=bullet_thresholds[0] - 50 # Heuristic
+                 ))
+                 # 1500-MAX -> 50
+                 profile.donation_rules.append(DonationRule(
+                     min_round=round_limits[1],
+                     max_round=MAX_ROUNDS,
+                     trigger_bullets=bullet_thresholds[1],
+                     keep_bullets=0 # Aggressive
+                 ))
+            elif len(round_limits) >= 1 and len(bullet_thresholds) >= 1:
+                 # 0-limit: setup? or limit-MAX: donate?
+                 # Usually: if (round < X) return; donate...
+                 # So donate after X.
+                 profile.donation_rules.append(DonationRule(
+                     min_round=round_limits[0],
+                     max_round=MAX_ROUNDS,
+                     trigger_bullets=bullet_thresholds[-1],
+                     keep_bullets=0
+                 ))
+        else:
+            # Fallback: if donate is present but no complex logic found
+            profile.donation_rules.append(DonationRule(
+                min_round=0, 
+                max_round=MAX_ROUNDS, 
+                trigger_bullets=1000, 
+                keep_bullets=0
+            ))
 
     return profile
 
@@ -271,6 +345,32 @@ def simulate(profile: BotProfile, max_rounds: int = MAX_ROUNDS, verbose: bool = 
         for tree in state.trees:
             tree_income += tree.get_income(round_num)
         state.bullets += tree_income
+
+        # === VP / DONATION PHASE ===
+        # Calculate VP cost
+        vp_cost = VP_BASE_COST + (round_num * VP_INCREASE_PER_ROUND)
+        
+        # Check donation rules
+        for rule in profile.donation_rules:
+            if rule.min_round <= round_num < rule.max_round:
+                if state.bullets > rule.trigger_bullets:
+                    # Donate excess
+                    to_donate = state.bullets - rule.keep_bullets
+                    # Donation must be positive
+                    if to_donate > 0:
+                        import math
+                        vps_to_buy = math.floor(to_donate / vp_cost)
+                        if vps_to_buy > 0:
+                            cost_of_vps = vps_to_buy * vp_cost
+                            state.bullets -= cost_of_vps
+                            state.vp += vps_to_buy
+                            state.log(f"Donated {cost_of_vps:.1f} bullets for {vps_to_buy} VP (cost: {vp_cost:.2f})")
+                            
+                            if state.vp >= VICTORY_VP:
+                                state.log(f"VICTORY! Reached {state.vp} VP at round {round_num}")
+                                return state
+                # Only apply one rule per turn (priority to first match)
+                break
 
         # === ARCHON PHASE: Hire Gardeners ===
         if state.archon_cooldown > 0:
@@ -386,10 +486,22 @@ def print_report(profile: BotProfile, state: GameState, verbose: bool = False):
     print(f"  Initial Build Order: {profile.initial_build_order}")
     print(f"  Cycle Pattern: {profile.cycle_pattern}")
     print(f"  Waters Trees: {profile.waters_trees}")
+    if profile.donation_rules:
+        print("  Donation Rules:")
+        for rule in profile.donation_rules:
+            print(f"    R{rule.min_round}-{rule.max_round}: Donate > {rule.trigger_bullets}, Keep {rule.keep_bullets}")
+    else:
+        print("  Donation Rules: None")
     print()
 
     print("FINAL STATE (round {}):".format(state.round_num))
     print(f"  Bullets: {state.bullets:.1f}")
+    
+    vp_cost = VP_BASE_COST + (state.round_num * VP_INCREASE_PER_ROUND)
+    print(f"  Victory Points: {state.vp} / {VICTORY_VP} (Current Cost: {vp_cost:.2f})")
+    if state.vp >= VICTORY_VP:
+        print("  RESULT: VICTORY by VP!")
+    
     print(f"  Trees alive: {len(state.trees)} (planted: {state.trees_planted})")
     print()
 
