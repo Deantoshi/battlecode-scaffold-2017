@@ -61,8 +61,8 @@ public strictfp class RobotPlayer {
                 // Generate a random direction
                 Direction dir = randomDirection();
 
-                // Hire up to 3 gardeners in first 100 rounds
-                if (rc.getRoundNum() < 100 && gardenersHired < 3 && rc.canHireGardener(dir)) {
+                // Hire up to 20 gardeners indefinitely
+                if (gardenersHired < 20 && rc.canHireGardener(dir)) {
                     rc.hireGardener(dir);
                     gardenersHired++;
                 }
@@ -87,9 +87,10 @@ public strictfp class RobotPlayer {
                 rc.broadcast(0,(int)myLocation.x);
                 rc.broadcast(1,(int)myLocation.y);
 
-                // VP donation logic
-                if (rc.getTeamBullets() > 0.5f * rc.getVictoryPointCost()) {
-                    rc.donate(rc.getTeamBullets());
+                // VP donation logic: donate all bullets over 100
+                if (rc.getTeamBullets() > 100) {
+                    float donateAmount = rc.getTeamBullets() - 100;
+                    rc.donate(donateAmount);
                 }
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
@@ -128,6 +129,12 @@ public strictfp class RobotPlayer {
                 // Attempt to build robots
                 Gardener.buildRobot();
 
+                // Water trees
+                Gardener.waterTree();
+
+                // Plant trees
+                Gardener.plantTree();
+
                 // Move randomly
                 tryMove(randomDirection());
 
@@ -155,8 +162,8 @@ public strictfp class RobotPlayer {
                 // Fire
                 Soldier.fire();
 
-                // Move towards enemy center
-                Nav.tryMoveBug(Nav.enemyCenter);
+                // Move randomly, minimal aggression
+                tryMove(randomDirection());
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();
@@ -185,14 +192,8 @@ public strictfp class RobotPlayer {
                 // Fire at enemies
                 Tank.fire();
 
-                // Determine target location
-                MapLocation targetLoc = Nav.enemyCenter;
-                if (robots.length > 0) {
-                    targetLoc = robots[0].location;
-                }
-
-                // Move towards target, tanks can move through trees
-                Nav.tryMoveBug(targetLoc);
+                // Move randomly, minimal aggression
+                tryMove(randomDirection());
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();
@@ -232,8 +233,8 @@ public strictfp class RobotPlayer {
 
                         tryMove(toEnemy);
                     } else {
-                        // Move towards enemy center
-                        Nav.tryMoveBug(Nav.enemyCenter);
+                        // Move randomly
+                        tryMove(randomDirection());
                     }
                 }
 
@@ -261,8 +262,8 @@ public strictfp class RobotPlayer {
                 // Fire
                 Scout.fire();
 
-                // Move towards enemy center
-                Nav.tryMoveBug(Nav.enemyCenter);
+                // Move randomly, minimal aggression
+                tryMove(randomDirection());
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();

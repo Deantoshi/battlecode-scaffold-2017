@@ -3,10 +3,7 @@ import battlecode.common.*;
 
 public class Gardener {
     static RobotController rc;
-    static int scoutsBuilt = 0;
     static int lumberjacksBuilt = 0;
-    static int tanksBuilt = 0;
-    static int factoriesBuilt = 0;
 
     public static void init(RobotController rc) {
         Gardener.rc = rc;
@@ -14,11 +11,10 @@ public class Gardener {
 
     public static void buildRobot() throws GameActionException {
         System.out.println("Gardener bullets: " + rc.getTeamBullets());
-        System.out.println("Scouts built: " + scoutsBuilt);
-        System.out.println("Tanks built: " + tanksBuilt);
+        System.out.println("Lumberjacks built: " + lumberjacksBuilt);
 
-        // Prioritize building lumberjacks for defense, then tanks, then scouts
-        if (lumberjacksBuilt < 10 && rc.getTeamBullets() >= 100) {
+        // Build lumberjacks for defense
+        if (lumberjacksBuilt < 50 && rc.getTeamBullets() >= 100) {
             System.out.println("Attempting to build lumberjack");
             for (int attempt = 0; attempt < 8; attempt++) {
                 Direction dir = Direction.getNorth().rotateLeftDegrees(attempt * 45);
@@ -30,36 +26,6 @@ public class Gardener {
                 }
             }
             System.out.println("Failed to build lumberjack in all attempts");
-        } else if (tanksBuilt < 5 && rc.getTeamBullets() >= 300) {
-            System.out.println("Bullets >=300, attempting to build tank");
-            for (int attempt = 0; attempt < 8; attempt++) {
-                Direction dir = Direction.getNorth().rotateLeftDegrees(attempt * 45);
-                if (rc.canBuildRobot(RobotType.TANK, dir)) {
-                    if (rc.isBuildReady()) {
-                        rc.buildRobot(RobotType.TANK, dir);
-                        tanksBuilt++;
-                        System.out.println("Built tank successfully");
-                        return;
-                    } else {
-                        System.out.println("Build not ready for tank");
-                    }
-                } else {
-                    System.out.println("Cannot build tank in direction " + dir);
-                }
-            }
-            System.out.println("Failed to build tank in all directions");
-        } else if (scoutsBuilt < 15 && rc.getTeamBullets() >= 100) {
-            System.out.println("Attempting to build scout");
-            for (int attempt = 0; attempt < 8; attempt++) {
-                Direction dir = Direction.getNorth().rotateLeftDegrees(attempt * 45);
-                if (rc.canBuildRobot(RobotType.SCOUT, dir) && rc.isBuildReady()) {
-                    rc.buildRobot(RobotType.SCOUT, dir);
-                    scoutsBuilt++;
-                    System.out.println("Built scout successfully");
-                    return;
-                }
-            }
-            System.out.println("Failed to build scout in all attempts");
         }
     }
 
