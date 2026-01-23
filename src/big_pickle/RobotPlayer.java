@@ -45,7 +45,7 @@ public strictfp class RobotPlayer {
     static void runArchon() throws GameActionException {
         System.out.println("I'm an archon!");
 
-        // Store archon location for fortress coordination
+        // Store archon location for strategic coordination
         archonLocation = rc.getLocation();
         archonLocationSet = true;
 
@@ -55,19 +55,19 @@ public strictfp class RobotPlayer {
             // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
             try {
 
-                // VP Tyrant: Use centralized spending policy for gardener hiring
+                // Hybrid Assassin: Use centralized spending policy for economic warfare
                 BulletSpending.spendPolicy();
 
-                // VP Tyrant: Archons stay central and avoid combat - focus on economy
-                if (rc.getRoundNum() < 100) {
-                    // Early game: move carefully to find good positioning for tree farms
-                    tryMoveTurtle(randomDirection());
+                // Hybrid Assassin: Archons support economic warfare with strategic positioning
+                if (rc.getRoundNum() < 150) {
+                    // Early game: find good position for supporting raids
+                    tryMoveAggressive(randomDirection());
                 } else {
-                    // Later game: stay near center to protect tree economy
-                    stayNearEconomicCenter();
+                    // Later game: maintain position to support VP pressure
+                    maintainStrategicPosition();
                 }
 
-                // Broadcast archon's location for economic coordination
+                // Broadcast archon's location for economic raid coordination
                 if (archonLocation != null) {
                     rc.broadcast(0,(int)archonLocation.x);
                     rc.broadcast(1,(int)archonLocation.y);
@@ -101,11 +101,11 @@ public strictfp class RobotPlayer {
                     archonLocationSet = true;
                 }
 
-                // VP Tyrant: Use centralized spending policy - trees and economy are priority
+                // Hybrid Assassin: Use centralized spending policy - economic warfare focus
                 BulletSpending.spendPolicy();
 
-                // VP Tyrant: Gardeners position themselves to maximize tree farming
-                maintainTreeFarmPosition(archonLoc);
+                // Hybrid Assassin: Gardeners position to support military production
+                maintainProductionPosition(archonLoc);
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();
@@ -128,34 +128,33 @@ public strictfp class RobotPlayer {
             try {
                 MapLocation myLocation = rc.getLocation();
 
-                // Get archon location for economic center protection
-                MapLocation economicCenter = getEconomicCenter();
-
-                // VP Tyrant: Soldiers are defensive only - avoid combat unless absolutely necessary
+                // Hybrid Assassin: Soldiers support economic warfare with aggressive targeting
                 RobotInfo[] robots = rc.senseNearbyRobots(-1, enemy);
 
                 if (robots.length > 0) {
-                    RobotInfo closestEnemy = getClosestEnemy(robots);
-                    float distToEnemy = myLocation.distanceTo(closestEnemy.location);
+                    RobotInfo target = selectEconomicTarget(robots);
+                    float distToTarget = myLocation.distanceTo(target.location);
                     
-                    // VP Tyrant: Only engage if enemies are very close to our economy
-                    float distToEconomy = economicCenter.distanceTo(closestEnemy.location);
-                    
-                    if (distToEconomy < 8 && distToEnemy <= 4) {
-                        // Defend economic center with minimal force
+                    // Hybrid Assassin: Attack economic targets aggressively
+                    if (distToTarget <= 6) {
                         if (rc.canFireSingleShot()) {
-                            rc.fireSingleShot(myLocation.directionTo(closestEnemy.location));
+                            rc.fireSingleShot(myLocation.directionTo(target.location));
+                        }
+                        // Use triad shots if multiple economic targets nearby
+                        if (distToTarget <= 4 && rc.canFireTriadShot() && 
+                            target.type == RobotType.GARDENER) {
+                            rc.fireTriadShot(myLocation.directionTo(target.location));
                         }
                     }
                     
-                    // Always prioritize avoiding combat - move away from enemies
-                    if (distToEnemy < 10) {
-                        Direction awayFromEnemy = closestEnemy.location.directionTo(myLocation);
-                        tryMoveTurtle(awayFromEnemy);
+                    // Hybrid Assassin: Pursue economic targets aggressively
+                    if (distToTarget > 4) {
+                        Direction toTarget = myLocation.directionTo(target.location);
+                        tryMoveAggressive(toTarget);
                     }
                 } else {
-                    // No enemies nearby - patrol defensively near economic center
-                    patrolNearEconomy(economicCenter);
+                    // No economic targets - hunt enemy economy
+                    huntEnemyEconomy();
                 }
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
@@ -178,44 +177,38 @@ public strictfp class RobotPlayer {
             // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
             try {
 
-                // VP Tyrant: Lumberjacks focus on clearing trees ONLY if blocking our tree farms
-                MapLocation economicCenter = getEconomicCenter();
-                TreeInfo[] trees = rc.senseNearbyTrees(-1, Team.NEUTRAL);
+                // Hybrid Assassin: Lumberjacks hunt enemy economy and clear strategic trees
+                MapLocation myLocation = rc.getLocation();
                 
-                if (trees.length > 0) {
-                    // Only chop trees that are very close to our economic center and blocking space
-                    TreeInfo blockingTree = null;
-                    float bestScore = Float.MAX_VALUE;
-                    
-                    for (TreeInfo tree : trees) {
-                        float distToEconomy = tree.location.distanceTo(economicCenter);
-                        float distToMe = rc.getLocation().distanceTo(tree.location);
-                        
-                        // Only consider trees within economic zone
-                        if (distToEconomy < 12) {
-                            float score = distToMe; // Priority to closest trees
-                            if (score < bestScore) {
-                                bestScore = score;
-                                blockingTree = tree;
-                            }
-                        }
+                // Priority 1: Strike enemy economic units if in range
+                RobotInfo[] enemyRobots = rc.senseNearbyRobots(2, enemy);
+                RobotInfo economicTarget = null;
+                for (RobotInfo robot : enemyRobots) {
+                    if (robot.type == RobotType.GARDENER || robot.type == RobotType.ARCHON) {
+                        economicTarget = robot;
+                        break;
                     }
+                }
+                
+                if (economicTarget != null && rc.canStrike()) {
+                    rc.strike();
+                } else {
+                    // Priority 2: Chop trees near enemy base or blocking our raids
+                    TreeInfo[] trees = rc.senseNearbyTrees(-1);
+                    TreeInfo targetTree = selectStrategicTree(trees);
                     
-                    if (blockingTree != null && bestScore < 3) {
-                        float distToTree = rc.getLocation().distanceTo(blockingTree.location);
+                    if (targetTree != null) {
+                        float distToTree = myLocation.distanceTo(targetTree.location);
                         if (distToTree <= RobotType.LUMBERJACK.bodyRadius + 1.0f) {
-                            rc.chop(blockingTree.location);
+                            rc.chop(targetTree.location);
                         } else {
-                            Direction toTree = rc.getLocation().directionTo(blockingTree.location);
-                            tryMoveTurtle(toTree);
+                            Direction toTree = myLocation.directionTo(targetTree.location);
+                            tryMoveAggressive(toTree);
                         }
                     } else {
-                        // No blocking trees - patrol near economy
-                        patrolNearEconomy(economicCenter);
+                        // Priority 3: Hunt enemy economy locations
+                        huntEnemyEconomy();
                     }
-                } else {
-                    // No trees nearby - patrol near economy
-                    patrolNearEconomy(economicCenter);
                 }
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
@@ -236,16 +229,46 @@ public strictfp class RobotPlayer {
             try {
                 MapLocation myLocation = rc.getLocation();
 
-                // VP Tyrant: Scouts avoid combat entirely - focus on vision for economy protection
+                // Hybrid Assassin: Scouts are primary economic assassins - hunt gardeners aggressively
                 RobotInfo[] robots = rc.senseNearbyRobots(-1, enemy);
-                if (robots.length > 0) {
-                    // Run away from all enemies - avoid combat at all costs
-                    RobotInfo closestEnemy = getClosestEnemy(robots);
-                    Direction awayFromEnemy = closestEnemy.location.directionTo(myLocation);
-                    tryMoveTurtle(awayFromEnemy);
+                
+                // Priority 1: Hunt enemy gardeners (primary economic targets)
+                RobotInfo gardenerTarget = null;
+                RobotInfo archonTarget = null;
+                
+                for (RobotInfo robot : robots) {
+                    if (robot.type == RobotType.GARDENER) {
+                        gardenerTarget = robot;
+                        break; // Gardeners are highest priority
+                    }
+                    if (robot.type == RobotType.ARCHON && archonTarget == null) {
+                        archonTarget = robot;
+                    }
+                }
+                
+                RobotInfo target = (gardenerTarget != null) ? gardenerTarget : archonTarget;
+                
+                if (target != null) {
+                    float distToTarget = myLocation.distanceTo(target.location);
+                    
+                    // Hybrid Assassin: Attack economic targets relentlessly
+                    if (distToTarget <= 5) {
+                        if (rc.canFireSingleShot()) {
+                            rc.fireSingleShot(myLocation.directionTo(target.location));
+                        }
+                    }
+                    
+                    // Hybrid Assassin: Pursue economic targets aggressively
+                    if (distToTarget > 2) {
+                        Direction toTarget = myLocation.directionTo(target.location);
+                        tryMoveAggressive(toTarget);
+                    } else {
+                        // Close range - circle to maintain attack position
+                        tryMoveAggressive(randomDirection());
+                    }
                 } else {
-                    // Explore but stay relatively close to economic center
-                    exploreForEconomyProtection();
+                    // No economic targets - search aggressively for enemy economy
+                    searchForEnemyEconomy();
                 }
 
                 Clock.yield();
@@ -264,31 +287,34 @@ public strictfp class RobotPlayer {
         while (true) {
             try {
                 MapLocation myLocation = rc.getLocation();
-                MapLocation economicCenter = getEconomicCenter();
 
-                // VP Tyrant: Tanks are defensive only - avoid combat unless economy is threatened
+                // Hybrid Assassin: Tanks support economic warfare with heavy firepower
                 RobotInfo[] robots = rc.senseNearbyRobots(-1, enemy);
 
                 if (robots.length > 0) {
-                    RobotInfo closestEnemy = getClosestEnemy(robots);
-                    float distToEnemy = myLocation.distanceTo(closestEnemy.location);
-                    float distToEconomy = economicCenter.distanceTo(closestEnemy.location);
+                    RobotInfo target = selectEconomicTarget(robots);
+                    float distToTarget = myLocation.distanceTo(target.location);
                     
-                    // Only engage if enemies are directly threatening our economy
-                    if (distToEconomy < 6 && distToEnemy <= 5) {
+                    // Hybrid Assassin: Attack economic targets with heavy firepower
+                    if (distToTarget <= 8) {
                         if (rc.canFireSingleShot()) {
-                            rc.fireSingleShot(myLocation.directionTo(closestEnemy.location));
+                            rc.fireSingleShot(myLocation.directionTo(target.location));
+                        }
+                        // Use pentad shots on economic targets for maximum damage
+                        if (distToTarget <= 6 && rc.canFirePentadShot() && 
+                            target.type == RobotType.GARDENER) {
+                            rc.firePentadShot(myLocation.directionTo(target.location));
                         }
                     }
                     
-                    // Always prioritize avoiding combat
-                    if (distToEnemy < 12) {
-                        Direction awayFromEnemy = closestEnemy.location.directionTo(myLocation);
-                        tryMoveTurtle(awayFromEnemy);
+                    // Hybrid Assassin: Move toward economic targets
+                    if (distToTarget > 6) {
+                        Direction toTarget = myLocation.directionTo(target.location);
+                        tryMoveAggressive(toTarget);
                     }
                 } else {
-                    // No enemies nearby - defend economic center
-                    defendEconomicCenter(economicCenter);
+                    // No targets - support economic raids
+                    supportEconomicRaids();
                 }
 
                 Clock.yield();
@@ -300,8 +326,175 @@ public strictfp class RobotPlayer {
         }
     }
 
-    // Helper methods for VP Tyrant defensive turtle strategy
+    // Helper methods for Hybrid Assassin economic warfare strategy
     
+    private static RobotInfo selectEconomicTarget(RobotInfo[] enemies) {
+        RobotInfo bestTarget = enemies[0];
+        float bestScore = Float.MIN_VALUE;
+        
+        for (RobotInfo enemy : enemies) {
+            float score = 0;
+            float dist = rc.getLocation().distanceTo(enemy.location);
+            
+            // Priority scoring for economic warfare
+            if (enemy.type == RobotType.GARDENER) {
+                score = 1000 - dist; // Highest priority
+            } else if (enemy.type == RobotType.ARCHON) {
+                score = 800 - dist; // High priority
+            } else if (enemy.type == RobotType.SCOUT) {
+                score = 300 - dist; // Medium priority
+            } else if (enemy.type == RobotType.LUMBERJACK) {
+                score = 200 - dist; // Lower priority
+            } else {
+                score = 100 - dist; // Lowest priority
+            }
+            
+            if (score > bestScore) {
+                bestScore = score;
+                bestTarget = enemy;
+            }
+        }
+        
+        return bestTarget;
+    }
+
+    private static TreeInfo selectStrategicTree(TreeInfo[] trees) {
+        TreeInfo bestTree = null;
+        float bestScore = Float.MIN_VALUE;
+        
+        for (TreeInfo tree : trees) {
+            float score = 0;
+            float dist = rc.getLocation().distanceTo(tree.location);
+            
+            // Priority for trees near suspected enemy locations
+            MapLocation myLoc = rc.getLocation();
+            MapLocation[] enemyArchons = rc.getInitialArchonLocations(rc.getTeam().opponent());
+            
+            float minDistToEnemyArchons = Float.MAX_VALUE;
+            for (MapLocation archon : enemyArchons) {
+                float archonDist = tree.location.distanceTo(archon);
+                minDistToEnemyArchons = Math.min(minDistToEnemyArchons, archonDist);
+            }
+            
+            if (tree.team == Team.NEUTRAL) {
+                // Neutral trees near enemy base have highest priority
+                if (minDistToEnemyArchons < 15) {
+                    score = 500 - dist - minDistToEnemyArchons;
+                } else {
+                    score = 100 - dist;
+                }
+            } else if (tree.team == rc.getTeam().opponent()) {
+                // Enemy trees are always good targets
+                score = 300 - dist;
+            }
+            
+            if (score > bestScore) {
+                bestScore = score;
+                bestTree = tree;
+            }
+        }
+        
+        return bestTree;
+    }
+
+    private static void maintainStrategicPosition() throws GameActionException {
+        MapLocation center = getEconomicCenter();
+        float distToCenter = rc.getLocation().distanceTo(center);
+        
+        // Archons maintain position to support raids but stay mobile
+        if (distToCenter > 8) {
+            Direction toCenter = rc.getLocation().directionTo(center);
+            tryMoveAggressive(toCenter);
+        } else {
+            // Strategic repositioning occasionally
+            if (Math.random() < 0.4) {
+                tryMoveAggressive(randomDirection());
+            }
+        }
+    }
+
+    private static void maintainProductionPosition(MapLocation archonLoc) throws GameActionException {
+        float distToArchon = rc.getLocation().distanceTo(archonLoc);
+        
+        // Position for optimal military production while maintaining some defense
+        if (distToArchon > 12) {
+            Direction toArchon = rc.getLocation().directionTo(archonLoc);
+            tryMoveAggressive(toArchon);
+        } else if (distToArchon < 4) {
+            Direction awayFromArchon = archonLoc.directionTo(rc.getLocation());
+            tryMoveAggressive(awayFromArchon);
+        } else {
+            // Reposition occasionally for better production angles
+            if (Math.random() < 0.2) {
+                tryMoveAggressive(randomDirection());
+            }
+        }
+    }
+
+    private static void huntEnemyEconomy() throws GameActionException {
+        // Move toward suspected enemy economic locations
+        MapLocation[] enemyArchons = rc.getInitialArchonLocations(rc.getTeam().opponent());
+        MapLocation myLoc = rc.getLocation();
+        
+        MapLocation closestArchon = enemyArchons[0];
+        float minDist = myLoc.distanceTo(closestArchon);
+        
+        for (MapLocation archon : enemyArchons) {
+            float dist = myLoc.distanceTo(archon);
+            if (dist < minDist) {
+                minDist = dist;
+                closestArchon = archon;
+            }
+        }
+        
+        Direction toEnemy = myLoc.directionTo(closestArchon);
+        tryMoveAggressive(toEnemy);
+    }
+
+    private static void searchForEnemyEconomy() throws GameActionException {
+        MapLocation[] enemyArchons = rc.getInitialArchonLocations(rc.getTeam().opponent());
+        MapLocation myLoc = rc.getLocation();
+        
+        // Scouts search aggressively for enemy economic locations
+        MapLocation targetArchon = enemyArchons[(int)(Math.random() * enemyArchons.length)];
+        Direction toTarget = myLoc.directionTo(targetArchon);
+        
+        // Add some randomness to search pattern
+        if (Math.random() < 0.3) {
+            toTarget = toTarget.rotateLeftDegrees((float)(Math.random() * 90 - 45));
+        }
+        
+        tryMoveAggressive(toTarget);
+    }
+
+    private static void supportEconomicRaids() throws GameActionException {
+        // Tanks support raids by moving toward enemy locations
+        MapLocation[] enemyArchons = rc.getInitialArchonLocations(rc.getTeam().opponent());
+        MapLocation myLoc = rc.getLocation();
+        
+        MapLocation closestArchon = enemyArchons[0];
+        float minDist = myLoc.distanceTo(closestArchon);
+        
+        for (MapLocation archon : enemyArchons) {
+            float dist = myLoc.distanceTo(archon);
+            if (dist < minDist) {
+                minDist = dist;
+                closestArchon = archon;
+            }
+        }
+        
+        // Tanks move toward enemy to support raids
+        if (minDist > 15) {
+            Direction toEnemy = myLoc.directionTo(closestArchon);
+            tryMoveAggressive(toEnemy);
+        } else {
+            // Close to enemy - position strategically
+            if (Math.random() < 0.3) {
+                tryMoveAggressive(randomDirection());
+            }
+        }
+    }
+
     private static MapLocation getEconomicCenter() {
         if (archonLocation != null) {
             return archonLocation;
@@ -316,112 +509,6 @@ public strictfp class RobotPlayer {
         }
     }
 
-    private static RobotInfo getClosestEnemy(RobotInfo[] enemies) {
-        RobotInfo closest = enemies[0];
-        float bestDist = rc.getLocation().distanceTo(closest.location);
-        
-        for (RobotInfo enemy : enemies) {
-            float dist = rc.getLocation().distanceTo(enemy.location);
-            if (dist < bestDist) {
-                bestDist = dist;
-                closest = enemy;
-            }
-        }
-        
-        return closest;
-    }
-
-    private static void stayNearEconomicCenter() throws GameActionException {
-        MapLocation center = getEconomicCenter();
-        float distToCenter = rc.getLocation().distanceTo(center);
-        
-        if (distToCenter > 6) {
-            // Move back toward economic center
-            Direction toCenter = rc.getLocation().directionTo(center);
-            tryMoveTurtle(toCenter);
-        } else {
-            // Stay in place or move randomly within safe zone
-            if (Math.random() < 0.3) {
-                tryMoveTurtle(randomDirection());
-            }
-        }
-    }
-
-    private static void maintainTreeFarmPosition(MapLocation archonLoc) throws GameActionException {
-        float distToArchon = rc.getLocation().distanceTo(archonLoc);
-        
-        // Position for optimal tree farming - spread out but not too far
-        if (distToArchon > 10) {
-            // Move closer to archon for tree farm coordination
-            Direction toArchon = rc.getLocation().directionTo(archonLoc);
-            tryMoveTurtle(toArchon);
-        } else if (distToArchon < 3) {
-            // Move away from archon to avoid crowding
-            Direction awayFromArchon = archonLoc.directionTo(rc.getLocation());
-            tryMoveTurtle(awayFromArchon);
-        } else {
-            // Stay in current position for tree farming
-            // Only move randomly occasionally
-            if (Math.random() < 0.1) {
-                tryMoveTurtle(randomDirection());
-            }
-        }
-    }
-
-    private static void patrolNearEconomy(MapLocation center) throws GameActionException {
-        float distToCenter = rc.getLocation().distanceTo(center);
-        
-        if (distToCenter > 12) {
-            // Move back toward economic center
-            Direction toCenter = rc.getLocation().directionTo(center);
-            tryMoveTurtle(toCenter);
-        } else if (distToCenter < 6) {
-            // Move outward slightly for defensive perimeter
-            Direction awayFromCenter = center.directionTo(rc.getLocation());
-            tryMoveTurtle(awayFromCenter);
-        } else {
-            // Maintain defensive position - minimal movement
-            if (Math.random() < 0.2) {
-                tryMoveTurtle(randomDirection());
-            }
-        }
-    }
-
-    private static void defendEconomicCenter(MapLocation center) throws GameActionException {
-        float idealDist = 8; // Defensive perimeter distance
-        float distToCenter = rc.getLocation().distanceTo(center);
-        
-        if (distToCenter > idealDist + 3) {
-            // Move toward center
-            Direction toCenter = rc.getLocation().directionTo(center);
-            tryMoveTurtle(toCenter);
-        } else if (distToCenter < idealDist - 3) {
-            // Move away from center
-            Direction awayFromCenter = center.directionTo(rc.getLocation());
-            tryMoveTurtle(awayFromCenter);
-        } else {
-            // Hold position - minimal movement
-            if (Math.random() < 0.1) {
-                tryMoveTurtle(randomDirection());
-            }
-        }
-    }
-
-    private static void exploreForEconomyProtection() throws GameActionException {
-        MapLocation economicCenter = getEconomicCenter();
-        float distToCenter = rc.getLocation().distanceTo(economicCenter);
-        
-        // Don't stray too far from economic center
-        if (distToCenter > 25) {
-            tryMoveTurtle(rc.getLocation().directionTo(economicCenter));
-        } else {
-            // Limited exploration for intelligence
-            if (Math.random() < 0.4) {
-                tryMoveTurtle(randomDirection());
-            }
-        }
-    }
-
     /**
      * Returns a random Direction
      * @return a random Direction
@@ -431,15 +518,15 @@ public strictfp class RobotPlayer {
     }
 
     /**
-     * VP Tyrant: Very careful movement - avoid all contact with enemies
-     * More conservative movement for defensive turtle strategy.
+     * Hybrid Assassin: Aggressive movement for economic warfare
+     * More aggressive movement with fewer safety checks for faster raids.
      *
      * @param dir The intended direction of movement
      * @return true if a move was performed
      * @throws GameActionException
      */
-    static boolean tryMoveTurtle(Direction dir) throws GameActionException {
-        return tryMove(dir,45,8); // Even more careful movement with wider angle checks
+    static boolean tryMoveAggressive(Direction dir) throws GameActionException {
+        return tryMove(dir,20,3); // More aggressive movement with fewer angle checks
     }
 
     /**

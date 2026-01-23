@@ -9,13 +9,13 @@ public class BulletSpending {
     }
 
     private static boolean shouldHireGardener(Direction dir) {
-        // VP Tyrant: Hire maximum gardeners for massive tree farm coverage
+        // Hybrid Assassin: Moderate gardener hiring up to 10 for sustained production
         int gardeners = countAlliedRobots(RobotType.GARDENER);
-        int maxGardeners = Math.min(15, 8 + rc.getRoundNum() / 200); // Scale up to 15 max
+        int maxGardeners = Math.min(10, 4 + rc.getRoundNum() / 250); // Scale up to 10 max
         
-        double hireChance = 0.90; // Very high chance to hire gardeners
-        if (gardeners < 8) hireChance = 0.95; // Extremely aggressive early
-        else if (gardeners < 12) hireChance = 0.85; // Still high for medium expansion
+        double hireChance = 0.70; // Moderate chance to hire gardeners
+        if (gardeners < 5) hireChance = 0.80; // More aggressive early
+        else if (gardeners < 8) hireChance = 0.60; // Moderate for mid expansion
         
         return rc.canHireGardener(dir) && 
                Math.random() < hireChance && 
@@ -23,56 +23,66 @@ public class BulletSpending {
     }
 
     private static boolean shouldBuildGardener(Direction dir) {
-        // VP Tyrant: Continue building meta-gardeners for expansion
+        // Hybrid Assassin: Continue building meta-gardeners for expansion
         int gardeners = countAlliedRobots(RobotType.GARDENER);
-        int maxGardeners = Math.min(15, 8 + rc.getRoundNum() / 200);
+        int maxGardeners = Math.min(10, 4 + rc.getRoundNum() / 250);
         
         return rc.canBuildRobot(RobotType.GARDENER, dir) && 
-               Math.random() < 0.10 && // Very low chance - prioritize trees
+               Math.random() < 0.15 && // Low chance - prioritize military
                gardeners < maxGardeners;
     }
 
     private static boolean shouldBuildSoldier(Direction dir) {
-        // VP Tyrant: Minimal defense only - 5% chance
+        // Hybrid Assassin: Soldiers 20% - medium attack force
         int soldiers = countAlliedRobots(RobotType.SOLDIER);
-        int maxSoldiers = 3; // Very limited defensive force
+        int maxSoldiers = 15; // Support economic warfare
         
         return rc.canBuildRobot(RobotType.SOLDIER, dir) && 
-               Math.random() < 0.05 && // 5% minimum for defense
+               Math.random() < 0.20 && // 20% for balanced attack force
                soldiers < maxSoldiers;
     }
 
     private static boolean shouldBuildTank(Direction dir) {
-        // VP Tyrant: Minimal defense only - 5% chance
+        // Hybrid Assassin: Minimal tanks - focus on speed for economic raids
         int tanks = countAlliedRobots(RobotType.TANK);
-        int maxTanks = 2; // Very limited defensive force
+        int maxTanks = 3; // Limited heavy support
         
         return rc.canBuildRobot(RobotType.TANK, dir) && 
-               Math.random() < 0.05 && // 5% minimum for defense
+               Math.random() < 0.05 && // 5% minimal heavy support
                tanks < maxTanks;
     }
 
     private static boolean shouldBuildScout(Direction dir) {
-        // VP Tyrant: Minimal scouts for vision - 5% chance
+        // Hybrid Assassin: Scouts 35% - primary economic warfare units
         int scouts = countAlliedRobots(RobotType.SCOUT);
-        int maxScouts = 2; // Minimal scouting
+        int maxScouts = 25; // Large scout force for hunting gardeners
         
         return rc.canBuildRobot(RobotType.SCOUT, dir) && 
-               Math.random() < 0.05 && // 5% minimum for defense/scouting
+               Math.random() < 0.35 && // 35% high priority for economic hunting
                scouts < maxScouts;
     }
 
+    private static boolean shouldBuildLumberjack(Direction dir) {
+        // Hybrid Assassin: Lumberjacks 25% - tree clearing and economic disruption
+        int lumberjacks = countAlliedRobots(RobotType.LUMBERJACK);
+        int maxLumberjacks = 20; // Significant force for economic warfare
+        
+        return rc.canBuildRobot(RobotType.LUMBERJACK, dir) && 
+               Math.random() < 0.25 && // 25% for tree clearing and disruption
+               lumberjacks < maxLumberjacks;
+    }
+
     private static boolean shouldPlantTree(Direction dir) {
-        // VP Tyrant: 98% tree planting chance - massive tree farms
+        // Hybrid Assassin: Moderate tree farming at 50% for steady VP pressure
         int trees = countTeamTrees();
         int round = rc.getRoundNum();
         
-        // Always try to plant trees with 98% chance
-        double treeChance = 0.98;
+        // Moderate tree planting for VP pressure while focusing on military
+        double treeChance = 0.50; // 50% chance - balanced approach
         
-        // Only slow down if we have an absolute massive number of trees
-        if (trees > 60) treeChance = 0.95;
-        if (trees > 80) treeChance = 0.90;
+        // Slow down if we have sufficient trees for VP pressure
+        if (trees > 30) treeChance = 0.40;
+        if (trees > 45) treeChance = 0.30;
         
         return rc.canPlantTree(dir) && Math.random() < treeChance;
     }
@@ -92,7 +102,7 @@ public class BulletSpending {
     }
 
     private static void tryWaterTrees() throws GameActionException {
-        // VP Tyrant: 100% priority for tree watering over all other actions
+        // Hybrid Assassin: Moderate priority for tree watering
         TreeInfo[] trees = rc.senseNearbyTrees(-1, rc.getTeam());
         if (trees.length > 0) {
             // Prioritize trees that need water most urgently
@@ -101,12 +111,12 @@ public class BulletSpending {
             
             for (TreeInfo tree : trees) {
                 if (rc.canWater(tree.location)) {
-                    // Prioritize lowest health trees to keep them alive and producing
+                    // Prioritize lowest health trees to keep them producing VP
                     float healthRatio = tree.health / tree.maxHealth;
-                    float score = (1 - healthRatio) * 20; // Heavy weight on low health
+                    float score = (1 - healthRatio) * 10; // Moderate weight on low health
                     
                     // Slight preference for larger trees
-                    score += tree.radius;
+                    score += tree.radius * 0.5;
                     
                     if (score > bestScore) {
                         bestScore = score;
@@ -122,30 +132,30 @@ public class BulletSpending {
     }
 
     private static float getDonateAmount() throws GameActionException {
-        // VP Tyrant: Very aggressive VP donation starting at 200 bullets
+        // Hybrid Assassin: VP donations at 180 bullets to maintain constant pressure
         float bullets = rc.getTeamBullets();
         float vpCost = rc.getVictoryPointCost();
         int round = rc.getRoundNum();
 
-        // Start VP donation much earlier and more aggressively
-        if (round < 200) {
-            // Even early game: donate if we have excess over 200 bullets
-            if (bullets > 200 && bullets >= vpCost * 2) {
-                float donateAmount = (float)Math.floor((bullets - 100) / vpCost) * vpCost;
+        // Start VP donation at 180 bullets threshold for constant pressure
+        if (round < 300) {
+            // Early game: donate if we have 180+ bullets for pressure
+            if (bullets > 180 && bullets >= vpCost * 2) {
+                float donateAmount = (float)Math.floor((bullets - 80) / vpCost) * vpCost;
                 if (donateAmount > 0) return donateAmount;
             }
         }
-        else if (round < 600) {
-            // Mid game: very aggressive donation
-            if (bullets > 150 && bullets >= vpCost * 1.5) {
+        else if (round < 800) {
+            // Mid game: maintain pressure while building military
+            if (bullets > 150 && bullets >= vpCost * 1.8) {
                 float donateAmount = (float)Math.floor((bullets - 50) / vpCost) * vpCost;
                 if (donateAmount > 0) return donateAmount;
             }
         }
-        // Late game: extremely aggressive VP rush
+        // Late game: aggressive VP to finish while military raids economy
         else {
-            if (bullets > 100 && bullets >= vpCost) {
-                float donateAmount = (float)Math.floor(bullets / vpCost) * vpCost;
+            if (bullets > 120 && bullets >= vpCost * 1.5) {
+                float donateAmount = (float)Math.floor((bullets - 30) / vpCost) * vpCost;
                 if (donateAmount > 0) return donateAmount;
             }
         }
@@ -154,10 +164,10 @@ public class BulletSpending {
     }
 
     public static void spendPolicy() throws GameActionException {
-        // VP Tyrant: Economic powerhouse strategy focused on trees and VP
+        // Hybrid Assassin: Economic warfare with mixed military and VP pressure
         
         if (rc.getType() == RobotType.ARCHON) {
-            // Archons prioritize hiring maximum gardeners for tree farms
+            // Archons hire moderate gardeners for sustained production
             Direction dir = randomDirection();
             
             if (shouldHireGardener(dir)) {
@@ -165,26 +175,36 @@ public class BulletSpending {
             }
         } 
         else if (rc.getType() == RobotType.GARDENER) {
-            // VP Tyrant gardener priority: Trees > Everything else
+            // Hybrid Assassin gardener priority: Economic warfare units > Trees
             
-            // Priority 1: Tree watering - 100% priority
-            tryWaterTrees();
-            if (rc.hasMoved()) return; // Don't do anything else if we watered
+            // Priority 1: Moderate tree watering for VP pressure
+            if (Math.random() < 0.60) { // 60% chance to water
+                tryWaterTrees();
+                if (rc.hasMoved()) return; // Don't do anything else if we watered
+            }
             
-            // Priority 2: Plant massive tree farms - 98% chance
+            // Priority 2: Build economic warfare military units
             Direction dir = randomDirection();
-            if (shouldPlantTree(dir)) {
+            
+            // Scout 35% - primary economic assassins
+            if (Math.random() < 0.35 && shouldBuildScout(dir)) {
+                rc.buildRobot(RobotType.SCOUT, dir);
+            }
+            // Lumberjack 25% - economic disruptors  
+            else if (Math.random() < 0.25 && shouldBuildLumberjack(dir)) {
+                rc.buildRobot(RobotType.LUMBERJACK, dir);
+            }
+            // Soldier 20% - support force
+            else if (Math.random() < 0.20 && shouldBuildSoldier(dir)) {
+                rc.buildRobot(RobotType.SOLDIER, dir);
+            }
+            // Plant trees 50% - moderate VP pressure
+            else if (Math.random() < 0.50 && shouldPlantTree(dir)) {
                 rc.plantTree(dir);
             }
-            // Only build minimal defensive units if we can't plant
-            else if (Math.random() < 0.05) { // 5% chance for minimal defense
-                if (shouldBuildSoldier(dir)) {
-                    rc.buildRobot(RobotType.SOLDIER, dir);
-                } else if (shouldBuildTank(dir)) {
-                    rc.buildRobot(RobotType.TANK, dir);
-                } else if (shouldBuildScout(dir)) {
-                    rc.buildRobot(RobotType.SCOUT, dir);
-                }
+            // Minimal tanks for heavy support
+            else if (Math.random() < 0.05 && shouldBuildTank(dir)) {
+                rc.buildRobot(RobotType.TANK, dir);
             }
             
             // Continue building meta-gardeners occasionally for expansion
@@ -194,7 +214,7 @@ public class BulletSpending {
             }
         }
         
-        // VP Tyrant: Very aggressive donation strategy
+        // Hybrid Assassin: VP pressure to force enemy mistakes
         float donateAmount = getDonateAmount();
         if (donateAmount > 0f) {
             rc.donate(donateAmount);
