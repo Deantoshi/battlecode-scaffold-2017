@@ -12,5 +12,5 @@
     "task": false
   },
   "$schema": "https://opencode.ai/config.json",
-  "model": "opencode/big-pickle"
+  "model": "opencode/grok-code"
 }
