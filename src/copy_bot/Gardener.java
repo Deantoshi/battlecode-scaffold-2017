@@ -3,90 +3,24 @@ import battlecode.common.*;
 
 public class Gardener {
     static RobotController rc;
-    static int lumberjacksBuilt = 0; // keep for tracking, but not limit
-    static int buildCounter = 0;
-    static RobotType[] buildOrder = {RobotType.LUMBERJACK, RobotType.SOLDIER, RobotType.TANK, RobotType.SCOUT};
 
     public static void init(RobotController rc) {
         Gardener.rc = rc;
     }
 
-    public static void buildRobot() throws GameActionException {
-        System.out.println("Gardener bullets: " + rc.getTeamBullets());
-        System.out.println("Build counter: " + buildCounter);
-
-        // Economic Timing: Delay military builds, focus on GARDENER and trees first 600 rounds. Minimal army until late, then all-in on VP.
-        int round = rc.getRoundNum();
-        RobotType[] currentBuildOrder;
-        if (round < 600) {
-            // Early: delay military builds, occasional LUMBERJACK for clearing
-            if (buildCounter % 2 == 0) {
-                currentBuildOrder = new RobotType[]{RobotType.LUMBERJACK};
-            } else {
-                // Focus on trees, skip military builds
-                return;
-            }
-        } else if (round <= 2000) {
-            // Mid: build priority LUMBERJACK, TANK, SOLDIER
-            currentBuildOrder = new RobotType[]{RobotType.LUMBERJACK, RobotType.TANK, RobotType.SOLDIER};
-        } else {
-            // Late: all-in on VP, no more robot builds
-            return;
-        }
-
-        int orderLength = currentBuildOrder.length;
-        int typeIndex = buildCounter % orderLength;
-        RobotType type = currentBuildOrder[typeIndex];
-        int cost = type.bulletCost;
-
-        if (rc.getTeamBullets() >= cost && rc.isBuildReady()) {
-            System.out.println("Attempting to build " + type);
-            for (int attempt = 0; attempt < 8; attempt++) {
-                Direction dir = Direction.getNorth().rotateLeftDegrees(attempt * 45);
-                if (rc.canBuildRobot(type, dir)) {
-                    rc.buildRobot(type, dir);
-                    if (type == RobotType.LUMBERJACK) {
-                        lumberjacksBuilt++;
-                    }
-                    buildCounter++;
-                    System.out.println("Built " + type + " successfully");
-                    return;
-                }
-            }
-            System.out.println("Failed to build " + type + " in all attempts");
-        }
-    }
-
-    public static void plantTree() throws GameActionException {
-        System.out.println("Trying to plant tree, bullets: " + rc.getTeamBullets());
-        if (rc.getTeamBullets() >= 50) {
-            Direction[] dirs = {
-                Direction.getNorth(),
-                Direction.getEast(),
-                Direction.getSouth(),
-                Direction.getWest(),
-                Direction.getNorth().rotateRightDegrees(45), // NE
-                Direction.getEast().rotateRightDegrees(45), // SE
-                Direction.getSouth().rotateRightDegrees(45), // SW
-                Direction.getWest().rotateRightDegrees(45) // NW
-            };
-            for (Direction dir : dirs) {
-                if (rc.canPlantTree(dir)) {
-                    rc.plantTree(dir);
-                    System.out.println("Planted tree!");
-                    return;
-                }
-            }
-        }
-    }
-
     public static void waterTree() throws GameActionException {
         TreeInfo[] nearbyTrees = rc.senseNearbyTrees(2, rc.getTeam());
+        // For optimization, water the tree with lowest health if possible.
+        TreeInfo bestTree = null;
+        float lowestHealth = Float.MAX_VALUE;
         for (TreeInfo tree : nearbyTrees) {
-            if (rc.canWater(tree.ID)) {
-                rc.water(tree.ID);
-                return;
+            if (rc.canWater(tree.ID) && tree.health < lowestHealth) {
+                lowestHealth = tree.health;
+                bestTree = tree;
             }
+        }
+        if (bestTree != null) {
+            rc.water(bestTree.ID);
         }
     }
 

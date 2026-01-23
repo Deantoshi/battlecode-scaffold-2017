@@ -10,17 +10,29 @@ public class Gardener {
 
     public static void waterTree() throws GameActionException {
         TreeInfo[] nearbyTrees = rc.senseNearbyTrees(2, rc.getTeam());
-        // For optimization, water the tree with lowest health if possible.
+        // Prioritize watering producing trees (health >80, assumed grown) to extend production period
         TreeInfo bestTree = null;
         float lowestHealth = Float.MAX_VALUE;
         for (TreeInfo tree : nearbyTrees) {
-            if (rc.canWater(tree.ID) && tree.health < lowestHealth) {
+            if (rc.canWater(tree.ID) && tree.health > 80 && tree.health < lowestHealth) {
                 lowestHealth = tree.health;
                 bestTree = tree;
             }
         }
         if (bestTree != null) {
             rc.water(bestTree.ID);
+        } else {
+            // If no producing trees, water any
+            lowestHealth = Float.MAX_VALUE;
+            for (TreeInfo tree : nearbyTrees) {
+                if (rc.canWater(tree.ID) && tree.health < lowestHealth) {
+                    lowestHealth = tree.health;
+                    bestTree = tree;
+                }
+            }
+            if (bestTree != null) {
+                rc.water(bestTree.ID);
+            }
         }
     }
 

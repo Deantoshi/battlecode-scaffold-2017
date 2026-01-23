@@ -1,0 +1,154 @@
+{
+  "archetypes": [
+    {
+      "id": 1,
+      "name": "Tree Farm VP Maximizer",
+      "win_condition": "vp_rush",
+      "philosophy": "Focus on planting as many trees as possible to maximize bullet income and aggressively donate for Victory Points, minimizing unit production to prioritize economy.",
+      "key_changes": [
+        "Modify BulletSpending.plantTree() to attempt planting in more directions and earlier in the round.",
+        "Update BulletSpending.donateForVP() to donate when bullets > 100 instead of 200.",
+        "Reduce unit building in BulletSpending.buildRobot() to only build after round 2000 and rarely.",
+        "Increase gardener hiring frequency by modifying tryHireGardener to try multiple directions.",
+        "Adjust Gardener to prioritize planting over watering if no low-health trees."
+      ],
+      "unit_priority": ["GARDENER"],
+      "engagement_style": "Static defense, maintaining tree farms while donating bullets."
+    },
+    {
+      "id": 2,
+      "name": "Tank Blitzkrieg",
+      "win_condition": "elimination",
+      "philosophy": "Build tanks early and aggressively, using their strength to push through defenses and eliminate enemy units, focusing on map control through brute force.",
+      "key_changes": [
+        "Change BulletSpending.buildRobot() to prioritize TANK building starting from round 500.",
+        "Modify BulletSpending.spendPolicy() to reserve bullets for tank production over trees.",
+        "Update Tank.defensiveMove() to instead move towards enemy center.",
+        "Reduce tree planting in BulletSpending.plantTree() to only when excess bullets.",
+        "Set unit priority to tanks, no other units."
+      ],
+      "unit_priority": ["TANK", "GARDENER"],
+      "engagement_style": "Aggressive pushes towards enemy base, using tanks to clear paths and ram trees."
+    },
+    {
+      "id": 3,
+      "name": "Scout Swarm Disrupter",
+      "win_condition": "hybrid",
+      "philosophy": "Swarm with cheap scouts to harass enemy gardeners, steal bullets from trees, and pressure archons, disrupting economy for VP or elimination win.",
+      "key_changes": [
+        "Alter BulletSpending.buildRobot() to build only SCOUT units frequently.",
+        "Modify Scout.fire() to target gardeners over archons.",
+        "Update Scout movement in runScout() to patrol towards enemy locations.",
+        "Reduce tree planting to fund more scouts.",
+        "Prioritize scout movement through trees without fear."
+      ],
+      "unit_priority": ["SCOUT"],
+      "engagement_style": "Harass enemy gardeners and trees, forcing them to defend rather than expand."
+    },
+    {
+      "id": 4,
+      "name": "Lumberjack Cleaver Rush",
+      "win_condition": "elimination",
+      "philosophy": "Deploy lumberjacks early to clear tree obstacles and strike enemy units, enabling quicker army movements and disrupting enemy setups.",
+      "key_changes": [
+        "Build LUMBERJACKs from round 400 in BulletSpending.buildRobot().",
+        "Modify runLumberjack() to move towards enemy center instead of base.",
+        "Use strike on nearby enemies without building robots.",
+        "Delay gardeners and trees until later.",
+        "Prioritize lumberjack production."
+      ],
+      "unit_priority": ["LUMBERJACK", "GARDENER"],
+      "engagement_style": "Early rushes to clear paths and attack adjacent units."
+    },
+    {
+      "id": 5,
+      "name": "Soldier Horde",
+      "win_condition": "elimination",
+      "philosophy": "Spam soldiers to overwhelm opponents with numbers, using area shots efficiently when clustered for massive damage output.",
+      "key_changes": [
+        "Change BulletSpending.buildRobot() to build SOLDIER predominantly.",
+        "Update Soldier.fire() to use triad/pentad more aggressively.",
+        "Modify Soldier movement to group near enemies.",
+        "Reduce other units and trees.",
+        "Movement towards enemy for positioning."
+      ],
+      "unit_priority": ["SOLDIER", "GARDENER"],
+      "engagement_style": "Mass assaults with soldiers, positioning for optimal shot coverage."
+    },
+    {
+      "id": 6,
+      "name": "Economic Late-Scaler",
+      "win_condition": "vp_rush",
+      "philosophy": "Invest heavily in trees for late-game bullet reserves, then convert to VP to win before opponent builds army.",
+      "key_changes": [
+        "Delay BulletSpending.buildRobot() to round 2500.",
+        "Maximize BulletSpending.plantTree() attempts.",
+        "Aggressive donation in donateForVP() when bullets >150.",
+        "Build mixed units late.",
+        "Extend tree growing period."
+      ],
+      "unit_priority": ["GARDENER"],
+      "engagement_style": "Turtling and scaling economy for VP win."
+    },
+    {
+      "id": 7,
+      "name": "Gardener Expansion",
+      "win_condition": "hybrid",
+      "philosophy": "Hire many gardeners to expand control, planting fewer trees per gardener for wider coverage, building small balanced armies.",
+      "key_changes": [
+        "Increase gardener hiring in runArchon().",
+        "Modify BulletSpending.plantTree() to plant in fewer directions.",
+        "Build balanced units in buildRobot().",
+        "Move gardeners to new locations for expansion.",
+        "Maintain multiple tree clusters."
+      ],
+      "unit_priority": ["GARDENER", "SOLDIER", "SCOUT"],
+      "engagement_style": "Expansive base building with defensive patrols."
+    },
+    {
+      "id": 8,
+      "name": "Archon Assassin Rush",
+      "win_condition": "elimination",
+      "philosophy": "All-in early with soldiers and lumberjacks to rush and kill enemy archons quickly, preventing them from building economy.",
+      "key_changes": [
+        "Build SOLDIER and LUMBERJACK from round 300.",
+        "Skip trees initially in plantTree().",
+        "Move aggressively towards enemy archons.",
+        "Target archons in firing.",
+        "No VP donation."
+      ],
+      "unit_priority": ["SOLDIER", "LUMBERJACK"],
+      "engagement_style": "Full commitment to early archon elimination."
+    },
+    {
+      "id": 9,
+      "name": "Mobile Flanker Army",
+      "win_condition": "elimination",
+      "philosophy": "Use mobile scouts and soldiers to roam, find weak spots, and ambush enemy units while avoiding direct confrontations.",
+      "key_changes": [
+        "Build SCOUT and SOLDIER, avoid tanks.",
+        "Update movement to patrol with enemy bias.",
+        "Use Nav.tryMoveBug() towards enemy.",
+        "Flexible firing.",
+        "Reduce static defense."
+      ],
+      "unit_priority": ["SOLDIER", "SCOUT"],
+      "engagement_style": "Mobile hit-and-run tactics, flanking and ambushing."
+    },
+    {
+      "id": 10,
+      "name": "Pure VP Rusher",
+      "win_condition": "vp_rush",
+      "philosophy": "Minimize all unit production and focus purely on bullet generation for rapid VP donation to end the game quickly.",
+      "key_changes": [
+        "No unit building in buildRobot().",
+        "Maximize gardeners and trees.",
+        "Donate aggressively when cost is low.",
+        "Stop planting when VP close.",
+        "No army units."
+      ],
+      "unit_priority": ["GARDENER"],
+      "engagement_style": "Static economy focus, no engagement."
+    }
+  ]
+}

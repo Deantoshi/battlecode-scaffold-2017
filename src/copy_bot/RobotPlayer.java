@@ -3,7 +3,6 @@ import battlecode.common.*;
 
 public strictfp class RobotPlayer {
     static RobotController rc;
-    static int gardenersHired = 0;
 
     /**
         * run() is the method that is called when a robot is instantiated in the Battlecode world.
@@ -22,9 +21,10 @@ public strictfp class RobotPlayer {
         Tank.init(rc);
         Scout.init(rc);
         Nav.init(rc);
+        BulletSpending.init(rc);
 
         // Here, we've separated the controls into a different method for each RobotType.
-        // You can add the missing ones or rewrite this into your own control structure.
+        // You can add the missing ones or rewrite this into your control structure.
         switch (rc.getType()) {
             case ARCHON:
                 runArchon();
@@ -55,42 +55,24 @@ public strictfp class RobotPlayer {
         // The code you want your robot to perform every round should be in this loop
         while (true) {
 
-            // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
+            // Try/catch blocks stop unhandled exceptions, which cause your robot to perform this loop again
             try {
 
                 // Generate a random direction
                 Direction dir = randomDirection();
 
                 // Hire up to 20 gardeners indefinitely
-                if (gardenersHired < 20 && rc.canHireGardener(dir)) {
-                    rc.hireGardener(dir);
-                    gardenersHired++;
-                }
+                BulletSpending.tryHireGardener(dir);
 
                 // Broadcast gardeners hired
-                rc.broadcast(2, gardenersHired);
+                rc.broadcast(2, BulletSpending.getGardenersHired());
 
                 // Broadcast archon's location for other robots on the team to know
                 MapLocation myLocation = rc.getLocation();
                 rc.broadcast(0,(int)myLocation.x);
                 rc.broadcast(1,(int)myLocation.y);
 
-                // VP donation logic: moderate donation only when tanks are built (from round 600)
-                float bullets = rc.getTeamBullets();
-                int round = rc.getRoundNum();
-                if (round < 600) {
-                    // Early: don't donate, focus on economy
-                } else if (round <= 1800) {
-                    // Mid: moderate donation when tanks are built
-                    if (bullets > 200) {
-                        rc.donate(bullets - 100);
-                    }
-                } else {
-                    // Late: aggressive donation for VP rush
-                    if (bullets > 50) {
-                        rc.donate(bullets - 0);
-                    }
-                }
+                BulletSpending.donateForVP();
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();
@@ -126,13 +108,13 @@ public strictfp class RobotPlayer {
                 }
 
                 // Attempt to build robots
-                Gardener.buildRobot();
+                BulletSpending.buildRobot();
 
                 // Water trees
                 Gardener.waterTree();
 
                 // Plant trees
-                Gardener.plantTree();
+                BulletSpending.plantTree();
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();
@@ -158,8 +140,11 @@ public strictfp class RobotPlayer {
                 // Fire
                 Soldier.fire();
 
-                // Move towards enemy center for coordinated pushes
-                Nav.tryMoveBug(Nav.enemyCenter);
+                // Static defense: stay near archon base instead of moving towards enemy
+                MapLocation archonLoc = new MapLocation(rc.readBroadcast(0), rc.readBroadcast(1));
+                if (myLocation.distanceTo(archonLoc) > 10) {
+                    Nav.tryMoveBug(archonLoc);
+                }
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();
@@ -218,8 +203,12 @@ public strictfp class RobotPlayer {
                     // Use strike() to hit all nearby robots!
                     rc.strike();
                 } else {
-                    // Move towards enemy center for coordinated pushes
-                    Nav.tryMoveBug(Nav.enemyCenter);
+                    // Static defense: stay near archon base instead of moving towards enemy
+                    MapLocation archonLoc = new MapLocation(rc.readBroadcast(0), rc.readBroadcast(1));
+                    MapLocation myLoc = rc.getLocation();
+                    if (myLoc.distanceTo(archonLoc) > 8) {
+                        Nav.tryMoveBug(archonLoc);
+                    }
                 }
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
@@ -238,7 +227,6 @@ public strictfp class RobotPlayer {
 
         // The code you want your robot to perform every round should be in this loop
         while (true) {
-
             // Try/catch blocks stop unhandled exceptions, which cause your robot to perform this loop again
             try {
                 MapLocation myLocation = rc.getLocation();
@@ -246,8 +234,14 @@ public strictfp class RobotPlayer {
                 // Fire
                 Scout.fire();
 
-                // Move towards enemy center for scouting and harassment
-                Nav.tryMoveBug(Nav.enemyCenter);
+                // Static defense: patrol near archon base instead of moving towards enemy
+                MapLocation archonLoc = new MapLocation(rc.readBroadcast(0), rc.readBroadcast(1));
+                if (myLocation.distanceTo(archonLoc) > 15) {
+                    Nav.tryMoveBug(archonLoc);
+                } else {
+                    // Patrol around base
+                    Nav.tryMoveBug(Nav.spawnLoc);
+                }
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();

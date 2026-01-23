@@ -1,4 +1,4 @@
-package grok_code_fast_1;
+package copy_bot;
 import battlecode.common.*;
 
 public class BulletSpending {
@@ -28,7 +28,7 @@ public class BulletSpending {
         int round = rc.getRoundNum();
         float cost = rc.getVictoryPointCost();
         // Aggressive donation when bullets are abundant
-        if (bullets > 150 && bullets >= cost) {
+        if (bullets > 200 && bullets >= cost) {
             // Donate all bullets above a small reserve
             float donateAmount = bullets - 50;
             int pointsToBuy = (int)(donateAmount / cost);
@@ -43,19 +43,17 @@ public class BulletSpending {
         System.out.println("Gardener bullets: " + rc.getTeamBullets());
         System.out.println("Build counter: " + buildCounter);
 
-        // Build units only very late and sparingly for protection, mixed types
+        // Build units only very late and sparingly for protection, prioritizing LUMBERJACK
         int round = rc.getRoundNum();
-        if (round < 2500) {
+        if (round < 1500) {
             // No units before very late game
             return;
         }
-        // Very seldom, every 15th attempt, build mixed units for protection
+        // Very seldom, every 15th attempt, build LUMBERJACK for protection
         if (buildCounter % 15 != 0) {
             return;
         }
-        // Cycle through types: LUMBERJACK, SOLDIER, TANK, SCOUT
-        RobotType[] types = {RobotType.LUMBERJACK, RobotType.SOLDIER, RobotType.TANK, RobotType.SCOUT};
-        RobotType type = types[buildCounter % 4];
+        RobotType type = RobotType.LUMBERJACK;
         int cost = type.bulletCost;
 
         if (rc.getTeamBullets() >= cost && rc.isBuildReady()) {
@@ -78,9 +76,18 @@ public class BulletSpending {
 
     public static void plantTree() throws GameActionException {
         System.out.println("Trying to plant tree, bullets: " + rc.getTeamBullets());
-        if (rc.getTeamBullets() >= 25) {
-            for (int i = 0; i < 16; i++) {
-                Direction dir = Direction.getNorth().rotateLeftDegrees(i * 22.5f);
+        if (rc.getTeamBullets() >= 50) {
+            Direction[] dirs = {
+                Direction.getNorth(),
+                Direction.getEast(),
+                Direction.getSouth(),
+                Direction.getWest(),
+                Direction.getNorth().rotateRightDegrees(45), // NE
+                Direction.getEast().rotateRightDegrees(45), // SE
+                Direction.getSouth().rotateRightDegrees(45), // SW
+                Direction.getWest().rotateRightDegrees(45) // NW
+            };
+            for (Direction dir : dirs) {
                 if (rc.canPlantTree(dir)) {
                     rc.plantTree(dir);
                     System.out.println("Planted tree!");
