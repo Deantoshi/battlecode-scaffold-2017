@@ -55,7 +55,7 @@ Create 10 DIVERSE archetypes covering different strategic dimensions:
 1. `name` - Short descriptive name (e.g., "Tank Fortress", "Scout Swarm")
 2. `win_condition` - "elimination", "vp_rush", or "hybrid"
 3. `philosophy` - 1-2 sentence strategic philosophy
-4. `key_changes` - List of 3-5 specific code changes to implement
+4. `key_changes` - List of 3-5 specific code changes to implement (spending changes must be framed as updates to `BulletSpending.spendPolicy()`)
 5. `unit_priority` - Which units to build and in what order
 6. `engagement_style` - How to approach combat
 

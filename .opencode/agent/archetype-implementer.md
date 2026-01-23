@@ -50,29 +50,29 @@ Implement the archetype's strategy by modifying the variant's code. You have cre
 
 ## Implementation Guidelines
 
-### Unit Building (Gardener.java typically)
-- Modify build priorities based on `unit_priority`
-- Adjust build conditions (resources, timing, etc.)
-- Change unit ratios
+### Unit Building (BulletSpending.java)
+- Modify build priorities based on `unit_priority` inside `BulletSpending.spendPolicy()`
+- Adjust build conditions (resources, timing, etc.) inside `spendPolicy()` or helper decisions it calls
+- Change unit ratios by tuning the spend policy ordering and thresholds
 
 ### Combat Behavior (Soldier.java, Tank.java, etc.)
 - Modify target selection based on archetype
 - Adjust engagement distances
 - Change firing patterns (single vs triad vs pentad)
 
-### Economy (Gardener.java, Archon.java)
-- Modify tree planting behavior
-- Adjust bullet donation logic for VP strategies
-- Change resource thresholds
+### Economy (BulletSpending.java)
+- Modify tree planting behavior inside `BulletSpending.spendPolicy()`
+- Adjust bullet donation logic for VP strategies inside `spendPolicy()`
+- Change resource thresholds used by the spend policy
 
 ### CRITICAL: Bullet Spending Must Be Centralized
-In this repo, **all bullet spending activities** must live in `BulletSpending.java` and nowhere else. This includes:
+In this repo, **all bullet spending activities** must live in `BulletSpending.java` and nowhere else, and they must be called only inside `BulletSpending.spendPolicy()`. This includes:
 - Donating for VP
 - Hiring gardeners
 - Building robots
 - Planting trees
 
-Do not add or keep bullet-spending logic in any other file. All callers should invoke `BulletSpending` methods instead.
+Do not add or keep bullet-spending logic in any other file, and do not call any of the methods above anywhere outside `BulletSpending.spendPolicy()`. All other files may only call `BulletSpending.spendPolicy()` and must never call any other `BulletSpending` method directly.
 
 ### Movement (Nav.java or unit files)
 - Adjust aggression (move toward vs away from enemies)
@@ -136,8 +136,8 @@ Compilation: SUCCESS
 
 ### Changing Build Order
 ```java
-// Example: Prioritize soldiers over tanks
-if (rc.canBuildRobot(RobotType.SOLDIER, dir)) {
+// Example: Prioritize soldiers over tanks (inside BulletSpending.spendPolicy)
+if (shouldBuildSoldier(dir)) {
     rc.buildRobot(RobotType.SOLDIER, dir);
 }
 ```
@@ -157,13 +157,10 @@ for (RobotInfo r : enemies) {
 
 ### VP Donation Logic
 ```java
-// Example: Aggressive VP donation
-float bullets = rc.getTeamBullets();
-if (bullets > 200) {
-    float donateAmount = bullets - 100;
-    if (donateAmount >= rc.getVictoryPointCost()) {
-        rc.donate(donateAmount);
-    }
+// Example: Aggressive VP donation (inside BulletSpending.spendPolicy)
+float donateAmount = getDonateAmount();
+if (donateAmount > 0f) {
+    rc.donate(donateAmount);
 }
 ```
 
