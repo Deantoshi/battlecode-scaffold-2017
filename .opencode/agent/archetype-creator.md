@@ -105,19 +105,6 @@ src/{BOT}/.state/archetypes.json
 - Make changes that would break compilation
 - Suggest changes that aren't implementable in the current bot structure
 
-## Example Archetypes
-
-1. **Soldier Rush** - Elimination - Mass soldiers early, overwhelm before opponent scales
-2. **VP Sprint** - VP Rush - Minimal army, max tree farming, donate bullets aggressively
-3. **Tank Fortress** - Hybrid - Defensive tanks protect tree farm, donate excess bullets
-4. **Scout Harassment** - Elimination - Fast scouts to kill gardeners, deny enemy economy
-5. **Lumberjack Blitz** - Elimination - Clear trees fast, rush enemy base through forest
-6. **Balanced Macro** - Hybrid - Standard build order, adapt to opponent
-7. **Gardener Spam** - VP Rush - Many gardeners, tree forest, passive VP accumulation
-8. **Mixed Army** - Elimination - Diverse unit composition for flexibility
-9. **Early Pressure** - Elimination - Constant early aggression to disrupt opponent
-10. **Late Game Scaling** - VP Rush - Survive early, outscale with economy
-
 ## Output
 
 After creating the archetypes JSON file, output a summary:
