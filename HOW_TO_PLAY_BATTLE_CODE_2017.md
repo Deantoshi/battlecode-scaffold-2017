@@ -193,7 +193,7 @@ CRITICAL: In this repo, **all bullet spending activities** must live in `BulletS
 - `rc.buildRobot(RobotType type, Direction dir)`
 - `rc.plantTree(Direction dir)`
 
-Do not add or keep bullet-spending logic in any other file, and do not call any of the methods above anywhere outside `BulletSpending.spendPolicy()`. All other files may only call `BulletSpending.spendPolicy()` and must never call any other `BulletSpending` method directly.
+Do not add or keep bullet-spending logic in any other file, and do not call any of the methods above anywhere outside `BulletSpending.spendPolicy()`. All other files may only call `BulletSpending.spendPolicy()` and must never call any other `BulletSpending` method directly. Centralizing spending order in `spendPolicy()` makes overall economic intent and timing easy to audit and reason about.
 
 ## Key API Entry Points
 - `battlecode.common.RobotController` is the primary interface for sensing and acting.
