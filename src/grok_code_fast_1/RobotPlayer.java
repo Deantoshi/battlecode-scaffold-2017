@@ -3,7 +3,6 @@ import battlecode.common.*;
 
 public strictfp class RobotPlayer {
     static RobotController rc;
-    static int gardenersHired = 0;
 
     /**
         * run() is the method that is called when a robot is instantiated in the Battlecode world.
@@ -22,6 +21,7 @@ public strictfp class RobotPlayer {
         Tank.init(rc);
         Scout.init(rc);
         Nav.init(rc);
+        BulletSpending.init(rc);
 
         // Here, we've separated the controls into a different method for each RobotType.
         // You can add the missing ones or rewrite this into your control structure.
@@ -62,43 +62,17 @@ public strictfp class RobotPlayer {
                 Direction dir = randomDirection();
 
                 // Hire up to 20 gardeners indefinitely
-                if (gardenersHired < 20 && rc.canHireGardener(dir)) {
-                    rc.hireGardener(dir);
-                    gardenersHired++;
-                }
+                BulletSpending.tryHireGardener(dir);
 
                 // Broadcast gardeners hired
-                rc.broadcast(2, gardenersHired);
+                rc.broadcast(2, BulletSpending.getGardenersHired());
 
                 // Broadcast archon's location for other robots on the team to know
                 MapLocation myLocation = rc.getLocation();
                 rc.broadcast(0,(int)myLocation.x);
                 rc.broadcast(1,(int)myLocation.y);
 
-                // VP donation logic: start earlier for accumulation, focus on scaling VP late game
-                float bullets = rc.getTeamBullets();
-                int round = rc.getRoundNum();
-                if (round >= 300 && bullets > 200) {
-                    // Early: start donating to accumulate VP sooner
-                    float donateAmount = bullets - 100;
-                    float cost = rc.getVictoryPointCost();
-                    if (donateAmount >= cost) {
-                        int pointsToBuy = (int)(donateAmount / cost);
-                        float actualDonate = pointsToBuy * cost;
-                        if (actualDonate >= cost) {
-                            rc.donate(actualDonate);
-                        }
-                    }
-                } else if (round > 1800) {
-                    // Late: aggressive donation for VP rush if economy is scaled
-                    if (bullets > 50) {
-                        float donateAmount = bullets - 0;
-                        float cost = rc.getVictoryPointCost();
-                        if (donateAmount >= cost) {
-                            rc.donate(donateAmount);
-                        }
-                    }
-                }
+                BulletSpending.donateForVP();
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();
@@ -134,13 +108,13 @@ public strictfp class RobotPlayer {
                 }
 
                 // Attempt to build robots
-                Gardener.buildRobot();
+                BulletSpending.buildRobot();
 
                 // Water trees
                 Gardener.waterTree();
 
                 // Plant trees
-                Gardener.plantTree();
+                BulletSpending.plantTree();
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();
