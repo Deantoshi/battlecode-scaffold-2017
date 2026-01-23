@@ -55,19 +55,19 @@ public strictfp class RobotPlayer {
             // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
             try {
 
-                // Use centralized spending policy for gardener hiring
+                // VP Tyrant: Use centralized spending policy for gardener hiring
                 BulletSpending.spendPolicy();
 
-                // Tank Fortress: archons stay relatively central but move strategically
-                if (rc.getRoundNum() < 200) {
-                    // Early game: move randomly but carefully to find good positioning
-                    tryMoveCareful(randomDirection());
+                // VP Tyrant: Archons stay central and avoid combat - focus on economy
+                if (rc.getRoundNum() < 100) {
+                    // Early game: move carefully to find good positioning for tree farms
+                    tryMoveTurtle(randomDirection());
                 } else {
-                    // Later game: stay near center of our controlled area
-                    moveToFortressCenter();
+                    // Later game: stay near center to protect tree economy
+                    stayNearEconomicCenter();
                 }
 
-                // Broadcast archon's location for fortress coordination
+                // Broadcast archon's location for economic coordination
                 if (archonLocation != null) {
                     rc.broadcast(0,(int)archonLocation.x);
                     rc.broadcast(1,(int)archonLocation.y);
@@ -101,11 +101,11 @@ public strictfp class RobotPlayer {
                     archonLocationSet = true;
                 }
 
-                // Use centralized spending policy for building meta-gardeners, tanks, and trees
+                // VP Tyrant: Use centralized spending policy - trees and economy are priority
                 BulletSpending.spendPolicy();
 
-                // Tank Fortress: gardeners position themselves strategically around archon
-                maintainGardenerPosition(archonLoc);
+                // VP Tyrant: Gardeners position themselves to maximize tree farming
+                maintainTreeFarmPosition(archonLoc);
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();
@@ -128,46 +128,34 @@ public strictfp class RobotPlayer {
             try {
                 MapLocation myLocation = rc.getLocation();
 
-                // Get archon location for fortress coordination
-                MapLocation fortressCenter = getFortressCenter();
+                // Get archon location for economic center protection
+                MapLocation economicCenter = getEconomicCenter();
 
-                // See if there are any nearby enemy robots
+                // VP Tyrant: Soldiers are defensive only - avoid combat unless absolutely necessary
                 RobotInfo[] robots = rc.senseNearbyRobots(-1, enemy);
 
-                // Tank Fortress: soldiers provide defensive support with better targeting
                 if (robots.length > 0) {
-                    RobotInfo target = selectBestTarget(robots);
+                    RobotInfo closestEnemy = getClosestEnemy(robots);
+                    float distToEnemy = myLocation.distanceTo(closestEnemy.location);
                     
-                    float distToTarget = myLocation.distanceTo(target.location);
+                    // VP Tyrant: Only engage if enemies are very close to our economy
+                    float distToEconomy = economicCenter.distanceTo(closestEnemy.location);
                     
-                    // Attack if in range and prioritized
-                    if (distToTarget <= 8 && rc.canFireSingleShot()) {
-                        // Use triad shot against groups or high-value targets
-                        if (shouldUseTriad(target, robots) && rc.canFireTriadShot()) {
-                            rc.fireTriadShot(myLocation.directionTo(target.location));
-                        } else {
-                            rc.fireSingleShot(myLocation.directionTo(target.location));
+                    if (distToEconomy < 8 && distToEnemy <= 4) {
+                        // Defend economic center with minimal force
+                        if (rc.canFireSingleShot()) {
+                            rc.fireSingleShot(myLocation.directionTo(closestEnemy.location));
                         }
                     }
                     
-                    // Smart defensive movement
-                    if (distToTarget > 10) {
-                        // Move toward target but stay in defensive range
-                        Direction toTarget = myLocation.directionTo(target.location);
-                        if (myLocation.distanceTo(fortressCenter) < 12) {
-                            tryMoveCareful(toTarget);
-                        }
-                    } else if (distToTarget < 4) {
-                        // Too close - back up to maintain optimal range
-                        Direction awayFromTarget = target.location.directionTo(myLocation);
-                        tryMoveCareful(awayFromTarget);
-                    } else {
-                        // Strafe around target for better positioning
-                        tryStrafe(target.location);
+                    // Always prioritize avoiding combat - move away from enemies
+                    if (distToEnemy < 10) {
+                        Direction awayFromEnemy = closestEnemy.location.directionTo(myLocation);
+                        tryMoveTurtle(awayFromEnemy);
                     }
                 } else {
-                    // No enemies nearby - patrol defensively around fortress
-                    patrolDefensiveArea(fortressCenter);
+                    // No enemies nearby - patrol defensively near economic center
+                    patrolNearEconomy(economicCenter);
                 }
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
@@ -190,46 +178,44 @@ public strictfp class RobotPlayer {
             // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
             try {
 
-                // See if there are any enemy robots within striking range
-                RobotInfo[] robots = rc.senseNearbyRobots(RobotType.LUMBERJACK.bodyRadius+GameConstants.LUMBERJACK_STRIKE_RADIUS, enemy);
-
-                if(robots.length > 0 && !rc.hasAttacked()) {
-                    // Use strike() to hit all nearby robots!
-                    rc.strike();
-                } else {
-                    // Tank Fortress: lumberjacks focus on clearing trees near our fortress
-                    MapLocation fortressCenter = getFortressCenter();
-                    TreeInfo[] trees = rc.senseNearbyTrees(-1, Team.NEUTRAL);
+                // VP Tyrant: Lumberjacks focus on clearing trees ONLY if blocking our tree farms
+                MapLocation economicCenter = getEconomicCenter();
+                TreeInfo[] trees = rc.senseNearbyTrees(-1, Team.NEUTRAL);
+                
+                if (trees.length > 0) {
+                    // Only chop trees that are very close to our economic center and blocking space
+                    TreeInfo blockingTree = null;
+                    float bestScore = Float.MAX_VALUE;
                     
-                    if (trees.length > 0 && !rc.hasAttacked()) {
-                        // Prioritize trees near our fortress
-                        TreeInfo closestTree = null;
-                        float bestScore = Float.MAX_VALUE;
+                    for (TreeInfo tree : trees) {
+                        float distToEconomy = tree.location.distanceTo(economicCenter);
+                        float distToMe = rc.getLocation().distanceTo(tree.location);
                         
-                        for (TreeInfo tree : trees) {
-                            float distToTree = rc.getLocation().distanceTo(tree.location);
-                            float distToFortress = tree.location.distanceTo(fortressCenter);
-                            float score = distToTree + distToFortress * 0.5f; // Weight toward fortress
-                            
+                        // Only consider trees within economic zone
+                        if (distToEconomy < 12) {
+                            float score = distToMe; // Priority to closest trees
                             if (score < bestScore) {
                                 bestScore = score;
-                                closestTree = tree;
+                                blockingTree = tree;
                             }
                         }
-                        
-                        if (closestTree != null) {
-                            float distToTree = rc.getLocation().distanceTo(closestTree.location);
-                            if (distToTree <= RobotType.LUMBERJACK.bodyRadius + 1.0f) {
-                                rc.chop(closestTree.location);
-                            } else {
-                                Direction toTree = rc.getLocation().directionTo(closestTree.location);
-                                tryMoveCareful(toTree);
-                            }
+                    }
+                    
+                    if (blockingTree != null && bestScore < 3) {
+                        float distToTree = rc.getLocation().distanceTo(blockingTree.location);
+                        if (distToTree <= RobotType.LUMBERJACK.bodyRadius + 1.0f) {
+                            rc.chop(blockingTree.location);
+                        } else {
+                            Direction toTree = rc.getLocation().directionTo(blockingTree.location);
+                            tryMoveTurtle(toTree);
                         }
                     } else {
-                        // No close robots or trees, patrol near fortress
-                        patrolDefensiveArea(fortressCenter);
+                        // No blocking trees - patrol near economy
+                        patrolNearEconomy(economicCenter);
                     }
+                } else {
+                    // No trees nearby - patrol near economy
+                    patrolNearEconomy(economicCenter);
                 }
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
@@ -250,32 +236,16 @@ public strictfp class RobotPlayer {
             try {
                 MapLocation myLocation = rc.getLocation();
 
-                // Tank Fortress: scouts focus on vision and harassment, not front-line combat
+                // VP Tyrant: Scouts avoid combat entirely - focus on vision for economy protection
                 RobotInfo[] robots = rc.senseNearbyRobots(-1, enemy);
                 if (robots.length > 0) {
-                    // Target high-value or isolated enemies
-                    RobotInfo target = selectBestScoutTarget(robots);
-                    float distToTarget = myLocation.distanceTo(target.location);
-                    
-                    // Only engage very weak targets or at range
-                    if (distToTarget <= 5 && (target.type == RobotType.ARCHON || target.type == RobotType.GARDENER)) {
-                        if (rc.canFireSingleShot()) {
-                            rc.fireSingleShot(myLocation.directionTo(target.location));
-                        }
-                    }
-                    
-                    // Generally avoid combat unless we have advantage
-                    if (target.type == RobotType.ARCHON || target.type == RobotType.GARDENER) {
-                        // Harass high-value targets cautiously
-                        tryHarass(target.location);
-                    } else {
-                        // Run away from combat units
-                        Direction awayFromEnemy = target.location.directionTo(myLocation);
-                        tryMoveCareful(awayFromEnemy);
-                    }
+                    // Run away from all enemies - avoid combat at all costs
+                    RobotInfo closestEnemy = getClosestEnemy(robots);
+                    Direction awayFromEnemy = closestEnemy.location.directionTo(myLocation);
+                    tryMoveTurtle(awayFromEnemy);
                 } else {
-                    // Explore the map looking for opportunities
-                    exploreStrategically();
+                    // Explore but stay relatively close to economic center
+                    exploreForEconomyProtection();
                 }
 
                 Clock.yield();
@@ -294,47 +264,31 @@ public strictfp class RobotPlayer {
         while (true) {
             try {
                 MapLocation myLocation = rc.getLocation();
-                MapLocation fortressCenter = getFortressCenter();
+                MapLocation economicCenter = getEconomicCenter();
 
-                // See if there are any nearby enemy robots
+                // VP Tyrant: Tanks are defensive only - avoid combat unless economy is threatened
                 RobotInfo[] robots = rc.senseNearbyRobots(-1, enemy);
 
                 if (robots.length > 0) {
-                    RobotInfo target = selectBestTarget(robots);
-                    float distToTarget = myLocation.distanceTo(target.location);
+                    RobotInfo closestEnemy = getClosestEnemy(robots);
+                    float distToEnemy = myLocation.distanceTo(closestEnemy.location);
+                    float distToEconomy = economicCenter.distanceTo(closestEnemy.location);
                     
-                    // Tank Fortress: tanks engage at medium range, protect fortress
-                    if (distToTarget <= 6) {
-                        // Use triad against multiple enemies or high-value targets
-                        if (shouldUseTriad(target, robots) && rc.canFireTriadShot()) {
-                            rc.fireTriadShot(myLocation.directionTo(target.location));
-                        } else if (rc.canFireSingleShot()) {
-                            rc.fireSingleShot(myLocation.directionTo(target.location));
+                    // Only engage if enemies are directly threatening our economy
+                    if (distToEconomy < 6 && distToEnemy <= 5) {
+                        if (rc.canFireSingleShot()) {
+                            rc.fireSingleShot(myLocation.directionTo(closestEnemy.location));
                         }
                     }
                     
-                    // Smart positioning - stay defensive but intercept threats
-                    if (distToTarget > 8) {
-                        // Move toward target but don't stray too far from fortress
-                        if (myLocation.distanceTo(fortressCenter) < 10) {
-                            Direction toTarget = myLocation.directionTo(target.location);
-                            tryMoveCareful(toTarget);
-                        } else {
-                            // Move back toward fortress
-                            Direction toFortress = myLocation.directionTo(fortressCenter);
-                            tryMoveCareful(toFortress);
-                        }
-                    } else if (distToTarget < 3) {
-                        // Too close - back up to optimal range
-                        Direction awayFromTarget = target.location.directionTo(myLocation);
-                        tryMoveCareful(awayFromTarget);
-                    } else {
-                        // Maintain optimal range by circling
-                        tryCircle(target.location);
+                    // Always prioritize avoiding combat
+                    if (distToEnemy < 12) {
+                        Direction awayFromEnemy = closestEnemy.location.directionTo(myLocation);
+                        tryMoveTurtle(awayFromEnemy);
                     }
                 } else {
-                    // No enemies nearby - form defensive perimeter
-                    maintainDefensivePerimeter(fortressCenter);
+                    // No enemies nearby - defend economic center
+                    defendEconomicCenter(economicCenter);
                 }
 
                 Clock.yield();
@@ -346,9 +300,9 @@ public strictfp class RobotPlayer {
         }
     }
 
-    // Helper methods for improved Tank Fortress coordination
+    // Helper methods for VP Tyrant defensive turtle strategy
     
-    private static MapLocation getFortressCenter() {
+    private static MapLocation getEconomicCenter() {
         if (archonLocation != null) {
             return archonLocation;
         }
@@ -362,176 +316,109 @@ public strictfp class RobotPlayer {
         }
     }
 
-    private static RobotInfo selectBestTarget(RobotInfo[] enemies) {
-        RobotInfo bestTarget = enemies[0];
-        float bestScore = -1;
+    private static RobotInfo getClosestEnemy(RobotInfo[] enemies) {
+        RobotInfo closest = enemies[0];
+        float bestDist = rc.getLocation().distanceTo(closest.location);
         
         for (RobotInfo enemy : enemies) {
-            float score = 0;
             float dist = rc.getLocation().distanceTo(enemy.location);
-            
-            // Prioritize high-value targets
-            if (enemy.type == RobotType.ARCHON) score += 1000;
-            else if (enemy.type == RobotType.GARDENER) score += 500;
-            else if (enemy.type == RobotType.TANK) score += 300;
-            else if (enemy.type == RobotType.SOLDIER) score += 200;
-            else if (enemy.type == RobotType.LUMBERJACK) score += 150;
-            else if (enemy.type == RobotType.SCOUT) score += 50;
-            
-            // Factor in distance (closer is generally better)
-            score += (10 - Math.min(10, dist)) * 10;
-            
-            // Factor in low health targets
-            if (enemy.health < enemy.type.maxHealth * 0.3f) score += 100;
-            
-            if (score > bestScore) {
-                bestScore = score;
-                bestTarget = enemy;
+            if (dist < bestDist) {
+                bestDist = dist;
+                closest = enemy;
             }
         }
         
-        return bestTarget;
+        return closest;
     }
 
-    private static RobotInfo selectBestScoutTarget(RobotInfo[] enemies) {
-        // Scouts prioritize economic targets they can harass safely
-        RobotInfo bestTarget = enemies[0];
-        float bestScore = -1;
+    private static void stayNearEconomicCenter() throws GameActionException {
+        MapLocation center = getEconomicCenter();
+        float distToCenter = rc.getLocation().distanceTo(center);
         
-        for (RobotInfo enemy : enemies) {
-            float score = 0;
-            float dist = rc.getLocation().distanceTo(enemy.location);
-            
-            // Prioritize isolated economic targets
-            if (enemy.type == RobotType.GARDENER) score += 300;
-            else if (enemy.type == RobotType.ARCHON) score += 500;
-            
-            // Only consider targets we can actually engage
-            if (dist > 8) score -= 100;
-            
-            // Prefer isolated targets
-            RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(6, enemy.getTeam());
-            score -= nearbyEnemies.length * 50;
-            
-            if (score > bestScore) {
-                bestScore = score;
-                bestTarget = enemy;
+        if (distToCenter > 6) {
+            // Move back toward economic center
+            Direction toCenter = rc.getLocation().directionTo(center);
+            tryMoveTurtle(toCenter);
+        } else {
+            // Stay in place or move randomly within safe zone
+            if (Math.random() < 0.3) {
+                tryMoveTurtle(randomDirection());
             }
         }
-        
-        return bestTarget;
     }
 
-    private static boolean shouldUseTriad(RobotInfo primaryTarget, RobotInfo[] allEnemies) {
-        // Use triad if multiple enemies are in range
-        int enemiesInRange = 0;
-        MapLocation myLocation = rc.getLocation();
-        
-        for (RobotInfo enemy : allEnemies) {
-            float dist = myLocation.distanceTo(enemy.location);
-            if (dist <= 8) enemiesInRange++;
-        }
-        
-        return enemiesInRange >= 2 || primaryTarget.type == RobotType.ARCHON || primaryTarget.type == RobotType.TANK;
-    }
-
-    private static void moveToFortressCenter() throws GameActionException {
-        MapLocation fortressCenter = getFortressCenter();
-        Direction toCenter = rc.getLocation().directionTo(fortressCenter);
-        tryMoveCareful(toCenter);
-    }
-
-    private static void maintainGardenerPosition(MapLocation archonLoc) throws GameActionException {
+    private static void maintainTreeFarmPosition(MapLocation archonLoc) throws GameActionException {
         float distToArchon = rc.getLocation().distanceTo(archonLoc);
         
-        if (distToArchon > 8) {
-            // Move closer to archon
+        // Position for optimal tree farming - spread out but not too far
+        if (distToArchon > 10) {
+            // Move closer to archon for tree farm coordination
             Direction toArchon = rc.getLocation().directionTo(archonLoc);
-            tryMoveCareful(toArchon);
-        } else if (distToArchon < 4) {
+            tryMoveTurtle(toArchon);
+        } else if (distToArchon < 3) {
             // Move away from archon to avoid crowding
             Direction awayFromArchon = archonLoc.directionTo(rc.getLocation());
-            tryMoveCareful(awayFromArchon);
+            tryMoveTurtle(awayFromArchon);
         } else {
-            // Maintain distance, move perpendicular for spreading out
-            tryMoveCareful(randomDirection());
+            // Stay in current position for tree farming
+            // Only move randomly occasionally
+            if (Math.random() < 0.1) {
+                tryMoveTurtle(randomDirection());
+            }
         }
     }
 
-    private static void patrolDefensiveArea(MapLocation center) throws GameActionException {
+    private static void patrolNearEconomy(MapLocation center) throws GameActionException {
         float distToCenter = rc.getLocation().distanceTo(center);
         
-        if (distToCenter > 15) {
-            // Move back toward center
+        if (distToCenter > 12) {
+            // Move back toward economic center
             Direction toCenter = rc.getLocation().directionTo(center);
-            tryMoveCareful(toCenter);
-        } else if (distToCenter < 8) {
-            // Move outward to expand patrol area
+            tryMoveTurtle(toCenter);
+        } else if (distToCenter < 6) {
+            // Move outward slightly for defensive perimeter
             Direction awayFromCenter = center.directionTo(rc.getLocation());
-            tryMoveCareful(awayFromCenter);
+            tryMoveTurtle(awayFromCenter);
         } else {
-            // Patrol in current area
-            tryMoveCareful(randomDirection());
+            // Maintain defensive position - minimal movement
+            if (Math.random() < 0.2) {
+                tryMoveTurtle(randomDirection());
+            }
         }
     }
 
-    private static void maintainDefensivePerimeter(MapLocation center) throws GameActionException {
-        float idealDist = 10;
+    private static void defendEconomicCenter(MapLocation center) throws GameActionException {
+        float idealDist = 8; // Defensive perimeter distance
         float distToCenter = rc.getLocation().distanceTo(center);
         
-        if (distToCenter > idealDist + 2) {
+        if (distToCenter > idealDist + 3) {
             // Move toward center
             Direction toCenter = rc.getLocation().directionTo(center);
-            tryMoveCareful(toCenter);
-        } else if (distToCenter < idealDist - 2) {
+            tryMoveTurtle(toCenter);
+        } else if (distToCenter < idealDist - 3) {
             // Move away from center
             Direction awayFromCenter = center.directionTo(rc.getLocation());
-            tryMoveCareful(awayFromCenter);
+            tryMoveTurtle(awayFromCenter);
         } else {
-            // Circle around center
-            tryCircle(center);
+            // Hold position - minimal movement
+            if (Math.random() < 0.1) {
+                tryMoveTurtle(randomDirection());
+            }
         }
     }
 
-    private static void tryCircle(MapLocation target) throws GameActionException {
-        // Move perpendicular to target direction to circle
-        Direction toTarget = rc.getLocation().directionTo(target);
-        Direction circleDir = toTarget.rotateLeftDegrees(90);
-        tryMoveCareful(circleDir);
-    }
-
-    private static void tryStrafe(MapLocation target) throws GameActionException {
-        // Move perpendicular to target direction for strafing
-        Direction toTarget = rc.getLocation().directionTo(target);
-        Direction strafeDir = Math.random() < 0.5 ? 
-            toTarget.rotateLeftDegrees(45) : toTarget.rotateRightDegrees(45);
-        tryMoveCareful(strafeDir);
-    }
-
-    private static void tryHarass(MapLocation target) throws GameActionException {
-        // Move toward target but keep distance
-        float dist = rc.getLocation().distanceTo(target);
-        if (dist > 6) {
-            tryMoveCareful(rc.getLocation().directionTo(target));
-        } else if (dist < 3) {
-            tryMoveCareful(target.directionTo(rc.getLocation()));
-        } else {
-            // Circle around target
-            tryCircle(target);
-        }
-    }
-
-    private static void exploreStrategically() throws GameActionException {
-        // Move toward unexplored areas while maintaining some awareness of fortress
-        MapLocation fortressCenter = getFortressCenter();
-        float distToCenter = rc.getLocation().distanceTo(fortressCenter);
+    private static void exploreForEconomyProtection() throws GameActionException {
+        MapLocation economicCenter = getEconomicCenter();
+        float distToCenter = rc.getLocation().distanceTo(economicCenter);
         
-        if (distToCenter > 20) {
-            // Don't stray too far from fortress
-            tryMoveCareful(rc.getLocation().directionTo(fortressCenter));
+        // Don't stray too far from economic center
+        if (distToCenter > 25) {
+            tryMoveTurtle(rc.getLocation().directionTo(economicCenter));
         } else {
-            // Explore in current direction
-            tryMoveCareful(randomDirection());
+            // Limited exploration for intelligence
+            if (Math.random() < 0.4) {
+                tryMoveTurtle(randomDirection());
+            }
         }
     }
 
@@ -544,15 +431,15 @@ public strictfp class RobotPlayer {
     }
 
     /**
-     * Attempts to move in a given direction, while avoiding small obstacles directly in the path.
-     * More conservative movement for Tank Fortress defensive strategy.
+     * VP Tyrant: Very careful movement - avoid all contact with enemies
+     * More conservative movement for defensive turtle strategy.
      *
      * @param dir The intended direction of movement
      * @return true if a move was performed
      * @throws GameActionException
      */
-    static boolean tryMoveCareful(Direction dir) throws GameActionException {
-        return tryMove(dir,30,6); // More careful movement with wider angle checks
+    static boolean tryMoveTurtle(Direction dir) throws GameActionException {
+        return tryMove(dir,45,8); // Even more careful movement with wider angle checks
     }
 
     /**
