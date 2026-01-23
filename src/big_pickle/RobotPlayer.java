@@ -52,7 +52,7 @@ public strictfp class RobotPlayer {
                 // Use centralized spending policy for gardener hiring
                 BulletSpending.spendPolicy();
 
-                // Move randomly but carefully (economic turtling - avoid unnecessary risk)
+                // Move randomly but carefully (Tank Fortress - avoid unnecessary risk)
                 tryMoveCareful(randomDirection());
 
                 // Broadcast archon's location for other robots on the team to know
@@ -84,10 +84,10 @@ public strictfp class RobotPlayer {
                 int yPos = rc.readBroadcast(1);
                 MapLocation archonLoc = new MapLocation(xPos,yPos);
 
-                // Use centralized spending policy for building meta-gardeners and trees
+                // Use centralized spending policy for building meta-gardeners, tanks, and trees
                 BulletSpending.spendPolicy();
 
-                // Economic turtling - stay relatively close to archon
+                // Tank Fortress - stay relatively close to archon to protect tree farm
                 if (rc.getLocation().distanceTo(archonLoc) > 15) {
                     Direction toArchon = rc.getLocation().directionTo(archonLoc);
                     tryMoveCareful(toArchon);
@@ -120,7 +120,7 @@ public strictfp class RobotPlayer {
                 // See if there are any nearby enemy robots
                 RobotInfo[] robots = rc.senseNearbyRobots(-1, enemy);
 
-                // Defensive posture: only engage if enemies are close
+                // Tank Fortress: soldiers provide defensive support
                 if (robots.length > 0) {
                     RobotInfo nearestEnemy = robots[0];
                     float closestDist = myLocation.distanceTo(nearestEnemy.location);
@@ -150,7 +150,7 @@ public strictfp class RobotPlayer {
                         tryMoveCareful(toEnemy);
                     }
                 } else {
-                    // No enemies nearby - patrol defensively
+                    // No enemies nearby - patrol defensively around tree farms
                     tryMoveCareful(randomDirection());
                 }
 
@@ -225,7 +225,7 @@ public strictfp class RobotPlayer {
             try {
                 MapLocation myLocation = rc.getLocation();
 
-                // Economic turtling - focus on scouting, not combat
+                // Tank Fortress - scouts focus on economic support, not aggressive combat
                 RobotInfo[] robots = rc.senseNearbyRobots(-1, enemy);
                 if (robots.length > 0) {
                     // Only shoot at very close range, mostly just run away
@@ -284,25 +284,25 @@ public strictfp class RobotPlayer {
                         }
                     }
 
-                    // Tank defensive behavior - only engage close enemies
-                    if (closestDist <= 6) {
+                    // Tank Fortress defensive behavior - only engage very close enemies (4 units max)
+                    if (closestDist <= 4) {
                         if (rc.canFireSingleShot()) {
                             rc.fireSingleShot(myLocation.directionTo(nearestEnemy.location));
                         }
                     }
                     
-                    // Move defensively
-                    if (closestDist > 8) {
+                    // Move defensively - stay in protective perimeter around tree farms
+                    if (closestDist > 6) {
                         // Stay defensive - move away from distant threats
                         Direction awayFromEnemy = nearestEnemy.location.directionTo(myLocation);
                         tryMoveCareful(awayFromEnemy);
-                    } else if (closestDist > 3) {
-                        // Move closer to engage if they're in engagement range
+                    } else if (closestDist > 2) {
+                        // Move closer to engage if they're very close
                         Direction toEnemy = myLocation.directionTo(nearestEnemy.location);
                         tryMoveCareful(toEnemy);
                     }
                 } else {
-                    // No enemies nearby - patrol defensively
+                    // No enemies nearby - patrol defensively around tree farm area
                     tryMoveCareful(randomDirection());
                 }
 
@@ -325,7 +325,7 @@ public strictfp class RobotPlayer {
 
     /**
      * Attempts to move in a given direction, while avoiding small obstacles directly in the path.
-     * More conservative movement for economic turtling strategy.
+     * More conservative movement for Tank Fortress defensive strategy.
      *
      * @param dir The intended direction of movement
      * @return true if a move was performed
