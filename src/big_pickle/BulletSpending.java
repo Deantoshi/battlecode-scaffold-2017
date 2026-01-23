@@ -9,13 +9,23 @@ public class BulletSpending {
     }
 
     private static boolean shouldHireGardener(Direction dir) {
-        // Hybrid Assassin: Moderate gardener hiring up to 10 for sustained production
+        // Early Rush Horde: Maximum immediate gardener hiring for early swarm
         int gardeners = countAlliedRobots(RobotType.GARDENER);
-        int maxGardeners = Math.min(10, 4 + rc.getRoundNum() / 250); // Scale up to 10 max
+        int round = rc.getRoundNum();
         
-        double hireChance = 0.70; // Moderate chance to hire gardeners
-        if (gardeners < 5) hireChance = 0.80; // More aggressive early
-        else if (gardeners < 8) hireChance = 0.60; // Moderate for mid expansion
+        // Hire maximum gardeners immediately - 6+ by round 100
+        int maxGardeners = 12; // Very high max for early production
+        if (round < 100) {
+            maxGardeners = Math.min(12, 2 + round / 15); // Rapid early scaling
+        } else if (round < 200) {
+            maxGardeners = Math.min(15, 6 + (round - 100) / 20); // Continue expansion
+        }
+        
+        // Very aggressive hiring for early game rush
+        double hireChance = 0.90; // 90% chance - extremely aggressive
+        if (gardeners < 4) hireChance = 0.95; // Near-certain early
+        else if (gardeners < 8) hireChance = 0.85; // Still very aggressive
+        else if (gardeners < 12) hireChance = 0.75; // High mid-game
         
         return rc.canHireGardener(dir) && 
                Math.random() < hireChance && 
@@ -23,68 +33,100 @@ public class BulletSpending {
     }
 
     private static boolean shouldBuildGardener(Direction dir) {
-        // Hybrid Assassin: Continue building meta-gardeners for expansion
+        // Early Rush Horde: Minimal meta-gardeners - focus on military
         int gardeners = countAlliedRobots(RobotType.GARDENER);
-        int maxGardeners = Math.min(10, 4 + rc.getRoundNum() / 250);
+        int maxGardeners = 3; // Very limited meta-gardeners
         
         return rc.canBuildRobot(RobotType.GARDENER, dir) && 
-               Math.random() < 0.15 && // Low chance - prioritize military
+               Math.random() < 0.05 && // 5% chance - focus on rush units
                gardeners < maxGardeners;
     }
 
     private static boolean shouldBuildSoldier(Direction dir) {
-        // Hybrid Assassin: Soldiers 20% - medium attack force
+        // Early Rush Horde: Soldiers 35% early game - primary rush units
         int soldiers = countAlliedRobots(RobotType.SOLDIER);
-        int maxSoldiers = 15; // Support economic warfare
+        int round = rc.getRoundNum();
+        int maxSoldiers = 40; // Large army for rush
+        
+        // Early game priority scaling
+        double soldierChance = 0.35; // 35% base priority
+        if (round < 200) {
+            soldierChance = 0.40; // 40% in very early game
+        } else if (round < 500) {
+            soldierChance = 0.35; // Maintain rush pressure
+        } else {
+            soldierChance = 0.25; // Scale back later
+        }
         
         return rc.canBuildRobot(RobotType.SOLDIER, dir) && 
-               Math.random() < 0.20 && // 20% for balanced attack force
+               Math.random() < soldierChance && 
                soldiers < maxSoldiers;
     }
 
     private static boolean shouldBuildTank(Direction dir) {
-        // Hybrid Assassin: Minimal tanks - focus on speed for economic raids
+        // Early Rush Horde: No tanks early - focus on cheap rush units
+        int round = rc.getRoundNum();
+        
+        // Completely disable tanks in early game rush
+        if (round < 600) return false;
+        
         int tanks = countAlliedRobots(RobotType.TANK);
-        int maxTanks = 3; // Limited heavy support
+        int maxTanks = 2; // Minimal late game support
         
         return rc.canBuildRobot(RobotType.TANK, dir) && 
-               Math.random() < 0.05 && // 5% minimal heavy support
+               Math.random() < 0.03 && // 3% - very low priority
                tanks < maxTanks;
     }
 
     private static boolean shouldBuildScout(Direction dir) {
-        // Hybrid Assassin: Scouts 35% - primary economic warfare units
+        // Early Rush Horde: Scouts 30% early game - secondary rush units
         int scouts = countAlliedRobots(RobotType.SCOUT);
-        int maxScouts = 25; // Large scout force for hunting gardeners
+        int round = rc.getRoundNum();
+        int maxScouts = 35; // Large scout force for early pressure
+        
+        // Early game priority scaling
+        double scoutChance = 0.30; // 30% base priority
+        if (round < 200) {
+            scoutChance = 0.35; // 35% in very early game
+        } else if (round < 500) {
+            scoutChance = 0.30; // Maintain rush
+        } else {
+            scoutChance = 0.20; // Scale back later
+        }
         
         return rc.canBuildRobot(RobotType.SCOUT, dir) && 
-               Math.random() < 0.35 && // 35% high priority for economic hunting
+               Math.random() < scoutChance && 
                scouts < maxScouts;
     }
 
     private static boolean shouldBuildLumberjack(Direction dir) {
-        // Hybrid Assassin: Lumberjacks 25% - tree clearing and economic disruption
+        // Early Rush Horde: Minimal lumberjacks - focus on rush not economy
+        int round = rc.getRoundNum();
+        
+        // Very limited lumberjacks in early game
+        if (round < 300) return false; // None early
+        
         int lumberjacks = countAlliedRobots(RobotType.LUMBERJACK);
-        int maxLumberjacks = 20; // Significant force for economic warfare
+        int maxLumberjacks = 5; // Minimal force
         
         return rc.canBuildRobot(RobotType.LUMBERJACK, dir) && 
-               Math.random() < 0.25 && // 25% for tree clearing and disruption
+               Math.random() < 0.08 && // 8% - low priority
                lumberjacks < maxLumberjacks;
     }
 
     private static boolean shouldPlantTree(Direction dir) {
-        // Hybrid Assassin: Moderate tree farming at 50% for steady VP pressure
-        int trees = countTeamTrees();
+        // Early Rush Horde: NO tree planting in first 500 rounds
         int round = rc.getRoundNum();
         
-        // Moderate tree planting for VP pressure while focusing on military
-        double treeChance = 0.50; // 50% chance - balanced approach
+        // Completely disabled early to preserve bullets for rush
+        if (round < 500) return false;
         
-        // Slow down if we have sufficient trees for VP pressure
-        if (trees > 30) treeChance = 0.40;
-        if (trees > 45) treeChance = 0.30;
+        // Very limited tree planting after round 500
+        int trees = countTeamTrees();
+        if (trees > 10) return false; // Minimal trees
         
-        return rc.canPlantTree(dir) && Math.random() < treeChance;
+        return rc.canPlantTree(dir) && 
+               Math.random() < 0.10; // 10% chance - very low
     }
 
     private static int countAlliedRobots(RobotType type) {
@@ -102,72 +144,58 @@ public class BulletSpending {
     }
 
     private static void tryWaterTrees() throws GameActionException {
-        // Hybrid Assassin: Moderate priority for tree watering
+        // Early Rush Horde: Minimal tree watering - focus on rush
+        int round = rc.getRoundNum();
+        
+        // No tree watering early game
+        if (round < 600) return;
+        
         TreeInfo[] trees = rc.senseNearbyTrees(-1, rc.getTeam());
         if (trees.length > 0) {
-            // Prioritize trees that need water most urgently
-            TreeInfo bestTree = null;
-            float bestScore = -1;
-            
-            for (TreeInfo tree : trees) {
-                if (rc.canWater(tree.location)) {
-                    // Prioritize lowest health trees to keep them producing VP
-                    float healthRatio = tree.health / tree.maxHealth;
-                    float score = (1 - healthRatio) * 10; // Moderate weight on low health
-                    
-                    // Slight preference for larger trees
-                    score += tree.radius * 0.5;
-                    
-                    if (score > bestScore) {
-                        bestScore = score;
+            // Only water if we have excess bullets
+            if (rc.getTeamBullets() > 200) {
+                TreeInfo bestTree = null;
+                float lowestHealth = Float.MAX_VALUE;
+                
+                for (TreeInfo tree : trees) {
+                    if (rc.canWater(tree.location) && tree.health < lowestHealth) {
+                        lowestHealth = tree.health;
                         bestTree = tree;
                     }
                 }
-            }
-            
-            if (bestTree != null) {
-                rc.water(bestTree.location);
+                
+                if (bestTree != null) {
+                    rc.water(bestTree.location);
+                }
             }
         }
     }
 
     private static float getDonateAmount() throws GameActionException {
-        // Hybrid Assassin: VP donations at 180 bullets to maintain constant pressure
+        // Early Rush Horde: NO VP donations until round 800
+        int round = rc.getRoundNum();
+        
+        // Completely disabled early to preserve all bullets for rush
+        if (round < 800) return 0f;
+        
+        // Late game only VP pressure
         float bullets = rc.getTeamBullets();
         float vpCost = rc.getVictoryPointCost();
-        int round = rc.getRoundNum();
-
-        // Start VP donation at 180 bullets threshold for constant pressure
-        if (round < 300) {
-            // Early game: donate if we have 180+ bullets for pressure
-            if (bullets > 180 && bullets >= vpCost * 2) {
-                float donateAmount = (float)Math.floor((bullets - 80) / vpCost) * vpCost;
-                if (donateAmount > 0) return donateAmount;
-            }
-        }
-        else if (round < 800) {
-            // Mid game: maintain pressure while building military
-            if (bullets > 150 && bullets >= vpCost * 1.8) {
-                float donateAmount = (float)Math.floor((bullets - 50) / vpCost) * vpCost;
-                if (donateAmount > 0) return donateAmount;
-            }
-        }
-        // Late game: aggressive VP to finish while military raids economy
-        else {
-            if (bullets > 120 && bullets >= vpCost * 1.5) {
-                float donateAmount = (float)Math.floor((bullets - 30) / vpCost) * vpCost;
-                if (donateAmount > 0) return donateAmount;
-            }
+        
+        // Only donate if we have massive bullet excess
+        if (bullets > 300 && bullets >= vpCost * 3) {
+            float donateAmount = (float)Math.floor((bullets - 100) / vpCost) * vpCost;
+            if (donateAmount > 0) return donateAmount;
         }
         
         return 0f;
     }
 
     public static void spendPolicy() throws GameActionException {
-        // Hybrid Assassin: Economic warfare with mixed military and VP pressure
+        // Early Rush Horde: All-out early military pressure, no economy
         
         if (rc.getType() == RobotType.ARCHON) {
-            // Archons hire moderate gardeners for sustained production
+            // Archons hire maximum gardeners immediately for rush
             Direction dir = randomDirection();
             
             if (shouldHireGardener(dir)) {
@@ -175,46 +203,61 @@ public class BulletSpending {
             }
         } 
         else if (rc.getType() == RobotType.GARDENER) {
-            // Hybrid Assassin gardener priority: Economic warfare units > Trees
+            // Early Rush Horde: Pure rush unit production
             
-            // Priority 1: Moderate tree watering for VP pressure
-            if (Math.random() < 0.60) { // 60% chance to water
+            // Priority 1: Minimal tree watering only late game
+            if (rc.getRoundNum() >= 600 && Math.random() < 0.20) { // 20% chance late
                 tryWaterTrees();
-                if (rc.hasMoved()) return; // Don't do anything else if we watered
+                if (rc.hasMoved()) return;
             }
             
-            // Priority 2: Build economic warfare military units
+            // Priority 2: Build rush units - soldiers and scouts dominate
             Direction dir = randomDirection();
+            int round = rc.getRoundNum();
             
-            // Scout 35% - primary economic assassins
-            if (Math.random() < 0.35 && shouldBuildScout(dir)) {
-                rc.buildRobot(RobotType.SCOUT, dir);
+            // Early game: pure rush composition
+            if (round < 500) {
+                // Soldier 35% - primary rush force
+                if (Math.random() < 0.35 && shouldBuildSoldier(dir)) {
+                    rc.buildRobot(RobotType.SOLDIER, dir);
+                }
+                // Scout 30% - secondary rush force  
+                else if (Math.random() < 0.30 && shouldBuildScout(dir)) {
+                    rc.buildRobot(RobotType.SCOUT, dir);
+                }
+                // Minimal lumberjacks only after round 300
+                else if (round >= 300 && Math.random() < 0.08 && shouldBuildLumberjack(dir)) {
+                    rc.buildRobot(RobotType.LUMBERJACK, dir);
+                }
+                // No tree planting before round 500
             }
-            // Lumberjack 25% - economic disruptors  
-            else if (Math.random() < 0.25 && shouldBuildLumberjack(dir)) {
-                rc.buildRobot(RobotType.LUMBERJACK, dir);
-            }
-            // Soldier 20% - support force
-            else if (Math.random() < 0.20 && shouldBuildSoldier(dir)) {
-                rc.buildRobot(RobotType.SOLDIER, dir);
-            }
-            // Plant trees 50% - moderate VP pressure
-            else if (Math.random() < 0.50 && shouldPlantTree(dir)) {
-                rc.plantTree(dir);
-            }
-            // Minimal tanks for heavy support
-            else if (Math.random() < 0.05 && shouldBuildTank(dir)) {
-                rc.buildRobot(RobotType.TANK, dir);
+            // Later game: still rush-focused but some economy
+            else {
+                // Still prioritize rush units
+                if (Math.random() < 0.25 && shouldBuildSoldier(dir)) {
+                    rc.buildRobot(RobotType.SOLDIER, dir);
+                }
+                else if (Math.random() < 0.20 && shouldBuildScout(dir)) {
+                    rc.buildRobot(RobotType.SCOUT, dir);
+                }
+                // Limited trees after round 500
+                else if (Math.random() < 0.10 && shouldPlantTree(dir)) {
+                    rc.plantTree(dir);
+                }
+                // Very limited tanks late game
+                else if (round >= 600 && Math.random() < 0.03 && shouldBuildTank(dir)) {
+                    rc.buildRobot(RobotType.TANK, dir);
+                }
             }
             
-            // Continue building meta-gardeners occasionally for expansion
+            // Minimal meta-gardener building
             dir = randomDirection();
             if (shouldBuildGardener(dir)) {
                 rc.buildRobot(RobotType.GARDENER, dir);
             }
         }
         
-        // Hybrid Assassin: VP pressure to force enemy mistakes
+        // Early Rush Horde: VP pressure only very late game
         float donateAmount = getDonateAmount();
         if (donateAmount > 0f) {
             rc.donate(donateAmount);

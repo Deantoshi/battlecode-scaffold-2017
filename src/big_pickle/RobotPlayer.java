@@ -45,7 +45,7 @@ public strictfp class RobotPlayer {
     static void runArchon() throws GameActionException {
         System.out.println("I'm an archon!");
 
-        // Store archon location for strategic coordination
+        // Store archon location for rush coordination
         archonLocation = rc.getLocation();
         archonLocationSet = true;
 
@@ -55,19 +55,19 @@ public strictfp class RobotPlayer {
             // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
             try {
 
-                // Hybrid Assassin: Use centralized spending policy for economic warfare
+                // Early Rush Horde: Use centralized spending policy for maximum early military production
                 BulletSpending.spendPolicy();
 
-                // Hybrid Assassin: Archons support economic warfare with strategic positioning
-                if (rc.getRoundNum() < 150) {
-                    // Early game: find good position for supporting raids
+                // Early Rush Horde: Archons support rush with aggressive positioning
+                if (rc.getRoundNum() < 200) {
+                    // Early game: position to maximize rush effectiveness
                     tryMoveAggressive(randomDirection());
                 } else {
-                    // Later game: maintain position to support VP pressure
-                    maintainStrategicPosition();
+                    // Later game: maintain position to continue supporting rush
+                    maintainRushPosition();
                 }
 
-                // Broadcast archon's location for economic raid coordination
+                // Broadcast archon's location for rush coordination
                 if (archonLocation != null) {
                     rc.broadcast(0,(int)archonLocation.x);
                     rc.broadcast(1,(int)archonLocation.y);
@@ -101,11 +101,11 @@ public strictfp class RobotPlayer {
                     archonLocationSet = true;
                 }
 
-                // Hybrid Assassin: Use centralized spending policy - economic warfare focus
+                // Early Rush Horde: Use centralized spending policy - pure rush focus
                 BulletSpending.spendPolicy();
 
-                // Hybrid Assassin: Gardeners position to support military production
-                maintainProductionPosition(archonLoc);
+                // Early Rush Horde: Gardeners position to maximize rush unit production
+                maintainRushProductionPosition(archonLoc);
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();
@@ -128,33 +128,32 @@ public strictfp class RobotPlayer {
             try {
                 MapLocation myLocation = rc.getLocation();
 
-                // Hybrid Assassin: Soldiers support economic warfare with aggressive targeting
+                // Early Rush Horde: Soldiers attack closest enemy regardless of type
                 RobotInfo[] robots = rc.senseNearbyRobots(-1, enemy);
 
                 if (robots.length > 0) {
-                    RobotInfo target = selectEconomicTarget(robots);
+                    RobotInfo target = selectClosestTarget(robots);
                     float distToTarget = myLocation.distanceTo(target.location);
                     
-                    // Hybrid Assassin: Attack economic targets aggressively
+                    // Early Rush Horde: Attack closest target aggressively
                     if (distToTarget <= 6) {
                         if (rc.canFireSingleShot()) {
                             rc.fireSingleShot(myLocation.directionTo(target.location));
                         }
-                        // Use triad shots if multiple economic targets nearby
-                        if (distToTarget <= 4 && rc.canFireTriadShot() && 
-                            target.type == RobotType.GARDENER) {
+                        // Use triad shots if very close regardless of target type
+                        if (distToTarget <= 4 && rc.canFireTriadShot()) {
                             rc.fireTriadShot(myLocation.directionTo(target.location));
                         }
                     }
                     
-                    // Hybrid Assassin: Pursue economic targets aggressively
-                    if (distToTarget > 4) {
+                    // Early Rush Horde: Pursue closest target relentlessly
+                    if (distToTarget > 2) {
                         Direction toTarget = myLocation.directionTo(target.location);
                         tryMoveAggressive(toTarget);
                     }
                 } else {
-                    // No economic targets - hunt enemy economy
-                    huntEnemyEconomy();
+                    // No targets - rush toward enemy base
+                    rushEnemyBase();
                 }
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
@@ -177,37 +176,31 @@ public strictfp class RobotPlayer {
             // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
             try {
 
-                // Hybrid Assassin: Lumberjacks hunt enemy economy and clear strategic trees
+                // Early Rush Horde: Lumberjacks attack closest enemy and support rush
                 MapLocation myLocation = rc.getLocation();
                 
-                // Priority 1: Strike enemy economic units if in range
+                // Priority 1: Strike closest enemy if in range
                 RobotInfo[] enemyRobots = rc.senseNearbyRobots(2, enemy);
-                RobotInfo economicTarget = null;
-                for (RobotInfo robot : enemyRobots) {
-                    if (robot.type == RobotType.GARDENER || robot.type == RobotType.ARCHON) {
-                        economicTarget = robot;
-                        break;
-                    }
-                }
                 
-                if (economicTarget != null && rc.canStrike()) {
+                if (enemyRobots.length > 0 && rc.canStrike()) {
+                    // Strike regardless of target type for maximum pressure
                     rc.strike();
                 } else {
-                    // Priority 2: Chop trees near enemy base or blocking our raids
+                    // Priority 2: Chop trees that block rush paths
                     TreeInfo[] trees = rc.senseNearbyTrees(-1);
-                    TreeInfo targetTree = selectStrategicTree(trees);
+                    TreeInfo blockingTree = selectBlockingTree(trees);
                     
-                    if (targetTree != null) {
-                        float distToTree = myLocation.distanceTo(targetTree.location);
+                    if (blockingTree != null) {
+                        float distToTree = myLocation.distanceTo(blockingTree.location);
                         if (distToTree <= RobotType.LUMBERJACK.bodyRadius + 1.0f) {
-                            rc.chop(targetTree.location);
+                            rc.chop(blockingTree.location);
                         } else {
-                            Direction toTree = myLocation.directionTo(targetTree.location);
+                            Direction toTree = myLocation.directionTo(blockingTree.location);
                             tryMoveAggressive(toTree);
                         }
                     } else {
-                        // Priority 3: Hunt enemy economy locations
-                        huntEnemyEconomy();
+                        // Priority 3: Rush toward enemy base
+                        rushEnemyBase();
                     }
                 }
 
@@ -229,46 +222,40 @@ public strictfp class RobotPlayer {
             try {
                 MapLocation myLocation = rc.getLocation();
 
-                // Hybrid Assassin: Scouts are primary economic assassins - hunt gardeners aggressively
+                // Early Rush Horde: Scouts attack closest enemy regardless of type
                 RobotInfo[] robots = rc.senseNearbyRobots(-1, enemy);
                 
-                // Priority 1: Hunt enemy gardeners (primary economic targets)
-                RobotInfo gardenerTarget = null;
-                RobotInfo archonTarget = null;
+                RobotInfo closestTarget = null;
+                float minDistance = Float.MAX_VALUE;
                 
+                // Find closest enemy regardless of type
                 for (RobotInfo robot : robots) {
-                    if (robot.type == RobotType.GARDENER) {
-                        gardenerTarget = robot;
-                        break; // Gardeners are highest priority
-                    }
-                    if (robot.type == RobotType.ARCHON && archonTarget == null) {
-                        archonTarget = robot;
+                    float dist = myLocation.distanceTo(robot.location);
+                    if (dist < minDistance) {
+                        minDistance = dist;
+                        closestTarget = robot;
                     }
                 }
                 
-                RobotInfo target = (gardenerTarget != null) ? gardenerTarget : archonTarget;
-                
-                if (target != null) {
-                    float distToTarget = myLocation.distanceTo(target.location);
-                    
-                    // Hybrid Assassin: Attack economic targets relentlessly
-                    if (distToTarget <= 5) {
+                if (closestTarget != null) {
+                    // Early Rush Horde: Attack closest target relentlessly
+                    if (minDistance <= 5) {
                         if (rc.canFireSingleShot()) {
-                            rc.fireSingleShot(myLocation.directionTo(target.location));
+                            rc.fireSingleShot(myLocation.directionTo(closestTarget.location));
                         }
                     }
                     
-                    // Hybrid Assassin: Pursue economic targets aggressively
-                    if (distToTarget > 2) {
-                        Direction toTarget = myLocation.directionTo(target.location);
+                    // Early Rush Horde: Pursue closest target aggressively
+                    if (minDistance > 1) {
+                        Direction toTarget = myLocation.directionTo(closestTarget.location);
                         tryMoveAggressive(toTarget);
                     } else {
-                        // Close range - circle to maintain attack position
+                        // Close range - circle to maintain pressure
                         tryMoveAggressive(randomDirection());
                     }
                 } else {
-                    // No economic targets - search aggressively for enemy economy
-                    searchForEnemyEconomy();
+                    // No targets - rush toward enemy base
+                    rushEnemyBase();
                 }
 
                 Clock.yield();
@@ -288,33 +275,32 @@ public strictfp class RobotPlayer {
             try {
                 MapLocation myLocation = rc.getLocation();
 
-                // Hybrid Assassin: Tanks support economic warfare with heavy firepower
+                // Early Rush Horde: Tanks attack closest enemy regardless of type
                 RobotInfo[] robots = rc.senseNearbyRobots(-1, enemy);
 
                 if (robots.length > 0) {
-                    RobotInfo target = selectEconomicTarget(robots);
-                    float distToTarget = myLocation.distanceTo(target.location);
+                    RobotInfo closestTarget = selectClosestTarget(robots);
+                    float distToTarget = myLocation.distanceTo(closestTarget.location);
                     
-                    // Hybrid Assassin: Attack economic targets with heavy firepower
+                    // Early Rush Horde: Attack closest target with heavy firepower
                     if (distToTarget <= 8) {
                         if (rc.canFireSingleShot()) {
-                            rc.fireSingleShot(myLocation.directionTo(target.location));
+                            rc.fireSingleShot(myLocation.directionTo(closestTarget.location));
                         }
-                        // Use pentad shots on economic targets for maximum damage
-                        if (distToTarget <= 6 && rc.canFirePentadShot() && 
-                            target.type == RobotType.GARDENER) {
-                            rc.firePentadShot(myLocation.directionTo(target.location));
+                        // Use pentad shots on close targets regardless of type
+                        if (distToTarget <= 6 && rc.canFirePentadShot()) {
+                            rc.firePentadShot(myLocation.directionTo(closestTarget.location));
                         }
                     }
                     
-                    // Hybrid Assassin: Move toward economic targets
-                    if (distToTarget > 6) {
-                        Direction toTarget = myLocation.directionTo(target.location);
+                    // Early Rush Horde: Move toward closest target
+                    if (distToTarget > 4) {
+                        Direction toTarget = myLocation.directionTo(closestTarget.location);
                         tryMoveAggressive(toTarget);
                     }
                 } else {
-                    // No targets - support economic raids
-                    supportEconomicRaids();
+                    // No targets - support rush
+                    supportRush();
                 }
 
                 Clock.yield();
@@ -326,47 +312,32 @@ public strictfp class RobotPlayer {
         }
     }
 
-    // Helper methods for Hybrid Assassin economic warfare strategy
+    // Helper methods for Early Rush Horde strategy
     
-    private static RobotInfo selectEconomicTarget(RobotInfo[] enemies) {
-        RobotInfo bestTarget = enemies[0];
-        float bestScore = Float.MIN_VALUE;
+    private static RobotInfo selectClosestTarget(RobotInfo[] enemies) {
+        RobotInfo closestTarget = null;
+        float minDistance = Float.MAX_VALUE;
         
         for (RobotInfo enemy : enemies) {
-            float score = 0;
             float dist = rc.getLocation().distanceTo(enemy.location);
-            
-            // Priority scoring for economic warfare
-            if (enemy.type == RobotType.GARDENER) {
-                score = 1000 - dist; // Highest priority
-            } else if (enemy.type == RobotType.ARCHON) {
-                score = 800 - dist; // High priority
-            } else if (enemy.type == RobotType.SCOUT) {
-                score = 300 - dist; // Medium priority
-            } else if (enemy.type == RobotType.LUMBERJACK) {
-                score = 200 - dist; // Lower priority
-            } else {
-                score = 100 - dist; // Lowest priority
-            }
-            
-            if (score > bestScore) {
-                bestScore = score;
-                bestTarget = enemy;
+            if (dist < minDistance) {
+                minDistance = dist;
+                closestTarget = enemy;
             }
         }
         
-        return bestTarget;
+        return closestTarget;
     }
 
-    private static TreeInfo selectStrategicTree(TreeInfo[] trees) {
-        TreeInfo bestTree = null;
+    private static TreeInfo selectBlockingTree(TreeInfo[] trees) {
+        TreeInfo blockingTree = null;
         float bestScore = Float.MIN_VALUE;
         
         for (TreeInfo tree : trees) {
             float score = 0;
             float dist = rc.getLocation().distanceTo(tree.location);
             
-            // Priority for trees near suspected enemy locations
+            // Priority for trees that block rush paths to enemy
             MapLocation myLoc = rc.getLocation();
             MapLocation[] enemyArchons = rc.getInitialArchonLocations(rc.getTeam().opponent());
             
@@ -377,62 +348,62 @@ public strictfp class RobotPlayer {
             }
             
             if (tree.team == Team.NEUTRAL) {
-                // Neutral trees near enemy base have highest priority
-                if (minDistToEnemyArchons < 15) {
-                    score = 500 - dist - minDistToEnemyArchons;
+                // Trees near enemy base have highest priority for clearing
+                if (minDistToEnemyArchons < 20) {
+                    score = 400 - dist - minDistToEnemyArchons;
                 } else {
-                    score = 100 - dist;
+                    score = 50 - dist;
                 }
             } else if (tree.team == rc.getTeam().opponent()) {
-                // Enemy trees are always good targets
-                score = 300 - dist;
+                // Enemy trees are good targets
+                score = 200 - dist;
             }
             
             if (score > bestScore) {
                 bestScore = score;
-                bestTree = tree;
+                blockingTree = tree;
             }
         }
         
-        return bestTree;
+        return blockingTree;
     }
 
-    private static void maintainStrategicPosition() throws GameActionException {
-        MapLocation center = getEconomicCenter();
+    private static void maintainRushPosition() throws GameActionException {
+        MapLocation center = getRushCenter();
         float distToCenter = rc.getLocation().distanceTo(center);
         
-        // Archons maintain position to support raids but stay mobile
-        if (distToCenter > 8) {
+        // Archons maintain position to support rush but stay mobile
+        if (distToCenter > 10) {
             Direction toCenter = rc.getLocation().directionTo(center);
             tryMoveAggressive(toCenter);
         } else {
-            // Strategic repositioning occasionally
+            // Aggressive repositioning for rush support
+            if (Math.random() < 0.6) {
+                tryMoveAggressive(randomDirection());
+            }
+        }
+    }
+
+    private static void maintainRushProductionPosition(MapLocation archonLoc) throws GameActionException {
+        float distToArchon = rc.getLocation().distanceTo(archonLoc);
+        
+        // Position for optimal rush unit production
+        if (distToArchon > 15) {
+            Direction toArchon = rc.getLocation().directionTo(archonLoc);
+            tryMoveAggressive(toArchon);
+        } else if (distToArchon < 5) {
+            Direction awayFromArchon = archonLoc.directionTo(rc.getLocation());
+            tryMoveAggressive(awayFromArchon);
+        } else {
+            // Reposition frequently for better rush unit angles
             if (Math.random() < 0.4) {
                 tryMoveAggressive(randomDirection());
             }
         }
     }
 
-    private static void maintainProductionPosition(MapLocation archonLoc) throws GameActionException {
-        float distToArchon = rc.getLocation().distanceTo(archonLoc);
-        
-        // Position for optimal military production while maintaining some defense
-        if (distToArchon > 12) {
-            Direction toArchon = rc.getLocation().directionTo(archonLoc);
-            tryMoveAggressive(toArchon);
-        } else if (distToArchon < 4) {
-            Direction awayFromArchon = archonLoc.directionTo(rc.getLocation());
-            tryMoveAggressive(awayFromArchon);
-        } else {
-            // Reposition occasionally for better production angles
-            if (Math.random() < 0.2) {
-                tryMoveAggressive(randomDirection());
-            }
-        }
-    }
-
-    private static void huntEnemyEconomy() throws GameActionException {
-        // Move toward suspected enemy economic locations
+    private static void rushEnemyBase() throws GameActionException {
+        // Move toward enemy base for rush
         MapLocation[] enemyArchons = rc.getInitialArchonLocations(rc.getTeam().opponent());
         MapLocation myLoc = rc.getLocation();
         
@@ -451,24 +422,8 @@ public strictfp class RobotPlayer {
         tryMoveAggressive(toEnemy);
     }
 
-    private static void searchForEnemyEconomy() throws GameActionException {
-        MapLocation[] enemyArchons = rc.getInitialArchonLocations(rc.getTeam().opponent());
-        MapLocation myLoc = rc.getLocation();
-        
-        // Scouts search aggressively for enemy economic locations
-        MapLocation targetArchon = enemyArchons[(int)(Math.random() * enemyArchons.length)];
-        Direction toTarget = myLoc.directionTo(targetArchon);
-        
-        // Add some randomness to search pattern
-        if (Math.random() < 0.3) {
-            toTarget = toTarget.rotateLeftDegrees((float)(Math.random() * 90 - 45));
-        }
-        
-        tryMoveAggressive(toTarget);
-    }
-
-    private static void supportEconomicRaids() throws GameActionException {
-        // Tanks support raids by moving toward enemy locations
+    private static void supportRush() throws GameActionException {
+        // Tanks support rush by moving toward enemy locations
         MapLocation[] enemyArchons = rc.getInitialArchonLocations(rc.getTeam().opponent());
         MapLocation myLoc = rc.getLocation();
         
@@ -483,19 +438,19 @@ public strictfp class RobotPlayer {
             }
         }
         
-        // Tanks move toward enemy to support raids
-        if (minDist > 15) {
+        // Tanks move toward enemy to support rush
+        if (minDist > 20) {
             Direction toEnemy = myLoc.directionTo(closestArchon);
             tryMoveAggressive(toEnemy);
         } else {
-            // Close to enemy - position strategically
-            if (Math.random() < 0.3) {
+            // Close to enemy - aggressive positioning
+            if (Math.random() < 0.5) {
                 tryMoveAggressive(randomDirection());
             }
         }
     }
 
-    private static MapLocation getEconomicCenter() {
+    private static MapLocation getRushCenter() {
         if (archonLocation != null) {
             return archonLocation;
         }
@@ -518,15 +473,15 @@ public strictfp class RobotPlayer {
     }
 
     /**
-     * Hybrid Assassin: Aggressive movement for economic warfare
-     * More aggressive movement with fewer safety checks for faster raids.
+     * Early Rush Horde: Very aggressive movement for maximum pressure
+     * Extremely aggressive movement with minimal safety checks for fastest rush.
      *
      * @param dir The intended direction of movement
      * @return true if a move was performed
      * @throws GameActionException
      */
     static boolean tryMoveAggressive(Direction dir) throws GameActionException {
-        return tryMove(dir,20,3); // More aggressive movement with fewer angle checks
+        return tryMove(dir,15,2); // Very aggressive movement with minimal angle checks
     }
 
     /**
