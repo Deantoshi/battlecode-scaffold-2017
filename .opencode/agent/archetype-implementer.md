@@ -65,6 +65,15 @@ Implement the archetype's strategy by modifying the variant's code. You have cre
 - Adjust bullet donation logic for VP strategies
 - Change resource thresholds
 
+### CRITICAL: Bullet Spending Must Be Centralized
+In this repo, **all bullet spending activities** must live in `BulletSpending.java` and nowhere else. This includes:
+- Donating for VP
+- Hiring gardeners
+- Building robots
+- Planting trees
+
+Do not add or keep bullet-spending logic in any other file. All callers should invoke `BulletSpending` methods instead.
+
 ### Movement (Nav.java or unit files)
 - Adjust aggression (move toward vs away from enemies)
 - Modify patrol patterns
