@@ -188,10 +188,10 @@ Tree interactions:
 
 ## Repo Rule: Bullet Spending Must Be Centralized
 CRITICAL: In this repo, **all bullet spending activities** must live in `BulletSpending.java` and nowhere else. This includes:
-- Donating for VP
-- Hiring gardeners
-- Building robots
-- Planting trees
+- `rc.donate(float bullets)`
+- `rc.hireGardener(Direction dir)`
+- `rc.buildRobot(RobotType type, Direction dir)`
+- `rc.plantTree(Direction dir)`
 
 Do not add or keep bullet-spending logic in any other file. All callers should invoke `BulletSpending` methods instead.
 
