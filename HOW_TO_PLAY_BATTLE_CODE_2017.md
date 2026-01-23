@@ -187,13 +187,13 @@ Tree interactions:
 - Donation timing matters; the VP cost increases each round.
 
 ## Repo Rule: Bullet Spending Must Be Centralized
-CRITICAL: In this repo, **all bullet spending activities** must live in `BulletSpending.java` and nowhere else. This includes:
+CRITICAL: In this repo, **all bullet spending activities** must live in `BulletSpending.java` and nowhere else, and they must be called only inside `spendPolicy()`. This includes:
 - `rc.donate(float bullets)`
 - `rc.hireGardener(Direction dir)`
 - `rc.buildRobot(RobotType type, Direction dir)`
 - `rc.plantTree(Direction dir)`
 
-Do not add or keep bullet-spending logic in any other file. All callers should invoke `BulletSpending` methods instead.
+Do not add or keep bullet-spending logic in any other file, and do not call any of the methods above anywhere outside `BulletSpending.spendPolicy()`. All other files may only call `BulletSpending.spendPolicy()` and must never call any other `BulletSpending` method directly.
 
 ## Key API Entry Points
 - `battlecode.common.RobotController` is the primary interface for sensing and acting.
