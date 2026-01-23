@@ -31,6 +31,12 @@ public strictfp class RobotPlayer {
             case LUMBERJACK:
                 runLumberjack();
                 break;
+            case SCOUT:
+                runScout();
+                break;
+            case TANK:
+                runTank();
+                break;
         }
 	}
 
@@ -43,14 +49,11 @@ public strictfp class RobotPlayer {
             // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
             try {
 
-                // Generate a random direction
-                Direction dir = randomDirection();
+                // Use centralized spending policy for gardener hiring
+                BulletSpending.spendPolicy();
 
-                // Randomly attempt to build a gardener in this direction
-                BulletSpending.tryHireGardener(dir);
-
-                // Move randomly
-                tryMove(randomDirection());
+                // Move randomly but carefully (economic turtling - avoid unnecessary risk)
+                tryMoveCareful(randomDirection());
 
                 // Broadcast archon's location for other robots on the team to know
                 MapLocation myLocation = rc.getLocation();
@@ -81,14 +84,17 @@ public strictfp class RobotPlayer {
                 int yPos = rc.readBroadcast(1);
                 MapLocation archonLoc = new MapLocation(xPos,yPos);
 
-                // Generate a random direction
-                Direction dir = randomDirection();
+                // Use centralized spending policy for building meta-gardeners and trees
+                BulletSpending.spendPolicy();
 
-                // Randomly attempt to build a soldier or lumberjack in this direction
-                BulletSpending.tryBuildGardenerUnits(dir);
-
-                // Move randomly
-                tryMove(randomDirection());
+                // Economic turtling - stay relatively close to archon
+                if (rc.getLocation().distanceTo(archonLoc) > 15) {
+                    Direction toArchon = rc.getLocation().directionTo(archonLoc);
+                    tryMoveCareful(toArchon);
+                } else {
+                    // Move randomly but carefully when near archon
+                    tryMoveCareful(randomDirection());
+                }
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();
@@ -114,17 +120,39 @@ public strictfp class RobotPlayer {
                 // See if there are any nearby enemy robots
                 RobotInfo[] robots = rc.senseNearbyRobots(-1, enemy);
 
-                // If there are some...
+                // Defensive posture: only engage if enemies are close
                 if (robots.length > 0) {
-                    // And we have enough bullets, and haven't attacked yet this turn...
-                    if (rc.canFireSingleShot()) {
-                        // ...Then fire a bullet in the direction of the enemy.
-                        rc.fireSingleShot(rc.getLocation().directionTo(robots[0].location));
+                    RobotInfo nearestEnemy = robots[0];
+                    float closestDist = myLocation.distanceTo(nearestEnemy.location);
+                    
+                    // Find the closest enemy
+                    for (RobotInfo robot : robots) {
+                        float dist = myLocation.distanceTo(robot.location);
+                        if (dist < closestDist) {
+                            closestDist = dist;
+                            nearestEnemy = robot;
+                        }
                     }
-                }
 
-                // Move randomly
-                tryMove(randomDirection());
+                    // Only attack if enemy is relatively close (defensive)
+                    if (closestDist <= 8 && rc.canFireSingleShot()) {
+                        rc.fireSingleShot(myLocation.directionTo(nearestEnemy.location));
+                    }
+                    
+                    // Move away from distant enemies, approach close ones
+                    if (closestDist > 10) {
+                        // Stay defensive - move away
+                        Direction awayFromEnemy = nearestEnemy.location.directionTo(myLocation);
+                        tryMoveCareful(awayFromEnemy);
+                    } else if (closestDist > 4) {
+                        // Move closer to engage if they're not too close
+                        Direction toEnemy = myLocation.directionTo(nearestEnemy.location);
+                        tryMoveCareful(toEnemy);
+                    }
+                } else {
+                    // No enemies nearby - patrol defensively
+                    tryMoveCareful(randomDirection());
+                }
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();
@@ -153,19 +181,29 @@ public strictfp class RobotPlayer {
                     // Use strike() to hit all nearby robots!
                     rc.strike();
                 } else {
-                    // No close robots, so search for robots within sight radius
-                    robots = rc.senseNearbyRobots(-1,enemy);
-
-                    // If there is a robot, move towards it
-                    if(robots.length > 0) {
-                        MapLocation myLocation = rc.getLocation();
-                        MapLocation enemyLocation = robots[0].getLocation();
-                        Direction toEnemy = myLocation.directionTo(enemyLocation);
-
-                        tryMove(toEnemy);
+                    // Look for neutral trees to chop for resources
+                    TreeInfo[] trees = rc.senseNearbyTrees(-1, Team.NEUTRAL);
+                    if (trees.length > 0 && !rc.hasAttacked()) {
+                        TreeInfo closestTree = trees[0];
+                        float closestDist = rc.getLocation().distanceTo(closestTree.location);
+                        
+                        for (TreeInfo tree : trees) {
+                            float dist = rc.getLocation().distanceTo(tree.location);
+                            if (dist < closestDist) {
+                                closestDist = dist;
+                                closestTree = tree;
+                            }
+                        }
+                        
+                        if (closestDist <= RobotType.LUMBERJACK.bodyRadius + 1.0f) {
+                            rc.chop(closestTree.location);
+                        } else {
+                            Direction toTree = rc.getLocation().directionTo(closestTree.location);
+                            tryMoveCareful(toTree);
+                        }
                     } else {
-                        // Move Randomly
-                        tryMove(randomDirection());
+                        // No close robots or trees, move randomly
+                        tryMoveCareful(randomDirection());
                     }
                 }
 
@@ -174,6 +212,104 @@ public strictfp class RobotPlayer {
 
             } catch (Exception e) {
                 System.out.println("Lumberjack Exception");
+                e.printStackTrace();
+            }
+        }
+    }
+
+    static void runScout() throws GameActionException {
+        System.out.println("I'm a scout!");
+        Team enemy = rc.getTeam().opponent();
+
+        while (true) {
+            try {
+                MapLocation myLocation = rc.getLocation();
+
+                // Economic turtling - focus on scouting, not combat
+                RobotInfo[] robots = rc.senseNearbyRobots(-1, enemy);
+                if (robots.length > 0) {
+                    // Only shoot at very close range, mostly just run away
+                    RobotInfo nearestEnemy = robots[0];
+                    float closestDist = myLocation.distanceTo(nearestEnemy.location);
+                    
+                    for (RobotInfo robot : robots) {
+                        float dist = myLocation.distanceTo(robot.location);
+                        if (dist < closestDist) {
+                            closestDist = dist;
+                            nearestEnemy = robot;
+                        }
+                    }
+
+                    if (closestDist <= 3 && rc.canFireSingleShot()) {
+                        rc.fireSingleShot(myLocation.directionTo(nearestEnemy.location));
+                    }
+                    
+                    // Run away from enemies
+                    Direction awayFromEnemy = nearestEnemy.location.directionTo(myLocation);
+                    tryMoveCareful(awayFromEnemy);
+                } else {
+                    // Explore the map
+                    tryMoveCareful(randomDirection());
+                }
+
+                Clock.yield();
+
+            } catch (Exception e) {
+                System.out.println("Scout Exception");
+                e.printStackTrace();
+            }
+        }
+    }
+
+    static void runTank() throws GameActionException {
+        System.out.println("I'm a tank!");
+        Team enemy = rc.getTeam().opponent();
+
+        while (true) {
+            try {
+                MapLocation myLocation = rc.getLocation();
+
+                // See if there are any nearby enemy robots
+                RobotInfo[] robots = rc.senseNearbyRobots(-1, enemy);
+
+                if (robots.length > 0) {
+                    RobotInfo nearestEnemy = robots[0];
+                    float closestDist = myLocation.distanceTo(nearestEnemy.location);
+                    
+                    for (RobotInfo robot : robots) {
+                        float dist = myLocation.distanceTo(robot.location);
+                        if (dist < closestDist) {
+                            closestDist = dist;
+                            nearestEnemy = robot;
+                        }
+                    }
+
+                    // Tank defensive behavior - only engage close enemies
+                    if (closestDist <= 6) {
+                        if (rc.canFireSingleShot()) {
+                            rc.fireSingleShot(myLocation.directionTo(nearestEnemy.location));
+                        }
+                    }
+                    
+                    // Move defensively
+                    if (closestDist > 8) {
+                        // Stay defensive - move away from distant threats
+                        Direction awayFromEnemy = nearestEnemy.location.directionTo(myLocation);
+                        tryMoveCareful(awayFromEnemy);
+                    } else if (closestDist > 3) {
+                        // Move closer to engage if they're in engagement range
+                        Direction toEnemy = myLocation.directionTo(nearestEnemy.location);
+                        tryMoveCareful(toEnemy);
+                    }
+                } else {
+                    // No enemies nearby - patrol defensively
+                    tryMoveCareful(randomDirection());
+                }
+
+                Clock.yield();
+
+            } catch (Exception e) {
+                System.out.println("Tank Exception");
                 e.printStackTrace();
             }
         }
@@ -189,13 +325,14 @@ public strictfp class RobotPlayer {
 
     /**
      * Attempts to move in a given direction, while avoiding small obstacles directly in the path.
+     * More conservative movement for economic turtling strategy.
      *
      * @param dir The intended direction of movement
      * @return true if a move was performed
      * @throws GameActionException
      */
-    static boolean tryMove(Direction dir) throws GameActionException {
-        return tryMove(dir,20,3);
+    static boolean tryMoveCareful(Direction dir) throws GameActionException {
+        return tryMove(dir,30,6); // More careful movement with wider angle checks
     }
 
     /**

@@ -43,11 +43,8 @@ public strictfp class RobotPlayer {
             // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
             try {
 
-                // Generate a random direction
-                Direction dir = randomDirection();
-
-                // Randomly attempt to build a gardener in this direction
-                BulletSpending.tryHireGardener(dir);
+                // Centralized spend policy (hire/build/donate)
+                BulletSpending.spendPolicy();
 
                 // Move randomly
                 tryMove(randomDirection());
@@ -81,11 +78,8 @@ public strictfp class RobotPlayer {
                 int yPos = rc.readBroadcast(1);
                 MapLocation archonLoc = new MapLocation(xPos,yPos);
 
-                // Generate a random direction
-                Direction dir = randomDirection();
-
-                // Randomly attempt to build a soldier or lumberjack in this direction
-                BulletSpending.tryBuildGardenerUnits(dir);
+                // Centralized spend policy (plant/build/donate)
+                BulletSpending.spendPolicy();
 
                 // Move randomly
                 tryMove(randomDirection());
