@@ -186,6 +186,15 @@ Tree interactions:
 - Tree economies take time: planted trees only start producing after 80 rounds.
 - Donation timing matters; the VP cost increases each round.
 
+## Repo Rule: Bullet Spending Must Be Centralized
+CRITICAL: In this repo, **all bullet spending activities** must live in `BulletSpending.java` and nowhere else. This includes:
+- Donating for VP
+- Hiring gardeners
+- Building robots
+- Planting trees
+
+Do not add or keep bullet-spending logic in any other file. All callers should invoke `BulletSpending` methods instead.
+
 ## Key API Entry Points
 - `battlecode.common.RobotController` is the primary interface for sensing and acting.
 - `battlecode.common.MapLocation` and `battlecode.common.Direction` are the geometry primitives.
@@ -204,3 +213,4 @@ Common, effective project structure for a full bot package (Java 8):
 - `Comms.java`: Broadcast channel schema, encoding/decoding, team state.
 - `Nav.java`: Movement, pathfinding, bullet dodging, obstacle avoidance.
 - `Utils.java`: Shared helpers (geometry, targeting utilities, randoms).
+- `BulletSpending.java`: **All bullet spending** (donations, hire gardener, build robot, plant tree) centralized here.
