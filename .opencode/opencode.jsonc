@@ -12,5 +12,5 @@
     "task": false
   },
   "$schema": "https://opencode.ai/config.json",
-  "model": "opencode/grok-code"
+  "model": "openrouter/x-ai/grok-code-fast-1"
 }
