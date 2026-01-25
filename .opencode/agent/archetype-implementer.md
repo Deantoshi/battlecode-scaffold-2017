@@ -34,10 +34,12 @@ HOW_TO_PLAY_BATTLE_CODE_2017.md
 src/{BOT}/.state/current-archetype.json
 ```
 
-**Step 3:** Read all Java files in the variant folder:
+**Step 3:** Read the bot code snapshot (contains all Java files in one file):
 ```
-src/{BOT}_v{N}/*.java
+src/{BOT}_v{N}/.state/bot-code-snapshot.txt
 ```
+
+This snapshot file contains all the Java source files concatenated together with `=== FILE: filename.java ===` headers. Reading this single file is more efficient than reading each .java file individually.
 
 ## Your Task
 
