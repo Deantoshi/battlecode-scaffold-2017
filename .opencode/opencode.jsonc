@@ -11,6 +11,5 @@
     "write": false,
     "task": false
   },
-  "$schema": "https://opencode.ai/config.json",
-  "model": "openrouter/x-ai/grok-code-fast-1"
+  "$schema": "https://opencode.ai/config.json"
 }

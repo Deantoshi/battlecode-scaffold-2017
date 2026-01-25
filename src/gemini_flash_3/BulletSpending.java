@@ -1,4 +1,4 @@
-package copy_bot;
+package gemini_flash_3;
 import battlecode.common.*;
 
 public class BulletSpending {
@@ -10,15 +10,13 @@ public class BulletSpending {
     }
 
     public static void spendPolicy() throws GameActionException {
-        // Centralized spend order: hire gardener -> plant tree -> build units -> donate.
         if (rc.getType() == RobotType.ARCHON) {
-            // Archetype Change: Archon should hire Gardeners as fast as cooldown allows (probability 1.0).
             Direction dir = RobotPlayer.randomDirection();
-            if (rc.canHireGardener(dir)) {
+            // Archetype Change: Increase shouldHireGardener probability to 1.0 if bullets > 100.
+            if (rc.getTeamBullets() > 100 && rc.canHireGardener(dir)) {
                 rc.hireGardener(dir);
             }
             
-            // Archetype Change: Donate 100% of bullets above 100 to VP.
             float donateAmount = getDonateAmount();
             if (donateAmount > 0f) {
                 rc.donate(donateAmount);
@@ -27,7 +25,7 @@ public class BulletSpending {
         }
         
         if (rc.getType() == RobotType.GARDENER) {
-            // Archetype Change: Gardener movement should favor moving away from the Archon.
+            // Movement: Move away from Archon
             int xPos = rc.readBroadcast(0);
             int yPos = rc.readBroadcast(1);
             if (xPos != 0 || yPos != 0) {
@@ -36,27 +34,22 @@ public class BulletSpending {
                 if (awayFromArchon == null) awayFromArchon = RobotPlayer.randomDirection();
                 RobotPlayer.tryMove(awayFromArchon);
             } else {
-                // If no archon loc broadcasted, move randomly to spread out
                 RobotPlayer.tryMove(RobotPlayer.randomDirection());
             }
 
-            // Priority 1: Plant trees (Map saturation)
-            // Increased probability for "saturation with trees"
+            // Archetype Change: Prioritize building SCOUT for harassment.
+            // Unit Priority: SCOUT, GARDENER (hired by Archon), SOLDIER
             Direction dir = RobotPlayer.randomDirection();
-            if (rc.canPlantTree(dir) && Math.random() < 0.9) {
+            if (rc.canBuildRobot(RobotType.SCOUT, dir)) {
+                rc.buildRobot(RobotType.SCOUT, dir);
+            } else if (rc.canBuildRobot(RobotType.SOLDIER, dir)) {
+                // Secondary unit priority
+                rc.buildRobot(RobotType.SOLDIER, dir);
+            } else if (rc.canPlantTree(dir)) {
+                // Planting trees is lower priority but good for economy if we can't build
                 rc.plantTree(dir);
             }
             
-            // Priority 2: Build Scouts (Unit priority: GARDENER, SCOUT)
-            // Only build scouts if we have enough bullets for a tree too
-            if (rc.getTeamBullets() > 180) { 
-                dir = RobotPlayer.randomDirection();
-                if (rc.canBuildRobot(RobotType.SCOUT, dir)) {
-                    rc.buildRobot(RobotType.SCOUT, dir);
-                }
-            }
-            
-            // Priority 3: Donate 100% of bullets above 100 to VP.
             float donateAmount = getDonateAmount();
             if (donateAmount > 0f) {
                 rc.donate(donateAmount);
@@ -65,6 +58,11 @@ public class BulletSpending {
     }
 
     private static float getDonateAmount() throws GameActionException {
+        // Archetype Change: Set getDonateAmount() to always return 0 until round 2000.
+        if (rc.getRoundNum() < 2000) {
+            return 0f;
+        }
+
         float bullets = rc.getTeamBullets();
         float cost = rc.getVictoryPointCost();
         
@@ -73,7 +71,6 @@ public class BulletSpending {
             return bullets;
         }
 
-        // Archetype Change: Donate 100% of bullets above 100 to VP.
         float reserve = BULLET_RESERVE;
         float donateAmount = bullets - reserve;
         if (donateAmount >= cost) {

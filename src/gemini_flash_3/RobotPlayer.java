@@ -1,4 +1,4 @@
-package copy_bot;
+package gemini_flash_3;
 import battlecode.common.*;
 
 public strictfp class RobotPlayer {
@@ -90,13 +90,58 @@ public strictfp class RobotPlayer {
         Team enemy = rc.getTeam().opponent();
         while (true) {
             try {
-                RobotInfo[] enemies = rc.senseNearbyRobots(-1, enemy);
-                if (enemies.length > 0) {
-                    if (rc.canFireSingleShot()) {
-                        rc.fireSingleShot(rc.getLocation().directionTo(enemies[0].location));
+                // 1. Shake trees for bullets
+                TreeInfo[] neutralTrees = rc.senseNearbyTrees(-1, Team.NEUTRAL);
+                for (TreeInfo t : neutralTrees) {
+                    if (t.containedBullets > 0 && rc.canShake(t.ID)) {
+                        rc.shake(t.ID);
+                        break;
                     }
                 }
-                tryMove(randomDirection());
+
+                // 2. Harassment logic
+                RobotInfo[] enemies = rc.senseNearbyRobots(-1, enemy);
+                RobotInfo target = null;
+                
+                // Prioritize Gardeners, then Archons
+                for (RobotInfo r : enemies) {
+                    if (r.type == RobotType.GARDENER) {
+                        target = r;
+                        break;
+                    }
+                }
+                if (target == null) {
+                    for (RobotInfo r : enemies) {
+                        if (r.type == RobotType.ARCHON) {
+                            target = r;
+                            break;
+                        }
+                    }
+                }
+                if (target == null && enemies.length > 0) {
+                    target = enemies[0];
+                }
+
+                if (target != null) {
+                    Direction toTarget = rc.getLocation().directionTo(target.location);
+                    
+                    // Hit and run engagement style
+                    if (target.type == RobotType.GARDENER || target.type == RobotType.ARCHON) {
+                        // Move towards economy units to harass
+                        tryMove(toTarget);
+                    } else {
+                        // Avoid combat units (Soldiers, Lumberjacks, Tanks)
+                        tryMove(toTarget.opposite());
+                    }
+
+                    if (rc.canFireSingleShot()) {
+                        rc.fireSingleShot(rc.getLocation().directionTo(target.location));
+                    }
+                } else {
+                    // No enemies, patrol
+                    tryMove(randomDirection());
+                }
+
                 Clock.yield();
             } catch (Exception e) {
                 System.out.println("Scout Exception");

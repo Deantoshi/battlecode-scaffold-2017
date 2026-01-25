@@ -81,7 +81,11 @@ run_agent() {
 
     case "$AI_ENGINE" in
         opencode)
-            opencode run --agent "${agent_name}" --format default -- "${args}" || exit_code=$?
+            if [[ -n "${MODEL:-}" ]]; then
+                opencode run --agent "${agent_name}" --model "$MODEL" --format default -- "${args}" || exit_code=$?
+            else
+                opencode run --agent "${agent_name}" --format default -- "${args}" || exit_code=$?
+            fi
             ;;
         claude)
             ./ralphy/ralphy.sh "@${agent_name} ${args}" || exit_code=$?

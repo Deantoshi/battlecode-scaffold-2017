@@ -1,0 +1,134 @@
+{
+  "archetypes": [
+    {
+      "id": 1,
+      "name": "Lumberjack Rush",
+      "win_condition": "elimination",
+      "philosophy": "Aggressively build Lumberjacks to clear trees and strike enemy Archons/Gardeners early.",
+      "key_changes": [
+        "BulletSpending.spendPolicy(): Prioritize building LUMBERJACK as soon as a Gardener is hired.",
+        "BulletSpending.spendPolicy(): Set shouldPlantTree to 0.1 to focus bullets on units.",
+        "BulletSpending.spendPolicy(): Set BULLET_RESERVE to 50 to allow early unit spam."
+      ],
+      "unit_priority": ["LUMBERJACK", "GARDENER"],
+      "engagement_style": "Seek and destroy enemy Archons using Lumberjack strike."
+    },
+    {
+      "id": 2,
+      "name": "Scout Swarm",
+      "win_condition": "elimination",
+      "philosophy": "Swarm the enemy with Scouts to pick off Gardeners and disrupt economy.",
+      "key_changes": [
+        "BulletSpending.spendPolicy(): Prioritize building SCOUT for harassment.",
+        "BulletSpending.spendPolicy(): Increase shouldHireGardener probability to 1.0 if bullets > 100.",
+        "BulletSpending.spendPolicy(): Set getDonateAmount() to always return 0 until round 2000."
+      ],
+      "unit_priority": ["SCOUT", "GARDENER", "SOLDIER"],
+      "engagement_style": "Hit and run harassment of enemy Gardeners and Archons."
+    },
+    {
+      "id": 3,
+      "name": "Soldier Wall",
+      "win_condition": "elimination",
+      "philosophy": "Create a massive line of Soldiers to push across the map and overwhelm the enemy.",
+      "key_changes": [
+        "BulletSpending.spendPolicy(): Balanced build order: 1 Soldier for every 2 trees planted.",
+        "BulletSpending.spendPolicy(): Maintain BULLET_RESERVE at 150 for sustained production.",
+        "BulletSpending.spendPolicy(): Increase SOLDIER build weight in Gardener logic."
+      ],
+      "unit_priority": ["SOLDIER", "GARDENER", "LUMBERJACK"],
+      "engagement_style": "Slow, methodical advance with a dense front line of Soldiers."
+    },
+    {
+      "id": 4,
+      "name": "VP Eco-Boom",
+      "win_condition": "vp_rush",
+      "philosophy": "Maximize tree production and donate everything to VP as early as possible.",
+      "key_changes": [
+        "BulletSpending.spendPolicy(): Set shouldPlantTree to 0.9.",
+        "BulletSpending.spendPolicy(): Reduce BULLET_RESERVE to 20 to maximize VP donation frequency.",
+        "BulletSpending.spendPolicy(): Only build units (Lumberjacks) if enemies are detected nearby."
+      ],
+      "unit_priority": ["GARDENER", "LUMBERJACK"],
+      "engagement_style": "Avoid combat, focus entirely on tree health and bullet generation."
+    },
+    {
+      "id": 5,
+      "name": "Tank Fortress",
+      "win_condition": "hybrid",
+      "philosophy": "Build a defensive perimeter of trees and eventually transition into high-power Tanks for the win.",
+      "key_changes": [
+        "BulletSpending.spendPolicy(): Increase BULLET_RESERVE to 350 to save up for Tanks.",
+        "BulletSpending.spendPolicy(): Prioritize TANK over all other units once reserve is met.",
+        "BulletSpending.spendPolicy(): Archon movement should be disabled to maintain base structure."
+      ],
+      "unit_priority": ["GARDENER", "TANK", "SOLDIER"],
+      "engagement_style": "Defensive until Tanks are online, then a crushing all-in push."
+    },
+    {
+      "id": 6,
+      "name": "The Gardener Swarm",
+      "win_condition": "vp_rush",
+      "philosophy": "Hire as many Gardeners as possible to spread across the map and plant trees everywhere.",
+      "key_changes": [
+        "BulletSpending.spendPolicy(): Archon should hire Gardeners as fast as cooldown allows (probability 1.0).",
+        "BulletSpending.spendPolicy(): Gardener movement should favor moving away from the Archon.",
+        "BulletSpending.spendPolicy(): Donate 100% of bullets above 100 to VP."
+      ],
+      "unit_priority": ["GARDENER", "SCOUT"],
+      "engagement_style": "Passive expansion and map saturation with trees."
+    },
+    {
+      "id": 7,
+      "name": "Aggressive Triad",
+      "win_condition": "elimination",
+      "philosophy": "Use Soldiers and Tanks focusing on Triad shots for maximum damage density.",
+      "key_changes": [
+        "BulletSpending.spendPolicy(): Prioritize SOLDIER and TANK production.",
+        "BulletSpending.spendPolicy(): Maintain BULLET_RESERVE at 200 to ensure enough bullets for Triad shots.",
+        "BulletSpending.spendPolicy(): No tree planting allowed until 10 combat units are alive."
+      ],
+      "unit_priority": ["SOLDIER", "TANK", "GARDENER"],
+      "engagement_style": "Aggressive pursuit of enemy units, using Triad shots at close range."
+    },
+    {
+      "id": 8,
+      "name": "The Turtle",
+      "win_condition": "vp_rush",
+      "philosophy": "Stay extremely compact, build a thick wall of trees around Archons, and win via VP.",
+      "key_changes": [
+        "BulletSpending.spendPolicy(): Gardeners must plant trees in every available slot around the Archon.",
+        "BulletSpending.spendPolicy(): Only build Lumberjacks for defense if an enemy is within radius 5.",
+        "BulletSpending.spendPolicy(): All excess bullets over 50 donated to VP immediately."
+      ],
+      "unit_priority": ["GARDENER", "LUMBERJACK"],
+      "engagement_style": "Static defense, relying on tree walls to block enemy fire."
+    },
+    {
+      "id": 9,
+      "name": "Blitzkrieg",
+      "win_condition": "elimination",
+      "philosophy": "Fast movement and overwhelming numbers of cheap units (Soldiers/Lumberjacks) early on.",
+      "key_changes": [
+        "BulletSpending.spendPolicy(): Build 1st Gardener, then immediately build 5 Soldiers/Lumberjacks.",
+        "BulletSpending.spendPolicy(): shouldHireGardener set to 1.0 until 3 Gardeners are out.",
+        "BulletSpending.spendPolicy(): Disable all tree planting for the first 500 rounds."
+      ],
+      "unit_priority": ["SOLDIER", "LUMBERJACK", "GARDENER"],
+      "engagement_style": "Constant pressure and seeking out the enemy Archon location."
+    },
+    {
+      "id": 10,
+      "name": "Map Control Hybrid",
+      "win_condition": "hybrid",
+      "philosophy": "Control neutral trees and map space with a mix of Lumberjacks and Soldiers, scaling into VP.",
+      "key_changes": [
+        "BulletSpending.spendPolicy(): Alternate between planting a tree and building a combat unit.",
+        "BulletSpending.spendPolicy(): Keep BULLET_RESERVE at 100 for versatility.",
+        "BulletSpending.spendPolicy(): Donate 50% of excess bullets to VP, keep 50% for military expansion."
+      ],
+      "unit_priority": ["LUMBERJACK", "SOLDIER", "GARDENER"],
+      "engagement_style": "Balanced approach, securing map resources while building a scoring engine."
+    }
+  ]
+}

@@ -1,4 +1,98 @@
-package copy_bot;
+# Bot Code
+
+=== FILE: BulletSpending.java ===
+package gemini_flash_3;
+import battlecode.common.*;
+
+public class BulletSpending {
+    static RobotController rc;
+    static final float BULLET_RESERVE = 100f;
+
+    public static void init(RobotController rc) {
+        BulletSpending.rc = rc;
+    }
+
+    public static void spendPolicy() throws GameActionException {
+        // Centralized spend order: hire gardener -> plant tree -> build units -> donate.
+        if (rc.getType() == RobotType.ARCHON) {
+            Direction dir = randomDirection();
+            if (shouldHireGardener(dir)) {
+                rc.hireGardener(dir);
+            }
+            float donateAmount = getDonateAmount();
+            if (donateAmount > 0f) {
+                rc.donate(donateAmount);
+            }
+            return;
+        }
+        if (rc.getType() == RobotType.GARDENER) {
+            // Priority 1: Plant trees (fortress walls)
+            Direction dir = randomDirection();
+            if (shouldPlantTree(dir)) {
+                rc.plantTree(dir);
+            }
+            
+            // Priority 2: Defense if enemies are extremely close
+            RobotInfo[] enemies = rc.senseNearbyRobots(4.0f, rc.getTeam().opponent());
+            if (enemies.length > 0) {
+                dir = randomDirection();
+                if (rc.canBuildRobot(RobotType.LUMBERJACK, dir)) {
+                    rc.buildRobot(RobotType.LUMBERJACK, dir);
+                }
+            }
+            
+            float donateAmount = getDonateAmount();
+            if (donateAmount > 0f) {
+                rc.donate(donateAmount);
+            }
+        }
+    }
+
+    private static boolean shouldHireGardener(Direction dir) {
+        if (!rc.canHireGardener(dir)) return false;
+        // Archetype: hire Gardeners with a 0.9 probability if bullets > 100
+        if (rc.getTeamBullets() > 100) {
+            return Math.random() < 0.9;
+        }
+        // Even if < 100, we still want gardeners, but maybe less aggressively
+        return Math.random() < 0.3;
+    }
+
+    private static boolean shouldPlantTree(Direction dir) {
+        // Archetype: Set shouldPlantTree to 0.4
+        return rc.canPlantTree(dir) && Math.random() < 0.4;
+    }
+
+    private static float getDonateAmount() throws GameActionException {
+        float bullets = rc.getTeamBullets();
+        float cost = rc.getVictoryPointCost();
+        
+        // Always donate if we can win
+        if (bullets >= (1000 - rc.getTeamVictoryPoints()) * cost) {
+            return bullets;
+        }
+
+        // Donate more aggressively in hybrid strategy if we have a lot of bullets
+        float reserve = BULLET_RESERVE;
+        if (rc.getType() == RobotType.ARCHON && bullets > 500) {
+            reserve = 200; // Keep some for gardeners
+        }
+
+        float donateAmount = bullets - reserve;
+        if (donateAmount >= cost) {
+            int pointsToBuy = (int)(donateAmount / cost);
+            return pointsToBuy * cost;
+        }
+        return 0f;
+    }
+
+    private static Direction randomDirection() {
+        return new Direction((float)Math.random() * 2 * (float)Math.PI);
+    }
+}
+
+=== FILE: RobotPlayer.java ===
+package gemini_flash_3;
 import battlecode.common.*;
 
 public strictfp class RobotPlayer {
@@ -36,17 +130,17 @@ public strictfp class RobotPlayer {
         System.out.println("I'm an archon!");
         while (true) {
             try {
-                // Broadcast location for gardeners to move away from
-                MapLocation myLocation = rc.getLocation();
-                rc.broadcast(0,(int)myLocation.x);
-                rc.broadcast(1,(int)myLocation.y);
-
                 BulletSpending.spendPolicy();
 
-                // Archon stays relatively still but can move if hit
+                // Archon stays relatively still for fortress formation
+                // Only move if absolutely necessary (e.g., being hit)
                 if (rc.getHealth() < 400) {
                    tryMove(randomDirection());
                 }
+
+                MapLocation myLocation = rc.getLocation();
+                rc.broadcast(0,(int)myLocation.x);
+                rc.broadcast(1,(int)myLocation.y);
 
                 Clock.yield();
             } catch (Exception e) {
@@ -74,8 +168,20 @@ public strictfp class RobotPlayer {
                     }
                 }
 
-                // 2. Spend policy (includes movement, planting, building, and donating)
+                // 2. Spend policy (plant/build/donate)
                 BulletSpending.spendPolicy();
+
+                // 3. Movement: Stay near Archon to form a wall, but don't move randomly
+                int xPos = rc.readBroadcast(0);
+                int yPos = rc.readBroadcast(1);
+                MapLocation archonLoc = new MapLocation(xPos, yPos);
+                
+                if (rc.getLocation().distanceTo(archonLoc) > 5) {
+                    tryMove(rc.getLocation().directionTo(archonLoc));
+                } else if (rc.getLocation().distanceTo(archonLoc) < 2) {
+                    tryMove(rc.getLocation().directionTo(archonLoc).opposite());
+                }
+                // Otherwise stay still to form the "wall"
 
                 Clock.yield();
             } catch (Exception e) {
@@ -179,3 +285,4 @@ public strictfp class RobotPlayer {
         return false;
     }
 }
+
