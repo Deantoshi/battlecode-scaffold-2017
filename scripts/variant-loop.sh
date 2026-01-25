@@ -32,6 +32,10 @@ NUM_VARIANTS=10
 # AI Engine
 AI_ENGINE="${AI_ENGINE:-opencode}"
 
+# Model override (e.g., google/antigravity-claude-opus-4-5-thinking)
+MODEL="${MODEL:-}"
+VARIANT="${VARIANT:-}"
+
 # Validate arguments
 if [[ -z "$BOT" || -z "$OPPONENT" ]]; then
     printf '%s\n' "${RED}Usage: $0 <bot> <opponent> [map] [max-iterations]${NC}"
@@ -69,6 +73,8 @@ printf '%s\n' "${BLUE}Map:${NC}        $MAP"
 printf '%s\n' "${BLUE}Max Iters:${NC}  $MAX_ITERS"
 printf '%s\n' "${BLUE}Variants:${NC}   $NUM_VARIANTS"
 printf '%s\n' "${BLUE}AI Engine:${NC}  $AI_ENGINE"
+[[ -n "$MODEL" ]] && printf '%s\n' "${BLUE}Model:${NC}      $MODEL"
+[[ -n "$VARIANT" ]] && printf '%s\n' "${BLUE}Variant:${NC}    $VARIANT"
 echo ""
 
 # Function to run an agent
@@ -81,11 +87,10 @@ run_agent() {
 
     case "$AI_ENGINE" in
         opencode)
-            if [[ -n "${MODEL:-}" ]]; then
-                opencode run --agent "${agent_name}" --model "$MODEL" --format default -- "${args}" || exit_code=$?
-            else
-                opencode run --agent "${agent_name}" --format default -- "${args}" || exit_code=$?
-            fi
+            local model_args=""
+            [[ -n "$MODEL" ]] && model_args="--model $MODEL"
+            [[ -n "$VARIANT" ]] && model_args="$model_args --variant $VARIANT"
+            opencode run --agent "${agent_name}" $model_args --format default -- "${args}" || exit_code=$?
             ;;
         claude)
             ./ralphy/ralphy.sh "@${agent_name} ${args}" || exit_code=$?
