@@ -15,21 +15,16 @@ This document summarizes the gameplay rules, mechanics, and API behavior as impl
 
 ## Win Conditions and Tie-Breakers
 - Instant win if the opponent has 0 robots remaining.
-- Victory points (VP): win immediately at `1000` VP.
 - If time limit reached and no winner:
-  1) Higher VP wins.
-  2) If tie, higher team tree count wins.
-  3) If tie, higher total bullets wins (team bullet supply + sum of bulletCost of remaining robots).
-  4) If tie, team of the highest-ID robot wins.
+  1) Higher team tree count wins.
+  2) If tie, higher total bullets wins (team bullet supply + sum of bulletCost of remaining robots).
+  3) If tie, team of the highest-ID robot wins.
 
 ## Core Constants (from `GameConstants`)
 - Map size: 30 to 100 (width/height), floating-point coordinates.
 - Max rounds: `3000` (default).
 - Initial bullets: `300`.
 - Bullet income per round: `max(0, 2 - 0.01 * current_bullets)`.
-- Victory point cost: `VP_BASE_COST + VP_INCREASE_PER_ROUND * round`, where
-  - `VP_BASE_COST = 7.5`
-  - `VP_INCREASE_PER_ROUND = 12.5 / 3000`
 - Broadcasting: 10,000 int channels shared by team.
 - Team memory across games: 32 longs.
 - Exceptions cost: 500 bytecodes per thrown exception.
@@ -100,7 +95,6 @@ Use these method signatures when calling actions from a robot's `RobotController
   - Fire single: `rc.canFireSingleShot()`, `rc.fireSingleShot(Direction dir)`
 - Any robot (tree interaction / economy / movement)
   - Shake: `rc.canShake(MapLocation loc)`, `rc.canShake(int id)`, `rc.shake(MapLocation loc)`, `rc.shake(int id)`, `rc.canShake()`
-  - Donate: `rc.getVictoryPointCost()`, `rc.donate(float bullets)`
   - Move: `rc.canMove(Direction dir)`, `rc.canMove(Direction dir, float dist)`, `rc.canMove(MapLocation loc)`, `rc.move(Direction dir)`, `rc.move(Direction dir, float dist)`, `rc.move(MapLocation loc)`
 
 ## Newly Built Units Are Inactive at First
@@ -154,10 +148,9 @@ Tree interactions:
 - Chop/shake/water require the tree edge to be within 1.0 of the robot edge.
 - If a neutral tree contains a robot, chopping can spawn that robot for the chopping team; overlapping Scouts are destroyed to resolve collisions.
 
-## Economy and Victory Points
+## Economy
 - Team bullet supply is shared across all robots.
 - Bullets are spent to build robots, plant trees, and fire shots.
-- Donating bullets buys VP at current cost (no fractional VP; uses floor). VP can end the game early at 1000.
 
 ## Sensing and Information
 - `sensorRadius` controls robot and tree sensing.
@@ -184,11 +177,9 @@ Tree interactions:
 - Use Scouts for pathing through dense forests; use Tanks to clear trees.
 - Plan around the 20-round inactivity of newly built units.
 - Tree economies take time: planted trees only start producing after 80 rounds.
-- Donation timing matters; the VP cost increases each round.
 
 ## Repo Rule: Bullet Spending Must Be Centralized
 CRITICAL: In this repo, **all bullet spending activities** must live in `BulletSpending.java` and nowhere else, and they must be called only inside `spendPolicy()`. This includes:
-- `rc.donate(float bullets)`
 - `rc.hireGardener(Direction dir)`
 - `rc.buildRobot(RobotType type, Direction dir)`
 - `rc.plantTree(Direction dir)`
@@ -204,7 +195,7 @@ Do not add or keep bullet-spending logic in any other file, and do not call any 
 Common, effective project structure for a full bot package (Java 8):
 
 - `RobotPlayer.java`: Entry point; dispatches by `RobotType` to per-unit logic.
-- `Archon.java`: Archon strategy (hire timing, initial expansion, VP donation logic).
+- `Archon.java`: Archon strategy (hire timing, initial expansion).
 - `Gardener.java`: Build order, tree farm management, unit production.
 - `Lumberjack.java`: Tree clearing, melee combat, early pressure.
 - `Soldier.java`: Core combat micro, targeting, firing decisions.
