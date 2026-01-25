@@ -35,6 +35,7 @@ AI_ENGINE="${AI_ENGINE:-opencode}"
 # Model override (e.g., google/antigravity-claude-opus-4-5-thinking)
 MODEL="${MODEL:-}"
 VARIANT="${VARIANT:-}"
+RUN_ID="${RUN_ID:-$(date +%Y%m%d-%H%M%S)-$$}"
 
 # Validate arguments
 if [[ -z "$BOT" || -z "$OPPONENT" ]]; then
@@ -81,6 +82,7 @@ echo ""
 run_agent() {
     local agent_name="$1"
     local args="$2"
+    local context="$3"
     local exit_code=0
 
     printf '%s\n' "${YELLOW}━━━ Running @${agent_name} ━━━${NC}"
@@ -90,7 +92,9 @@ run_agent() {
             local model_args=""
             [[ -n "$MODEL" ]] && model_args="--model $MODEL"
             [[ -n "$VARIANT" ]] && model_args="$model_args --variant $VARIANT"
-            opencode run --agent "${agent_name}" $model_args --format default -- "${args}" || exit_code=$?
+            local title="variant-loop:${RUN_ID}:${BOT}:${OPPONENT}:${MAP}:${agent_name}"
+            [[ -n "$context" ]] && title="${title}:${context}"
+            opencode run --agent "${agent_name}" --title "${title}" $model_args --format default -- "${args}" || exit_code=$?
             ;;
         claude)
             ./ralphy/ralphy.sh "@${agent_name} ${args}" || exit_code=$?
@@ -129,7 +133,7 @@ if [[ ! -f "$ARCHETYPES_FILE" ]]; then
         done
     } > "$STATE_DIR/bot-code-snapshot.txt"
 
-    run_agent "archetype-creator" "--bot $BOT --opponent $OPPONENT --map $MAP"
+    run_agent "archetype-creator" "--bot $BOT --opponent $OPPONENT --map $MAP" "phase0"
 
     if [[ ! -f "$ARCHETYPES_FILE" ]]; then
         printf '%s\n' "${RED}Error: Archetypes file not created at $ARCHETYPES_FILE${NC}"
@@ -191,7 +195,7 @@ else:
         # Save archetype for this variant
         echo "$ARCHETYPE" > "$STATE_DIR/current-archetype.json"
 
-        run_agent "archetype-implementer" "--bot $BOT --variant $v --opponent $OPPONENT"
+        run_agent "archetype-implementer" "--bot $BOT --variant $v --opponent $OPPONENT" "iter:${iter}:v${v}"
 
         # Verify compilation
         printf '%s\n' "${BLUE}Verifying compilation for ${BOT}_v${v}...${NC}"

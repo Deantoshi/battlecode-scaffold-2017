@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 import path from "path"
-import { Global } from "../packages/opencode/src/global/index.ts"
+import os from "os"
 
 type Tokens = {
   input: number
@@ -125,7 +125,7 @@ while (args.length > 0) {
   process.exit(1)
 }
 
-const root = path.join(Global.Path.data, "storage")
+const root = path.join(os.homedir(), ".local", "share", "opencode", "storage")
 const rootStat = await Bun.file(root).stat().catch(() => null)
 const missing = !rootStat || !rootStat.isDirectory()
 if (missing) {
