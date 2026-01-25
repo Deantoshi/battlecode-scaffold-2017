@@ -29,6 +29,9 @@ public strictfp class RobotPlayer {
             case SCOUT:
                 runScout();
                 break;
+            case TANK:
+                runTank();
+                break;
         }
     }
 
@@ -90,55 +93,49 @@ public strictfp class RobotPlayer {
         Team enemy = rc.getTeam().opponent();
         while (true) {
             try {
-                // 1. Shake trees for bullets
-                TreeInfo[] neutralTrees = rc.senseNearbyTrees(-1, Team.NEUTRAL);
-                for (TreeInfo t : neutralTrees) {
-                    if (t.containedBullets > 0 && rc.canShake(t.ID)) {
-                        rc.shake(t.ID);
-                        break;
+                // 1. Scavenging focus: Shake trees for bullets
+                TreeInfo[] trees = rc.senseNearbyTrees(-1, Team.NEUTRAL);
+                TreeInfo bestTree = null;
+                for (TreeInfo t : trees) {
+                    if (t.containedBullets > 0) {
+                        if (rc.canShake(t.ID)) {
+                            rc.shake(t.ID);
+                        }
+                        if (bestTree == null) bestTree = t;
                     }
                 }
 
-                // 2. Harassment logic
+                // 2. Engagement style: Avoid combat unless necessary, focus on scavenging
                 RobotInfo[] enemies = rc.senseNearbyRobots(-1, enemy);
                 RobotInfo target = null;
+                RobotInfo dangerousEnemy = null;
                 
-                // Prioritize Gardeners, then Archons
                 for (RobotInfo r : enemies) {
-                    if (r.type == RobotType.GARDENER) {
-                        target = r;
-                        break;
+                    if (r.type == RobotType.GARDENER || r.type == RobotType.ARCHON) {
+                        if (target == null) target = r;
+                    } else if (r.type == RobotType.SOLDIER || r.type == RobotType.LUMBERJACK || r.type == RobotType.TANK) {
+                        if (dangerousEnemy == null) dangerousEnemy = r;
                     }
-                }
-                if (target == null) {
-                    for (RobotInfo r : enemies) {
-                        if (r.type == RobotType.ARCHON) {
-                            target = r;
-                            break;
-                        }
-                    }
-                }
-                if (target == null && enemies.length > 0) {
-                    target = enemies[0];
                 }
 
-                if (target != null) {
-                    Direction toTarget = rc.getLocation().directionTo(target.location);
-                    
-                    // Hit and run engagement style
-                    if (target.type == RobotType.GARDENER || target.type == RobotType.ARCHON) {
-                        // Move towards economy units to harass
-                        tryMove(toTarget);
-                    } else {
-                        // Avoid combat units (Soldiers, Lumberjacks, Tanks)
-                        tryMove(toTarget.opposite());
-                    }
-
+                if (dangerousEnemy != null) {
+                    // Avoid combat units
+                    tryMove(rc.getLocation().directionTo(dangerousEnemy.location).opposite());
                     if (rc.canFireSingleShot()) {
-                        rc.fireSingleShot(rc.getLocation().directionTo(target.location));
+                        rc.fireSingleShot(rc.getLocation().directionTo(dangerousEnemy.location));
                     }
+                } else if (target != null) {
+                    // Harass economy units
+                    Direction toTarget = rc.getLocation().directionTo(target.location);
+                    tryMove(toTarget);
+                    if (rc.canFireSingleShot()) {
+                        rc.fireSingleShot(toTarget);
+                    }
+                } else if (bestTree != null) {
+                    // Move to tree with bullets
+                    tryMove(rc.getLocation().directionTo(bestTree.location));
                 } else {
-                    // No enemies, patrol
+                    // No immediate targets, patrol
                     tryMove(randomDirection());
                 }
 
@@ -191,6 +188,28 @@ public strictfp class RobotPlayer {
                 Clock.yield();
             } catch (Exception e) {
                 System.out.println("Lumberjack Exception");
+                e.printStackTrace();
+            }
+        }
+    }
+
+    static void runTank() throws GameActionException {
+        System.out.println("I'm a tank!");
+        Team enemy = rc.getTeam().opponent();
+        while (true) {
+            try {
+                RobotInfo[] enemies = rc.senseNearbyRobots(-1, enemy);
+                if (enemies.length > 0) {
+                    if (rc.canFireSingleShot()) {
+                        rc.fireSingleShot(rc.getLocation().directionTo(enemies[0].location));
+                    }
+                    tryMove(rc.getLocation().directionTo(enemies[0].location));
+                } else {
+                    tryMove(randomDirection());
+                }
+                Clock.yield();
+            } catch (Exception e) {
+                System.out.println("Tank Exception");
                 e.printStackTrace();
             }
         }
