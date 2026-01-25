@@ -28,7 +28,7 @@ This document summarizes the gameplay rules, mechanics, and API behavior as impl
 - Initial bullets: `300`.
 - Bullet income per round: `max(0, 2 - 0.01 * current_bullets)`.
 - Victory point cost: `VP_BASE_COST + VP_INCREASE_PER_ROUND * round`, where
-  - `VP_BASE_COST = 7.5`
+  - `VP_BASE_COST = 15.0`
   - `VP_INCREASE_PER_ROUND = 12.5 / 3000`
 - Broadcasting: 10,000 int channels shared by team.
 - Team memory across games: 32 longs.
