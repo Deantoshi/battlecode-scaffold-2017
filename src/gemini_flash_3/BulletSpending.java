@@ -23,13 +23,12 @@ public class BulletSpending {
             return;
         }
         if (rc.getType() == RobotType.GARDENER) {
-            // Priority 1: Build Scouts if needed (per archetype unit_priority)
-            // The archetype lists GARDENER and SCOUT. Since Gardeners are hired by Archons, 
-            // Gardeners themselves should focus on trees and maybe a scout for defense/harassment.
-            if (rc.getTeamBullets() > 150) {
+            // Priority 1: Build SCOUTs above all other combat units (Archetype requirement)
+            if (rc.getTeamBullets() >= RobotType.SCOUT.bulletCost) {
                 Direction scoutDir = randomDirection();
-                if (rc.canBuildRobot(RobotType.SCOUT, scoutDir) && Math.random() < 0.2) {
+                if (rc.canBuildRobot(RobotType.SCOUT, scoutDir)) {
                     rc.buildRobot(RobotType.SCOUT, scoutDir);
+                    return; // Consumes turn action
                 }
             }
 
@@ -37,6 +36,7 @@ public class BulletSpending {
             Direction dir = randomDirection();
             if (shouldPlantTree(dir)) {
                 rc.plantTree(dir);
+                return; // Consumes turn action
             }
             
             float donateAmount = getDonateAmount();
@@ -48,8 +48,9 @@ public class BulletSpending {
 
     private static boolean shouldHireGardener(Direction dir) {
         if (!rc.canHireGardener(dir)) return false;
-        // Archetype: hire Gardeners as fast as cooldown allows (probability 1.0).
-        return true;
+        // Archetype: hire Gardeners as fast as cooldown allows
+        // Limit to a reasonable number of gardeners so we have bullets for scouts
+        return rc.getRobotCount() < 20; 
     }
 
     private static boolean shouldPlantTree(Direction dir) {

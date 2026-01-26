@@ -76,7 +76,7 @@ public strictfp class RobotPlayer {
                 // 2. Spend policy (plant/build/donate)
                 BulletSpending.spendPolicy();
 
-                // 3. Movement: Archetype: Gardener movement should favor moving away from the Archon.
+                // 3. Movement
                 int xPos = rc.readBroadcast(0);
                 int yPos = rc.readBroadcast(1);
                 MapLocation archonLoc = new MapLocation(xPos, yPos);
@@ -105,19 +105,52 @@ public strictfp class RobotPlayer {
         Team enemy = rc.getTeam().opponent();
         while (true) {
             try {
-                RobotInfo[] enemies = rc.senseNearbyRobots(-1, enemy);
-                if (enemies.length > 0) {
-                    if (rc.canFireSingleShot()) {
-                        rc.fireSingleShot(rc.getLocation().directionTo(enemies[0].location));
+                // Prioritize shaking trees for bullets (Archetype requirement)
+                TreeInfo[] neutralTrees = rc.senseNearbyTrees(-1, Team.NEUTRAL);
+                for (TreeInfo t : neutralTrees) {
+                    if (t.containedBullets > 0 && rc.canShake(t.ID)) {
+                        rc.shake(t.ID);
+                        break;
                     }
                 }
-                // Scouts should explore and move away from home
-                int xPos = rc.readBroadcast(0);
-                int yPos = rc.readBroadcast(1);
-                MapLocation archonLoc = new MapLocation(xPos, yPos);
-                Direction away = archonLoc.directionTo(rc.getLocation());
-                if (away == null) away = randomDirection();
-                tryMove(away);
+
+                RobotInfo[] enemies = rc.senseNearbyRobots(-1, enemy);
+                RobotInfo target = null;
+                
+                if (enemies.length > 0) {
+                    // Prioritize Gardeners (Archetype requirement)
+                    for (RobotInfo r : enemies) {
+                        if (r.type == RobotType.GARDENER) {
+                            target = r;
+                            break;
+                        }
+                    }
+                    if (target == null) target = enemies[0];
+
+                    // Combat behavior: Kite combat units, pursue gardeners
+                    Direction toTarget = rc.getLocation().directionTo(target.location);
+                    boolean isCombatUnit = (target.type == RobotType.SOLDIER || target.type == RobotType.LUMBERJACK || target.type == RobotType.TANK || target.type == RobotType.SCOUT);
+                    
+                    if (isCombatUnit) {
+                        // Kite: move away while shooting
+                        tryMove(toTarget.opposite());
+                    } else {
+                        // Pursue: move closer to gardener/archon
+                        tryMove(toTarget);
+                    }
+
+                    if (rc.canFireSingleShot()) {
+                        rc.fireSingleShot(rc.getLocation().directionTo(target.location));
+                    }
+                } else {
+                    // Explore: search for neutral trees or enemies
+                    if (neutralTrees.length > 0) {
+                        tryMove(rc.getLocation().directionTo(neutralTrees[0].location));
+                    } else {
+                        tryMove(randomDirection());
+                    }
+                }
+                
                 Clock.yield();
             } catch (Exception e) {
                 System.out.println("Scout Exception");
