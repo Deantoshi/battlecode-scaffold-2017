@@ -29,9 +29,6 @@ public strictfp class RobotPlayer {
             case SCOUT:
                 runScout();
                 break;
-            case TANK:
-                runTank();
-                break;
         }
     }
 
@@ -39,17 +36,16 @@ public strictfp class RobotPlayer {
         System.out.println("I'm an archon!");
         while (true) {
             try {
-                // Broadcast location for gardeners to move away from
-                MapLocation myLocation = rc.getLocation();
-                rc.broadcast(0,(int)myLocation.x);
-                rc.broadcast(1,(int)myLocation.y);
-
                 BulletSpending.spendPolicy();
 
                 // Archon stays relatively still but can move if hit
                 if (rc.getHealth() < 400) {
                    tryMove(randomDirection());
                 }
+
+                MapLocation myLocation = rc.getLocation();
+                rc.broadcast(0,(int)myLocation.x);
+                rc.broadcast(1,(int)myLocation.y);
 
                 Clock.yield();
             } catch (Exception e) {
@@ -77,8 +73,24 @@ public strictfp class RobotPlayer {
                     }
                 }
 
-                // 2. Spend policy (includes movement, planting, building, and donating)
+                // 2. Spend policy (plant/build/donate)
                 BulletSpending.spendPolicy();
+
+                // 3. Movement: Archetype: Gardener movement should favor moving away from the Archon.
+                int xPos = rc.readBroadcast(0);
+                int yPos = rc.readBroadcast(1);
+                MapLocation archonLoc = new MapLocation(xPos, yPos);
+                
+                // Move away from archon to spread across map
+                Direction awayFromArchon = archonLoc.directionTo(rc.getLocation());
+                if (awayFromArchon == null) awayFromArchon = randomDirection();
+                
+                if (rc.getLocation().distanceTo(archonLoc) < 15) {
+                    tryMove(awayFromArchon);
+                } else {
+                    // Just keep moving to spread out
+                    tryMove(randomDirection());
+                }
 
                 Clock.yield();
             } catch (Exception e) {
@@ -93,52 +105,19 @@ public strictfp class RobotPlayer {
         Team enemy = rc.getTeam().opponent();
         while (true) {
             try {
-                // 1. Scavenging focus: Shake trees for bullets
-                TreeInfo[] trees = rc.senseNearbyTrees(-1, Team.NEUTRAL);
-                TreeInfo bestTree = null;
-                for (TreeInfo t : trees) {
-                    if (t.containedBullets > 0) {
-                        if (rc.canShake(t.ID)) {
-                            rc.shake(t.ID);
-                        }
-                        if (bestTree == null) bestTree = t;
-                    }
-                }
-
-                // 2. Engagement style: Avoid combat unless necessary, focus on scavenging
                 RobotInfo[] enemies = rc.senseNearbyRobots(-1, enemy);
-                RobotInfo target = null;
-                RobotInfo dangerousEnemy = null;
-                
-                for (RobotInfo r : enemies) {
-                    if (r.type == RobotType.GARDENER || r.type == RobotType.ARCHON) {
-                        if (target == null) target = r;
-                    } else if (r.type == RobotType.SOLDIER || r.type == RobotType.LUMBERJACK || r.type == RobotType.TANK) {
-                        if (dangerousEnemy == null) dangerousEnemy = r;
+                if (enemies.length > 0) {
+                    if (rc.canFireSingleShot()) {
+                        rc.fireSingleShot(rc.getLocation().directionTo(enemies[0].location));
                     }
                 }
-
-                if (dangerousEnemy != null) {
-                    // Avoid combat units
-                    tryMove(rc.getLocation().directionTo(dangerousEnemy.location).opposite());
-                    if (rc.canFireSingleShot()) {
-                        rc.fireSingleShot(rc.getLocation().directionTo(dangerousEnemy.location));
-                    }
-                } else if (target != null) {
-                    // Harass economy units
-                    Direction toTarget = rc.getLocation().directionTo(target.location);
-                    tryMove(toTarget);
-                    if (rc.canFireSingleShot()) {
-                        rc.fireSingleShot(toTarget);
-                    }
-                } else if (bestTree != null) {
-                    // Move to tree with bullets
-                    tryMove(rc.getLocation().directionTo(bestTree.location));
-                } else {
-                    // No immediate targets, patrol
-                    tryMove(randomDirection());
-                }
-
+                // Scouts should explore and move away from home
+                int xPos = rc.readBroadcast(0);
+                int yPos = rc.readBroadcast(1);
+                MapLocation archonLoc = new MapLocation(xPos, yPos);
+                Direction away = archonLoc.directionTo(rc.getLocation());
+                if (away == null) away = randomDirection();
+                tryMove(away);
                 Clock.yield();
             } catch (Exception e) {
                 System.out.println("Scout Exception");
@@ -188,28 +167,6 @@ public strictfp class RobotPlayer {
                 Clock.yield();
             } catch (Exception e) {
                 System.out.println("Lumberjack Exception");
-                e.printStackTrace();
-            }
-        }
-    }
-
-    static void runTank() throws GameActionException {
-        System.out.println("I'm a tank!");
-        Team enemy = rc.getTeam().opponent();
-        while (true) {
-            try {
-                RobotInfo[] enemies = rc.senseNearbyRobots(-1, enemy);
-                if (enemies.length > 0) {
-                    if (rc.canFireSingleShot()) {
-                        rc.fireSingleShot(rc.getLocation().directionTo(enemies[0].location));
-                    }
-                    tryMove(rc.getLocation().directionTo(enemies[0].location));
-                } else {
-                    tryMove(randomDirection());
-                }
-                Clock.yield();
-            } catch (Exception e) {
-                System.out.println("Tank Exception");
                 e.printStackTrace();
             }
         }
