@@ -23,20 +23,42 @@ public class BulletSpending {
             return;
         }
         if (rc.getType() == RobotType.GARDENER) {
-            // Priority 1: Build SCOUTs above all other combat units (Archetype requirement)
-            if (rc.getTeamBullets() >= RobotType.SCOUT.bulletCost) {
-                Direction scoutDir = randomDirection();
-                if (rc.canBuildRobot(RobotType.SCOUT, scoutDir)) {
-                    rc.buildRobot(RobotType.SCOUT, scoutDir);
-                    return; // Consumes turn action
-                }
-            }
-
-            // Priority 2: Plant trees (Map saturation)
+            // Archetype: Iron Juggernaut - Heavy economic investment to reach late-game Tank production.
+            
+            // Priority 1: Plant trees (Map saturation for income)
             Direction dir = randomDirection();
             if (shouldPlantTree(dir)) {
                 rc.plantTree(dir);
                 return; // Consumes turn action
+            }
+
+            // Priority 2: Build units
+            // unit_priority: ["GARDENER", "LUMBERJACK", "TANK", "TANK"]
+            // Note: Gardeners are hired by Archons. Gardener builds Lumberjacks, Soldiers, Scouts, Tanks.
+            
+            int treeCount = rc.getTreeCount();
+            
+            // If we have 10+ trees, prioritize TANKS
+            if (treeCount >= 10) {
+                if (rc.getTeamBullets() >= RobotType.TANK.bulletCost) {
+                    Direction buildDir = randomDirection();
+                    if (rc.canBuildRobot(RobotType.TANK, buildDir)) {
+                        rc.buildRobot(RobotType.TANK, buildDir);
+                        return;
+                    }
+                }
+            }
+
+            // Otherwise, build Lumberjacks to clear space or for defense
+            if (rc.getTeamBullets() >= RobotType.LUMBERJACK.bulletCost) {
+                // Check if we already have some lumberjacks or if there are many trees
+                if (rc.getRobotCount() < 20) { // Limit total robots to save for tanks
+                    Direction buildDir = randomDirection();
+                    if (rc.canBuildRobot(RobotType.LUMBERJACK, buildDir)) {
+                        rc.buildRobot(RobotType.LUMBERJACK, buildDir);
+                        return;
+                    }
+                }
             }
             
             float donateAmount = getDonateAmount();
@@ -48,14 +70,13 @@ public class BulletSpending {
 
     private static boolean shouldHireGardener(Direction dir) {
         if (!rc.canHireGardener(dir)) return false;
-        // Archetype: hire Gardeners as fast as cooldown allows
-        // Limit to a reasonable number of gardeners so we have bullets for scouts
-        return rc.getRobotCount() < 20; 
+        // Need gardeners to build the tree economy
+        return rc.getRobotCount() < 30; 
     }
 
     private static boolean shouldPlantTree(Direction dir) {
-        // Favor planting trees whenever possible for map saturation
-        return rc.canPlantTree(dir) && Math.random() < 0.8;
+        // High priority on planting trees for the "Iron Juggernaut" economy
+        return rc.canPlantTree(dir);
     }
 
     private static float getDonateAmount() throws GameActionException {
@@ -67,13 +88,16 @@ public class BulletSpending {
             return bullets;
         }
 
-        // Archetype: Donate 100% of bullets above 100 to VP.
-        float reserve = BULLET_RESERVE;
-        float donateAmount = bullets - reserve;
-        if (donateAmount >= cost) {
-            int pointsToBuy = (int)(donateAmount / cost);
-            return pointsToBuy * cost;
+        // Donate surplus only if we have a very strong economy and enough for tanks
+        if (rc.getTreeCount() >= 25) {
+            float reserve = 500f; // Higher reserve for tanks
+            float donateAmount = bullets - reserve;
+            if (donateAmount >= cost) {
+                int pointsToBuy = (int)(donateAmount / cost);
+                return pointsToBuy * cost;
+            }
         }
+        
         return 0f;
     }
 

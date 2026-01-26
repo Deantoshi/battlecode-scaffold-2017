@@ -4,11 +4,6 @@ import battlecode.common.*;
 public strictfp class RobotPlayer {
     static RobotController rc;
 
-    /**
-     * run() is the method that is called when a robot is instantiated in the Battlecode world.
-     * If this method returns, the robot dies!
-     **/
-    @SuppressWarnings("unused")
     public static void run(RobotController rc) throws GameActionException {
         RobotPlayer.rc = rc;
         BulletSpending.init(rc);
@@ -29,43 +24,41 @@ public strictfp class RobotPlayer {
             case SCOUT:
                 runScout();
                 break;
+            case TANK:
+                runTank();
+                break;
         }
     }
 
     static void runArchon() throws GameActionException {
-        System.out.println("I'm an archon!");
         while (true) {
             try {
                 BulletSpending.spendPolicy();
-
-                // Archon stays relatively still but can move if hit
                 if (rc.getHealth() < 400) {
                    tryMove(randomDirection());
                 }
-
                 MapLocation myLocation = rc.getLocation();
                 rc.broadcast(0,(int)myLocation.x);
                 rc.broadcast(1,(int)myLocation.y);
-
                 Clock.yield();
             } catch (Exception e) {
-                System.out.println("Archon Exception");
                 e.printStackTrace();
             }
         }
     }
 
     static void runGardener() throws GameActionException {
-        System.out.println("I'm a gardener!");
         while (true) {
             try {
-                // 1. Water nearby trees
+                // Key Change: Prioritize watering existing trees to ensure bullet income for expensive Tanks.
                 TreeInfo[] trees = rc.senseNearbyTrees(1.5f, rc.getTeam());
                 if (trees.length > 0) {
                     TreeInfo lowestHealthTree = null;
                     for (TreeInfo t : trees) {
-                        if (lowestHealthTree == null || t.health < lowestHealthTree.health) {
-                            lowestHealthTree = t;
+                        if (t.health < 50f) {
+                            if (lowestHealthTree == null || t.health < lowestHealthTree.health) {
+                                lowestHealthTree = t;
+                            }
                         }
                     }
                     if (lowestHealthTree != null && rc.canWater(lowestHealthTree.ID)) {
@@ -73,79 +66,61 @@ public strictfp class RobotPlayer {
                     }
                 }
 
-                // 2. Spend policy (plant/build/donate)
                 BulletSpending.spendPolicy();
 
-                // 3. Movement
                 int xPos = rc.readBroadcast(0);
                 int yPos = rc.readBroadcast(1);
                 MapLocation archonLoc = new MapLocation(xPos, yPos);
-                
-                // Move away from archon to spread across map
                 Direction awayFromArchon = archonLoc.directionTo(rc.getLocation());
                 if (awayFromArchon == null) awayFromArchon = randomDirection();
                 
-                if (rc.getLocation().distanceTo(archonLoc) < 15) {
+                if (rc.getLocation().distanceTo(archonLoc) < 10) {
                     tryMove(awayFromArchon);
                 } else {
-                    // Just keep moving to spread out
-                    tryMove(randomDirection());
+                    // Try to find a good spot to plant trees (less crowded)
+                    if (rc.senseNearbyTrees(2f).length > 2) {
+                        tryMove(randomDirection());
+                    }
                 }
 
                 Clock.yield();
             } catch (Exception e) {
-                System.out.println("Gardener Exception");
                 e.printStackTrace();
             }
         }
     }
 
-    static void runScout() throws GameActionException {
-        System.out.println("I'm a scout!");
+    static void runTank() throws GameActionException {
         Team enemy = rc.getTeam().opponent();
         while (true) {
             try {
-                // Prioritize shaking trees for bullets (Archetype requirement)
-                TreeInfo[] neutralTrees = rc.senseNearbyTrees(-1, Team.NEUTRAL);
-                for (TreeInfo t : neutralTrees) {
-                    if (t.containedBullets > 0 && rc.canShake(t.ID)) {
-                        rc.shake(t.ID);
-                        break;
-                    }
-                }
-
+                // Key Change: Implement logic to prioritize moving through dense neutral forests to clear paths.
+                // Engagement Style: Frontal assault; push through obstacles and use high health to soak damage.
+                
                 RobotInfo[] enemies = rc.senseNearbyRobots(-1, enemy);
-                RobotInfo target = null;
+                TreeInfo[] neutralTrees = rc.senseNearbyTrees(-1, Team.NEUTRAL);
                 
                 if (enemies.length > 0) {
-                    // Prioritize Gardeners (Archetype requirement)
-                    for (RobotInfo r : enemies) {
-                        if (r.type == RobotType.GARDENER) {
-                            target = r;
-                            break;
-                        }
-                    }
-                    if (target == null) target = enemies[0];
-
-                    // Combat behavior: Kite combat units, pursue gardeners
-                    Direction toTarget = rc.getLocation().directionTo(target.location);
-                    boolean isCombatUnit = (target.type == RobotType.SOLDIER || target.type == RobotType.LUMBERJACK || target.type == RobotType.TANK || target.type == RobotType.SCOUT);
+                    // Attack closest enemy
+                    Direction toEnemy = rc.getLocation().directionTo(enemies[0].location);
+                    tryMove(toEnemy);
                     
-                    if (isCombatUnit) {
-                        // Kite: move away while shooting
-                        tryMove(toTarget.opposite());
-                    } else {
-                        // Pursue: move closer to gardener/archon
-                        tryMove(toTarget);
+                    if (rc.canFirePentadShot()) {
+                        rc.firePentadShot(toEnemy);
+                    } else if (rc.canFireTriadShot()) {
+                        rc.fireTriadShot(toEnemy);
+                    } else if (rc.canFireSingleShot()) {
+                        rc.fireSingleShot(toEnemy);
                     }
-
-                    if (rc.canFireSingleShot()) {
-                        rc.fireSingleShot(rc.getLocation().directionTo(target.location));
-                    }
+                } else if (neutralTrees.length > 0) {
+                    // Move towards and through neutral trees to clear them
+                    Direction toTree = rc.getLocation().directionTo(neutralTrees[0].location);
+                    tryMove(toTree);
                 } else {
-                    // Explore: search for neutral trees or enemies
-                    if (neutralTrees.length > 0) {
-                        tryMove(rc.getLocation().directionTo(neutralTrees[0].location));
+                    // Search for enemies - head towards enemy archon locations
+                    MapLocation[] enemyArchons = rc.getInitialArchonLocations(enemy);
+                    if (enemyArchons.length > 0) {
+                        tryMove(rc.getLocation().directionTo(enemyArchons[0]));
                     } else {
                         tryMove(randomDirection());
                     }
@@ -153,36 +128,60 @@ public strictfp class RobotPlayer {
                 
                 Clock.yield();
             } catch (Exception e) {
-                System.out.println("Scout Exception");
+                e.printStackTrace();
+            }
+        }
+    }
+
+    static void runScout() throws GameActionException {
+        Team enemy = rc.getTeam().opponent();
+        while (true) {
+            try {
+                TreeInfo[] neutralTrees = rc.senseNearbyTrees(-1, Team.NEUTRAL);
+                for (TreeInfo t : neutralTrees) {
+                    if (t.containedBullets > 0 && rc.canShake(t.ID)) {
+                        rc.shake(t.ID);
+                        break;
+                    }
+                }
+                RobotInfo[] enemies = rc.senseNearbyRobots(-1, enemy);
+                if (enemies.length > 0) {
+                    tryMove(rc.getLocation().directionTo(enemies[0].location).opposite());
+                    if (rc.canFireSingleShot()) {
+                        rc.fireSingleShot(rc.getLocation().directionTo(enemies[0].location));
+                    }
+                } else {
+                    tryMove(randomDirection());
+                }
+                Clock.yield();
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }
     }
 
     static void runSoldier() throws GameActionException {
-        System.out.println("I'm a soldier!");
         Team enemy = rc.getTeam().opponent();
         while (true) {
             try {
                 RobotInfo[] enemies = rc.senseNearbyRobots(-1, enemy);
                 if (enemies.length > 0) {
+                    Direction toEnemy = rc.getLocation().directionTo(enemies[0].location);
+                    tryMove(toEnemy);
                     if (rc.canFireSingleShot()) {
-                        rc.fireSingleShot(rc.getLocation().directionTo(enemies[0].location));
+                        rc.fireSingleShot(toEnemy);
                     }
-                    tryMove(rc.getLocation().directionTo(enemies[0].location));
                 } else {
                     tryMove(randomDirection());
                 }
                 Clock.yield();
             } catch (Exception e) {
-                System.out.println("Soldier Exception");
                 e.printStackTrace();
             }
         }
     }
 
     static void runLumberjack() throws GameActionException {
-        System.out.println("I'm a lumberjack!");
         Team enemy = rc.getTeam().opponent();
         while (true) {
             try {
@@ -194,12 +193,20 @@ public strictfp class RobotPlayer {
                     if(enemies.length > 0) {
                         tryMove(rc.getLocation().directionTo(enemies[0].location));
                     } else {
-                        tryMove(randomDirection());
+                        TreeInfo[] trees = rc.senseNearbyTrees(-1, Team.NEUTRAL);
+                        if (trees.length > 0) {
+                            if (rc.canChop(trees[0].ID)) {
+                                rc.chop(trees[0].ID);
+                            } else {
+                                tryMove(rc.getLocation().directionTo(trees[0].location));
+                            }
+                        } else {
+                            tryMove(randomDirection());
+                        }
                     }
                 }
                 Clock.yield();
             } catch (Exception e) {
-                System.out.println("Lumberjack Exception");
                 e.printStackTrace();
             }
         }
