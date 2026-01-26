@@ -36,17 +36,16 @@ public strictfp class RobotPlayer {
         System.out.println("I'm an archon!");
         while (true) {
             try {
-                // Broadcast location for gardeners to move away from
-                MapLocation myLocation = rc.getLocation();
-                rc.broadcast(0,(int)myLocation.x);
-                rc.broadcast(1,(int)myLocation.y);
-
                 BulletSpending.spendPolicy();
 
                 // Archon stays relatively still but can move if hit
                 if (rc.getHealth() < 400) {
                    tryMove(randomDirection());
                 }
+
+                MapLocation myLocation = rc.getLocation();
+                rc.broadcast(0,(int)myLocation.x);
+                rc.broadcast(1,(int)myLocation.y);
 
                 Clock.yield();
             } catch (Exception e) {
@@ -74,8 +73,24 @@ public strictfp class RobotPlayer {
                     }
                 }
 
-                // 2. Spend policy (includes movement, planting, building, and donating)
+                // 2. Spend policy (plant/build/donate)
                 BulletSpending.spendPolicy();
+
+                // 3. Movement: Archetype: Gardener movement should favor moving away from the Archon.
+                int xPos = rc.readBroadcast(0);
+                int yPos = rc.readBroadcast(1);
+                MapLocation archonLoc = new MapLocation(xPos, yPos);
+                
+                // Move away from archon to spread across map
+                Direction awayFromArchon = archonLoc.directionTo(rc.getLocation());
+                if (awayFromArchon == null) awayFromArchon = randomDirection();
+                
+                if (rc.getLocation().distanceTo(archonLoc) < 15) {
+                    tryMove(awayFromArchon);
+                } else {
+                    // Just keep moving to spread out
+                    tryMove(randomDirection());
+                }
 
                 Clock.yield();
             } catch (Exception e) {
@@ -96,7 +111,13 @@ public strictfp class RobotPlayer {
                         rc.fireSingleShot(rc.getLocation().directionTo(enemies[0].location));
                     }
                 }
-                tryMove(randomDirection());
+                // Scouts should explore and move away from home
+                int xPos = rc.readBroadcast(0);
+                int yPos = rc.readBroadcast(1);
+                MapLocation archonLoc = new MapLocation(xPos, yPos);
+                Direction away = archonLoc.directionTo(rc.getLocation());
+                if (away == null) away = randomDirection();
+                tryMove(away);
                 Clock.yield();
             } catch (Exception e) {
                 System.out.println("Scout Exception");

@@ -12,56 +12,49 @@ public class BulletSpending {
     public static void spendPolicy() throws GameActionException {
         // Centralized spend order: hire gardener -> plant tree -> build units -> donate.
         if (rc.getType() == RobotType.ARCHON) {
-            // Archetype Change: Archon should hire Gardeners as fast as cooldown allows (probability 1.0).
-            Direction dir = RobotPlayer.randomDirection();
-            if (rc.canHireGardener(dir)) {
+            Direction dir = randomDirection();
+            if (shouldHireGardener(dir)) {
                 rc.hireGardener(dir);
             }
-            
-            // Archetype Change: Donate 100% of bullets above 100 to VP.
             float donateAmount = getDonateAmount();
             if (donateAmount > 0f) {
                 rc.donate(donateAmount);
             }
             return;
         }
-        
         if (rc.getType() == RobotType.GARDENER) {
-            // Archetype Change: Gardener movement should favor moving away from the Archon.
-            int xPos = rc.readBroadcast(0);
-            int yPos = rc.readBroadcast(1);
-            if (xPos != 0 || yPos != 0) {
-                MapLocation currentArchonLoc = new MapLocation(xPos, yPos);
-                Direction awayFromArchon = currentArchonLoc.directionTo(rc.getLocation());
-                if (awayFromArchon == null) awayFromArchon = RobotPlayer.randomDirection();
-                RobotPlayer.tryMove(awayFromArchon);
-            } else {
-                // If no archon loc broadcasted, move randomly to spread out
-                RobotPlayer.tryMove(RobotPlayer.randomDirection());
+            // Priority 1: Build Scouts if needed (per archetype unit_priority)
+            // The archetype lists GARDENER and SCOUT. Since Gardeners are hired by Archons, 
+            // Gardeners themselves should focus on trees and maybe a scout for defense/harassment.
+            if (rc.getTeamBullets() > 150) {
+                Direction scoutDir = randomDirection();
+                if (rc.canBuildRobot(RobotType.SCOUT, scoutDir) && Math.random() < 0.2) {
+                    rc.buildRobot(RobotType.SCOUT, scoutDir);
+                }
             }
 
-            // Priority 1: Plant trees (Map saturation)
-            // Increased probability for "saturation with trees"
-            Direction dir = RobotPlayer.randomDirection();
-            if (rc.canPlantTree(dir) && Math.random() < 0.9) {
+            // Priority 2: Plant trees (Map saturation)
+            Direction dir = randomDirection();
+            if (shouldPlantTree(dir)) {
                 rc.plantTree(dir);
             }
             
-            // Priority 2: Build Scouts (Unit priority: GARDENER, SCOUT)
-            // Only build scouts if we have enough bullets for a tree too
-            if (rc.getTeamBullets() > 180) { 
-                dir = RobotPlayer.randomDirection();
-                if (rc.canBuildRobot(RobotType.SCOUT, dir)) {
-                    rc.buildRobot(RobotType.SCOUT, dir);
-                }
-            }
-            
-            // Priority 3: Donate 100% of bullets above 100 to VP.
             float donateAmount = getDonateAmount();
             if (donateAmount > 0f) {
                 rc.donate(donateAmount);
             }
         }
+    }
+
+    private static boolean shouldHireGardener(Direction dir) {
+        if (!rc.canHireGardener(dir)) return false;
+        // Archetype: hire Gardeners as fast as cooldown allows (probability 1.0).
+        return true;
+    }
+
+    private static boolean shouldPlantTree(Direction dir) {
+        // Favor planting trees whenever possible for map saturation
+        return rc.canPlantTree(dir) && Math.random() < 0.8;
     }
 
     private static float getDonateAmount() throws GameActionException {
@@ -73,7 +66,7 @@ public class BulletSpending {
             return bullets;
         }
 
-        // Archetype Change: Donate 100% of bullets above 100 to VP.
+        // Archetype: Donate 100% of bullets above 100 to VP.
         float reserve = BULLET_RESERVE;
         float donateAmount = bullets - reserve;
         if (donateAmount >= cost) {
@@ -81,5 +74,9 @@ public class BulletSpending {
             return pointsToBuy * cost;
         }
         return 0f;
+    }
+
+    private static Direction randomDirection() {
+        return new Direction((float)Math.random() * 2 * (float)Math.PI);
     }
 }
