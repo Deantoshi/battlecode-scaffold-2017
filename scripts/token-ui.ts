@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 import path from "path"
 import os from "os"
+import { stat } from "fs/promises"
 
 type Tokens = {
   input: number
@@ -71,7 +72,7 @@ const parseTitle = (title: string) => {
 }
 
 const buildData = async (dir: string, prefix: string): Promise<Data> => {
-  const rootStat = await Bun.file(root).stat().catch(() => undefined)
+  const rootStat = await stat(root).catch(() => undefined)
   const missing = !rootStat || !rootStat.isDirectory()
 
   if (missing) {
