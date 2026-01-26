@@ -148,7 +148,7 @@ public interface GameConstants {
     // *********************************
 
     /** The price, in bullets, of 1 victory point at the start of the game */
-    float VP_BASE_COST = 15.0f;
+    float VP_BASE_COST = 30.0f;
 
     /** The price, in bullets, the victory point cost increases each turn */
     float VP_INCREASE_PER_ROUND = 12.5f / 3000f;
