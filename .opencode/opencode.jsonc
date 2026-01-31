@@ -11,5 +11,6 @@
     "write": false,
     "task": false
   },
-  "$schema": "https://opencode.ai/config.json"
+  "$schema": "https://opencode.ai/config.json",
+  "model": "opencode/kimi-k2.5-free"
 }
