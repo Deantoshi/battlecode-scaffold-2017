@@ -38,7 +38,7 @@ public strictfp class RobotPlayer {
 	}
 
     static void runArchon() throws GameActionException {
-        System.out.println("I'm an archon!");
+        System.out.println("I'm an archon! Hybrid Dominance mode!");
 
         // The code you want your robot to perform every round should be in this loop
         while (true) {
@@ -68,7 +68,7 @@ public strictfp class RobotPlayer {
     }
 
 	static void runGardener() throws GameActionException {
-        System.out.println("I'm a gardener!");
+        System.out.println("I'm a gardener! Hybrid Dominance mode!");
         int round = rc.getRoundNum();
 
         // The code you want your robot to perform every round should be in this loop
@@ -87,7 +87,7 @@ public strictfp class RobotPlayer {
                 // Centralized spend policy (plant/build/donate)
                 BulletSpending.spendPolicy();
 
-                // Water trees if possible (gardeners should maintain minimal economy)
+                // Water trees if possible (gardeners maintain economy)
                 waterTrees();
 
                 // Defensive movement: hide from enemies
@@ -122,7 +122,7 @@ public strictfp class RobotPlayer {
     }
 
     static void runScout() throws GameActionException {
-        System.out.println("I'm a scout! Commando Strike mode!");
+        System.out.println("I'm a scout! Hybrid Dominance mode!");
         Team enemy = rc.getTeam().opponent();
         int round = rc.getRoundNum();
 
@@ -148,8 +148,16 @@ public strictfp class RobotPlayer {
                         rc.fireSingleShot(toTarget);
                     }
                     
-                    // Scouts are fast - move toward production targets aggressively
-                    tryMove(toTarget);
+                    // Hybrid Dominance: Flexible scout behavior
+                    // Aggressive when targeting production, cautious otherwise
+                    if (target.type == RobotType.ARCHON || target.type == RobotType.GARDENER) {
+                        // Push toward production targets
+                        tryMove(toTarget);
+                    } else {
+                        // Circle at safe distance for reconnaissance
+                        Direction circlingDir = toTarget.rotateLeftDegrees(60);
+                        tryMove(circlingDir);
+                    }
                     
                     // Broadcast enemy production location for team
                     if (target.type == RobotType.ARCHON || target.type == RobotType.GARDENER) {
@@ -179,7 +187,7 @@ public strictfp class RobotPlayer {
     }
 
     static void runSoldier() throws GameActionException {
-        System.out.println("I'm a soldier! Commando Strike mode!");
+        System.out.println("I'm a soldier! Hybrid Dominance mode!");
         Team enemy = rc.getTeam().opponent();
         int round = rc.getRoundNum();
 
@@ -199,22 +207,26 @@ public strictfp class RobotPlayer {
 
                 if (target != null) {
                     Direction toTarget = myLocation.directionTo(target.location);
+                    float distToTarget = myLocation.distanceTo(target.location);
                     
                     // Fire at priority target
                     if (rc.canFireSingleShot()) {
                         rc.fireSingleShot(toTarget);
                     }
                     
-                    // Commando Strike: Aggressive movement toward production units
-                    // Move toward enemy production, ignore combat units when possible
+                    // Hybrid Dominance: Flexible tactics
+                    // Push when advantageous, defend when necessary
                     if (target.type == RobotType.ARCHON || target.type == RobotType.GARDENER) {
-                        // Aggressive push toward production
+                        // Aggressive push toward production units
                         tryMove(toTarget);
+                    } else if (distToTarget > 8f) {
+                        // Enemy combat unit at range - advance cautiously
+                        Direction cautiousAdvance = toTarget.rotateLeftDegrees(15);
+                        tryMove(cautiousAdvance);
                     } else {
-                        // For non-production units, be more cautious but still advance
-                        // Try to circle around to find production
-                        Direction flankingDir = toTarget.rotateLeftDegrees(45);
-                        tryMove(flankingDir);
+                        // Close combat - kite at optimal range
+                        Direction kiteDir = target.location.directionTo(myLocation);
+                        tryMove(kiteDir);
                     }
                 } else {
                     // No enemies visible - check broadcast for enemy production location
@@ -299,7 +311,7 @@ public strictfp class RobotPlayer {
     }
 
     static void runLumberjack() throws GameActionException {
-        System.out.println("I'm a lumberjack!");
+        System.out.println("I'm a lumberjack! Hybrid Dominance mode!");
         Team enemy = rc.getTeam().opponent();
         int round = rc.getRoundNum();
 

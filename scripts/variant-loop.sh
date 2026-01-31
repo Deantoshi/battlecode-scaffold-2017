@@ -288,6 +288,12 @@ print(data.get('goal_met', 'NO'))
         exit 0
     fi
 
+    # ─────────────────────────────────────────────────────────────────────────────
+    # Step 6: Copy current bot to copy_bot for next iteration's opponent
+    # ─────────────────────────────────────────────────────────────────────────────
+    printf '%s\n' "${BLUE}Copying $BOT to copy_bot...${NC}"
+    bash "$(cd "$(dirname "$0")" && pwd)/copy_bot.sh" "src/$BOT"
+
     printf '%s\n' "${BLUE}Iteration $iter complete. Continuing...${NC}"
     echo ""
 done

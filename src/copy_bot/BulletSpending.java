@@ -3,10 +3,10 @@ import battlecode.common.*;
 
 public class BulletSpending {
     static RobotController rc;
-    // Dynamic reserve based on game phase - LOWERED for aggressive unit production (Commando Strike)
-    static final float BULLET_RESERVE_EARLY = 80f;   // Lowered from 250f for aggressive production
-    static final float BULLET_RESERVE_LATE = 50f;    // After round 2000
-    static final float BULLET_RESERVE_MID = 100f;    // Round 1000-2000 (lowered for mid-game pushes)
+    // Hybrid Dominance: Balanced reserves for steady economy and army production
+    static final float BULLET_RESERVE_EARLY = 120f;   // Moderate reserve for early game flexibility
+    static final float BULLET_RESERVE_MID = 80f;      // Lower mid-game to enable sustained production
+    static final float BULLET_RESERVE_LATE = 50f;     // Minimal late-game to maximize VP potential
 
     public static void init(RobotController rc) {
         BulletSpending.rc = rc;
@@ -19,12 +19,12 @@ public class BulletSpending {
         // Centralized spend order based on game phase
         if (rc.getType() == RobotType.ARCHON) {
             Direction dir = randomDirection();
-            // Hire gardeners aggressively early for economy
+            // Hire gardeners at 0.025f for first 600 rounds (high early expansion)
             if (shouldHireGardener(dir, round)) {
                 rc.hireGardener(dir);
             }
-            // VP donations: Minimal - focus on elimination via units
-            if (round >= 2500) {
+            // VP donations: Start at round 1500 with moderate frequency
+            if (round >= 1500) {
                 float donateAmount = getDonateAmount(reserve, round);
                 if (donateAmount > 0f) {
                     rc.donate(donateAmount);
@@ -33,22 +33,23 @@ public class BulletSpending {
             return;
         }
         if (rc.getType() == RobotType.GARDENER) {
-            // Plant trees at lower priority - focus on units for Commando Strike
+            // Plant trees at 0.03f throughout the game (sustained economy)
             Direction dir = randomDirection();
             if (shouldPlantTree(dir, round)) {
                 rc.plantTree(dir);
             }
-            // Build SCOUTS and SOLDIERS equally (0.015f each as per archetype)
+            // Build scouts at 0.015f consistently (recon and harassment)
             dir = randomDirection();
             if (shouldBuildScout(dir, round)) {
                 rc.buildRobot(RobotType.SCOUT, dir);
             }
+            // Build soldiers at 0.02f consistently (main army)
             dir = randomDirection();
             if (shouldBuildSoldier(dir, round)) {
                 rc.buildRobot(RobotType.SOLDIER, dir);
             }
-            // Minimal VP donations from gardeners (focus on elimination)
-            if (round >= 2500) {
+            // VP donations: Moderate donations from gardeners starting round 1500
+            if (round >= 1500) {
                 float donateAmount = getDonateAmount(reserve, round);
                 if (donateAmount > 0f) {
                     rc.donate(donateAmount);
@@ -59,53 +60,50 @@ public class BulletSpending {
 
     private static float getReserveForRound(int round) {
         if (round < 1000) {
-            return BULLET_RESERVE_EARLY;  // 80f - aggressive early unit production
+            return BULLET_RESERVE_EARLY;  // 120f - moderate early reserve
         } else if (round < 2000) {
-            return BULLET_RESERVE_MID;    // 100f
+            return BULLET_RESERVE_MID;    // 80f - enable sustained production
         } else {
-            return BULLET_RESERVE_LATE;   // 50f
+            return BULLET_RESERVE_LATE;   // 50f - minimal late reserve
         }
     }
 
     private static boolean shouldHireGardener(Direction dir, int round) {
         if (!rc.canHireGardener(dir)) return false;
-        // Aggressive hiring early to build production capacity
-        float hireChance = (round < 500) ? 0.03f : 0.015f;
+        // Hire gardeners at 0.025f for first 600 rounds
+        float hireChance = (round < 600) ? 0.025f : 0.015f;
         return Math.random() < hireChance;
     }
 
     private static boolean shouldPlantTree(Direction dir, int round) {
         if (!rc.canPlantTree(dir)) return false;
-        // Lower tree planting priority - focus on units for strike force
-        if (round < 1000) {
-            return Math.random() < 0.02;
-        }
-        // Even lower after round 1000
-        return Math.random() < 0.01;
+        // Plant trees at 0.03f throughout the game (sustained economy focus)
+        return Math.random() < 0.03f;
     }
 
     private static boolean shouldBuildScout(Direction dir, int round) {
         if (!rc.canBuildRobot(RobotType.SCOUT, dir)) return false;
-        // Build scouts at 0.015f probability as per archetype
+        // Build scouts at 0.015f consistently
         return Math.random() < 0.015f;
     }
 
     private static boolean shouldBuildSoldier(Direction dir, int round) {
         if (!rc.canBuildRobot(RobotType.SOLDIER, dir)) return false;
-        // Build soldiers at 0.015f probability as per archetype
-        return Math.random() < 0.015f;
+        // Build soldiers at 0.02f consistently (higher than scouts for army strength)
+        return Math.random() < 0.02f;
     }
 
     private static float getDonateAmount(float reserve, int round) throws GameActionException {
         float bullets = rc.getTeamBullets();
         float cost = rc.getVictoryPointCost();
         
-        // After round 2500, convert excess bullets to VP (only if not focusing on elimination)
+        // Moderate donations - adapt to whatever victory condition presents itself first
         float effectiveReserve = (round >= 2500) ? BULLET_RESERVE_LATE : reserve;
         
         float donateAmount = bullets - effectiveReserve;
         if (donateAmount >= cost) {
             int pointsToBuy = (int)(donateAmount / cost);
+            // Moderate frequency - buy in chunks rather than every round
             return pointsToBuy * cost;
         }
         return 0f;
