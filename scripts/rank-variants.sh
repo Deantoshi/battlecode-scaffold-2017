@@ -5,8 +5,8 @@
 #
 # Scoring:
 #   Win in ≤1500 rounds: SCORE = 20000 - rounds (goal met - pure speed)
-#   Win in >1500 rounds: SCORE = 10000 - rounds + (enemy_kills * 10) + (victory_points * 2.5) + (bullets_generated / 100)
-#   Loss (or win >=2999): SCORE = 10000 - rounds + (enemy_kills * 10) + (victory_points * 2.5) + (bullets_generated / 100) - 5000
+#   Win in >1500 rounds: SCORE = 10000 - rounds + (enemy_kills * 50) + (victory_points * 2.5) + (bullets_generated / 100)
+#   Loss (or win >=2999): SCORE = 10000 - rounds + (enemy_kills * 50) + (victory_points * 2.5) + (bullets_generated / 100) - 5000
 #
 # Scores are aggregated across all opponents (main + champions).
 # Goal check is based on the primary opponent match only.
@@ -176,7 +176,7 @@ def calculate_score(won, rounds, enemy_kills=0, bullets_generated=0, victory_poi
         return 20000 - rounds
     else:
         # All other cases - reward kills, economy, and victory points
-        kill_bonus = enemy_kills * 10
+        kill_bonus = enemy_kills * 50
         econ_bonus = int(bullets_generated / 100)
         vp_bonus = int(victory_points * 2.5)
         base_score = 10000 - rounds + kill_bonus + econ_bonus + vp_bonus
@@ -300,9 +300,9 @@ if num_champions > 0:
 # Header
 print(f"{'Variant':<10} {'Total':<8} {'Matches':<8} ", end="")
 for label in opponent_labels:
-    print(f"{label:<12} ", end="")
+    print(f"{label:<30} ", end="")
 print()
-print("-" * (26 + 13 * len(opponent_labels)))
+print("-" * (26 + 31 * len(opponent_labels)))
 
 for r in results:
     print(f"{r['name']:<10} {r['total_score']:<8} {r['match_count']:<8} ", end="")
@@ -312,9 +312,11 @@ for r in results:
         m = match_by_label.get(label)
         if m:
             won_str = "W" if m['won'] else "L"
-            print(f"{won_str} {m['score']:<10} ", end="")
+            kills = m.get('enemy_kills', 0)
+            vp = m.get('victory_points', 0)
+            print(f"{won_str} {m['rounds']}r {kills}k {vp}vp {m['score']:<6} ", end="")
         else:
-            print(f"{'--':<12} ", end="")
+            print(f"{'--':<30} ", end="")
     print()
 
 print("")
@@ -328,8 +330,8 @@ else:
 print("")
 print("Scoring formula (per matchup):")
 print("  Win ≤1500 rounds:  20000 - rounds")
-print("  Win >1500 rounds:  10000 - rounds + (kills*10) + (vp*2.5) + (bullets/100)")
-print("  Loss/win >=2999:   10000 - rounds + (kills*10) + (vp*2.5) + (bullets/100) - 5000")
+print("  Win >1500 rounds:  10000 - rounds + (kills*50) + (vp*2.5) + (bullets/100)")
+print("  Loss/win >=2999:   10000 - rounds + (kills*50) + (vp*2.5) + (bullets/100) - 5000")
 print("  Aggregate = sum of all matchup scores")
 print("=" * 90)
 
