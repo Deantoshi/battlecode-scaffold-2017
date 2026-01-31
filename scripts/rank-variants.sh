@@ -1,25 +1,29 @@
 #!/bin/bash
 # rank-variants.sh - Analyzes match results, ranks variants, and promotes winner
 #
-# Usage: ./scripts/rank-variants.sh <bot> <opponent> <map>
+# Usage: ./scripts/rank-variants.sh <bot> <opponent> <map> [num_champions]
 #
 # Scoring:
 #   Win in ≤1500 rounds: SCORE = 20000 - rounds (goal met - pure speed)
 #   Win in >1500 rounds: SCORE = 10000 - rounds + (enemy_kills * 10) + (victory_points * 2.5) + (bullets_generated / 100)
 #   Loss (or win >=2999): SCORE = 10000 - rounds + (enemy_kills * 10) + (victory_points * 2.5) + (bullets_generated / 100) - 5000
 #
+# Scores are aggregated across all opponents (main + champions).
+# Goal check is based on the primary opponent match only.
+#
 # Output: src/<bot>/.state/variant-results.json
-# Action: Promotes winning variant to original if it scores higher
+# Action: Promotes winning variant to original if it scores higher, saves champion
 
 set -e
 
 BOT="${1:-}"
 OPPONENT="${2:-}"
 MAP="${3:-MagicWood}"
+NUM_CHAMPIONS="${4:-0}"
 NUM_VARIANTS=10
 
 if [[ -z "$BOT" || -z "$OPPONENT" ]]; then
-    echo "Usage: $0 <bot> <opponent> [map]"
+    echo "Usage: $0 <bot> <opponent> [map] [num_champions]"
     exit 1
 fi
 
@@ -33,7 +37,7 @@ echo "Analyzing match results..."
 echo ""
 
 # Python script to analyze matches using database files
-python3 << 'PYEOF' - "$BOT" "$OPPONENT" "$MAP" "$NUM_VARIANTS" "$MATCHES_DIR" "$RESULTS_FILE"
+python3 << 'PYEOF' - "$BOT" "$OPPONENT" "$MAP" "$NUM_VARIANTS" "$MATCHES_DIR" "$RESULTS_FILE" "$NUM_CHAMPIONS"
 import sys
 import json
 import os
@@ -45,6 +49,12 @@ map_name = sys.argv[3]
 num_variants = int(sys.argv[4])
 matches_dir = sys.argv[5]
 results_file = sys.argv[6]
+num_champions = int(sys.argv[7])
+
+# Build opponent labels list
+opponent_labels = ['opponent']
+for c in range(num_champions):
+    opponent_labels.append(f'champ{c}')
 
 
 def analyze_match(match_name):
@@ -176,33 +186,32 @@ def calculate_score(won, rounds, enemy_kills=0, bullets_generated=0, victory_poi
         return base_score
 
 
-# Collect results
+# Collect results - aggregate scores across all opponents
+competitors = ['original'] + [f'v{v}' for v in range(1, num_variants + 1)]
 results = []
 
-# Original
-match_result = analyze_match(f"{bot}_original")
-score = calculate_score(
-    match_result['won'],
-    match_result['rounds'],
-    match_result['enemy_kills'],
-    match_result['bullets_generated'],
-    match_result['victory_points']
-)
-results.append({
-    'name': 'original',
-    'won': match_result['won'],
-    'rounds': match_result['rounds'],
-    'enemy_kills': match_result['enemy_kills'],
-    'bullets_generated': match_result['bullets_generated'],
-    'victory_points': match_result['victory_points'],
-    'score': score,
-    'source': match_result['source']
-})
+for comp in competitors:
+    # Build match name prefix
+    if comp == 'original':
+        match_prefix = f"{bot}_original"
+    else:
+        match_prefix = f"{bot}_{comp}"
 
-# Variants
-for v in range(1, num_variants + 1):
-    match_result = analyze_match(f"{bot}_v{v}")
-    if match_result['parsed'] or os.path.exists(os.path.join(matches_dir, f"{bot}_v{v}.db")):
+    total_score = 0
+    matches = []
+    primary_won = False
+    primary_rounds = 3000
+    has_any_match = False
+
+    for label in opponent_labels:
+        match_name = f"{match_prefix}_vs_{label}"
+        match_result = analyze_match(match_name)
+
+        if not match_result['parsed'] and not os.path.exists(os.path.join(matches_dir, f"{match_name}.db")):
+            # Skip variants that don't exist
+            if comp != 'original':
+                continue
+
         score = calculate_score(
             match_result['won'],
             match_result['rounds'],
@@ -210,8 +219,11 @@ for v in range(1, num_variants + 1):
             match_result['bullets_generated'],
             match_result['victory_points']
         )
-        results.append({
-            'name': f'v{v}',
+        total_score += score
+        has_any_match = True
+
+        match_entry = {
+            'opponent_label': label,
             'won': match_result['won'],
             'rounds': match_result['rounds'],
             'enemy_kills': match_result['enemy_kills'],
@@ -219,10 +231,26 @@ for v in range(1, num_variants + 1):
             'victory_points': match_result['victory_points'],
             'score': score,
             'source': match_result['source']
+        }
+        matches.append(match_entry)
+
+        # Track primary opponent result for goal check
+        if label == 'opponent':
+            primary_won = match_result['won']
+            primary_rounds = match_result['rounds']
+
+    if has_any_match:
+        results.append({
+            'name': comp,
+            'total_score': total_score,
+            'primary_won': primary_won,
+            'primary_rounds': primary_rounds,
+            'match_count': len(matches),
+            'matches': matches
         })
 
-# Sort by score descending
-results.sort(key=lambda x: x['score'], reverse=True)
+# Sort by total_score descending
+results.sort(key=lambda x: x['total_score'], reverse=True)
 
 # Determine winner and goal status
 if not results:
@@ -230,15 +258,16 @@ if not results:
     sys.exit(1)
 
 winner = results[0]['name']
-winner_score = results[0]['score']
-winner_won = results[0]['won']
-winner_rounds = results[0]['rounds']
+winner_score = results[0]['total_score']
+winner_primary_won = results[0]['primary_won']
+winner_primary_rounds = results[0]['primary_rounds']
 
-goal_met = 'YES' if (winner_won and winner_rounds <= 1500) else 'NO'
+# Goal check based on primary opponent only
+goal_met = 'YES' if (winner_primary_won and winner_primary_rounds <= 1500) else 'NO'
 
 # Check if winner beats original
 original_result = next((r for r in results if r['name'] == 'original'), None)
-original_score = original_result['score'] if original_result else -9999
+original_score = original_result['total_score'] if original_result else -9999
 
 should_promote = (winner != 'original' and winner_score > original_score)
 
@@ -246,11 +275,12 @@ should_promote = (winner != 'original' and winner_score > original_score)
 output = {
     'winner': winner,
     'winner_score': winner_score,
-    'winner_won': winner_won,
-    'winner_rounds': winner_rounds,
+    'winner_won': winner_primary_won,
+    'winner_rounds': winner_primary_rounds,
     'goal_met': goal_met,
     'should_promote': should_promote,
     'original_score': original_score,
+    'num_opponents': len(opponent_labels),
     'results': results
 }
 
@@ -258,33 +288,50 @@ with open(results_file, 'w') as f:
     json.dump(output, f, indent=2)
 
 # Print table
-print("═" * 80)
+print("=" * 90)
 print("RESULTS TABLE")
-print("═" * 80)
+print("=" * 90)
 print("")
-print(f"{'Variant':<10} {'Won':<5} {'Rounds':<7} {'Kills':<6} {'VP':<5} {'Bullets':<9} {'Score':<8}")
-print("-" * 60)
+
+if num_champions > 0:
+    print(f"Opponents: {opponent} + {num_champions} champion(s) ({len(opponent_labels)} total)")
+    print("")
+
+# Header
+print(f"{'Variant':<10} {'Total':<8} {'Matches':<8} ", end="")
+for label in opponent_labels:
+    print(f"{label:<12} ", end="")
+print()
+print("-" * (26 + 13 * len(opponent_labels)))
+
 for r in results:
-    won_str = "YES" if r['won'] else "NO"
-    kills = r.get('enemy_kills', 0)
-    vp = r.get('victory_points', 0)
-    bullets = r.get('bullets_generated', 0)
-    print(f"{r['name']:<10} {won_str:<5} {r['rounds']:<7} {kills:<6} {vp:<5} {bullets:<9} {r['score']:<8}")
+    print(f"{r['name']:<10} {r['total_score']:<8} {r['match_count']:<8} ", end="")
+    # Per-opponent breakdown
+    match_by_label = {m['opponent_label']: m for m in r['matches']}
+    for label in opponent_labels:
+        m = match_by_label.get(label)
+        if m:
+            won_str = "W" if m['won'] else "L"
+            print(f"{won_str} {m['score']:<10} ", end="")
+        else:
+            print(f"{'--':<12} ", end="")
+    print()
 
 print("")
-print("═" * 80)
-print(f"WINNER: {winner} (Score: {winner_score})")
-print(f"GOAL MET: {goal_met}")
+print("=" * 90)
+print(f"WINNER: {winner} (Aggregate Score: {winner_score})")
+print(f"GOAL MET: {goal_met} (based on primary opponent match)")
 if should_promote:
     print(f"ACTION: PROMOTE {winner} -> original (score {winner_score} > {original_score})")
 else:
     print(f"ACTION: Keep original (best or tied)")
 print("")
-print("Scoring formula:")
+print("Scoring formula (per matchup):")
 print("  Win ≤1500 rounds:  20000 - rounds")
 print("  Win >1500 rounds:  10000 - rounds + (kills*10) + (vp*2.5) + (bullets/100)")
 print("  Loss/win >=2999:   10000 - rounds + (kills*10) + (vp*2.5) + (bullets/100) - 5000")
-print("═" * 80)
+print("  Aggregate = sum of all matchup scores")
+print("=" * 90)
 
 PYEOF
 
@@ -340,9 +387,28 @@ if [[ "$SHOULD_PROMOTE" == "YES" && "$WINNER" != "original" ]]; then
 
     echo "✓ Promoted $WINNER to $BOT"
 
+    # Save champion: copy promoted original to champion folder
+    CHAMPION_DIR="src/${BOT}_champion_${NUM_CHAMPIONS}"
+    echo "Saving champion as ${BOT}_champion_${NUM_CHAMPIONS}..."
+    mkdir -p "$CHAMPION_DIR"
+    for java_file in "src/$BOT"/*.java; do
+        if [[ -f "$java_file" ]]; then
+            filename=$(basename "$java_file")
+            # Update package declaration to champion package name
+            sed "s/^package ${BOT};/package ${BOT}_champion_${NUM_CHAMPIONS};/" "$java_file" > "$CHAMPION_DIR/$filename"
+        fi
+    done
+    # Fix internal references to the package
+    for java_file in "$CHAMPION_DIR"/*.java; do
+        if [[ -f "$java_file" ]]; then
+            sed -i "s/import ${BOT}\./import ${BOT}_champion_${NUM_CHAMPIONS}./g" "$java_file"
+        fi
+    done
+    echo "✓ Champion saved to $CHAMPION_DIR"
+
     # Record promotion in history
     HISTORY_FILE="$STATE_DIR/promotion-history.txt"
-    echo "$(date '+%Y-%m-%d %H:%M:%S') - Promoted $WINNER to original" >> "$HISTORY_FILE"
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - Promoted $WINNER to original, saved as ${BOT}_champion_${NUM_CHAMPIONS}" >> "$HISTORY_FILE"
 else
     echo ""
     echo "No promotion needed (original is best or tied)"

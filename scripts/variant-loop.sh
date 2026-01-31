@@ -62,6 +62,12 @@ fi
 STATE_DIR="src/$BOT/.state"
 mkdir -p "$STATE_DIR"
 
+# Count existing champions
+NUM_CHAMPIONS=0
+while [[ -d "src/${BOT}_champion_${NUM_CHAMPIONS}" ]]; do
+    NUM_CHAMPIONS=$((NUM_CHAMPIONS + 1))
+done
+
 # Print header
 printf '%s\n' "${BOLD}${CYAN}"
 echo "═══════════════════════════════════════════════════════════════════════════════"
@@ -73,6 +79,7 @@ printf '%s\n' "${BLUE}Opponent:${NC}   $OPPONENT"
 printf '%s\n' "${BLUE}Map:${NC}        $MAP"
 printf '%s\n' "${BLUE}Max Iters:${NC}  $MAX_ITERS"
 printf '%s\n' "${BLUE}Variants:${NC}   $NUM_VARIANTS"
+printf '%s\n' "${BLUE}Champions:${NC}  $NUM_CHAMPIONS"
 printf '%s\n' "${BLUE}AI Engine:${NC}  $AI_ENGINE"
 [[ -n "$MODEL" ]] && printf '%s\n' "${BLUE}Model:${NC}      $MODEL"
 [[ -n "$VARIANT" ]] && printf '%s\n' "${BLUE}Variant:${NC}    $VARIANT"
@@ -154,6 +161,9 @@ for iter in $(seq 1 "$MAX_ITERS"); do
     printf '%s\n' "${BOLD}${CYAN}"
     echo "═══════════════════════════════════════════════════════════════════════════════"
     echo "                            ITERATION $iter / $MAX_ITERS"
+    if [[ $NUM_CHAMPIONS -gt 0 ]]; then
+    echo "                            Champions: $NUM_CHAMPIONS"
+    fi
     echo "═══════════════════════════════════════════════════════════════════════════════"
     printf '%s\n' "${NC}"
 
@@ -209,14 +219,17 @@ else:
     # Step 3: Run all variants against opponent
     # ─────────────────────────────────────────────────────────────────────────────
     printf '%s\n' "${BOLD}${GREEN}[STEP 3] Running all variants against $OPPONENT${NC}"
-    ./scripts/run-all-variants.sh "$BOT" "$OPPONENT" "$MAP"
+    if [[ $NUM_CHAMPIONS -gt 0 ]]; then
+        printf '%s\n' "${BLUE}  (also playing against $NUM_CHAMPIONS champion(s))${NC}"
+    fi
+    ./scripts/run-all-variants.sh "$BOT" "$OPPONENT" "$MAP" "$NUM_CHAMPIONS"
     echo ""
 
     # ─────────────────────────────────────────────────────────────────────────────
     # Step 4: Rank results, promote winner, cleanup
     # ─────────────────────────────────────────────────────────────────────────────
     printf '%s\n' "${BOLD}${GREEN}[STEP 4] Ranking results and promoting winner${NC}"
-    ./scripts/rank-variants.sh "$BOT" "$OPPONENT" "$MAP"
+    ./scripts/rank-variants.sh "$BOT" "$OPPONENT" "$MAP" "$NUM_CHAMPIONS"
 
     # Read results
     RESULTS_FILE="$STATE_DIR/variant-results.json"
@@ -247,8 +260,17 @@ with open('$RESULTS_FILE', 'r') as f:
 print(data.get('goal_met', 'NO'))
 ")
 
+    # Recount champions (a new one may have been saved)
+    NUM_CHAMPIONS=0
+    while [[ -d "src/${BOT}_champion_${NUM_CHAMPIONS}" ]]; do
+        NUM_CHAMPIONS=$((NUM_CHAMPIONS + 1))
+    done
+
     echo ""
     printf '%s\n' "${CYAN}Winner: $WINNER (Score: $WINNER_SCORE)${NC}"
+    if [[ $NUM_CHAMPIONS -gt 0 ]]; then
+        printf '%s\n' "${CYAN}Champions: $NUM_CHAMPIONS${NC}"
+    fi
 
     # ─────────────────────────────────────────────────────────────────────────────
     # Step 5: Check if goal achieved

@@ -1,7 +1,7 @@
 #!/bin/bash
-# run-all-variants.sh - Runs all variants + original against opponent
+# run-all-variants.sh - Runs all variants + original against opponent (+ champions)
 #
-# Usage: ./scripts/run-all-variants.sh <bot> <opponent> <map>
+# Usage: ./scripts/run-all-variants.sh <bot> <opponent> <map> [num_champions]
 #
 # Creates match files and databases for analysis
 
@@ -10,10 +10,11 @@ set -e
 BOT="${1:-}"
 OPPONENT="${2:-}"
 MAP="${3:-MagicWood}"
+NUM_CHAMPIONS="${4:-0}"
 NUM_VARIANTS=10
 
 if [[ -z "$BOT" || -z "$OPPONENT" ]]; then
-    echo "Usage: $0 <bot> <opponent> [map]"
+    echo "Usage: $0 <bot> <opponent> [map] [num_champions]"
     exit 1
 fi
 
@@ -26,7 +27,19 @@ rm -f "$MATCHES_DIR"/${BOT}*.bc17 2>/dev/null || true
 rm -f "$MATCHES_DIR"/${BOT}*.db 2>/dev/null || true
 rm -f "$MATCHES_DIR"/${BOT}*.log 2>/dev/null || true
 
-echo "Running matches for $BOT and $NUM_VARIANTS variants against $OPPONENT on $MAP..."
+# Build opponent list: main opponent + all champions
+ALL_OPPONENTS=("$OPPONENT")
+OPPONENT_LABELS=("opponent")
+
+for c in $(seq 0 $((NUM_CHAMPIONS - 1))); do
+    ALL_OPPONENTS+=("${BOT}_champion_${c}")
+    OPPONENT_LABELS+=("champ${c}")
+done
+
+echo "Running matches for $BOT and $NUM_VARIANTS variants against ${#ALL_OPPONENTS[@]} opponent(s) on $MAP..."
+if [[ $NUM_CHAMPIONS -gt 0 ]]; then
+    echo "  Opponents: $OPPONENT + $NUM_CHAMPIONS champion(s)"
+fi
 echo ""
 
 # Function to run a single match and extract DB
@@ -95,25 +108,38 @@ wait_for_slot() {
 # Function to start a match with parallelism control
 start_match() {
     local team_a="$1"
-    local match_name="$2"
-    local display_name="$3"
+    local team_b="$2"
+    local match_name="$3"
+    local display_name="$4"
 
     wait_for_slot
-    echo "Starting: $display_name ($team_a vs $OPPONENT)"
-    run_match "$team_a" "$OPPONENT" "$MAP" "$match_name" &
+    echo "Starting: $display_name ($team_a vs $team_b)"
+    run_match "$team_a" "$team_b" "$MAP" "$match_name" &
     PIDS+=($!)
     MATCH_NAMES+=("$display_name")
     ALL_NAMES+=("$display_name")
 }
 
-# Run original bot
-start_match "$BOT" "${BOT}_original" "original"
+# Run all competitors against all opponents
+# Competitors: original + v1..v10
+# Opponents: main opponent + champion_0..champion_N
 
-# Run all variants
+# Original vs all opponents
+for opp_idx in "${!ALL_OPPONENTS[@]}"; do
+    opp="${ALL_OPPONENTS[$opp_idx]}"
+    label="${OPPONENT_LABELS[$opp_idx]}"
+    start_match "$BOT" "$opp" "${BOT}_original_vs_${label}" "original vs ${label}"
+done
+
+# Variants vs all opponents
 for v in $(seq 1 $NUM_VARIANTS); do
     VARIANT="${BOT}_v${v}"
     if [[ -d "src/$VARIANT" ]]; then
-        start_match "$VARIANT" "${BOT}_v${v}" "v$v"
+        for opp_idx in "${!ALL_OPPONENTS[@]}"; do
+            opp="${ALL_OPPONENTS[$opp_idx]}"
+            label="${OPPONENT_LABELS[$opp_idx]}"
+            start_match "$VARIANT" "$opp" "${BOT}_v${v}_vs_${label}" "v${v} vs ${label}"
+        done
     else
         echo "Skipping: v$v (folder not found)"
     fi
@@ -144,7 +170,7 @@ fi
 # List generated files
 echo ""
 echo "Match files:"
-ls -la "$MATCHES_DIR"/${BOT}*.bc17 2>/dev/null | head -15 || echo "  (no .bc17 files found)"
+ls -la "$MATCHES_DIR"/${BOT}*.bc17 2>/dev/null | head -20 || echo "  (no .bc17 files found)"
 echo ""
 echo "Database files:"
-ls -la "$MATCHES_DIR"/${BOT}*.db 2>/dev/null | head -15 || echo "  (no .db files found)"
+ls -la "$MATCHES_DIR"/${BOT}*.db 2>/dev/null | head -20 || echo "  (no .db files found)"
