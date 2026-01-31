@@ -1,12 +1,12 @@
-package copy_bot;
+package kimi_k2_5_champion_0;
 import battlecode.common.*;
 
 public class BulletSpending {
     static RobotController rc;
-    // Dynamic reserve based on game phase - LOWERED for aggressive unit production (Commando Strike)
-    static final float BULLET_RESERVE_EARLY = 80f;   // Lowered from 250f for aggressive production
+    // Dynamic reserve based on game phase - EXTREME early defense
+    static final float BULLET_RESERVE_EARLY = 250f;  // Until round 1000
     static final float BULLET_RESERVE_LATE = 50f;    // After round 2000
-    static final float BULLET_RESERVE_MID = 100f;    // Round 1000-2000 (lowered for mid-game pushes)
+    static final float BULLET_RESERVE_MID = 150f;    // Round 1000-2000
 
     public static void init(RobotController rc) {
         BulletSpending.rc = rc;
@@ -19,12 +19,12 @@ public class BulletSpending {
         // Centralized spend order based on game phase
         if (rc.getType() == RobotType.ARCHON) {
             Direction dir = randomDirection();
-            // Hire gardeners aggressively early for economy
+            // Hire gardeners more aggressively early to build economy
             if (shouldHireGardener(dir, round)) {
                 rc.hireGardener(dir);
             }
-            // VP donations: Minimal - focus on elimination via units
-            if (round >= 2500) {
+            // VP donations: ZERO until round 1500, then start donating
+            if (round >= 1500) {
                 float donateAmount = getDonateAmount(reserve, round);
                 if (donateAmount > 0f) {
                     rc.donate(donateAmount);
@@ -33,22 +33,18 @@ public class BulletSpending {
             return;
         }
         if (rc.getType() == RobotType.GARDENER) {
-            // Plant trees at lower priority - focus on units for Commando Strike
+            // Plant trees at 0.05 probability for first 1000 rounds
             Direction dir = randomDirection();
             if (shouldPlantTree(dir, round)) {
                 rc.plantTree(dir);
             }
-            // Build SCOUTS and SOLDIERS equally (0.015f each as per archetype)
-            dir = randomDirection();
-            if (shouldBuildScout(dir, round)) {
-                rc.buildRobot(RobotType.SCOUT, dir);
-            }
+            // Build soldiers for defense
             dir = randomDirection();
             if (shouldBuildSoldier(dir, round)) {
                 rc.buildRobot(RobotType.SOLDIER, dir);
             }
-            // Minimal VP donations from gardeners (focus on elimination)
-            if (round >= 2500) {
+            // VP donations from gardeners too (after round 1500)
+            if (round >= 1500) {
                 float donateAmount = getDonateAmount(reserve, round);
                 if (donateAmount > 0f) {
                     rc.donate(donateAmount);
@@ -59,49 +55,44 @@ public class BulletSpending {
 
     private static float getReserveForRound(int round) {
         if (round < 1000) {
-            return BULLET_RESERVE_EARLY;  // 80f - aggressive early unit production
+            return BULLET_RESERVE_EARLY;  // 250f - extreme early defense
         } else if (round < 2000) {
-            return BULLET_RESERVE_MID;    // 100f
+            return BULLET_RESERVE_MID;    // 150f
         } else {
-            return BULLET_RESERVE_LATE;   // 50f
+            return BULLET_RESERVE_LATE;   // 50f - convert all excess to VP
         }
     }
 
     private static boolean shouldHireGardener(Direction dir, int round) {
         if (!rc.canHireGardener(dir)) return false;
-        // Aggressive hiring early to build production capacity
-        float hireChance = (round < 500) ? 0.03f : 0.015f;
+        // More aggressive hiring early to build economy
+        float hireChance = (round < 1000) ? 0.02f : 0.01f;
         return Math.random() < hireChance;
     }
 
     private static boolean shouldPlantTree(Direction dir, int round) {
         if (!rc.canPlantTree(dir)) return false;
-        // Lower tree planting priority - focus on units for strike force
+        // 0.05 probability for first 1000 rounds (as required by archetype)
         if (round < 1000) {
-            return Math.random() < 0.02;
+            return Math.random() < 0.05;
         }
-        // Even lower after round 1000
-        return Math.random() < 0.01;
-    }
-
-    private static boolean shouldBuildScout(Direction dir, int round) {
-        if (!rc.canBuildRobot(RobotType.SCOUT, dir)) return false;
-        // Build scouts at 0.015f probability as per archetype
-        return Math.random() < 0.015f;
+        // Normal planting after round 1000
+        return Math.random() < 0.02;
     }
 
     private static boolean shouldBuildSoldier(Direction dir, int round) {
         if (!rc.canBuildRobot(RobotType.SOLDIER, dir)) return false;
-        // Build soldiers at 0.015f probability as per archetype
-        return Math.random() < 0.015f;
+        // Build soldiers more aggressively if we have economy to support them
+        float buildChance = (round < 1000) ? 0.005f : 0.01f;
+        return Math.random() < buildChance;
     }
 
     private static float getDonateAmount(float reserve, int round) throws GameActionException {
         float bullets = rc.getTeamBullets();
         float cost = rc.getVictoryPointCost();
         
-        // After round 2500, convert excess bullets to VP (only if not focusing on elimination)
-        float effectiveReserve = (round >= 2500) ? BULLET_RESERVE_LATE : reserve;
+        // After round 2000, convert ALL excess bullets to VP (minimal reserve)
+        float effectiveReserve = (round >= 2000) ? BULLET_RESERVE_LATE : reserve;
         
         float donateAmount = bullets - effectiveReserve;
         if (donateAmount >= cost) {

@@ -1,4 +1,4 @@
-package copy_bot;
+package kimi_k2_5_champion_0;
 import battlecode.common.*;
 
 public strictfp class RobotPlayer {
@@ -30,9 +30,6 @@ public strictfp class RobotPlayer {
                 break;
             case LUMBERJACK:
                 runLumberjack();
-                break;
-            case SCOUT:
-                runScout();
                 break;
         }
 	}
@@ -76,7 +73,7 @@ public strictfp class RobotPlayer {
 
             // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
             try {
-                // Update round for checks
+                // Update round for defensive checks
                 round = rc.getRoundNum();
 
                 // Listen for home archon's location
@@ -87,12 +84,13 @@ public strictfp class RobotPlayer {
                 // Centralized spend policy (plant/build/donate)
                 BulletSpending.spendPolicy();
 
-                // Water trees if possible (gardeners should maintain minimal economy)
+                // Water trees if possible (gardeners should maintain economy)
                 waterTrees();
 
-                // Defensive movement: hide from enemies
+                // Defensive movement: hide and avoid enemies early game
                 RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
-                if (nearbyEnemies.length > 0) {
+                if (nearbyEnemies.length > 0 && round < 1500) {
+                    // Early game: retreat from enemies - hide!
                     Direction awayFromEnemy = nearbyEnemies[0].location.directionTo(rc.getLocation());
                     tryMove(awayFromEnemy);
                 } else {
@@ -121,65 +119,8 @@ public strictfp class RobotPlayer {
         }
     }
 
-    static void runScout() throws GameActionException {
-        System.out.println("I'm a scout! Commando Strike mode!");
-        Team enemy = rc.getTeam().opponent();
-        int round = rc.getRoundNum();
-
-        // The code you want your robot to perform every round should be in this loop
-        while (true) {
-
-            // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
-            try {
-                MapLocation myLocation = rc.getLocation();
-                round = rc.getRoundNum();
-
-                // Scouts have superior vision - find enemy production units
-                RobotInfo[] robots = rc.senseNearbyRobots(-1, enemy);
-
-                // Priority targeting: ARCHON > GARDENER > other
-                RobotInfo target = findPriorityTarget(robots);
-
-                if (target != null) {
-                    Direction toTarget = myLocation.directionTo(target.location);
-                    
-                    // Fire at target if in range
-                    if (rc.canFireSingleShot()) {
-                        rc.fireSingleShot(toTarget);
-                    }
-                    
-                    // Scouts are fast - move toward production targets aggressively
-                    tryMove(toTarget);
-                    
-                    // Broadcast enemy production location for team
-                    if (target.type == RobotType.ARCHON || target.type == RobotType.GARDENER) {
-                        rc.broadcast(2, (int)target.location.x);
-                        rc.broadcast(3, (int)target.location.y);
-                        rc.broadcast(4, target.type.ordinal()); // Type indicator
-                    }
-                } else {
-                    // No priority targets - explore toward enemy base or random
-                    MapLocation enemyLoc = guessEnemyLocation();
-                    if (enemyLoc != null) {
-                        Direction toEnemy = myLocation.directionTo(enemyLoc);
-                        tryMove(toEnemy);
-                    } else {
-                        tryMove(randomDirection());
-                    }
-                }
-
-                // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
-                Clock.yield();
-
-            } catch (Exception e) {
-                System.out.println("Scout Exception");
-                e.printStackTrace();
-            }
-        }
-    }
-
     static void runSoldier() throws GameActionException {
-        System.out.println("I'm a soldier! Commando Strike mode!");
+        System.out.println("I'm an soldier!");
         Team enemy = rc.getTeam().opponent();
         int round = rc.getRoundNum();
 
@@ -194,45 +135,29 @@ public strictfp class RobotPlayer {
                 // See if there are any nearby enemy robots
                 RobotInfo[] robots = rc.senseNearbyRobots(-1, enemy);
 
-                // Priority targeting: ARCHON > GARDENER > other
-                RobotInfo target = findPriorityTarget(robots);
-
-                if (target != null) {
-                    Direction toTarget = myLocation.directionTo(target.location);
+                // If there are some...
+                if (robots.length > 0) {
+                    Direction toEnemy = myLocation.directionTo(robots[0].location);
                     
-                    // Fire at priority target
-                    if (rc.canFireSingleShot()) {
-                        rc.fireSingleShot(toTarget);
-                    }
-                    
-                    // Commando Strike: Aggressive movement toward production units
-                    // Move toward enemy production, ignore combat units when possible
-                    if (target.type == RobotType.ARCHON || target.type == RobotType.GARDENER) {
-                        // Aggressive push toward production
-                        tryMove(toTarget);
+                    // EXTREME DEFENSIVE BEHAVIOR EARLY GAME (as per archetype)
+                    if (round < 1500) {
+                        // Early game: RETREAT rather than engage - pure turtle
+                        Direction awayFromEnemy = robots[0].location.directionTo(myLocation);
+                        // Only fire if we can while retreating
+                        if (rc.canFireSingleShot()) {
+                            rc.fireSingleShot(toEnemy);
+                        }
+                        tryMove(awayFromEnemy);
                     } else {
-                        // For non-production units, be more cautious but still advance
-                        // Try to circle around to find production
-                        Direction flankingDir = toTarget.rotateLeftDegrees(45);
-                        tryMove(flankingDir);
+                        // Late game: Normal aggressive behavior
+                        if (rc.canFireSingleShot()) {
+                            rc.fireSingleShot(toEnemy);
+                        }
+                        tryMove(toEnemy);
                     }
                 } else {
-                    // No enemies visible - check broadcast for enemy production location
-                    int targetX = rc.readBroadcast(2);
-                    int targetY = rc.readBroadcast(3);
-                    if (targetX != 0 || targetY != 0) {
-                        MapLocation targetLoc = new MapLocation(targetX, targetY);
-                        Direction toTarget = myLocation.directionTo(targetLoc);
-                        tryMove(toTarget);
-                    } else {
-                        // No intel - move randomly or toward enemy start
-                        MapLocation enemyLoc = guessEnemyLocation();
-                        if (enemyLoc != null) {
-                            tryMove(myLocation.directionTo(enemyLoc));
-                        } else {
-                            tryMove(randomDirection());
-                        }
-                    }
+                    // No enemies - move randomly
+                    tryMove(randomDirection());
                 }
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
@@ -243,59 +168,6 @@ public strictfp class RobotPlayer {
                 e.printStackTrace();
             }
         }
-    }
-
-    // Helper method to find priority target: ARCHON > GARDENER > other
-    static RobotInfo findPriorityTarget(RobotInfo[] robots) {
-        RobotInfo archonTarget = null;
-        RobotInfo gardenerTarget = null;
-        RobotInfo anyTarget = null;
-        double archonDist = Double.MAX_VALUE;
-        double gardenerDist = Double.MAX_VALUE;
-        double anyDist = Double.MAX_VALUE;
-        
-        for (RobotInfo robot : robots) {
-            double dist = rc.getLocation().distanceSquaredTo(robot.location);
-            
-            if (robot.type == RobotType.ARCHON) {
-                if (dist < archonDist) {
-                    archonTarget = robot;
-                    archonDist = dist;
-                }
-            } else if (robot.type == RobotType.GARDENER) {
-                if (dist < gardenerDist) {
-                    gardenerTarget = robot;
-                    gardenerDist = dist;
-                }
-            } else {
-                if (dist < anyDist) {
-                    anyTarget = robot;
-                    anyDist = dist;
-                }
-            }
-        }
-        
-        // Return in priority order: ARCHON > GARDENER > any
-        if (archonTarget != null) return archonTarget;
-        if (gardenerTarget != null) return gardenerTarget;
-        return anyTarget;
-    }
-
-    // Helper to guess enemy location based on map symmetry
-    static MapLocation guessEnemyLocation() {
-        MapLocation[] myArchons = rc.getInitialArchonLocations(rc.getTeam());
-        MapLocation[] enemyArchons = rc.getInitialArchonLocations(rc.getTeam().opponent());
-        
-        if (enemyArchons.length > 0 && myArchons.length > 0) {
-            // Return average enemy archon location
-            float x = 0, y = 0;
-            for (MapLocation loc : enemyArchons) {
-                x += loc.x;
-                y += loc.y;
-            }
-            return new MapLocation(x / enemyArchons.length, y / enemyArchons.length);
-        }
-        return null;
     }
 
     static void runLumberjack() throws GameActionException {
@@ -310,7 +182,7 @@ public strictfp class RobotPlayer {
             try {
                 round = rc.getRoundNum();
 
-                // See if there are any enemy robots within striking range
+                // See if there are any enemy robots within striking range (distance 1 from lumberjack's radius)
                 RobotInfo[] robots = rc.senseNearbyRobots(RobotType.LUMBERJACK.bodyRadius+GameConstants.LUMBERJACK_STRIKE_RADIUS, enemy);
 
                 if(robots.length > 0 && !rc.hasAttacked()) {
@@ -320,16 +192,18 @@ public strictfp class RobotPlayer {
                     // No close robots, so search for robots within sight radius
                     robots = rc.senseNearbyRobots(-1,enemy);
 
-                    // If there is a robot, move toward it
+                    // If there is a robot, decide whether to engage based on game phase
                     if(robots.length > 0) {
                         MapLocation myLocation = rc.getLocation();
-                        
-                        // Priority targeting for lumberjack: GARDENER > ARCHON > other
-                        RobotInfo target = findPriorityTarget(robots);
-                        
-                        if (target != null) {
-                            MapLocation enemyLocation = target.getLocation();
-                            Direction toEnemy = myLocation.directionTo(enemyLocation);
+                        MapLocation enemyLocation = robots[0].getLocation();
+                        Direction toEnemy = myLocation.directionTo(enemyLocation);
+
+                        if (round < 1500) {
+                            // Early game: be more defensive - lumberjacks retreat too
+                            Direction awayFromEnemy = enemyLocation.directionTo(myLocation);
+                            tryMove(awayFromEnemy);
+                        } else {
+                            // Late game: be aggressive
                             tryMove(toEnemy);
                         }
                     } else {
