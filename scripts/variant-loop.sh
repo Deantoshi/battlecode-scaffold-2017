@@ -118,40 +118,7 @@ run_agent() {
     fi
 }
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# PHASE 0: Generate Archetypes (only once)
-# ═══════════════════════════════════════════════════════════════════════════════
-
 ARCHETYPES_FILE="$STATE_DIR/archetypes.json"
-
-if [[ ! -f "$ARCHETYPES_FILE" ]]; then
-    printf '%s\n' "${BOLD}${GREEN}[PHASE 0] Generating 10 Variant Archetypes${NC}"
-
-    # Prepare context for archetype creator
-    {
-        echo "# Bot Code"
-        echo ""
-        for f in src/"$BOT"/*.java; do
-            if [[ -f "$f" ]]; then
-                echo "=== FILE: $(basename "$f") ==="
-                cat "$f"
-                echo ""
-            fi
-        done
-    } > "$STATE_DIR/bot-code-snapshot.txt"
-
-    run_agent "archetype-creator" "--bot $BOT --opponent $OPPONENT --map $MAP" "phase0"
-
-    if [[ ! -f "$ARCHETYPES_FILE" ]]; then
-        printf '%s\n' "${RED}Error: Archetypes file not created at $ARCHETYPES_FILE${NC}"
-        exit 1
-    fi
-    printf '%s\n' "${GREEN}✓ Archetypes generated${NC}"
-else
-    printf '%s\n' "${BLUE}[PHASE 0] Archetypes already exist, skipping generation${NC}"
-fi
-
-echo ""
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # MAIN LOOP
@@ -166,6 +133,34 @@ for iter in $(seq 1 "$MAX_ITERS"); do
     fi
     echo "═══════════════════════════════════════════════════════════════════════════════"
     printf '%s\n' "${NC}"
+
+    # ─────────────────────────────────────────────────────────────────────────────
+    # Step 0: Generate fresh archetypes for this iteration
+    # ─────────────────────────────────────────────────────────────────────────────
+    mkdir -p "$STATE_DIR"
+    printf '%s\n' "${BOLD}${GREEN}[STEP 0] Generating 10 Variant Archetypes${NC}"
+
+    # Prepare context for archetype creator
+    {
+        echo "# Bot Code"
+        echo ""
+        for f in src/"$BOT"/*.java; do
+            if [[ -f "$f" ]]; then
+                echo "=== FILE: $(basename "$f") ==="
+                cat "$f"
+                echo ""
+            fi
+        done
+    } > "$STATE_DIR/bot-code-snapshot.txt"
+
+    run_agent "archetype-creator" "--bot $BOT --opponent $OPPONENT --map $MAP" "iter:${iter}:phase0"
+
+    if [[ ! -f "$ARCHETYPES_FILE" ]]; then
+        printf '%s\n' "${RED}Error: Archetypes file not created at $ARCHETYPES_FILE${NC}"
+        exit 1
+    fi
+    printf '%s\n' "${GREEN}✓ Archetypes generated${NC}"
+    echo ""
 
     # ─────────────────────────────────────────────────────────────────────────────
     # Step 1: Create variant folders
@@ -281,6 +276,12 @@ print(data.get('goal_met', 'NO'))
     # Stop Gradle daemon to free heap memory (~200-500MB) between iterations
     printf '%s\n' "${BLUE}Stopping Gradle daemon to free memory...${NC}"
     ./gradlew --stop 2>/dev/null || true
+
+    # ─────────────────────────────────────────────────────────────────────────────
+    # Step 6: Clean up .state so archetypes are regenerated next iteration
+    # ─────────────────────────────────────────────────────────────────────────────
+    printf '%s\n' "${BLUE}Cleaning up .state directory for fresh archetypes next iteration...${NC}"
+    rm -rf "$STATE_DIR"
 
     printf '%s\n' "${BLUE}Iteration $iter complete. Continuing...${NC}"
     echo ""

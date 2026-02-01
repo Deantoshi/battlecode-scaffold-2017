@@ -149,14 +149,24 @@ run_agent() {
     fi
 }
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# PHASE 0: Generate Archetypes (only once)
-# ═══════════════════════════════════════════════════════════════════════════════
-
 ARCHETYPES_FILE="$STATE_DIR/archetypes.json"
 
-if [[ ! -f "$ARCHETYPES_FILE" ]]; then
-    printf '%s\n' "${BOLD}${GREEN}[PHASE 0] Generating 10 Variant Archetypes${NC}"
+# ═══════════════════════════════════════════════════════════════════════════════
+# MAIN LOOP
+# ═══════════════════════════════════════════════════════════════════════════════
+
+for iter in $(seq 1 "$MAX_ITERS"); do
+    printf '%s\n' "${BOLD}${CYAN}"
+    echo "═══════════════════════════════════════════════════════════════════════════════"
+    echo "                            ITERATION $iter / $MAX_ITERS"
+    echo "═══════════════════════════════════════════════════════════════════════════════"
+    printf '%s\n' "${NC}"
+
+    # ─────────────────────────────────────────────────────────────────────────────
+    # Step 0: Generate fresh archetypes for this iteration
+    # ─────────────────────────────────────────────────────────────────────────────
+    mkdir -p "$STATE_DIR"
+    printf '%s\n' "${BOLD}${GREEN}[STEP 0] Generating 10 Variant Archetypes${NC}"
 
     # Prepare context for archetype creator
     {
@@ -171,29 +181,14 @@ if [[ ! -f "$ARCHETYPES_FILE" ]]; then
         done
     } > "$STATE_DIR/bot-code-snapshot.txt"
 
-    run_agent "archetype-creator" "--bot $BOT --opponent $OPPONENT --map $MAP" "phase0"
+    run_agent "archetype-creator" "--bot $BOT --opponent $OPPONENT --map $MAP" "iter:${iter}:phase0"
 
     if [[ ! -f "$ARCHETYPES_FILE" ]]; then
         printf '%s\n' "${RED}Error: Archetypes file not created at $ARCHETYPES_FILE${NC}"
         exit 1
     fi
     printf '%s\n' "${GREEN}✓ Archetypes generated${NC}"
-else
-    printf '%s\n' "${BLUE}[PHASE 0] Archetypes already exist, skipping generation${NC}"
-fi
-
-echo ""
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# MAIN LOOP
-# ═══════════════════════════════════════════════════════════════════════════════
-
-for iter in $(seq 1 "$MAX_ITERS"); do
-    printf '%s\n' "${BOLD}${CYAN}"
-    echo "═══════════════════════════════════════════════════════════════════════════════"
-    echo "                            ITERATION $iter / $MAX_ITERS"
-    echo "═══════════════════════════════════════════════════════════════════════════════"
-    printf '%s\n' "${NC}"
+    echo ""
 
     # ─────────────────────────────────────────────────────────────────────────────
     # Step 1: Create variant folders
@@ -303,6 +298,12 @@ print(data.get('goal_met', 'NO'))
         echo "Iterations: $iter"
         exit 0
     fi
+
+    # ─────────────────────────────────────────────────────────────────────────────
+    # Step 6: Clean up .state so archetypes are regenerated next iteration
+    # ─────────────────────────────────────────────────────────────────────────────
+    printf '%s\n' "${BLUE}Cleaning up .state directory for fresh archetypes next iteration...${NC}"
+    rm -rf "$STATE_DIR"
 
     printf '%s\n' "${BLUE}Iteration $iter complete. Continuing...${NC}"
     echo ""

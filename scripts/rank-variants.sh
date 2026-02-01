@@ -408,9 +408,7 @@ if [[ "$SHOULD_PROMOTE" == "YES" && "$WINNER" != "original" ]]; then
     done
     echo "✓ Champion saved to $CHAMPION_DIR"
 
-    # Record promotion in history
-    HISTORY_FILE="$STATE_DIR/promotion-history.txt"
-    echo "$(date '+%Y-%m-%d %H:%M:%S') - Promoted $WINNER to original, saved as ${BOT}_champion_${NUM_CHAMPIONS}" >> "$HISTORY_FILE"
+
 else
     echo ""
     echo "No promotion needed (original is best or tied)"
