@@ -1,4 +1,4 @@
-package copy_bot;
+package minimax_2_1_champion_0;
 import battlecode.common.*;
 
 public class BulletSpending {
@@ -10,7 +10,8 @@ public class BulletSpending {
     }
 
     public static void spendPolicy() throws GameActionException {
-        // Centralized spend order: hire gardener -> plant tree -> hire scout -> donate.
+        // Centralized spend order: hire gardener -> plant tree -> hire lumberjack -> donate.
+        // Lumberjack Rush: prioritize lumberjack production and aggressive gardener hiring
         if (rc.getType() == RobotType.ARCHON) {
             Direction dir = randomDirection();
             if (shouldHireGardener(dir)) {
@@ -24,14 +25,13 @@ public class BulletSpending {
         }
         if (rc.getType() == RobotType.GARDENER) {
             Direction dir = randomDirection();
-            // Reduced tree planting to 0.05 to maximize scout production
             if (shouldPlantTree(dir)) {
                 rc.plantTree(dir);
             }
             dir = randomDirection();
-            // Prioritize scouts with 0.4 probability
-            if (shouldBuildScout(dir)) {
-                rc.buildRobot(RobotType.SCOUT, dir);
+            // Lumberjack Rush: Build lumberjacks with 0.5 probability instead of soldiers
+            if (shouldBuildLumberjack(dir)) {
+                rc.buildRobot(RobotType.LUMBERJACK, dir);
             }
             float donateAmount = getDonateAmount();
             if (donateAmount > 0f) {
@@ -41,22 +41,21 @@ public class BulletSpending {
     }
 
     private static boolean shouldHireGardener(Direction dir) {
-        return rc.canHireGardener(dir) && Math.random() < .01;
+        // Lumberjack Rush: Hire gardeners very aggressively (0.5 probability) in first 500 rounds
+        if (rc.getRoundNum() < 500) {
+            return rc.canHireGardener(dir) && Math.random() < 0.5;
+        }
+        return rc.canHireGardener(dir) && Math.random() < 0.1;
     }
 
     private static boolean shouldPlantTree(Direction dir) {
-        // Reduced from 0.01 to 0.05 for scout swarm - minimal tree planting to maximize unit production
-        return rc.canPlantTree(dir) && Math.random() < 0.05;
+        // Reduce tree planting in rush strategy - focus on unit production
+        return rc.canPlantTree(dir) && Math.random() < 0.001;
     }
 
-    private static boolean shouldBuildScout(Direction dir) {
-        // Scout swarm: prioritize scouts with 0.4 probability and check we have enough bullets (scout costs 100)
-        return rc.canBuildRobot(RobotType.SCOUT, dir) && rc.getTeamBullets() > 100 && Math.random() < 0.4;
-    }
-
-    private static boolean shouldBuildSoldier(Direction dir) {
-        // No longer used in scout swarm - kept for reference
-        return rc.canBuildRobot(RobotType.SOLDIER, dir) && Math.random() < .01;
+    private static boolean shouldBuildLumberjack(Direction dir) {
+        // Lumberjack Rush: Build lumberjacks with 0.5 probability
+        return rc.canBuildRobot(RobotType.LUMBERJACK, dir) && Math.random() < 0.5;
     }
 
     private static float getDonateAmount() throws GameActionException {

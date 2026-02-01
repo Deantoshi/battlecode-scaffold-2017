@@ -1,4 +1,4 @@
-package minimax_2_1;
+package minimax_2_1_champion_2;
 import battlecode.common.*;
 
 public strictfp class RobotPlayer {

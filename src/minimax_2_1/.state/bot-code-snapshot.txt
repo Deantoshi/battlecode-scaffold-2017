@@ -1,3 +1,75 @@
+# Bot Code
+
+=== FILE: BulletSpending.java ===
+package minimax_2_1;
+import battlecode.common.*;
+
+public class BulletSpending {
+    static RobotController rc;
+    static final float BULLET_RESERVE = 100f;
+
+    public static void init(RobotController rc) {
+        BulletSpending.rc = rc;
+    }
+
+    public static void spendPolicy() throws GameActionException {
+        // Centralized spend order: hire gardener -> plant tree -> hire soldier -> donate.
+        if (rc.getType() == RobotType.ARCHON) {
+            Direction dir = randomDirection();
+            if (shouldHireGardener(dir)) {
+                rc.hireGardener(dir);
+            }
+            float donateAmount = getDonateAmount();
+            if (donateAmount > 0f) {
+                rc.donate(donateAmount);
+            }
+            return;
+        }
+        if (rc.getType() == RobotType.GARDENER) {
+            Direction dir = randomDirection();
+            if (shouldPlantTree(dir)) {
+                rc.plantTree(dir);
+            }
+            dir = randomDirection();
+            if (shouldBuildSoldier(dir)) {
+                rc.buildRobot(RobotType.SOLDIER, dir);
+            }
+            float donateAmount = getDonateAmount();
+            if (donateAmount > 0f) {
+                rc.donate(donateAmount);
+            }
+        }
+    }
+
+    private static boolean shouldHireGardener(Direction dir) {
+        return rc.canHireGardener(dir) && Math.random() < .01;
+    }
+
+    private static boolean shouldPlantTree(Direction dir) {
+        return rc.canPlantTree(dir) && Math.random() < .01;
+    }
+
+    private static boolean shouldBuildSoldier(Direction dir) {
+        return rc.canBuildRobot(RobotType.SOLDIER, dir) && Math.random() < .01;
+    }
+
+    private static float getDonateAmount() throws GameActionException {
+        float bullets = rc.getTeamBullets();
+        float cost = rc.getVictoryPointCost();
+        float donateAmount = bullets - BULLET_RESERVE;
+        if (donateAmount >= cost) {
+            int pointsToBuy = (int)(donateAmount / cost);
+            return pointsToBuy * cost;
+        }
+        return 0f;
+    }
+
+    private static Direction randomDirection() {
+        return new Direction((float)Math.random() * 2 * (float)Math.PI);
+    }
+}
+
+=== FILE: RobotPlayer.java ===
 package minimax_2_1;
 import battlecode.common.*;
 
@@ -95,7 +167,7 @@ public strictfp class RobotPlayer {
     }
 
     static void runSoldier() throws GameActionException {
-        System.out.println("I'm a soldier!");
+        System.out.println("I'm an soldier!");
         Team enemy = rc.getTeam().opponent();
 
         // The code you want your robot to perform every round should be in this loop
@@ -140,54 +212,26 @@ public strictfp class RobotPlayer {
             // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
             try {
 
-                // Lumberjack Rush: Read enemy archon location from broadcast channels 0 and 1
-                int enemyArchonX = rc.readBroadcast(2);
-                int enemyArchonY = rc.readBroadcast(3);
-                MapLocation enemyArchonLoc = new MapLocation(enemyArchonX, enemyArchonY);
-
                 // See if there are any enemy robots within striking range (distance 1 from lumberjack's radius)
                 RobotInfo[] robots = rc.senseNearbyRobots(RobotType.LUMBERJACK.bodyRadius+GameConstants.LUMBERJACK_STRIKE_RADIUS, enemy);
 
-                // Priority targeting: Lumberjack Rush prioritizes enemy gardeners first
-                RobotInfo target = null;
-                if (robots.length > 0) {
-                    // First, look for gardeners to eliminate enemy economy
-                    for (RobotInfo r : robots) {
-                        if (r.type == RobotType.GARDENER) {
-                            target = r;
-                            break;
-                        }
-                    }
-                    // If no gardeners found, target the closest enemy
-                    if (target == null) {
-                        target = robots[0];
-                    }
-                }
-
-                if (robots.length > 0 && !rc.hasAttacked()) {
+                if(robots.length > 0 && !rc.hasAttacked()) {
                     // Use strike() to hit all nearby robots!
                     rc.strike();
                 } else {
-                    // If we have enemy archon location, move directly toward it
-                    if (enemyArchonX != 0 || enemyArchonY != 0) {
+                    // No close robots, so search for robots within sight radius
+                    robots = rc.senseNearbyRobots(-1,enemy);
+
+                    // If there is a robot, move towards it
+                    if(robots.length > 0) {
                         MapLocation myLocation = rc.getLocation();
-                        Direction toEnemyArchon = myLocation.directionTo(enemyArchonLoc);
-                        tryMove(toEnemyArchon);
+                        MapLocation enemyLocation = robots[0].getLocation();
+                        Direction toEnemy = myLocation.directionTo(enemyLocation);
+
+                        tryMove(toEnemy);
                     } else {
-                        // No enemy archon info yet, search for any enemy robots
-                        robots = rc.senseNearbyRobots(-1, enemy);
-
-                        // If there is a robot, move towards it
-                        if (robots.length > 0) {
-                            MapLocation myLocation = rc.getLocation();
-                            MapLocation enemyLocation = robots[0].getLocation();
-                            Direction toEnemy = myLocation.directionTo(enemyLocation);
-
-                            tryMove(toEnemy);
-                        } else {
-                            // Move Randomly
-                            tryMove(randomDirection());
-                        }
+                        // Move Randomly
+                        tryMove(randomDirection());
                     }
                 }
 
@@ -276,7 +320,7 @@ public strictfp class RobotPlayer {
 
         // Calculate bullet relations to this robot
         Direction directionToRobot = bulletLocation.directionTo(myLocation);
-        float distToRobot = bulletLocation.distanceTo(bulletLocation);
+        float distToRobot = bulletLocation.distanceTo(myLocation);
         float theta = propagationDirection.radiansBetween(directionToRobot);
 
         // If theta > 90 degrees, then the bullet is traveling away from us and we can break early
@@ -293,3 +337,4 @@ public strictfp class RobotPlayer {
         return (perpendicularDist <= rc.getType().bodyRadius);
     }
 }
+

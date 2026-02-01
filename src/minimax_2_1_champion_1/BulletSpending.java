@@ -1,4 +1,4 @@
-package copy_bot;
+package minimax_2_1_champion_1;
 import battlecode.common.*;
 
 public class BulletSpending {

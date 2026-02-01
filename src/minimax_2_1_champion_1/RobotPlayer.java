@@ -1,4 +1,4 @@
-package minimax_2_1;
+package minimax_2_1_champion_1;
 import battlecode.common.*;
 
 public strictfp class RobotPlayer {
@@ -27,6 +27,9 @@ public strictfp class RobotPlayer {
                 break;
             case SOLDIER:
                 runSoldier();
+                break;
+            case SCOUT:
+                runScout();
                 break;
             case LUMBERJACK:
                 runLumberjack();
@@ -95,7 +98,7 @@ public strictfp class RobotPlayer {
     }
 
     static void runSoldier() throws GameActionException {
-        System.out.println("I'm a soldier!");
+        System.out.println("I'm an soldier!");
         Team enemy = rc.getTeam().opponent();
 
         // The code you want your robot to perform every round should be in this loop
@@ -130,6 +133,101 @@ public strictfp class RobotPlayer {
         }
     }
 
+    static void runScout() throws GameActionException {
+        System.out.println("I'm a scout!");
+        Team enemy = rc.getTeam().opponent();
+
+        // The code you want your robot to perform every round should be in this loop
+        while (true) {
+
+            // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
+            try {
+                MapLocation myLocation = rc.getLocation();
+
+                // Scout swarm: aggressively target enemy gardeners and archons, avoid tanks
+                RobotInfo[] enemies = rc.senseNearbyRobots(-1, enemy);
+                RobotInfo target = null;
+
+                // Priority targeting: gardeners first, then archons, then others (avoid tanks)
+                for (RobotInfo r : enemies) {
+                    if (r.type == RobotType.GARDENER) {
+                        target = r;
+                        break;
+                    }
+                }
+                if (target == null) {
+                    for (RobotInfo r : enemies) {
+                        if (r.type == RobotType.ARCHON) {
+                            target = r;
+                            break;
+                        }
+                    }
+                }
+                if (target == null) {
+                    for (RobotInfo r : enemies) {
+                        if (r.type != RobotType.TANK) {
+                            target = r;
+                            break;
+                        }
+                    }
+                }
+
+                // Fire at priority target if in range
+                if (target != null && rc.canFireSingleShot()) {
+                    rc.fireSingleShot(rc.getLocation().directionTo(target.location));
+                }
+
+                // Scout swarm movement: move toward enemy archon locations if no immediate threat
+                // Otherwise patrol aggressively
+                if (target == null) {
+                    // Try to find enemy archon from broadcasts or move randomly
+                    try {
+                        int enemyArchonX = rc.readBroadcast(10); // Assume we can read enemy archon location
+                        int enemyArchonY = rc.readBroadcast(11);
+                        if (enemyArchonX != 0 || enemyArchonY != 0) {
+                            MapLocation enemyArchonLoc = new MapLocation(enemyArchonX, enemyArchonY);
+                            Direction toEnemyArchon = myLocation.directionTo(enemyArchonLoc);
+                            tryMove(toEnemyArchon);
+                        } else {
+                            // No enemy archon info, move randomly to explore
+                            tryMove(randomDirection());
+                        }
+                    } catch (Exception e) {
+                        // If we can't read enemy archon location, move randomly
+                        tryMove(randomDirection());
+                    }
+                } else if (target.type != RobotType.TANK) {
+                    // Move toward priority target (gardeners, archons, other units)
+                    Direction toTarget = myLocation.directionTo(target.location);
+                    tryMove(toTarget);
+                } else {
+                    // Tank detected - retreat/avoid
+                    Direction awayFromTank = myLocation.directionTo(target.location).opposite();
+                    tryMove(awayFromTank);
+                }
+
+                // Collect bullets from neutral trees if available
+                TreeInfo[] trees = rc.senseNearbyTrees(-1);
+                for (TreeInfo tree : trees) {
+                    // Check if neutral tree has a robot inside
+                    if (!tree.getTeam().equals(rc.getTeam()) && tree.getContainedRobot() != null) {
+                        // Neutral tree with robot inside - try to collect
+                        if (rc.canShake(tree.location)) {
+                            rc.shake(tree.location);
+                        }
+                    }
+                }
+
+                // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
+                Clock.yield();
+
+            } catch (Exception e) {
+                System.out.println("Scout Exception");
+                e.printStackTrace();
+            }
+        }
+    }
+
     static void runLumberjack() throws GameActionException {
         System.out.println("I'm a lumberjack!");
         Team enemy = rc.getTeam().opponent();
@@ -140,54 +238,26 @@ public strictfp class RobotPlayer {
             // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
             try {
 
-                // Lumberjack Rush: Read enemy archon location from broadcast channels 0 and 1
-                int enemyArchonX = rc.readBroadcast(2);
-                int enemyArchonY = rc.readBroadcast(3);
-                MapLocation enemyArchonLoc = new MapLocation(enemyArchonX, enemyArchonY);
-
                 // See if there are any enemy robots within striking range (distance 1 from lumberjack's radius)
                 RobotInfo[] robots = rc.senseNearbyRobots(RobotType.LUMBERJACK.bodyRadius+GameConstants.LUMBERJACK_STRIKE_RADIUS, enemy);
 
-                // Priority targeting: Lumberjack Rush prioritizes enemy gardeners first
-                RobotInfo target = null;
-                if (robots.length > 0) {
-                    // First, look for gardeners to eliminate enemy economy
-                    for (RobotInfo r : robots) {
-                        if (r.type == RobotType.GARDENER) {
-                            target = r;
-                            break;
-                        }
-                    }
-                    // If no gardeners found, target the closest enemy
-                    if (target == null) {
-                        target = robots[0];
-                    }
-                }
-
-                if (robots.length > 0 && !rc.hasAttacked()) {
+                if(robots.length > 0 && !rc.hasAttacked()) {
                     // Use strike() to hit all nearby robots!
                     rc.strike();
                 } else {
-                    // If we have enemy archon location, move directly toward it
-                    if (enemyArchonX != 0 || enemyArchonY != 0) {
+                    // No close robots, so search for robots within sight radius
+                    robots = rc.senseNearbyRobots(-1,enemy);
+
+                    // If there is a robot, move towards it
+                    if(robots.length > 0) {
                         MapLocation myLocation = rc.getLocation();
-                        Direction toEnemyArchon = myLocation.directionTo(enemyArchonLoc);
-                        tryMove(toEnemyArchon);
+                        MapLocation enemyLocation = robots[0].getLocation();
+                        Direction toEnemy = myLocation.directionTo(enemyLocation);
+
+                        tryMove(toEnemy);
                     } else {
-                        // No enemy archon info yet, search for any enemy robots
-                        robots = rc.senseNearbyRobots(-1, enemy);
-
-                        // If there is a robot, move towards it
-                        if (robots.length > 0) {
-                            MapLocation myLocation = rc.getLocation();
-                            MapLocation enemyLocation = robots[0].getLocation();
-                            Direction toEnemy = myLocation.directionTo(enemyLocation);
-
-                            tryMove(toEnemy);
-                        } else {
-                            // Move Randomly
-                            tryMove(randomDirection());
-                        }
+                        // Move Randomly
+                        tryMove(randomDirection());
                     }
                 }
 
