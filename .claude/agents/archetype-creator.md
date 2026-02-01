@@ -28,6 +28,26 @@ Parse the prompt for:
 
 Your archetypes MUST target one or both of these win conditions.
 
+## Scoring System (CRITICAL - Design Archetypes to Maximize This)
+
+Your variants will be scored per matchup using this exact formula. **Your goal is to design archetypes that achieve the ABSOLUTE HIGHEST SCORE possible.**
+
+**Scoring formula (per matchup):**
+- **Win in ≤1500 rounds:** `SCORE = 20000 - rounds` (best case: 18500+ points)
+- **Win in >1500 rounds:** `SCORE = 10000 - rounds + (enemy_kills × 50) + (victory_points × 2.5) + (bullets_generated / 100)`
+- **Loss (or win at ≥2999 rounds):** `SCORE = 10000 - rounds + (enemy_kills × 50) + (victory_points × 2.5) + (bullets_generated / 100) - 5000`
+
+Scores are **aggregated across all opponents** (main opponent + any champion bots from previous iterations).
+
+**What this means for archetype design:**
+1. **Winning fast is king.** A win in ≤1500 rounds scores 18500–20000 — far more than any slow win or loss. Design aggressive archetypes that can close games quickly.
+2. **Winning matters enormously.** Losing costs a flat 5000-point penalty. A slow win always beats a loss.
+3. **Enemy kills are very valuable** when you can't win fast — each kill is worth 50 points. Archetypes should seek to destroy enemy units even if they can't achieve elimination.
+4. **Victory Points help** at 2.5 points per VP. VP-focused archetypes can accumulate score even if they don't win outright.
+5. **Fewer rounds is always better** — the score always subtracts rounds. Faster strategies beat slower ones at the same outcome.
+
+**Design your 10 archetypes to cover a range of score-maximizing strategies:** some should aim for fast elimination wins (highest ceiling), some for VP rushes (consistent scoring), and some for aggressive hybrid approaches that kill units quickly while building VP as insurance.
+
 ## Step 1: Read Context
 
 Read these files to understand the game and current bot:
