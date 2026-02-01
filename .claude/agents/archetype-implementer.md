@@ -46,6 +46,19 @@ Implement the archetype's strategy by modifying the variant's code. You have cre
 3. **Implement the key changes** - Address each item in the archetype's `key_changes` list
 4. **Maintain compilable code** - The variant MUST compile after your changes
 
+## CRITICAL: Ensure Your Strategy Is Mechanically Achievable
+
+Before writing code, verify that your implementation actually allows the archetype's strategy to execute at runtime. A common failure mode is writing code where the spending logic prevents the strategy from ever happening.
+
+**Check these specifically:**
+- **Unit costs vs. spending order:** If the archetype wants Tanks (cost 300 bullets), your `spendPolicy()` must not spend bullets on cheaper things first in a way that prevents the balance from ever reaching 300. Put expensive purchases before cheap ones, or gate cheaper purchases with a reserve threshold.
+- **VP donation vs. army building:** If donating bullets for VP before building units, the bot may never have enough bullets to build anything. If the archetype is hybrid, donation should come after essential unit production, or only kick in above a safe threshold.
+- **Tree planting vs. unit production:** Planting trees costs bullets too. If the archetype prioritizes army, don't plant trees first and drain the budget.
+- **Gardener hiring vs. available bullets:** Each gardener costs 100 bullets. If the archetype hires multiple gardeners early, ensure there are enough bullets for the rest of the strategy.
+- **Thresholds and ordering in spendPolicy():** The order of operations in `spendPolicy()` IS the priority. Whatever comes first gets funded first. Make sure the ordering matches the archetype's actual priorities.
+
+**General rule:** Walk through your `spendPolicy()` mentally — starting from a typical bullet income of ~2-5 bullets/round early game — and verify that the strategy's key units/actions can actually be afforded in the order you've coded them.
+
 ## Implementation Guidelines
 
 ### Unit Building (BulletSpending.java)

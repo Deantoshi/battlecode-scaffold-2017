@@ -119,6 +119,7 @@ src/{BOT}/.state/archetypes.json
 - Ignore the VP win condition
 - Make changes that would break compilation
 - Suggest changes that aren't implementable in the current bot structure
+- Design archetypes whose key_changes contradict each other — e.g., don't specify "spend bullets aggressively early" alongside "build Tanks" (which cost 300 bullets). If a strategy needs expensive units, the spending logic must allow the balance to accumulate high enough to afford them.
 
 ## Output
 
