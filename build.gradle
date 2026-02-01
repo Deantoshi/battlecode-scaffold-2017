@@ -461,6 +461,60 @@ task visualizeMap(type: JavaExec, dependsOn: 'compileEngineJava') {
     }
 }
 
+// Batch match runner - reads a matchlist file and runs all matches sequentially
+// Each line in matchList file: teamA teamB map saveFile
+task batchRun(dependsOn: 'build') {
+    description 'Runs multiple matches from a matchlist file in a single Gradle invocation.'
+    group 'battlecode'
+
+    doLast {
+        def matchListFile = file(project.property('matchList'))
+        if (!matchListFile.exists()) {
+            throw new GradleException("matchList file not found: ${matchListFile}")
+        }
+        matchListFile.eachLine { line ->
+            line = line.trim()
+            if (line.isEmpty() || line.startsWith('#')) return
+            def parts = line.split(/\s+/)
+            if (parts.length < 4) {
+                println "Skipping malformed line: ${line}"
+                return
+            }
+            def teamA = parts[0]
+            def teamB = parts[1]
+            def map = parts[2]
+            def saveFile = parts[3]
+
+            println "Running: ${teamA} vs ${teamB} on ${map} -> ${saveFile}"
+            try {
+                javaexec {
+                    main = 'battlecode.server.Main'
+                    classpath = sourceSets.main.runtimeClasspath + sourceSets.engine.runtimeClasspath
+                    args = ['-c=-']
+                    jvmArgs = [
+                        '-Dbc.server.mode=headless',
+                        '-Dbc.server.map-path=maps',
+                        '-Dbc.server.debug=false',
+                        '-Dbc.engine.debug-methods=false',
+                        '-Dbc.server.robot-player-to-system-out=false',
+                        '-Dbc.game.team-a=' + teamA,
+                        '-Dbc.game.team-b=' + teamB,
+                        '-Dbc.game.team-a.url=' + sourceSets.main.output.classesDir,
+                        '-Dbc.game.team-b.url=' + sourceSets.main.output.classesDir,
+                        '-Dbc.game.maps=' + map,
+                        '-Dbc.server.wait-for-client=false',
+                        '-Dbc.server.save-file=' + saveFile
+                    ]
+                    ignoreExitValue = true
+                }
+                println "  Completed: ${saveFile}"
+            } catch (Exception e) {
+                println "  Failed: ${saveFile} - ${e.message}"
+            }
+        }
+    }
+}
+
 // Generate summaries for all existing match files
 task summarizeAll(dependsOn: 'createSummariesDir') {
     description 'Generates summaries for all match files in matches/ directory.'

@@ -294,6 +294,10 @@ print(data.get('goal_met', 'NO'))
     printf '%s\n' "${BLUE}Copying $BOT to copy_bot...${NC}"
     bash "$(cd "$(dirname "$0")" && pwd)/copy_bot.sh" "src/$BOT"
 
+    # Stop Gradle daemon to free heap memory (~200-500MB) between iterations
+    printf '%s\n' "${BLUE}Stopping Gradle daemon to free memory...${NC}"
+    ./gradlew --stop 2>/dev/null || true
+
     printf '%s\n' "${BLUE}Iteration $iter complete. Continuing...${NC}"
     echo ""
 done

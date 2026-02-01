@@ -4,6 +4,7 @@
 # Usage: ./scripts/run-all-variants.sh <bot> <opponent> <map> [num_champions]
 #
 # Creates match files and databases for analysis
+# Uses batchRun Gradle task for memory-efficient sequential execution
 
 set -e
 
@@ -42,93 +43,21 @@ if [[ $NUM_CHAMPIONS -gt 0 ]]; then
 fi
 echo ""
 
-# Function to run a single match and extract DB
-run_match() {
-    local team_a="$1"
-    local team_b="$2"
-    local map="$3"
-    local match_name="$4"
+# ─────────────────────────────────────────────────────────────────────────────
+# Generate matchlist file
+# ─────────────────────────────────────────────────────────────────────────────
+MATCHLIST="$MATCHES_DIR/matchlist.txt"
+> "$MATCHLIST"
 
-    local match_file="$MATCHES_DIR/${match_name}.bc17"
-    local log_file="$MATCHES_DIR/${match_name}.log"
-    local db_file="$MATCHES_DIR/${match_name}.db"
-
-    # Run the match
-    ./gradlew run -PteamA="$team_a" -PteamB="$team_b" -Pmaps="$map" \
-        > "$log_file" 2>&1
-
-    # Find the generated match file (gradle names it differently)
-    local found_match=$(ls -t matches/*.bc17 2>/dev/null | head -1)
-    if [[ -n "$found_match" && "$found_match" != "$match_file" ]]; then
-        mv "$found_match" "$match_file" 2>/dev/null || true
-    fi
-
-    # Extract to database if match file exists
-    if [[ -f "$match_file" ]]; then
-        python3 "$SCRIPT_DIR/bc17_query.py" extract "$match_file" "$db_file" > /dev/null 2>&1 || true
-    fi
-}
-
-# Parallelism limit - only run this many matches at once
-MAX_PARALLEL=${MAX_PARALLEL:-2}
-
-# Arrays to track PIDs for parallel execution
-declare -a PIDS=()
-declare -a MATCH_NAMES=()
-declare -a ALL_NAMES=()
-FAILED=0
-
-# Function to wait for a slot to become available
-wait_for_slot() {
-    while [[ ${#PIDS[@]} -ge $MAX_PARALLEL ]]; do
-        # Wait for any job to finish
-        for i in "${!PIDS[@]}"; do
-            pid="${PIDS[$i]}"
-            if ! kill -0 "$pid" 2>/dev/null; then
-                # Process finished, check exit status
-                if wait "$pid"; then
-                    echo "  ✓ ${MATCH_NAMES[$i]} completed"
-                else
-                    echo "  ✗ ${MATCH_NAMES[$i]} failed"
-                    FAILED=$((FAILED + 1))
-                fi
-                # Remove from arrays
-                unset 'PIDS[i]'
-                unset 'MATCH_NAMES[i]'
-                # Reindex arrays
-                PIDS=("${PIDS[@]}")
-                MATCH_NAMES=("${MATCH_NAMES[@]}")
-                return
-            fi
-        done
-        sleep 0.5
-    done
-}
-
-# Function to start a match with parallelism control
-start_match() {
-    local team_a="$1"
-    local team_b="$2"
-    local match_name="$3"
-    local display_name="$4"
-
-    wait_for_slot
-    echo "Starting: $display_name ($team_a vs $team_b)"
-    run_match "$team_a" "$team_b" "$MAP" "$match_name" &
-    PIDS+=($!)
-    MATCH_NAMES+=("$display_name")
-    ALL_NAMES+=("$display_name")
-}
-
-# Run all competitors against all opponents
-# Competitors: original + v1..v10
-# Opponents: main opponent + champion_0..champion_N
+MATCH_COUNT=0
 
 # Original vs all opponents
 for opp_idx in "${!ALL_OPPONENTS[@]}"; do
     opp="${ALL_OPPONENTS[$opp_idx]}"
     label="${OPPONENT_LABELS[$opp_idx]}"
-    start_match "$BOT" "$opp" "${BOT}_original_vs_${label}" "original vs ${label}"
+    match_name="${BOT}_original_vs_${label}"
+    echo "$BOT $opp $MAP $MATCHES_DIR/${match_name}.bc17" >> "$MATCHLIST"
+    MATCH_COUNT=$((MATCH_COUNT + 1))
 done
 
 # Variants vs all opponents
@@ -138,39 +67,57 @@ for v in $(seq 1 $NUM_VARIANTS); do
         for opp_idx in "${!ALL_OPPONENTS[@]}"; do
             opp="${ALL_OPPONENTS[$opp_idx]}"
             label="${OPPONENT_LABELS[$opp_idx]}"
-            start_match "$VARIANT" "$opp" "${BOT}_v${v}_vs_${label}" "v${v} vs ${label}"
+            match_name="${BOT}_v${v}_vs_${label}"
+            echo "$VARIANT $opp $MAP $MATCHES_DIR/${match_name}.bc17" >> "$MATCHLIST"
+            MATCH_COUNT=$((MATCH_COUNT + 1))
         done
     else
         echo "Skipping: v$v (folder not found)"
     fi
 done
 
+echo "Generated matchlist with $MATCH_COUNT matches"
 echo ""
-echo "Waiting for remaining matches to complete..."
 
-# Wait for remaining matches
-for i in "${!PIDS[@]}"; do
-    pid="${PIDS[$i]}"
-    name="${MATCH_NAMES[$i]}"
-    if wait "$pid"; then
-        echo "  ✓ $name completed"
+# ─────────────────────────────────────────────────────────────────────────────
+# Run all matches via single Gradle invocation
+# ─────────────────────────────────────────────────────────────────────────────
+echo "Running batch matches..."
+./gradlew batchRun -PmatchList="$MATCHLIST"
+echo ""
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Extract databases and clean up .bc17 files
+# ─────────────────────────────────────────────────────────────────────────────
+echo "Extracting databases from match files..."
+EXTRACTED=0
+FAILED=0
+
+for bc17_file in "$MATCHES_DIR"/${BOT}*.bc17; do
+    [[ -f "$bc17_file" ]] || continue
+
+    db_file="${bc17_file%.bc17}.db"
+    if python3 "$SCRIPT_DIR/bc17_query.py" extract "$bc17_file" "$db_file" > /dev/null 2>&1; then
+        EXTRACTED=$((EXTRACTED + 1))
+        # Delete .bc17 after successful extraction to save memory
+        rm -f "$bc17_file"
     else
-        echo "  ✗ $name failed"
+        echo "  Failed to extract: $bc17_file"
         FAILED=$((FAILED + 1))
     fi
 done
 
 echo ""
 if [[ $FAILED -gt 0 ]]; then
-    echo "Warning: $FAILED match(es) failed"
+    echo "Warning: $FAILED extraction(s) failed"
 else
-    echo "All matches completed successfully."
+    echo "All $EXTRACTED matches extracted successfully."
 fi
 
+# Clean up matchlist
+rm -f "$MATCHLIST"
+
 # List generated files
-echo ""
-echo "Match files:"
-ls -la "$MATCHES_DIR"/${BOT}*.bc17 2>/dev/null | head -20 || echo "  (no .bc17 files found)"
 echo ""
 echo "Database files:"
 ls -la "$MATCHES_DIR"/${BOT}*.db 2>/dev/null | head -20 || echo "  (no .db files found)"
