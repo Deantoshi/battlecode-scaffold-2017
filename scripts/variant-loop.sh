@@ -135,6 +135,14 @@ for iter in $(seq 1 "$MAX_ITERS"); do
     printf '%s\n' "${NC}"
 
     # ─────────────────────────────────────────────────────────────────────────────
+    # Clean slate: remove .state directory from previous iteration
+    # ─────────────────────────────────────────────────────────────────────────────
+    if [[ -d "$STATE_DIR" ]]; then
+        printf '%s\n' "${BLUE}Cleaning .state directory for fresh iteration...${NC}"
+        rm -rf "$STATE_DIR"
+    fi
+
+    # ─────────────────────────────────────────────────────────────────────────────
     # Step 0: Generate fresh archetypes for this iteration
     # ─────────────────────────────────────────────────────────────────────────────
     mkdir -p "$STATE_DIR"
