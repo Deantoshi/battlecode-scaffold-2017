@@ -277,12 +277,6 @@ print(data.get('goal_met', 'NO'))
     printf '%s\n' "${BLUE}Stopping Gradle daemon to free memory...${NC}"
     ./gradlew --stop 2>/dev/null || true
 
-    # ─────────────────────────────────────────────────────────────────────────────
-    # Step 6: Clean up .state so archetypes are regenerated next iteration
-    # ─────────────────────────────────────────────────────────────────────────────
-    printf '%s\n' "${BLUE}Cleaning up .state directory for fresh archetypes next iteration...${NC}"
-    rm -rf "$STATE_DIR"
-
     printf '%s\n' "${BLUE}Iteration $iter complete. Continuing...${NC}"
     echo ""
 done
