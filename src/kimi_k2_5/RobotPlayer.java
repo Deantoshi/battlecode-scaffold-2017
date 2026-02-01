@@ -38,7 +38,7 @@ public strictfp class RobotPlayer {
 	}
 
     static void runArchon() throws GameActionException {
-        System.out.println("I'm an archon! Hybrid Dominance mode!");
+        System.out.println("I'm an archon! Defensive Turtle mode!");
 
         // The code you want your robot to perform every round should be in this loop
         while (true) {
@@ -68,7 +68,7 @@ public strictfp class RobotPlayer {
     }
 
 	static void runGardener() throws GameActionException {
-        System.out.println("I'm a gardener! Hybrid Dominance mode!");
+        System.out.println("I'm a gardener! Defensive Turtle mode!");
         int round = rc.getRoundNum();
 
         // The code you want your robot to perform every round should be in this loop
@@ -122,7 +122,7 @@ public strictfp class RobotPlayer {
     }
 
     static void runScout() throws GameActionException {
-        System.out.println("I'm a scout! Hybrid Dominance mode!");
+        System.out.println("I'm a scout! Defensive Turtle mode!");
         Team enemy = rc.getTeam().opponent();
         int round = rc.getRoundNum();
 
@@ -148,14 +148,14 @@ public strictfp class RobotPlayer {
                         rc.fireSingleShot(toTarget);
                     }
                     
-                    // Hybrid Dominance: Flexible scout behavior
-                    // Aggressive when targeting production, cautious otherwise
+                    // Defensive Turtle: Scouts harass but avoid overextending
                     if (target.type == RobotType.ARCHON || target.type == RobotType.GARDENER) {
-                        // Push toward production targets
-                        tryMove(toTarget);
+                        // Careful approach to production targets
+                        Direction carefulDir = toTarget.rotateLeftDegrees(30);
+                        tryMove(carefulDir);
                     } else {
-                        // Circle at safe distance for reconnaissance
-                        Direction circlingDir = toTarget.rotateLeftDegrees(60);
+                        // Maintain safe distance for reconnaissance
+                        Direction circlingDir = toTarget.rotateLeftDegrees(90);
                         tryMove(circlingDir);
                     }
                     
@@ -187,7 +187,7 @@ public strictfp class RobotPlayer {
     }
 
     static void runSoldier() throws GameActionException {
-        System.out.println("I'm a soldier! Hybrid Dominance mode!");
+        System.out.println("I'm a soldier! Defensive Turtle mode!");
         Team enemy = rc.getTeam().opponent();
         int round = rc.getRoundNum();
 
@@ -209,25 +209,29 @@ public strictfp class RobotPlayer {
                     Direction toTarget = myLocation.directionTo(target.location);
                     float distToTarget = myLocation.distanceTo(target.location);
                     
-                    // Fire at priority target
-                    if (rc.canFireSingleShot()) {
+                    // Defensive Turtle: Use pentad shots through tree gaps for maximum defensive firepower
+                    if (rc.canFirePentadShot()) {
+                        rc.firePentadShot(toTarget);
+                    } else if (rc.canFireSingleShot()) {
                         rc.fireSingleShot(toTarget);
                     }
                     
-                    // Hybrid Dominance: Flexible tactics
-                    // Push when advantageous, defend when necessary
+                    // Defensive Turtle: Static defensive positions - let enemy come to you
+                    // Hold position behind tree walls, only advance if enemy overextends
                     if (target.type == RobotType.ARCHON || target.type == RobotType.GARDENER) {
-                        // Aggressive push toward production units
-                        tryMove(toTarget);
-                    } else if (distToTarget > 8f) {
-                        // Enemy combat unit at range - advance cautiously
-                        Direction cautiousAdvance = toTarget.rotateLeftDegrees(15);
-                        tryMove(cautiousAdvance);
-                    } else {
-                        // Close combat - kite at optimal range
+                        // Enemy production exposed - careful advance
+                        if (distToTarget > 10f) {
+                            tryMove(toTarget);
+                        }
+                    } else if (distToTarget < 5f) {
+                        // Enemy too close - kite back to maintain defensive position
                         Direction kiteDir = target.location.directionTo(myLocation);
                         tryMove(kiteDir);
+                    } else if (distToTarget > 12f) {
+                        // Enemy at range - hold position (static defense)
+                        // Don't move, let them come through our tree wall
                     }
+                    // At optimal range (5-12f) - hold position and fire
                 } else {
                     // No enemies visible - check broadcast for enemy production location
                     int targetX = rc.readBroadcast(2);
@@ -235,15 +239,12 @@ public strictfp class RobotPlayer {
                     if (targetX != 0 || targetY != 0) {
                         MapLocation targetLoc = new MapLocation(targetX, targetY);
                         Direction toTarget = myLocation.directionTo(targetLoc);
-                        tryMove(toTarget);
+                        // Defensive Turtle: Don't overextend, move only partway
+                        Direction partialMove = toTarget.rotateLeftDegrees(45);
+                        tryMove(partialMove);
                     } else {
-                        // No intel - move randomly or toward enemy start
-                        MapLocation enemyLoc = guessEnemyLocation();
-                        if (enemyLoc != null) {
-                            tryMove(myLocation.directionTo(enemyLoc));
-                        } else {
-                            tryMove(randomDirection());
-                        }
+                        // No intel - stay in defensive position
+                        tryMove(randomDirection());
                     }
                 }
 
@@ -311,7 +312,7 @@ public strictfp class RobotPlayer {
     }
 
     static void runLumberjack() throws GameActionException {
-        System.out.println("I'm a lumberjack! Hybrid Dominance mode!");
+        System.out.println("I'm a lumberjack! Defensive Turtle mode!");
         Team enemy = rc.getTeam().opponent();
         int round = rc.getRoundNum();
 

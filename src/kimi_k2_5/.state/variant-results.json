@@ -1,0 +1,661 @@
+{
+  "winner": "v7",
+  "winner_score": 68819,
+  "winner_won": true,
+  "winner_rounds": 1168,
+  "goal_met": "YES",
+  "should_promote": true,
+  "original_score": 68734,
+  "num_opponents": 5,
+  "results": [
+    {
+      "name": "v7",
+      "total_score": 68819,
+      "primary_won": true,
+      "primary_rounds": 1168,
+      "match_count": 5,
+      "matches": [
+        {
+          "opponent_label": "opponent",
+          "won": true,
+          "rounds": 1168,
+          "enemy_kills": 18,
+          "bullets_generated": 6051,
+          "victory_points": 0,
+          "score": 18832,
+          "source": "database"
+        },
+        {
+          "opponent_label": "champ0",
+          "won": true,
+          "rounds": 2242,
+          "enemy_kills": 11,
+          "bullets_generated": 13304,
+          "victory_points": 0,
+          "score": 8441,
+          "source": "database"
+        },
+        {
+          "opponent_label": "champ1",
+          "won": true,
+          "rounds": 800,
+          "enemy_kills": 16,
+          "bullets_generated": 3981,
+          "victory_points": 0,
+          "score": 19200,
+          "source": "database"
+        },
+        {
+          "opponent_label": "champ2",
+          "won": false,
+          "rounds": 2999,
+          "enemy_kills": 29,
+          "bullets_generated": 6382,
+          "victory_points": 0,
+          "score": 3514,
+          "source": "database"
+        },
+        {
+          "opponent_label": "champ3",
+          "won": true,
+          "rounds": 1168,
+          "enemy_kills": 18,
+          "bullets_generated": 6051,
+          "victory_points": 0,
+          "score": 18832,
+          "source": "database"
+        }
+      ]
+    },
+    {
+      "name": "original",
+      "total_score": 68734,
+      "primary_won": true,
+      "primary_rounds": 1376,
+      "match_count": 5,
+      "matches": [
+        {
+          "opponent_label": "opponent",
+          "won": true,
+          "rounds": 1376,
+          "enemy_kills": 20,
+          "bullets_generated": 5559,
+          "victory_points": 0,
+          "score": 18624,
+          "source": "database"
+        },
+        {
+          "opponent_label": "champ0",
+          "won": true,
+          "rounds": 754,
+          "enemy_kills": 5,
+          "bullets_generated": 2069,
+          "victory_points": 0,
+          "score": 19246,
+          "source": "database"
+        },
+        {
+          "opponent_label": "champ1",
+          "won": true,
+          "rounds": 1376,
+          "enemy_kills": 20,
+          "bullets_generated": 5559,
+          "victory_points": 0,
+          "score": 18624,
+          "source": "database"
+        },
+        {
+          "opponent_label": "champ2",
+          "won": false,
+          "rounds": 2999,
+          "enemy_kills": 10,
+          "bullets_generated": 1765,
+          "victory_points": 0,
+          "score": 2518,
+          "source": "database"
+        },
+        {
+          "opponent_label": "champ3",
+          "won": true,
+          "rounds": 1893,
+          "enemy_kills": 31,
+          "bullets_generated": 6585,
+          "victory_points": 0,
+          "score": 9722,
+          "source": "database"
+        }
+      ]
+    },
+    {
+      "name": "v4",
+      "total_score": 33945,
+      "primary_won": false,
+      "primary_rounds": 1455,
+      "match_count": 5,
+      "matches": [
+        {
+          "opponent_label": "opponent",
+          "won": false,
+          "rounds": 1455,
+          "enemy_kills": 10,
+          "bullets_generated": 3291,
+          "victory_points": 0,
+          "score": 4077,
+          "source": "database"
+        },
+        {
+          "opponent_label": "champ0",
+          "won": false,
+          "rounds": 2999,
+          "enemy_kills": 8,
+          "bullets_generated": 6510,
+          "victory_points": 0,
+          "score": 2466,
+          "source": "database"
+        },
+        {
+          "opponent_label": "champ1",
+          "won": true,
+          "rounds": 1094,
+          "enemy_kills": 17,
+          "bullets_generated": 4551,
+          "victory_points": 0,
+          "score": 18906,
+          "source": "database"
+        },
+        {
+          "opponent_label": "champ2",
+          "won": false,
+          "rounds": 902,
+          "enemy_kills": 6,
+          "bullets_generated": 2120,
+          "victory_points": 0,
+          "score": 4419,
+          "source": "database"
+        },
+        {
+          "opponent_label": "champ3",
+          "won": false,
+          "rounds": 1455,
+          "enemy_kills": 10,
+          "bullets_generated": 3291,
+          "victory_points": 0,
+          "score": 4077,
+          "source": "database"
+        }
+      ]
+    },
+    {
+      "name": "v9",
+      "total_score": 30290,
+      "primary_won": false,
+      "primary_rounds": 1540,
+      "match_count": 5,
+      "matches": [
+        {
+          "opponent_label": "opponent",
+          "won": false,
+          "rounds": 1540,
+          "enemy_kills": 14,
+          "bullets_generated": 2357,
+          "victory_points": 0,
+          "score": 4183,
+          "source": "database"
+        },
+        {
+          "opponent_label": "champ0",
+          "won": true,
+          "rounds": 2143,
+          "enemy_kills": 23,
+          "bullets_generated": 10255,
+          "victory_points": 0,
+          "score": 9109,
+          "source": "database"
+        },
+        {
+          "opponent_label": "champ1",
+          "won": false,
+          "rounds": 2999,
+          "enemy_kills": 37,
+          "bullets_generated": 5518,
+          "victory_points": 0,
+          "score": 3906,
+          "source": "database"
+        },
+        {
+          "opponent_label": "champ2",
+          "won": true,
+          "rounds": 2013,
+          "enemy_kills": 16,
+          "bullets_generated": 12284,
+          "victory_points": 0,
+          "score": 8909,
+          "source": "database"
+        },
+        {
+          "opponent_label": "champ3",
+          "won": false,
+          "rounds": 1540,
+          "enemy_kills": 14,
+          "bullets_generated": 2357,
+          "victory_points": 0,
+          "score": 4183,
+          "source": "database"
+        }
+      ]
+    },
+    {
+      "name": "v6",
+      "total_score": 29648,
+      "primary_won": false,
+      "primary_rounds": 2734,
+      "match_count": 5,
+      "matches": [
+        {
+          "opponent_label": "opponent",
+          "won": false,
+          "rounds": 2734,
+          "enemy_kills": 79,
+          "bullets_generated": 14272,
+          "victory_points": 0,
+          "score": 6358,
+          "source": "database"
+        },
+        {
+          "opponent_label": "champ0",
+          "won": true,
+          "rounds": 1520,
+          "enemy_kills": 9,
+          "bullets_generated": 5866,
+          "victory_points": 0,
+          "score": 8988,
+          "source": "database"
+        },
+        {
+          "opponent_label": "champ1",
+          "won": true,
+          "rounds": 2999,
+          "enemy_kills": 77,
+          "bullets_generated": 18091,
+          "victory_points": 0,
+          "score": 6031,
+          "source": "database"
+        },
+        {
+          "opponent_label": "champ2",
+          "won": false,
+          "rounds": 2946,
+          "enemy_kills": 33,
+          "bullets_generated": 4629,
+          "victory_points": 0,
+          "score": 3750,
+          "source": "database"
+        },
+        {
+          "opponent_label": "champ3",
+          "won": false,
+          "rounds": 1713,
+          "enemy_kills": 24,
+          "bullets_generated": 3456,
+          "victory_points": 0,
+          "score": 4521,
+          "source": "database"
+        }
+      ]
+    },
+    {
+      "name": "v10",
+      "total_score": 28544,
+      "primary_won": false,
+      "primary_rounds": 2999,
+      "match_count": 5,
+      "matches": [
+        {
+          "opponent_label": "opponent",
+          "won": false,
+          "rounds": 2999,
+          "enemy_kills": 13,
+          "bullets_generated": 3279,
+          "victory_points": 0,
+          "score": 2683,
+          "source": "database"
+        },
+        {
+          "opponent_label": "champ0",
+          "won": true,
+          "rounds": 2912,
+          "enemy_kills": 35,
+          "bullets_generated": 15870,
+          "victory_points": 0,
+          "score": 8996,
+          "source": "database"
+        },
+        {
+          "opponent_label": "champ1",
+          "won": true,
+          "rounds": 2546,
+          "enemy_kills": 68,
+          "bullets_generated": 14122,
+          "victory_points": 0,
+          "score": 10995,
+          "source": "database"
+        },
+        {
+          "opponent_label": "champ2",
+          "won": false,
+          "rounds": 2999,
+          "enemy_kills": 23,
+          "bullets_generated": 3619,
+          "victory_points": 0,
+          "score": 3187,
+          "source": "database"
+        },
+        {
+          "opponent_label": "champ3",
+          "won": false,
+          "rounds": 2999,
+          "enemy_kills": 13,
+          "bullets_generated": 3279,
+          "victory_points": 0,
+          "score": 2683,
+          "source": "database"
+        }
+      ]
+    },
+    {
+      "name": "v3",
+      "total_score": 26284,
+      "primary_won": false,
+      "primary_rounds": 2999,
+      "match_count": 5,
+      "matches": [
+        {
+          "opponent_label": "opponent",
+          "won": false,
+          "rounds": 2999,
+          "enemy_kills": 11,
+          "bullets_generated": 3970,
+          "victory_points": 0,
+          "score": 2590,
+          "source": "database"
+        },
+        {
+          "opponent_label": "champ0",
+          "won": true,
+          "rounds": 2139,
+          "enemy_kills": 18,
+          "bullets_generated": 10357,
+          "victory_points": 0,
+          "score": 8864,
+          "source": "database"
+        },
+        {
+          "opponent_label": "champ1",
+          "won": true,
+          "rounds": 1509,
+          "enemy_kills": 25,
+          "bullets_generated": 7429,
+          "victory_points": 0,
+          "score": 9815,
+          "source": "database"
+        },
+        {
+          "opponent_label": "champ2",
+          "won": false,
+          "rounds": 2999,
+          "enemy_kills": 8,
+          "bullets_generated": 2429,
+          "victory_points": 0,
+          "score": 2425,
+          "source": "database"
+        },
+        {
+          "opponent_label": "champ3",
+          "won": false,
+          "rounds": 2999,
+          "enemy_kills": 11,
+          "bullets_generated": 3970,
+          "victory_points": 0,
+          "score": 2590,
+          "source": "database"
+        }
+      ]
+    },
+    {
+      "name": "v5",
+      "total_score": 23413,
+      "primary_won": false,
+      "primary_rounds": 2734,
+      "match_count": 5,
+      "matches": [
+        {
+          "opponent_label": "opponent",
+          "won": false,
+          "rounds": 2734,
+          "enemy_kills": 79,
+          "bullets_generated": 14272,
+          "victory_points": 0,
+          "score": 6358,
+          "source": "database"
+        },
+        {
+          "opponent_label": "champ0",
+          "won": false,
+          "rounds": 2026,
+          "enemy_kills": 0,
+          "bullets_generated": 0,
+          "victory_points": 0,
+          "score": 2974,
+          "source": "none"
+        },
+        {
+          "opponent_label": "champ1",
+          "won": true,
+          "rounds": 2999,
+          "enemy_kills": 97,
+          "bullets_generated": 26919,
+          "victory_points": 0,
+          "score": 7120,
+          "source": "database"
+        },
+        {
+          "opponent_label": "champ2",
+          "won": false,
+          "rounds": 1718,
+          "enemy_kills": 25,
+          "bullets_generated": 16392,
+          "victory_points": 0,
+          "score": 4695,
+          "source": "database"
+        },
+        {
+          "opponent_label": "champ3",
+          "won": false,
+          "rounds": 2734,
+          "enemy_kills": 0,
+          "bullets_generated": 0,
+          "victory_points": 0,
+          "score": 2266,
+          "source": "none"
+        }
+      ]
+    },
+    {
+      "name": "v2",
+      "total_score": 18916,
+      "primary_won": false,
+      "primary_rounds": 1985,
+      "match_count": 5,
+      "matches": [
+        {
+          "opponent_label": "opponent",
+          "won": false,
+          "rounds": 1985,
+          "enemy_kills": 31,
+          "bullets_generated": 3085,
+          "victory_points": 0,
+          "score": 4595,
+          "source": "database"
+        },
+        {
+          "opponent_label": "champ0",
+          "won": false,
+          "rounds": 2999,
+          "enemy_kills": 0,
+          "bullets_generated": 0,
+          "victory_points": 0,
+          "score": 2001,
+          "source": "none"
+        },
+        {
+          "opponent_label": "champ1",
+          "won": false,
+          "rounds": 1430,
+          "enemy_kills": 26,
+          "bullets_generated": 3113,
+          "victory_points": 0,
+          "score": 4901,
+          "source": "database"
+        },
+        {
+          "opponent_label": "champ2",
+          "won": false,
+          "rounds": 2999,
+          "enemy_kills": 16,
+          "bullets_generated": 2399,
+          "victory_points": 0,
+          "score": 2824,
+          "source": "database"
+        },
+        {
+          "opponent_label": "champ3",
+          "won": false,
+          "rounds": 1985,
+          "enemy_kills": 31,
+          "bullets_generated": 3085,
+          "victory_points": 0,
+          "score": 4595,
+          "source": "database"
+        }
+      ]
+    },
+    {
+      "name": "v8",
+      "total_score": 17884,
+      "primary_won": false,
+      "primary_rounds": 1436,
+      "match_count": 5,
+      "matches": [
+        {
+          "opponent_label": "opponent",
+          "won": false,
+          "rounds": 1436,
+          "enemy_kills": 5,
+          "bullets_generated": 1899,
+          "victory_points": 0,
+          "score": 3832,
+          "source": "database"
+        },
+        {
+          "opponent_label": "champ0",
+          "won": false,
+          "rounds": 2999,
+          "enemy_kills": 8,
+          "bullets_generated": 17961,
+          "victory_points": 0,
+          "score": 2580,
+          "source": "database"
+        },
+        {
+          "opponent_label": "champ1",
+          "won": false,
+          "rounds": 2016,
+          "enemy_kills": 29,
+          "bullets_generated": 5339,
+          "victory_points": 0,
+          "score": 4487,
+          "source": "database"
+        },
+        {
+          "opponent_label": "champ2",
+          "won": false,
+          "rounds": 2400,
+          "enemy_kills": 10,
+          "bullets_generated": 5356,
+          "victory_points": 0,
+          "score": 3153,
+          "source": "database"
+        },
+        {
+          "opponent_label": "champ3",
+          "won": false,
+          "rounds": 1436,
+          "enemy_kills": 5,
+          "bullets_generated": 1899,
+          "victory_points": 0,
+          "score": 3832,
+          "source": "database"
+        }
+      ]
+    },
+    {
+      "name": "v1",
+      "total_score": 16591,
+      "primary_won": false,
+      "primary_rounds": 1715,
+      "match_count": 5,
+      "matches": [
+        {
+          "opponent_label": "opponent",
+          "won": false,
+          "rounds": 1715,
+          "enemy_kills": 6,
+          "bullets_generated": 1168,
+          "victory_points": 0,
+          "score": 3596,
+          "source": "database"
+        },
+        {
+          "opponent_label": "champ0",
+          "won": false,
+          "rounds": 2999,
+          "enemy_kills": 2,
+          "bullets_generated": 2024,
+          "victory_points": 0,
+          "score": 2121,
+          "source": "database"
+        },
+        {
+          "opponent_label": "champ1",
+          "won": false,
+          "rounds": 1175,
+          "enemy_kills": 4,
+          "bullets_generated": 840,
+          "victory_points": 0,
+          "score": 4033,
+          "source": "database"
+        },
+        {
+          "opponent_label": "champ2",
+          "won": false,
+          "rounds": 1967,
+          "enemy_kills": 4,
+          "bullets_generated": 1266,
+          "victory_points": 0,
+          "score": 3245,
+          "source": "database"
+        },
+        {
+          "opponent_label": "champ3",
+          "won": false,
+          "rounds": 1715,
+          "enemy_kills": 6,
+          "bullets_generated": 1168,
+          "victory_points": 0,
+          "score": 3596,
+          "source": "database"
+        }
+      ]
+    }
+  ]
+}

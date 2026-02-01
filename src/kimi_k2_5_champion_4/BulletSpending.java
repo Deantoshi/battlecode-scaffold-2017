@@ -1,4 +1,4 @@
-package kimi_k2_5;
+package kimi_k2_5_champion_4;
 import battlecode.common.*;
 
 public class BulletSpending {

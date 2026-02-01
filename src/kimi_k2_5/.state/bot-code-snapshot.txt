@@ -1,4 +1,124 @@
-package copy_bot;
+# Bot Code
+
+=== FILE: BulletSpending.java ===
+package kimi_k2_5;
+import battlecode.common.*;
+
+public class BulletSpending {
+    static RobotController rc;
+    // Hybrid Dominance: Balanced reserves for steady economy and army production
+    static final float BULLET_RESERVE_EARLY = 120f;   // Moderate reserve for early game flexibility
+    static final float BULLET_RESERVE_MID = 80f;      // Lower mid-game to enable sustained production
+    static final float BULLET_RESERVE_LATE = 50f;     // Minimal late-game to maximize VP potential
+
+    public static void init(RobotController rc) {
+        BulletSpending.rc = rc;
+    }
+
+    public static void spendPolicy() throws GameActionException {
+        int round = rc.getRoundNum();
+        float reserve = getReserveForRound(round);
+
+        // Centralized spend order based on game phase
+        if (rc.getType() == RobotType.ARCHON) {
+            Direction dir = randomDirection();
+            // Hire gardeners at 0.025f for first 600 rounds (high early expansion)
+            if (shouldHireGardener(dir, round)) {
+                rc.hireGardener(dir);
+            }
+            // VP donations: Start at round 1500 with moderate frequency
+            if (round >= 1500) {
+                float donateAmount = getDonateAmount(reserve, round);
+                if (donateAmount > 0f) {
+                    rc.donate(donateAmount);
+                }
+            }
+            return;
+        }
+        if (rc.getType() == RobotType.GARDENER) {
+            // Plant trees at 0.03f throughout the game (sustained economy)
+            Direction dir = randomDirection();
+            if (shouldPlantTree(dir, round)) {
+                rc.plantTree(dir);
+            }
+            // Build scouts at 0.015f consistently (recon and harassment)
+            dir = randomDirection();
+            if (shouldBuildScout(dir, round)) {
+                rc.buildRobot(RobotType.SCOUT, dir);
+            }
+            // Build soldiers at 0.02f consistently (main army)
+            dir = randomDirection();
+            if (shouldBuildSoldier(dir, round)) {
+                rc.buildRobot(RobotType.SOLDIER, dir);
+            }
+            // VP donations: Moderate donations from gardeners starting round 1500
+            if (round >= 1500) {
+                float donateAmount = getDonateAmount(reserve, round);
+                if (donateAmount > 0f) {
+                    rc.donate(donateAmount);
+                }
+            }
+        }
+    }
+
+    private static float getReserveForRound(int round) {
+        if (round < 1000) {
+            return BULLET_RESERVE_EARLY;  // 120f - moderate early reserve
+        } else if (round < 2000) {
+            return BULLET_RESERVE_MID;    // 80f - enable sustained production
+        } else {
+            return BULLET_RESERVE_LATE;   // 50f - minimal late reserve
+        }
+    }
+
+    private static boolean shouldHireGardener(Direction dir, int round) {
+        if (!rc.canHireGardener(dir)) return false;
+        // Hire gardeners at 0.025f for first 600 rounds
+        float hireChance = (round < 600) ? 0.025f : 0.015f;
+        return Math.random() < hireChance;
+    }
+
+    private static boolean shouldPlantTree(Direction dir, int round) {
+        if (!rc.canPlantTree(dir)) return false;
+        // Plant trees at 0.03f throughout the game (sustained economy focus)
+        return Math.random() < 0.03f;
+    }
+
+    private static boolean shouldBuildScout(Direction dir, int round) {
+        if (!rc.canBuildRobot(RobotType.SCOUT, dir)) return false;
+        // Build scouts at 0.015f consistently
+        return Math.random() < 0.015f;
+    }
+
+    private static boolean shouldBuildSoldier(Direction dir, int round) {
+        if (!rc.canBuildRobot(RobotType.SOLDIER, dir)) return false;
+        // Build soldiers at 0.02f consistently (higher than scouts for army strength)
+        return Math.random() < 0.02f;
+    }
+
+    private static float getDonateAmount(float reserve, int round) throws GameActionException {
+        float bullets = rc.getTeamBullets();
+        float cost = rc.getVictoryPointCost();
+        
+        // Moderate donations - adapt to whatever victory condition presents itself first
+        float effectiveReserve = (round >= 2500) ? BULLET_RESERVE_LATE : reserve;
+        
+        float donateAmount = bullets - effectiveReserve;
+        if (donateAmount >= cost) {
+            int pointsToBuy = (int)(donateAmount / cost);
+            // Moderate frequency - buy in chunks rather than every round
+            return pointsToBuy * cost;
+        }
+        return 0f;
+    }
+
+    private static Direction randomDirection() {
+        return new Direction((float)Math.random() * 2 * (float)Math.PI);
+    }
+}
+
+=== FILE: RobotPlayer.java ===
+package kimi_k2_5;
 import battlecode.common.*;
 
 public strictfp class RobotPlayer {
@@ -38,7 +158,7 @@ public strictfp class RobotPlayer {
 	}
 
     static void runArchon() throws GameActionException {
-        System.out.println("I'm an archon! Bullet Starvation mode!");
+        System.out.println("I'm an archon! Hybrid Dominance mode!");
 
         // The code you want your robot to perform every round should be in this loop
         while (true) {
@@ -68,7 +188,7 @@ public strictfp class RobotPlayer {
     }
 
 	static void runGardener() throws GameActionException {
-        System.out.println("I'm a gardener! Bullet Starvation mode!");
+        System.out.println("I'm a gardener! Hybrid Dominance mode!");
         int round = rc.getRoundNum();
 
         // The code you want your robot to perform every round should be in this loop
@@ -122,9 +242,8 @@ public strictfp class RobotPlayer {
     }
 
     static void runScout() throws GameActionException {
-        System.out.println("I'm a scout! Bullet Starvation mode!");
+        System.out.println("I'm a scout! Hybrid Dominance mode!");
         Team enemy = rc.getTeam().opponent();
-        Team myTeam = rc.getTeam();
         int round = rc.getRoundNum();
 
         // The code you want your robot to perform every round should be in this loop
@@ -135,31 +254,10 @@ public strictfp class RobotPlayer {
                 MapLocation myLocation = rc.getLocation();
                 round = rc.getRoundNum();
 
-                // BULLET STARVATION PRIORITY: Shake all trees for bullets first
-                TreeInfo[] neutralTrees = rc.senseNearbyTrees(-1, Team.NEUTRAL);
-                boolean shookTree = false;
-                for (TreeInfo tree : neutralTrees) {
-                    if (tree.containedBullets > 0 && rc.canShake(tree.ID)) {
-                        rc.shake(tree.ID);
-                        shookTree = true;
-                        break; // Shake one tree per turn
-                    }
-                }
-
-                // Find neutral trees with bullets to move toward
-                TreeInfo targetTree = null;
-                int maxBullets = 0;
-                for (TreeInfo tree : neutralTrees) {
-                    if (tree.containedBullets > maxBullets) {
-                        maxBullets = tree.containedBullets;
-                        targetTree = tree;
-                    }
-                }
-
-                // Scouts have superior vision - find enemy robots
+                // Scouts have superior vision - find enemy production units
                 RobotInfo[] robots = rc.senseNearbyRobots(-1, enemy);
 
-                // Priority targeting: GARDENER > ARCHON > other (starve their economy)
+                // Priority targeting: ARCHON > GARDENER > other
                 RobotInfo target = findPriorityTarget(robots);
 
                 if (target != null) {
@@ -170,9 +268,10 @@ public strictfp class RobotPlayer {
                         rc.fireSingleShot(toTarget);
                     }
                     
-                    // Bullet Starvation: Aggressive toward production units
-                    if (target.type == RobotType.GARDENER || target.type == RobotType.ARCHON) {
-                        // Push toward production targets to deny economy
+                    // Hybrid Dominance: Flexible scout behavior
+                    // Aggressive when targeting production, cautious otherwise
+                    if (target.type == RobotType.ARCHON || target.type == RobotType.GARDENER) {
+                        // Push toward production targets
                         tryMove(toTarget);
                     } else {
                         // Circle at safe distance for reconnaissance
@@ -186,10 +285,6 @@ public strictfp class RobotPlayer {
                         rc.broadcast(3, (int)target.location.y);
                         rc.broadcast(4, target.type.ordinal()); // Type indicator
                     }
-                } else if (targetTree != null && !shookTree) {
-                    // Move toward trees with bullets to shake them
-                    Direction toTree = myLocation.directionTo(targetTree.location);
-                    tryMove(toTree);
                 } else {
                     // No priority targets - explore toward enemy base or random
                     MapLocation enemyLoc = guessEnemyLocation();
@@ -212,7 +307,7 @@ public strictfp class RobotPlayer {
     }
 
     static void runSoldier() throws GameActionException {
-        System.out.println("I'm a soldier! Bullet Starvation mode!");
+        System.out.println("I'm a soldier! Hybrid Dominance mode!");
         Team enemy = rc.getTeam().opponent();
         int round = rc.getRoundNum();
 
@@ -227,7 +322,7 @@ public strictfp class RobotPlayer {
                 // See if there are any nearby enemy robots
                 RobotInfo[] robots = rc.senseNearbyRobots(-1, enemy);
 
-                // Priority targeting: GARDENER > ARCHON > other (starve their economy)
+                // Priority targeting: ARCHON > GARDENER > other
                 RobotInfo target = findPriorityTarget(robots);
 
                 if (target != null) {
@@ -239,14 +334,14 @@ public strictfp class RobotPlayer {
                         rc.fireSingleShot(toTarget);
                     }
                     
-                    // Bullet Starvation: Secure controlled areas
-                    // Push when targeting production, defend positions otherwise
-                    if (target.type == RobotType.GARDENER || target.type == RobotType.ARCHON) {
+                    // Hybrid Dominance: Flexible tactics
+                    // Push when advantageous, defend when necessary
+                    if (target.type == RobotType.ARCHON || target.type == RobotType.GARDENER) {
                         // Aggressive push toward production units
                         tryMove(toTarget);
                     } else if (distToTarget > 8f) {
-                        // Enemy combat unit at range - advance to control area
-                        Direction cautiousAdvance = toTarget.rotateLeftDegrees(10);
+                        // Enemy combat unit at range - advance cautiously
+                        Direction cautiousAdvance = toTarget.rotateLeftDegrees(15);
                         tryMove(cautiousAdvance);
                     } else {
                         // Close combat - kite at optimal range
@@ -282,27 +377,27 @@ public strictfp class RobotPlayer {
         }
     }
 
-    // Helper method to find priority target: GARDENER > ARCHON > other (economy targeting)
+    // Helper method to find priority target: ARCHON > GARDENER > other
     static RobotInfo findPriorityTarget(RobotInfo[] robots) {
-        RobotInfo gardenerTarget = null;
         RobotInfo archonTarget = null;
+        RobotInfo gardenerTarget = null;
         RobotInfo anyTarget = null;
-        double gardenerDist = Double.MAX_VALUE;
         double archonDist = Double.MAX_VALUE;
+        double gardenerDist = Double.MAX_VALUE;
         double anyDist = Double.MAX_VALUE;
         
         for (RobotInfo robot : robots) {
             double dist = rc.getLocation().distanceSquaredTo(robot.location);
             
-            if (robot.type == RobotType.GARDENER) {
-                if (dist < gardenerDist) {
-                    gardenerTarget = robot;
-                    gardenerDist = dist;
-                }
-            } else if (robot.type == RobotType.ARCHON) {
+            if (robot.type == RobotType.ARCHON) {
                 if (dist < archonDist) {
                     archonTarget = robot;
                     archonDist = dist;
+                }
+            } else if (robot.type == RobotType.GARDENER) {
+                if (dist < gardenerDist) {
+                    gardenerTarget = robot;
+                    gardenerDist = dist;
                 }
             } else {
                 if (dist < anyDist) {
@@ -312,9 +407,9 @@ public strictfp class RobotPlayer {
             }
         }
         
-        // Return in priority order: GARDENER > ARCHON > any (starve economy)
-        if (gardenerTarget != null) return gardenerTarget;
+        // Return in priority order: ARCHON > GARDENER > any
         if (archonTarget != null) return archonTarget;
+        if (gardenerTarget != null) return gardenerTarget;
         return anyTarget;
     }
 
@@ -336,7 +431,7 @@ public strictfp class RobotPlayer {
     }
 
     static void runLumberjack() throws GameActionException {
-        System.out.println("I'm a lumberjack! Bullet Starvation mode!");
+        System.out.println("I'm a lumberjack! Hybrid Dominance mode!");
         Team enemy = rc.getTeam().opponent();
         int round = rc.getRoundNum();
 
@@ -346,56 +441,32 @@ public strictfp class RobotPlayer {
             // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
             try {
                 round = rc.getRoundNum();
-                MapLocation myLocation = rc.getLocation();
 
-                // BULLET STARVATION PRIORITY: Chop neutral trees to deny enemy bullets
-                TreeInfo[] neutralTrees = rc.senseNearbyTrees(RobotType.LUMBERJACK.sensorRadius, Team.NEUTRAL);
-                TreeInfo bestTree = null;
-                int maxBullets = 0;
-                
-                for (TreeInfo tree : neutralTrees) {
-                    // Priority: Trees with robots > trees with bullets > other trees
-                    if (tree.containedRobot != null) {
-                        bestTree = tree;
-                        break; // Highest priority - deny enemy free units
-                    } else if (tree.containedBullets > maxBullets) {
-                        maxBullets = tree.containedBullets;
-                        bestTree = tree;
-                    }
-                }
-                
-                // Chop the best tree if we can
-                if (bestTree != null && rc.canChop(bestTree.ID)) {
-                    rc.chop(bestTree.ID);
+                // See if there are any enemy robots within striking range
+                RobotInfo[] robots = rc.senseNearbyRobots(RobotType.LUMBERJACK.bodyRadius+GameConstants.LUMBERJACK_STRIKE_RADIUS, enemy);
+
+                if(robots.length > 0 && !rc.hasAttacked()) {
+                    // Use strike() to hit all nearby robots!
+                    rc.strike();
                 } else {
-                    // No good trees to chop - check for enemies to strike
-                    RobotInfo[] robots = rc.senseNearbyRobots(RobotType.LUMBERJACK.bodyRadius+GameConstants.LUMBERJACK_STRIKE_RADIUS, enemy);
+                    // No close robots, so search for robots within sight radius
+                    robots = rc.senseNearbyRobots(-1,enemy);
 
-                    if(robots.length > 0 && !rc.hasAttacked()) {
-                        // Use strike() to hit all nearby robots!
-                        rc.strike();
-                    } else {
-                        // No close robots, so search for robots within sight radius
-                        robots = rc.senseNearbyRobots(-1,enemy);
-
-                        // If there is a robot, move toward it
-                        if(robots.length > 0) {
-                            // Priority targeting for lumberjack: GARDENER > ARCHON > other
-                            RobotInfo target = findPriorityTarget(robots);
-                            
-                            if (target != null) {
-                                MapLocation enemyLocation = target.getLocation();
-                                Direction toEnemy = myLocation.directionTo(enemyLocation);
-                                tryMove(toEnemy);
-                            }
-                        } else if (bestTree != null) {
-                            // Move toward best tree to chop it
-                            Direction toTree = myLocation.directionTo(bestTree.location);
-                            tryMove(toTree);
-                        } else {
-                            // Move Randomly
-                            tryMove(randomDirection());
+                    // If there is a robot, move toward it
+                    if(robots.length > 0) {
+                        MapLocation myLocation = rc.getLocation();
+                        
+                        // Priority targeting for lumberjack: GARDENER > ARCHON > other
+                        RobotInfo target = findPriorityTarget(robots);
+                        
+                        if (target != null) {
+                            MapLocation enemyLocation = target.getLocation();
+                            Direction toEnemy = myLocation.directionTo(enemyLocation);
+                            tryMove(toEnemy);
                         }
+                    } else {
+                        // Move Randomly
+                        tryMove(randomDirection());
                     }
                 }
 
@@ -501,3 +572,4 @@ public strictfp class RobotPlayer {
         return (perpendicularDist <= rc.getType().bodyRadius);
     }
 }
+

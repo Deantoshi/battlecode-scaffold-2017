@@ -1,0 +1,154 @@
+{
+  "archetypes": [
+    {
+      "id": 1,
+      "name": "VP Rush",
+      "win_condition": "vp_rush",
+      "philosophy": "Abandon traditional military buildup in favor of early VP donations when costs are lowest. Win by reaching 1000 VP before the opponent can organize a defense.",
+      "key_changes": [
+        "Update BulletSpending.spendPolicy(): Set VP donation start to round 300 instead of 1500",
+        "Update BulletSpending.getDonateAmount(): Donate aggressively with reserve of only 20-30 bullets",
+        "Update BulletSpending.shouldHireGardener(): Reduce hire chance to 0.005f - minimal economy",
+        "Update BulletSpending.shouldPlantTree(): Disable tree planting (set to 0.0f) - VP > economy",
+        "Update BulletSpending.shouldBuildSoldier(): Reduce to 0.005f - token defense only"
+      ],
+      "unit_priority": ["SCOUT", "SOLDIER"],
+      "engagement_style": "Avoid major combat. Scouts for vision and harassment only. Survive and donate."
+    },
+    {
+      "id": 2,
+      "name": "Early Soldier Swarm",
+      "win_condition": "elimination",
+      "philosophy": "Overwhelm the opponent in the first 500 rounds before they can establish defenses. Mass soldiers targeting enemy production units.",
+      "key_changes": [
+        "Update BulletSpending.spendPolicy(): Maximize gardener hiring at 0.04f for rounds 0-300",
+        "Update BulletSpending.shouldBuildSoldier(): Increase to 0.05f for first 600 rounds",
+        "Update BulletSpending.shouldPlantTree(): Reduce to 0.01f - minimal economy, all-in aggression",
+        "Update BulletSpending.shouldBuildScout(): Disable (0.0f) - focus purely on soldiers",
+        "Update BulletSpending.getReserveForRound(): Set early reserve to 50f for max unit production"
+      ],
+      "unit_priority": ["SOLDIER", "GARDENER", "LUMBERJACK"],
+      "engagement_style": "Aggressive all-in pushes. Target enemy gardeners and archons first. No retreat."
+    },
+    {
+      "id": 3,
+      "name": "Tank Fortress",
+      "win_condition": "elimination",
+      "philosophy": "Build a core of heavy tanks that slowly advance, destroying everything in their path. Tanks body-damage trees and absorb massive punishment.",
+      "key_changes": [
+        "Update BulletSpending.spendPolicy(): Add TANK to build options with 0.015f priority",
+        "Update BulletSpending.shouldBuildSoldier(): Reduce to 0.01f - supplement with tanks",
+        "Update BulletSpending.shouldPlantTree(): Increase to 0.04f - need bullet income for expensive tanks",
+        "Update BulletSpending.shouldHireGardener(): Maintain 0.02f for sustained production",
+        "Update BulletSpending.getReserveForRound(): Higher reserves (150f early) to afford 300-bullet tanks"
+      ],
+      "unit_priority": ["TANK", "SOLDIER", "SCOUT"],
+      "engagement_style": "Slow, methodical advancement. Use pentad shots for maximum damage. Tanks clear forests by walking through them."
+    },
+    {
+      "id": 4,
+      "name": "Scout Swarm Harassment",
+      "win_condition": "hybrid",
+      "philosophy": "Mass produce cheap scouts (80 bullets vs 100) to harass enemy gardeners, collect bullets from trees, and control vision. Scouts move through trees and have superior speed/vision.",
+      "key_changes": [
+        "Update BulletSpending.shouldBuildScout(): Increase to 0.04f - mass scout production",
+        "Update BulletSpending.shouldBuildSoldier(): Reduce to 0.008f - minimal backup",
+        "Update BulletSpending.shouldPlantTree(): 0.02f - moderate economy for sustained swarm",
+        "Update BulletSpending.shouldHireGardener(): 0.02f - support swarm with gardeners",
+        "Add Tank build at very low priority (0.003f) for late-game tank conversion if needed"
+      ],
+      "unit_priority": ["SCOUT", "SOLDIER", "TANK"],
+      "engagement_style": "Hit-and-run harassment. Target isolated gardeners. Use superior speed to kite. Shake trees for bullets."
+    },
+    {
+      "id": 5,
+      "name": "Tree Economy Titan",
+      "win_condition": "hybrid",
+      "philosophy": "Maximize tree farming early to create overwhelming late-game bullet income. Trees produce 1 bullet/round at full health after 80-round maturation.",
+      "key_changes": [
+        "Update BulletSpending.shouldPlantTree(): Increase to 0.08f - maximize tree planting",
+        "Update BulletSpending.shouldHireGardener(): Increase to 0.03f for first 800 rounds - more planters",
+        "Update BulletSpending.shouldBuildSoldier(): Reduce to 0.012f - minimal defense early",
+        "Update BulletSpending.getReserveForRound(): Very high reserves (200f early) to fund massive tree planting",
+        "Update BulletSpending.getDonateAmount(): Start VP donations at round 2000 with massive bullet surplus"
+      ],
+      "unit_priority": ["SOLDIER", "LUMBERJACK", "TANK"],
+      "engagement_style": "Defensive early game. Let trees mature. Late-game overwhelming force from bullet surplus."
+    },
+    {
+      "id": 6,
+      "name": "Lumberjack Forest Clear",
+      "win_condition": "elimination",
+      "philosophy": "Use lumberjacks to clear forests (chopping deals 5 damage) and strike multiple enemies at once in melee. Excellent on dense maps like Clusters.",
+      "key_changes": [
+        "Update BulletSpending.spendPolicy(): Add LUMBERJACK priority at 0.035f",
+        "Update BulletSpending.shouldBuildSoldier(): Reduce to 0.015f - support with ranged",
+        "Update BulletSpending.shouldPlantTree(): 0.02f - moderate economy",
+        "Update BulletSpending.shouldBuildScout(): 0.01f - scout for lumberjacks",
+        "Update BulletSpending.getReserveForRound(): 80f - lumberjacks are cheap (100 bullets)"
+      ],
+      "unit_priority": ["LUMBERJACK", "SOLDIER", "SCOUT"],
+      "engagement_style": "Close-quarters combat. Strike damages all nearby enemies simultaneously. Clear trees to open paths and release contained units/bullets."
+    },
+    {
+      "id": 7,
+      "name": "Defensive Turtle",
+      "win_condition": "hybrid",
+      "philosophy": "Build dense tree walls around archon, use pentad shots from soldiers behind cover. Force opponent to break through defenses while accumulating VP.",
+      "key_changes": [
+        "Update BulletSpending.shouldPlantTree(): Increase to 0.06f - dense defensive walls",
+        "Update BulletSpending.shouldBuildSoldier(): 0.025f - defenders behind trees",
+        "Update BulletSpending.shouldHireGardener(): 0.025f - maintain defensive production",
+        "Update BulletSpending.getDonateAmount(): Start VP donations at round 1200 - moderate timing",
+        "Update BulletSpending.getReserveForRound(): 100f - balanced for defense + VP"
+      ],
+      "unit_priority": ["SOLDIER", "TANK", "LUMBERJACK"],
+      "engagement_style": "Static defensive positions. Use pentad shots through tree gaps. Let enemy come to you. Counter-attack when they overextend."
+    },
+    {
+      "id": 8,
+      "name": "Archon Assassin",
+      "win_condition": "elimination",
+      "philosophy": "All units prioritize killing enemy archons above all else. Archons have 400 HP but killing them instantly wins via elimination (no more gardener hiring).",
+      "key_changes": [
+        "Update BulletSpending.shouldBuildScout(): 0.025f - fast scouts to find archons",
+        "Update BulletSpending.shouldBuildSoldier(): 0.025f - soldiers to kill archons",
+        "Update BulletSpending.shouldPlantTree(): 0.02f - sustain but don't over-invest",
+        "Update BulletSpending.shouldHireGardener(): 0.02f - steady production",
+        "Modify targeting logic: Only target ARCHON, ignore everything else until archons dead"
+      ],
+      "unit_priority": ["SCOUT", "SOLDIER", "TANK"],
+      "engagement_style": "Obsessive archon hunting. Scouts find archon locations and broadcast. All units converge on archon. Ignore enemy soldiers unless they block path."
+    },
+    {
+      "id": 9,
+      "name": "Bullet Starvation",
+      "win_condition": "elimination",
+      "philosophy": "Control the map to deny enemy access to neutral trees containing bullets. Starve opponent of resources while maintaining steady production.",
+      "key_changes": [
+        "Update BulletSpending.shouldBuildScout(): 0.03f - control map and shake trees",
+        "Update BulletSpending.shouldBuildSoldier(): 0.02f - secure controlled areas",
+        "Update BulletSpending.shouldBuildLumberjack(): 0.015f - harvest trees before enemy",
+        "Update BulletSpending.shouldPlantTree(): 0.025f - secure own bullet income",
+        "Update BulletSpending.shouldHireGardener(): 0.022f - spread across map"
+      ],
+      "unit_priority": ["SCOUT", "LUMBERJACK", "SOLDIER"],
+      "engagement_style": "Map control and denial. Scouts shake all trees for bullets. Secure neutral tree clusters. Deny enemy access to bullet sources."
+    },
+    {
+      "id": 10,
+      "name": "Mid-Game Power Spike",
+      "win_condition": "hybrid",
+      "philosophy": "Conserve resources early, then unleash massive coordinated attack around round 1000-1500 when opponent is vulnerable. Timed VP donation backup plan.",
+      "key_changes": [
+        "Update BulletSpending.shouldHireGardener(): 0.015f early, spike to 0.04f at round 800",
+        "Update BulletSpending.shouldBuildSoldier(): 0.008f early, spike to 0.05f at round 1000",
+        "Update BulletSpending.shouldPlantTree(): 0.04f early, reduce to 0.01f at round 1000",
+        "Update BulletSpending.getReserveForRound(): Very high early (250f), drop to 30f at round 1000",
+        "Update BulletSpending.getDonateAmount(): Backup VP at round 2200 if elimination failing"
+      ],
+      "unit_priority": ["SOLDIER", "TANK", "LUMBERJACK"],
+      "engagement_style": "Defensive/conservative early. At round 1000, all-in coordinated push with pentad shots. Overwhelm before opponent can react."
+    }
+  ]
+}

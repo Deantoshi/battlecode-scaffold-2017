@@ -1,4 +1,4 @@
-package copy_bot;
+package kimi_k2_5_champion_4;
 import battlecode.common.*;
 
 public strictfp class RobotPlayer {
@@ -38,7 +38,7 @@ public strictfp class RobotPlayer {
 	}
 
     static void runArchon() throws GameActionException {
-        System.out.println("I'm an archon! Bullet Starvation mode!");
+        System.out.println("I'm an archon! Defensive Turtle mode!");
 
         // The code you want your robot to perform every round should be in this loop
         while (true) {
@@ -68,7 +68,7 @@ public strictfp class RobotPlayer {
     }
 
 	static void runGardener() throws GameActionException {
-        System.out.println("I'm a gardener! Bullet Starvation mode!");
+        System.out.println("I'm a gardener! Defensive Turtle mode!");
         int round = rc.getRoundNum();
 
         // The code you want your robot to perform every round should be in this loop
@@ -122,9 +122,8 @@ public strictfp class RobotPlayer {
     }
 
     static void runScout() throws GameActionException {
-        System.out.println("I'm a scout! Bullet Starvation mode!");
+        System.out.println("I'm a scout! Defensive Turtle mode!");
         Team enemy = rc.getTeam().opponent();
-        Team myTeam = rc.getTeam();
         int round = rc.getRoundNum();
 
         // The code you want your robot to perform every round should be in this loop
@@ -135,31 +134,10 @@ public strictfp class RobotPlayer {
                 MapLocation myLocation = rc.getLocation();
                 round = rc.getRoundNum();
 
-                // BULLET STARVATION PRIORITY: Shake all trees for bullets first
-                TreeInfo[] neutralTrees = rc.senseNearbyTrees(-1, Team.NEUTRAL);
-                boolean shookTree = false;
-                for (TreeInfo tree : neutralTrees) {
-                    if (tree.containedBullets > 0 && rc.canShake(tree.ID)) {
-                        rc.shake(tree.ID);
-                        shookTree = true;
-                        break; // Shake one tree per turn
-                    }
-                }
-
-                // Find neutral trees with bullets to move toward
-                TreeInfo targetTree = null;
-                int maxBullets = 0;
-                for (TreeInfo tree : neutralTrees) {
-                    if (tree.containedBullets > maxBullets) {
-                        maxBullets = tree.containedBullets;
-                        targetTree = tree;
-                    }
-                }
-
-                // Scouts have superior vision - find enemy robots
+                // Scouts have superior vision - find enemy production units
                 RobotInfo[] robots = rc.senseNearbyRobots(-1, enemy);
 
-                // Priority targeting: GARDENER > ARCHON > other (starve their economy)
+                // Priority targeting: ARCHON > GARDENER > other
                 RobotInfo target = findPriorityTarget(robots);
 
                 if (target != null) {
@@ -170,13 +148,14 @@ public strictfp class RobotPlayer {
                         rc.fireSingleShot(toTarget);
                     }
                     
-                    // Bullet Starvation: Aggressive toward production units
-                    if (target.type == RobotType.GARDENER || target.type == RobotType.ARCHON) {
-                        // Push toward production targets to deny economy
-                        tryMove(toTarget);
+                    // Defensive Turtle: Scouts harass but avoid overextending
+                    if (target.type == RobotType.ARCHON || target.type == RobotType.GARDENER) {
+                        // Careful approach to production targets
+                        Direction carefulDir = toTarget.rotateLeftDegrees(30);
+                        tryMove(carefulDir);
                     } else {
-                        // Circle at safe distance for reconnaissance
-                        Direction circlingDir = toTarget.rotateLeftDegrees(60);
+                        // Maintain safe distance for reconnaissance
+                        Direction circlingDir = toTarget.rotateLeftDegrees(90);
                         tryMove(circlingDir);
                     }
                     
@@ -186,10 +165,6 @@ public strictfp class RobotPlayer {
                         rc.broadcast(3, (int)target.location.y);
                         rc.broadcast(4, target.type.ordinal()); // Type indicator
                     }
-                } else if (targetTree != null && !shookTree) {
-                    // Move toward trees with bullets to shake them
-                    Direction toTree = myLocation.directionTo(targetTree.location);
-                    tryMove(toTree);
                 } else {
                     // No priority targets - explore toward enemy base or random
                     MapLocation enemyLoc = guessEnemyLocation();
@@ -212,7 +187,7 @@ public strictfp class RobotPlayer {
     }
 
     static void runSoldier() throws GameActionException {
-        System.out.println("I'm a soldier! Bullet Starvation mode!");
+        System.out.println("I'm a soldier! Defensive Turtle mode!");
         Team enemy = rc.getTeam().opponent();
         int round = rc.getRoundNum();
 
@@ -227,32 +202,36 @@ public strictfp class RobotPlayer {
                 // See if there are any nearby enemy robots
                 RobotInfo[] robots = rc.senseNearbyRobots(-1, enemy);
 
-                // Priority targeting: GARDENER > ARCHON > other (starve their economy)
+                // Priority targeting: ARCHON > GARDENER > other
                 RobotInfo target = findPriorityTarget(robots);
 
                 if (target != null) {
                     Direction toTarget = myLocation.directionTo(target.location);
                     float distToTarget = myLocation.distanceTo(target.location);
                     
-                    // Fire at priority target
-                    if (rc.canFireSingleShot()) {
+                    // Defensive Turtle: Use pentad shots through tree gaps for maximum defensive firepower
+                    if (rc.canFirePentadShot()) {
+                        rc.firePentadShot(toTarget);
+                    } else if (rc.canFireSingleShot()) {
                         rc.fireSingleShot(toTarget);
                     }
                     
-                    // Bullet Starvation: Secure controlled areas
-                    // Push when targeting production, defend positions otherwise
-                    if (target.type == RobotType.GARDENER || target.type == RobotType.ARCHON) {
-                        // Aggressive push toward production units
-                        tryMove(toTarget);
-                    } else if (distToTarget > 8f) {
-                        // Enemy combat unit at range - advance to control area
-                        Direction cautiousAdvance = toTarget.rotateLeftDegrees(10);
-                        tryMove(cautiousAdvance);
-                    } else {
-                        // Close combat - kite at optimal range
+                    // Defensive Turtle: Static defensive positions - let enemy come to you
+                    // Hold position behind tree walls, only advance if enemy overextends
+                    if (target.type == RobotType.ARCHON || target.type == RobotType.GARDENER) {
+                        // Enemy production exposed - careful advance
+                        if (distToTarget > 10f) {
+                            tryMove(toTarget);
+                        }
+                    } else if (distToTarget < 5f) {
+                        // Enemy too close - kite back to maintain defensive position
                         Direction kiteDir = target.location.directionTo(myLocation);
                         tryMove(kiteDir);
+                    } else if (distToTarget > 12f) {
+                        // Enemy at range - hold position (static defense)
+                        // Don't move, let them come through our tree wall
                     }
+                    // At optimal range (5-12f) - hold position and fire
                 } else {
                     // No enemies visible - check broadcast for enemy production location
                     int targetX = rc.readBroadcast(2);
@@ -260,15 +239,12 @@ public strictfp class RobotPlayer {
                     if (targetX != 0 || targetY != 0) {
                         MapLocation targetLoc = new MapLocation(targetX, targetY);
                         Direction toTarget = myLocation.directionTo(targetLoc);
-                        tryMove(toTarget);
+                        // Defensive Turtle: Don't overextend, move only partway
+                        Direction partialMove = toTarget.rotateLeftDegrees(45);
+                        tryMove(partialMove);
                     } else {
-                        // No intel - move randomly or toward enemy start
-                        MapLocation enemyLoc = guessEnemyLocation();
-                        if (enemyLoc != null) {
-                            tryMove(myLocation.directionTo(enemyLoc));
-                        } else {
-                            tryMove(randomDirection());
-                        }
+                        // No intel - stay in defensive position
+                        tryMove(randomDirection());
                     }
                 }
 
@@ -282,27 +258,27 @@ public strictfp class RobotPlayer {
         }
     }
 
-    // Helper method to find priority target: GARDENER > ARCHON > other (economy targeting)
+    // Helper method to find priority target: ARCHON > GARDENER > other
     static RobotInfo findPriorityTarget(RobotInfo[] robots) {
-        RobotInfo gardenerTarget = null;
         RobotInfo archonTarget = null;
+        RobotInfo gardenerTarget = null;
         RobotInfo anyTarget = null;
-        double gardenerDist = Double.MAX_VALUE;
         double archonDist = Double.MAX_VALUE;
+        double gardenerDist = Double.MAX_VALUE;
         double anyDist = Double.MAX_VALUE;
         
         for (RobotInfo robot : robots) {
             double dist = rc.getLocation().distanceSquaredTo(robot.location);
             
-            if (robot.type == RobotType.GARDENER) {
-                if (dist < gardenerDist) {
-                    gardenerTarget = robot;
-                    gardenerDist = dist;
-                }
-            } else if (robot.type == RobotType.ARCHON) {
+            if (robot.type == RobotType.ARCHON) {
                 if (dist < archonDist) {
                     archonTarget = robot;
                     archonDist = dist;
+                }
+            } else if (robot.type == RobotType.GARDENER) {
+                if (dist < gardenerDist) {
+                    gardenerTarget = robot;
+                    gardenerDist = dist;
                 }
             } else {
                 if (dist < anyDist) {
@@ -312,9 +288,9 @@ public strictfp class RobotPlayer {
             }
         }
         
-        // Return in priority order: GARDENER > ARCHON > any (starve economy)
-        if (gardenerTarget != null) return gardenerTarget;
+        // Return in priority order: ARCHON > GARDENER > any
         if (archonTarget != null) return archonTarget;
+        if (gardenerTarget != null) return gardenerTarget;
         return anyTarget;
     }
 
@@ -336,7 +312,7 @@ public strictfp class RobotPlayer {
     }
 
     static void runLumberjack() throws GameActionException {
-        System.out.println("I'm a lumberjack! Bullet Starvation mode!");
+        System.out.println("I'm a lumberjack! Defensive Turtle mode!");
         Team enemy = rc.getTeam().opponent();
         int round = rc.getRoundNum();
 
@@ -346,56 +322,32 @@ public strictfp class RobotPlayer {
             // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
             try {
                 round = rc.getRoundNum();
-                MapLocation myLocation = rc.getLocation();
 
-                // BULLET STARVATION PRIORITY: Chop neutral trees to deny enemy bullets
-                TreeInfo[] neutralTrees = rc.senseNearbyTrees(RobotType.LUMBERJACK.sensorRadius, Team.NEUTRAL);
-                TreeInfo bestTree = null;
-                int maxBullets = 0;
-                
-                for (TreeInfo tree : neutralTrees) {
-                    // Priority: Trees with robots > trees with bullets > other trees
-                    if (tree.containedRobot != null) {
-                        bestTree = tree;
-                        break; // Highest priority - deny enemy free units
-                    } else if (tree.containedBullets > maxBullets) {
-                        maxBullets = tree.containedBullets;
-                        bestTree = tree;
-                    }
-                }
-                
-                // Chop the best tree if we can
-                if (bestTree != null && rc.canChop(bestTree.ID)) {
-                    rc.chop(bestTree.ID);
+                // See if there are any enemy robots within striking range
+                RobotInfo[] robots = rc.senseNearbyRobots(RobotType.LUMBERJACK.bodyRadius+GameConstants.LUMBERJACK_STRIKE_RADIUS, enemy);
+
+                if(robots.length > 0 && !rc.hasAttacked()) {
+                    // Use strike() to hit all nearby robots!
+                    rc.strike();
                 } else {
-                    // No good trees to chop - check for enemies to strike
-                    RobotInfo[] robots = rc.senseNearbyRobots(RobotType.LUMBERJACK.bodyRadius+GameConstants.LUMBERJACK_STRIKE_RADIUS, enemy);
+                    // No close robots, so search for robots within sight radius
+                    robots = rc.senseNearbyRobots(-1,enemy);
 
-                    if(robots.length > 0 && !rc.hasAttacked()) {
-                        // Use strike() to hit all nearby robots!
-                        rc.strike();
-                    } else {
-                        // No close robots, so search for robots within sight radius
-                        robots = rc.senseNearbyRobots(-1,enemy);
-
-                        // If there is a robot, move toward it
-                        if(robots.length > 0) {
-                            // Priority targeting for lumberjack: GARDENER > ARCHON > other
-                            RobotInfo target = findPriorityTarget(robots);
-                            
-                            if (target != null) {
-                                MapLocation enemyLocation = target.getLocation();
-                                Direction toEnemy = myLocation.directionTo(enemyLocation);
-                                tryMove(toEnemy);
-                            }
-                        } else if (bestTree != null) {
-                            // Move toward best tree to chop it
-                            Direction toTree = myLocation.directionTo(bestTree.location);
-                            tryMove(toTree);
-                        } else {
-                            // Move Randomly
-                            tryMove(randomDirection());
+                    // If there is a robot, move toward it
+                    if(robots.length > 0) {
+                        MapLocation myLocation = rc.getLocation();
+                        
+                        // Priority targeting for lumberjack: GARDENER > ARCHON > other
+                        RobotInfo target = findPriorityTarget(robots);
+                        
+                        if (target != null) {
+                            MapLocation enemyLocation = target.getLocation();
+                            Direction toEnemy = myLocation.directionTo(enemyLocation);
+                            tryMove(toEnemy);
                         }
+                    } else {
+                        // Move Randomly
+                        tryMove(randomDirection());
                     }
                 }
 
