@@ -44,7 +44,7 @@ Create 10 DIVERSE archetypes covering different strategic dimensions:
 
 **Suggested dimensions to vary:**
 - **Economy focus:** Tree farming vs aggressive bullet spending vs VP rushing
-- **Unit composition:** Soldier spam, Tank heavy, Scout swarm, Lumberjack rush, mixed
+- **Unit composition:** Soldier, Tank, Scout, Lumberjack, mixed
 - **Aggression level:** Defensive turtle, balanced, hyper-aggressive
 - **Timing:** Early rush, mid-game power spike, late-game scaling
 - **Map control:** Expansion focused, compact base, mobile army
@@ -52,10 +52,10 @@ Create 10 DIVERSE archetypes covering different strategic dimensions:
 - **Movement style:** Static defense, roaming patrols, all-in pushes
 
 **Each archetype must include:**
-1. `name` - Short descriptive name (e.g., "Tank Fortress", "Scout Swarm")
+1. `name` - Short descriptive name (e.g., "Defensive Fortress", "Combat Swarm")
 2. `win_condition` - "elimination", "vp_rush", or "hybrid"
 3. `philosophy` - 1-2 sentence strategic philosophy
-4. `key_changes` - List of 3-5 specific code changes to implement (spending changes must be framed as updates to `BulletSpending.spendPolicy()`)
+4. `key_changes` - List of specific code changes to implement (spending changes must be framed as updates to `BulletSpending.spendPolicy()`)
 5. `unit_priority` - Which units to build and in what order
 6. `engagement_style` - How to approach combat
 
@@ -93,9 +93,6 @@ src/{BOT}/.state/archetypes.json
 
 **DO:**
 - Make each archetype fundamentally different
-- Include at least 2 VP-focused archetypes
-- Include at least 2 rush/aggressive archetypes
-- Include at least 1 economic/scaling archetype
 - Be specific about what code changes to make
 - Consider the opponent's likely strategy
 
