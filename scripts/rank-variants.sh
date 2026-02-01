@@ -403,7 +403,8 @@ if [[ "$SHOULD_PROMOTE" == "YES" && "$WINNER" != "original" ]]; then
     # Fix internal references to the package
     for java_file in "$CHAMPION_DIR"/*.java; do
         if [[ -f "$java_file" ]]; then
-            sed -i '' "s/import ${BOT}\./import ${BOT}_champion_${NUM_CHAMPIONS}./g" "$java_file"
+            sed -i.bak "s/import ${BOT}\./import ${BOT}_champion_${NUM_CHAMPIONS}./g" "$java_file"
+            rm -f "${java_file}.bak"
         fi
     done
     echo "✓ Champion saved to $CHAMPION_DIR"
