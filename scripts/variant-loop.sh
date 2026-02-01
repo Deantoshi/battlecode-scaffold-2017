@@ -273,23 +273,7 @@ print(data.get('goal_met', 'NO'))
     fi
 
     # ─────────────────────────────────────────────────────────────────────────────
-    # Step 5: Check if goal achieved
-    # ─────────────────────────────────────────────────────────────────────────────
-    if [[ "$GOAL_MET" == "YES" ]]; then
-        printf '%s\n' "${BOLD}${GREEN}"
-        echo "┌─────────────────────────────────────────────────────────────────────────────┐"
-        echo "│                           GOAL ACHIEVED!                                    │"
-        echo "└─────────────────────────────────────────────────────────────────────────────┘"
-        printf '%s\n' "${NC}"
-        echo ""
-        echo "Bot $BOT has achieved victory in ≤1500 rounds!"
-        echo "Winner: $WINNER"
-        echo "Iterations: $iter"
-        exit 0
-    fi
-
-    # ─────────────────────────────────────────────────────────────────────────────
-    # Step 6: Copy current bot to copy_bot for next iteration's opponent
+    # Step 5: Copy current bot to copy_bot for next iteration's opponent
     # ─────────────────────────────────────────────────────────────────────────────
     printf '%s\n' "${BLUE}Copying $BOT to copy_bot...${NC}"
     bash "$(cd "$(dirname "$0")" && pwd)/copy_bot.sh" "src/$BOT"
@@ -303,15 +287,14 @@ print(data.get('goal_met', 'NO'))
 done
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# MAX ITERATIONS REACHED
+# ALL ITERATIONS COMPLETE
 # ═══════════════════════════════════════════════════════════════════════════════
 
-printf '%s\n' "${BOLD}${YELLOW}"
+printf '%s\n' "${BOLD}${GREEN}"
 echo "═══════════════════════════════════════════════════════════════════════════════"
-echo "                     MAX ITERATIONS REACHED ($MAX_ITERS)"
+echo "                  ALL $MAX_ITERS ITERATIONS COMPLETE"
 echo "═══════════════════════════════════════════════════════════════════════════════"
 printf '%s\n' "${NC}"
 
-echo "Goal was NOT achieved within $MAX_ITERS iterations."
 echo "Best result saved in src/$BOT/"
-exit 1
+exit 0
