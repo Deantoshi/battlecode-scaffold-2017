@@ -11,6 +11,5 @@
     "write": false,
     "task": false
   },
-  "$schema": "https://opencode.ai/config.json",
-  "model": "opencode/minimax-m2.1-free"
+  "$schema": "https://opencode.ai/config.json"
 }

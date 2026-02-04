@@ -1,6 +1,11 @@
 package claude_opus_4_5_low;
 import battlecode.common.*;
 
+/**
+ * Balanced Army Archetype
+ * Philosophy: Build a diverse army with multiple unit types for adaptation.
+ * Engagement Style: Adaptive - soldiers at range, lumberjacks clear/strike, tanks push
+ */
 public strictfp class RobotPlayer {
     static RobotController rc;
 
@@ -16,8 +21,7 @@ public strictfp class RobotPlayer {
         RobotPlayer.rc = rc;
         BulletSpending.init(rc);
 
-        // Here, we've separated the controls into a different method for each RobotType.
-        // You can add the missing ones or rewrite this into your own control structure.
+        // Balanced Army: Handle all unit types including tanks
         switch (rc.getType()) {
             case ARCHON:
                 runArchon();
@@ -30,6 +34,9 @@ public strictfp class RobotPlayer {
                 break;
             case LUMBERJACK:
                 runLumberjack();
+                break;
+            case TANK:
+                runTank();
                 break;
         }
 	}
@@ -78,6 +85,15 @@ public strictfp class RobotPlayer {
                 int yPos = rc.readBroadcast(1);
                 MapLocation archonLoc = new MapLocation(xPos,yPos);
 
+                // Water nearby trees to maintain economy
+                TreeInfo[] trees = rc.senseNearbyTrees(2f, rc.getTeam());
+                for (TreeInfo tree : trees) {
+                    if (rc.canWater(tree.ID)) {
+                        rc.water(tree.ID);
+                        break;
+                    }
+                }
+
                 // Centralized spend policy (plant/build/donate)
                 BulletSpending.spendPolicy();
 
@@ -94,8 +110,11 @@ public strictfp class RobotPlayer {
         }
     }
 
+    /**
+     * Balanced Army Soldier: Engage at range, prioritize high-value targets
+     */
     static void runSoldier() throws GameActionException {
-        System.out.println("I'm an soldier!");
+        System.out.println("I'm a soldier!");
         Team enemy = rc.getTeam().opponent();
 
         // The code you want your robot to perform every round should be in this loop
@@ -110,15 +129,38 @@ public strictfp class RobotPlayer {
 
                 // If there are some...
                 if (robots.length > 0) {
-                    // And we have enough bullets, and haven't attacked yet this turn...
-                    if (rc.canFireSingleShot()) {
-                        // ...Then fire a bullet in the direction of the enemy.
-                        rc.fireSingleShot(rc.getLocation().directionTo(robots[0].location));
+                    // Balanced Army: Prioritize targets (gardeners > archons > others)
+                    RobotInfo target = selectPriorityTarget(robots);
+                    Direction toEnemy = myLocation.directionTo(target.location);
+                    float distToEnemy = myLocation.distanceTo(target.location);
+                    
+                    // Engage at range - use triad for grouped enemies
+                    if (robots.length >= 3 && rc.canFireTriadShot()) {
+                        rc.fireTriadShot(toEnemy);
+                    } else if (rc.canFireSingleShot()) {
+                        rc.fireSingleShot(toEnemy);
+                    }
+                    
+                    // Move toward enemy but maintain some distance for safety
+                    if (distToEnemy > 4f) {
+                        tryMove(toEnemy);
+                    } else if (distToEnemy < 2.5f) {
+                        // Too close, back off slightly
+                        tryMove(toEnemy.opposite());
+                    } else {
+                        // Good range, strafe
+                        tryMove(toEnemy.rotateLeftDegrees(90));
+                    }
+                } else {
+                    // No enemies - move toward enemy archon spawn
+                    MapLocation[] enemyArchons = rc.getInitialArchonLocations(enemy);
+                    if (enemyArchons.length > 0) {
+                        Direction toEnemyBase = myLocation.directionTo(enemyArchons[0]);
+                        tryMove(toEnemyBase);
+                    } else {
+                        tryMove(randomDirection());
                     }
                 }
-
-                // Move randomly
-                tryMove(randomDirection());
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();
@@ -130,6 +172,9 @@ public strictfp class RobotPlayer {
         }
     }
 
+    /**
+     * Balanced Army Lumberjack: Clear trees and strike enemies in melee
+     */
     static void runLumberjack() throws GameActionException {
         System.out.println("I'm a lumberjack!");
         Team enemy = rc.getTeam().opponent();
@@ -139,26 +184,37 @@ public strictfp class RobotPlayer {
 
             // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
             try {
+                MapLocation myLocation = rc.getLocation();
 
-                // See if there are any enemy robots within striking range (distance 1 from lumberjack's radius)
+                // See if there are any enemy robots within striking range
                 RobotInfo[] robots = rc.senseNearbyRobots(RobotType.LUMBERJACK.bodyRadius+GameConstants.LUMBERJACK_STRIKE_RADIUS, enemy);
 
                 if(robots.length > 0 && !rc.hasAttacked()) {
                     // Use strike() to hit all nearby robots!
                     rc.strike();
                 } else {
-                    // No close robots, so search for robots within sight radius
-                    robots = rc.senseNearbyRobots(-1,enemy);
+                    // No close robots, check for trees to chop
+                    TreeInfo[] neutralTrees = rc.senseNearbyTrees(-1, Team.NEUTRAL);
+                    
+                    // Search for robots within sight radius
+                    robots = rc.senseNearbyRobots(-1, enemy);
 
-                    // If there is a robot, move towards it
+                    // Priority: Chase enemies > Chop trees
                     if(robots.length > 0) {
-                        MapLocation myLocation = rc.getLocation();
                         MapLocation enemyLocation = robots[0].getLocation();
                         Direction toEnemy = myLocation.directionTo(enemyLocation);
-
                         tryMove(toEnemy);
+                    } else if (neutralTrees.length > 0 && !rc.hasAttacked()) {
+                        // Chop nearest tree to clear paths
+                        TreeInfo nearestTree = neutralTrees[0];
+                        if (rc.canChop(nearestTree.ID)) {
+                            rc.chop(nearestTree.ID);
+                        } else {
+                            // Move toward tree
+                            tryMove(myLocation.directionTo(nearestTree.location));
+                        }
                     } else {
-                        // Move Randomly
+                        // Move randomly
                         tryMove(randomDirection());
                     }
                 }
@@ -170,6 +226,90 @@ public strictfp class RobotPlayer {
                 System.out.println("Lumberjack Exception");
                 e.printStackTrace();
             }
+        }
+    }
+
+    /**
+     * Balanced Army Tank: Heavy push, body-ram through obstacles
+     */
+    static void runTank() throws GameActionException {
+        System.out.println("I'm a tank!");
+        Team enemy = rc.getTeam().opponent();
+
+        while (true) {
+            try {
+                MapLocation myLocation = rc.getLocation();
+
+                // See if there are any nearby enemy robots
+                RobotInfo[] robots = rc.senseNearbyRobots(-1, enemy);
+
+                if (robots.length > 0) {
+                    // Tank: Prioritize high-value targets and push hard
+                    RobotInfo target = selectPriorityTarget(robots);
+                    Direction toEnemy = myLocation.directionTo(target.location);
+                    float distToEnemy = myLocation.distanceTo(target.location);
+                    
+                    // Tank uses pentad for max damage when enemies are close
+                    if (distToEnemy < 5f && robots.length >= 2 && rc.canFirePentadShot()) {
+                        rc.firePentadShot(toEnemy);
+                    } else if (distToEnemy < 6f && rc.canFireTriadShot()) {
+                        rc.fireTriadShot(toEnemy);
+                    } else if (rc.canFireSingleShot()) {
+                        rc.fireSingleShot(toEnemy);
+                    }
+                    
+                    // Tanks push forward aggressively - they can body-ram trees
+                    tryMove(toEnemy);
+                } else {
+                    // No enemies - push toward enemy base
+                    MapLocation[] enemyArchons = rc.getInitialArchonLocations(enemy);
+                    if (enemyArchons.length > 0) {
+                        Direction toEnemyBase = myLocation.directionTo(enemyArchons[0]);
+                        tryMove(toEnemyBase);
+                    } else {
+                        tryMove(randomDirection());
+                    }
+                }
+
+                Clock.yield();
+
+            } catch (Exception e) {
+                System.out.println("Tank Exception");
+                e.printStackTrace();
+            }
+        }
+    }
+
+    /**
+     * Balanced Army target priority:
+     * 1. Gardeners (kill economy)
+     * 2. Archons (kill production)
+     * 3. Combat units by threat level
+     */
+    static RobotInfo selectPriorityTarget(RobotInfo[] enemies) {
+        RobotInfo bestTarget = enemies[0];
+        int bestPriority = getTargetPriority(bestTarget.type);
+        
+        for (RobotInfo enemy : enemies) {
+            int priority = getTargetPriority(enemy.type);
+            if (priority > bestPriority) {
+                bestPriority = priority;
+                bestTarget = enemy;
+            }
+        }
+        
+        return bestTarget;
+    }
+    
+    static int getTargetPriority(RobotType type) {
+        switch (type) {
+            case GARDENER: return 100;  // Highest - kills economy
+            case ARCHON: return 90;     // Very high - kills production
+            case SOLDIER: return 50;    // Medium threat
+            case LUMBERJACK: return 40; // Medium threat
+            case TANK: return 30;       // Hard to kill
+            case SCOUT: return 20;      // Low threat
+            default: return 0;
         }
     }
 
