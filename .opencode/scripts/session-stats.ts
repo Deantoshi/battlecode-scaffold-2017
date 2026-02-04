@@ -32,6 +32,7 @@ interface MessageInfo {
   id: string
   sessionID: string
   role: "user" | "assistant"
+  parentID?: string
   cost?: number
   tokens?: {
     input: number
@@ -44,6 +45,7 @@ interface MessageInfo {
   }
   modelID?: string
   providerID?: string
+  variant?: string
 }
 
 interface PartInfo {
@@ -81,9 +83,11 @@ interface SessionStats {
         }
       }
       cost: number
+      variant?: string
     }
   >
   toolUsage: Record<string, number>
+  reasoningVariants: Set<string>
   timeRange: {
     created: number
     updated: number
@@ -194,6 +198,7 @@ async function getSessionStats(sessionID: string): Promise<SessionStats> {
     },
     models: {},
     toolUsage: {},
+    reasoningVariants: new Set(),
     timeRange: {
       created: sessionInfo.time.created,
       updated: sessionInfo.time.updated,
@@ -202,6 +207,11 @@ async function getSessionStats(sessionID: string): Promise<SessionStats> {
 
   // Process messages
   for (const message of messages) {
+    // Track reasoning variants from user messages
+    if (message.role === "user" && message.variant) {
+      stats.reasoningVariants.add(message.variant)
+    }
+
     if (message.role === "assistant") {
       stats.totalCost += message.cost || 0
 
@@ -215,6 +225,12 @@ async function getSessionStats(sessionID: string): Promise<SessionStats> {
       }
       stats.models[modelKey].messages++
       stats.models[modelKey].cost += message.cost || 0
+
+      // Find the corresponding user message to get variant
+      const userMessage = messages.find((m) => m.role === "user" && m.id === message.parentID)
+      if (userMessage?.variant && !stats.models[modelKey].variant) {
+        stats.models[modelKey].variant = userMessage.variant
+      }
 
       if (message.tokens) {
         stats.totalTokens.input += message.tokens.input || 0
@@ -275,6 +291,12 @@ function displaySessionStats(stats: SessionStats) {
   const truncatedTitle = stats.title.length > 35 ? stats.title.substring(0, 32) + "..." : stats.title
   console.log(renderRow("Title", truncatedTitle))
   console.log(renderRow("Messages", stats.totalMessages.toLocaleString()))
+  if (stats.reasoningVariants.size > 0) {
+    const variants = Array.from(stats.reasoningVariants)
+      .map((v) => v.toUpperCase())
+      .join(", ")
+    console.log(renderRow("Reasoning Levels", variants))
+  }
   console.log(renderRow("Created", formatDate(stats.timeRange.created)))
   console.log(renderRow("Updated", formatDate(stats.timeRange.updated)))
   console.log("└────────────────────────────────────────────────────────┘")
@@ -309,6 +331,9 @@ function displaySessionStats(stats: SessionStats) {
     for (const [model, usage] of Object.entries(stats.models)) {
       const modelDisplay = model.length > 54 ? model.substring(0, 51) + "..." : model
       console.log(`│ ${modelDisplay.padEnd(54)} │`)
+      if (usage.variant) {
+        console.log(renderRow("  Reasoning Level", usage.variant.toUpperCase()))
+      }
       console.log(renderRow("  Messages", usage.messages.toLocaleString()))
       console.log(renderRow("  Input Tokens", formatNumber(usage.tokens.input)))
       console.log(renderRow("  Output Tokens", formatNumber(usage.tokens.output)))
