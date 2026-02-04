@@ -24,6 +24,10 @@
 *.swp
 *.pyc
 
+# Node lockfiles
+/package-lock.json
+/scripts/package-lock.json
+
 # Gradle
 .gradle
 *.jar
