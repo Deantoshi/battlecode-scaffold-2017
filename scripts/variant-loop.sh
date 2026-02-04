@@ -43,7 +43,7 @@ if [[ "$AI_ENGINE" == "opencode" ]]; then
     OPENCODE_STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/state}"
     OPENCODE_MODEL_JSON="${OPENCODE_MODEL_JSON:-$OPENCODE_STATE_HOME/opencode/model.json}"
     if [[ -f "$OPENCODE_MODEL_JSON" ]]; then
-        readarray -t __opencode_model_info < <(python3 - "$OPENCODE_MODEL_JSON" "${MODEL:-}" <<'PY'
+        { read -r OPENCODE_SELECTED_MODEL; read -r OPENCODE_SELECTED_VARIANT; } < <(python3 - "$OPENCODE_MODEL_JSON" "${MODEL:-}" <<'PY'
 import json
 import sys
 
@@ -83,9 +83,6 @@ emit(current_model, variant)
 PY
         ) || true
 
-        OPENCODE_SELECTED_MODEL="${__opencode_model_info[0]:-}"
-        OPENCODE_SELECTED_VARIANT="${__opencode_model_info[1]:-}"
-
         if [[ -z "$MODEL" && -n "$OPENCODE_SELECTED_MODEL" ]]; then
             MODEL="$OPENCODE_SELECTED_MODEL"
         fi
@@ -93,6 +90,25 @@ PY
             VARIANT="$OPENCODE_SELECTED_VARIANT"
         fi
     fi
+
+    # Require a resolved model — abort early so you never run blind
+    if [[ -z "$MODEL" ]]; then
+        printf '%s\n' "${RED}═══════════════════════════════════════════════════════════════════════════════${NC}"
+        printf '%s\n' "${RED}  ERROR: Could not detect active opencode model.${NC}"
+        printf '%s\n' "${RED}  State file: ${OPENCODE_MODEL_JSON:-<not set>}${NC}"
+        printf '%s\n' "${RED}  Either select a model in the TUI first, or override with:${NC}"
+        printf '%s\n' "${RED}    MODEL=provider/model-id ./scripts/variant-loop.sh ...${NC}"
+        printf '%s\n' "${RED}═══════════════════════════════════════════════════════════════════════════════${NC}"
+        exit 1
+    fi
+
+    printf '%s\n' "${GREEN}═══════════════════════════════════════════════════════════════════════════════${NC}"
+    printf '%s\n' "${GREEN}  Model detected from opencode state file:${NC}"
+    printf '%s\n' "${BOLD}    MODEL:   ${MODEL}${NC}"
+    printf '%s\n' "${BOLD}    VARIANT: ${VARIANT:-<none>}${NC}"
+    printf '%s\n' "${GREEN}  Source: ${OPENCODE_MODEL_JSON}${NC}"
+    printf '%s\n' "${GREEN}═══════════════════════════════════════════════════════════════════════════════${NC}"
+    echo ""
 fi
 
 # Validate arguments
