@@ -1,4 +1,4 @@
-package copy_bot;
+package claude_opus_4_5_low;
 import battlecode.common.*;
 
 public class BulletSpending {
