@@ -37,6 +37,64 @@ MODEL="${MODEL:-}"
 VARIANT="${VARIANT:-}"
 RUN_ID="${RUN_ID:-$(date +%Y%m%d-%H%M%S)-$$}"
 
+# If using opencode, default to the TUI-selected model/variant when not explicitly set.
+# This reads from opencode's state file: $XDG_STATE_HOME/opencode/model.json (fallback: ~/.local/state).
+if [[ "$AI_ENGINE" == "opencode" ]]; then
+    OPENCODE_STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/state}"
+    OPENCODE_MODEL_JSON="${OPENCODE_MODEL_JSON:-$OPENCODE_STATE_HOME/opencode/model.json}"
+    if [[ -f "$OPENCODE_MODEL_JSON" ]]; then
+        readarray -t __opencode_model_info < <(python3 - "$OPENCODE_MODEL_JSON" "${MODEL:-}" <<'PY'
+import json
+import sys
+
+path = sys.argv[1]
+requested = sys.argv[2] if len(sys.argv) > 2 else ""
+
+def emit(model: str, variant: str) -> None:
+    print(model or "")
+    print(variant or "")
+
+try:
+    with open(path, "r") as f:
+        data = json.load(f)
+except Exception:
+    emit("", "")
+    sys.exit(0)
+
+current = data.get("current") or {}
+provider = current.get("providerID")
+model_id = current.get("modelID")
+current_model = f"{provider}/{model_id}" if provider and model_id else ""
+
+if not current_model:
+    recent = data.get("recent") or []
+    if isinstance(recent, list) and recent:
+        item = recent[0] or {}
+        provider = item.get("providerID")
+        model_id = item.get("modelID")
+        if provider and model_id:
+            current_model = f"{provider}/{model_id}"
+
+model_for_variant = requested or current_model
+variant_map = data.get("variant") or {}
+variant = variant_map.get(model_for_variant, "") if model_for_variant else ""
+
+emit(current_model, variant)
+PY
+        ) || true
+
+        OPENCODE_SELECTED_MODEL="${__opencode_model_info[0]:-}"
+        OPENCODE_SELECTED_VARIANT="${__opencode_model_info[1]:-}"
+
+        if [[ -z "$MODEL" && -n "$OPENCODE_SELECTED_MODEL" ]]; then
+            MODEL="$OPENCODE_SELECTED_MODEL"
+        fi
+        if [[ -z "$VARIANT" && -n "$OPENCODE_SELECTED_VARIANT" ]]; then
+            VARIANT="$OPENCODE_SELECTED_VARIANT"
+        fi
+    fi
+fi
+
 # Validate arguments
 if [[ -z "$BOT" || -z "$OPPONENT" ]]; then
     printf '%s\n' "${RED}Usage: $0 <bot> <opponent> [map] [max-iterations]${NC}"
