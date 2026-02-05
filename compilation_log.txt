@@ -1,0 +1,149 @@
+:compileEngineKotlin UP-TO-DATE
+:compileEngineJava UP-TO-DATE
+:copyEngineKotlinClasses UP-TO-DATE
+:compileEngineScala UP-TO-DATE
+:processEngineResources UP-TO-DATE
+:engineClasses UP-TO-DATE
+:compileKotlin UP-TO-DATE
+:compileJava/Users/danieldean/Documents/work_code/battlecode-scaffold-2017/src/gemini_3_pro_high_v3/BulletSpending.java:4: error: duplicate class: copy_bot.BulletSpending
+public class BulletSpending {
+       ^
+/Users/danieldean/Documents/work_code/battlecode-scaffold-2017/src/gemini_3_pro_high_v5/BulletSpending.java:4: error: duplicate class: copy_bot.BulletSpending
+public class BulletSpending {
+       ^
+/Users/danieldean/Documents/work_code/battlecode-scaffold-2017/src/gemini_3_pro_high/BulletSpending.java:4: error: duplicate class: copy_bot.BulletSpending
+public class BulletSpending {
+       ^
+/Users/danieldean/Documents/work_code/battlecode-scaffold-2017/src/gemini_3_pro_high_v9/BulletSpending.java:4: error: duplicate class: copy_bot.BulletSpending
+public class BulletSpending {
+       ^
+/Users/danieldean/Documents/work_code/battlecode-scaffold-2017/src/gemini_3_pro_high_v7/BulletSpending.java:4: error: duplicate class: copy_bot.BulletSpending
+public class BulletSpending {
+       ^
+/Users/danieldean/Documents/work_code/battlecode-scaffold-2017/src/gemini_3_pro_high_v6/BulletSpending.java:4: error: duplicate class: copy_bot.BulletSpending
+public class BulletSpending {
+       ^
+/Users/danieldean/Documents/work_code/battlecode-scaffold-2017/src/gemini_3_pro_high_v8/BulletSpending.java:4: error: duplicate class: copy_bot.BulletSpending
+public class BulletSpending {
+       ^
+/Users/danieldean/Documents/work_code/battlecode-scaffold-2017/src/gemini_3_pro_high_v10/RobotPlayer.java:17: error: cannot find symbol
+        BulletSpending.init(rc);
+        ^
+  symbol:   variable BulletSpending
+  location: class RobotPlayer
+/Users/danieldean/Documents/work_code/battlecode-scaffold-2017/src/gemini_3_pro_high_v10/RobotPlayer.java:47: error: cannot find symbol
+                BulletSpending.spendPolicy();
+                ^
+  symbol:   variable BulletSpending
+  location: class RobotPlayer
+/Users/danieldean/Documents/work_code/battlecode-scaffold-2017/src/gemini_3_pro_high_v10/RobotPlayer.java:82: error: cannot find symbol
+                BulletSpending.spendPolicy();
+                ^
+  symbol:   variable BulletSpending
+  location: class RobotPlayer
+/Users/danieldean/Documents/work_code/battlecode-scaffold-2017/src/gemini_3_pro_high_v3/RobotPlayer.java:17: error: cannot find symbol
+        BulletSpending.init(rc);
+        ^
+  symbol:   variable BulletSpending
+  location: class RobotPlayer
+/Users/danieldean/Documents/work_code/battlecode-scaffold-2017/src/gemini_3_pro_high_v3/RobotPlayer.java:47: error: cannot find symbol
+                BulletSpending.spendPolicy();
+                ^
+  symbol:   variable BulletSpending
+  location: class RobotPlayer
+/Users/danieldean/Documents/work_code/battlecode-scaffold-2017/src/gemini_3_pro_high_v3/RobotPlayer.java:82: error: cannot find symbol
+                BulletSpending.spendPolicy();
+                ^
+  symbol:   variable BulletSpending
+  location: class RobotPlayer
+/Users/danieldean/Documents/work_code/battlecode-scaffold-2017/src/gemini_3_pro_high_v5/RobotPlayer.java:17: error: cannot find symbol
+        BulletSpending.init(rc);
+        ^
+  symbol:   variable BulletSpending
+  location: class RobotPlayer
+/Users/danieldean/Documents/work_code/battlecode-scaffold-2017/src/gemini_3_pro_high_v5/RobotPlayer.java:47: error: cannot find symbol
+                BulletSpending.spendPolicy();
+                ^
+  symbol:   variable BulletSpending
+  location: class RobotPlayer
+/Users/danieldean/Documents/work_code/battlecode-scaffold-2017/src/gemini_3_pro_high_v5/RobotPlayer.java:82: error: cannot find symbol
+                BulletSpending.spendPolicy();
+                ^
+  symbol:   variable BulletSpending
+  location: class RobotPlayer
+/Users/danieldean/Documents/work_code/battlecode-scaffold-2017/src/gemini_3_pro_high_v9/RobotPlayer.java:17: error: cannot find symbol
+        BulletSpending.init(rc);
+        ^
+  symbol:   variable BulletSpending
+  location: class RobotPlayer
+/Users/danieldean/Documents/work_code/battlecode-scaffold-2017/src/gemini_3_pro_high_v9/RobotPlayer.java:47: error: cannot find symbol
+                BulletSpending.spendPolicy();
+                ^
+  symbol:   variable BulletSpending
+  location: class RobotPlayer
+/Users/danieldean/Documents/work_code/battlecode-scaffold-2017/src/gemini_3_pro_high_v9/RobotPlayer.java:82: error: cannot find symbol
+                BulletSpending.spendPolicy();
+                ^
+  symbol:   variable BulletSpending
+  location: class RobotPlayer
+/Users/danieldean/Documents/work_code/battlecode-scaffold-2017/src/gemini_3_pro_high_v7/RobotPlayer.java:17: error: cannot find symbol
+        BulletSpending.init(rc);
+        ^
+  symbol:   variable BulletSpending
+  location: class RobotPlayer
+/Users/danieldean/Documents/work_code/battlecode-scaffold-2017/src/gemini_3_pro_high_v7/RobotPlayer.java:47: error: cannot find symbol
+                BulletSpending.spendPolicy();
+                ^
+  symbol:   variable BulletSpending
+  location: class RobotPlayer
+/Users/danieldean/Documents/work_code/battlecode-scaffold-2017/src/gemini_3_pro_high_v7/RobotPlayer.java:82: error: cannot find symbol
+                BulletSpending.spendPolicy();
+                ^
+  symbol:   variable BulletSpending
+  location: class RobotPlayer
+/Users/danieldean/Documents/work_code/battlecode-scaffold-2017/src/gemini_3_pro_high_v6/RobotPlayer.java:17: error: cannot find symbol
+        BulletSpending.init(rc);
+        ^
+  symbol:   variable BulletSpending
+  location: class RobotPlayer
+/Users/danieldean/Documents/work_code/battlecode-scaffold-2017/src/gemini_3_pro_high_v6/RobotPlayer.java:47: error: cannot find symbol
+                BulletSpending.spendPolicy();
+                ^
+  symbol:   variable BulletSpending
+  location: class RobotPlayer
+/Users/danieldean/Documents/work_code/battlecode-scaffold-2017/src/gemini_3_pro_high_v6/RobotPlayer.java:82: error: cannot find symbol
+                BulletSpending.spendPolicy();
+                ^
+  symbol:   variable BulletSpending
+  location: class RobotPlayer
+/Users/danieldean/Documents/work_code/battlecode-scaffold-2017/src/gemini_3_pro_high_v8/RobotPlayer.java:17: error: cannot find symbol
+        BulletSpending.init(rc);
+        ^
+  symbol:   variable BulletSpending
+  location: class RobotPlayer
+/Users/danieldean/Documents/work_code/battlecode-scaffold-2017/src/gemini_3_pro_high_v8/RobotPlayer.java:47: error: cannot find symbol
+                BulletSpending.spendPolicy();
+                ^
+  symbol:   variable BulletSpending
+  location: class RobotPlayer
+/Users/danieldean/Documents/work_code/battlecode-scaffold-2017/src/gemini_3_pro_high_v8/RobotPlayer.java:82: error: cannot find symbol
+                BulletSpending.spendPolicy();
+                ^
+  symbol:   variable BulletSpending
+  location: class RobotPlayer
+28 errors
+ FAILED
+:copyMainKotlinClasses SKIPPED
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':compileJava'.
+> Compilation failed; see the compiler error output for details.
+
+* Try:
+Run with --stacktrace option to get the stack trace. Run with --info or --debug option to get more log output.
+
+BUILD FAILED
+
+Total time: 0.844 secs

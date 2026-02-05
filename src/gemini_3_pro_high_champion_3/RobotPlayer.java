@@ -1,4 +1,4 @@
-package copy_bot;
+package gemini_3_pro_high_champion_3;
 import battlecode.common.*;
 
 public strictfp class RobotPlayer {

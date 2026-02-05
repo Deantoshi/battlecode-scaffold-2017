@@ -1,4 +1,4 @@
-package copy_bot;
+package gemini_3_pro_high_champion_2;
 import battlecode.common.*;
 
 public class BulletSpending {
@@ -28,14 +28,12 @@ public class BulletSpending {
             if (r.type == RobotType.GARDENER) nearbyGardeners++;
         }
 
-        // Archetype: Lumberjack Rush
-        // We need gardeners to build lumberjacks, but not too many that they clog the map.
-        // 2-3 gardeners should be enough to pump out lumberjacks continuously if we have the bullets.
-        int gardenerCap = 3;
+        // Win Condition: VP Rush via high tree count (20).
+        // Need enough gardeners to support 20 trees.
+        // Cap gardeners at 6 to be safe (6 * 4 trees = 24).
+        boolean needGardener = nearbyGardeners < 6;
         
-        boolean needGardener = nearbyGardeners < gardenerCap;
-        
-        // Safety buffer: don't hire if very low on bullets, save for lumberjacks
+        // Safety buffer for bullets
         if (rc.getTeamBullets() < 100) needGardener = false;
 
         if (needGardener) {
@@ -54,36 +52,29 @@ public class BulletSpending {
     private static void runGardenerSpending() throws GameActionException {
         int treeCount = rc.getTreeCount();
         
-        // Archetype: Cap trees at 3 (high mobility needed)
-        boolean buildTrees = treeCount < 3; 
+        // Maintain high tree count (20)
+        boolean buildEconomy = treeCount < 20; 
         
-        // Strategy: Build Lumberjacks Primarily
-        // If we have enough bullets for a Lumberjack, try to build one.
-        // Trees are secondary priority here, mainly for some income.
-        
-        boolean builtUnit = false;
-        
-        // Priority 1: Build Lumberjacks
-        // Maintain a swarm.
-        if (rc.getTeamBullets() >= RobotType.LUMBERJACK.bulletCost) {
-            for (int i = 0; i < 8; i++) {
-                Direction d = randomDirection();
-                if (rc.canBuildRobot(RobotType.LUMBERJACK, d)) {
-                    rc.buildRobot(RobotType.LUMBERJACK, d);
-                    builtUnit = true;
-                    break;
-                }
-            }
-        }
-        
-        // Priority 2: Plant Trees (if we didn't build a unit and need trees)
-        // Or if we have excess bullets.
-        // But we want to prioritize unit cap.
-        if (!builtUnit && buildTrees) {
+        // Priority 1: Plant Trees
+        if (buildEconomy) {
             for (int i = 0; i < 5; i++) {
                 Direction d = randomDirection();
                 if (rc.canPlantTree(d)) {
                     rc.plantTree(d);
+                    return; 
+                }
+            }
+        }
+        
+        // Priority 2: Build Soldiers for defense
+        // Only build if we have excess bullets to ensure we feed the VP rush
+        // But also need some defense.
+        if (rc.getTeamBullets() > 200) {
+            RobotType buildType = RobotType.SOLDIER;
+            for (int i = 0; i < 8; i++) {
+                Direction d = randomDirection();
+                if (rc.canBuildRobot(buildType, d)) {
+                    rc.buildRobot(buildType, d);
                     break;
                 }
             }
@@ -96,13 +87,17 @@ public class BulletSpending {
         float bullets = rc.getTeamBullets();
         float cost = rc.getVictoryPointCost();
         
-        // Archetype: Elimination
-        // Focus on units. Only donate if we are overflowing with bullets.
-        float floatCap = 1000; 
-
-        if (bullets > floatCap) {
-            float toDonate = bullets - floatCap;
+        // Archetype Change: Lower donation threshold to 100 bullets.
+        if (bullets > 100) {
+            float toDonate = bullets - 100;
             if (toDonate >= cost) {
+                // Donate as much as we can while keeping 100 reserve
+                // Note: rc.donate takes float. 
+                // We want to buy integer number of VPs usually to be efficient?
+                // The rules say "Donating bullets buys VP at current cost (no fractional VP; uses floor)"
+                // So rc.donate(cost * 1.5) buys 1 VP and wastes 0.5 cost bullets?
+                // Let's ensure we donate multiples of cost.
+                
                 int vps = (int)(toDonate / cost);
                 if (vps > 0) {
                     rc.donate(vps * cost);

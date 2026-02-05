@@ -1,4 +1,4 @@
-package copy_bot;
+package gemini_3_pro_high_champion_2;
 import battlecode.common.*;
 
 public strictfp class RobotPlayer {
@@ -160,27 +160,14 @@ public strictfp class RobotPlayer {
     }
     
     static void runLumberjack() throws GameActionException {
-        MapLocation[] enemyArchons = rc.getInitialArchonLocations(enemyTeam);
-        MapLocation target = null;
-        if (enemyArchons.length > 0) {
-            target = enemyArchons[rc.getID() % enemyArchons.length];
-        }
-
         while (true) {
             try {
-                // 1. Strike/Chop logic (Combat)
                 RobotInfo[] enemies = rc.senseNearbyRobots(GameConstants.LUMBERJACK_STRIKE_RADIUS, enemyTeam);
                 TreeInfo[] trees = rc.senseNearbyTrees(GameConstants.LUMBERJACK_STRIKE_RADIUS);
                 
-                boolean attacked = false;
                 if (enemies.length > 0) {
-                    if (rc.canStrike()) {
-                        rc.strike();
-                        attacked = true;
-                    }
-                } 
-                
-                if (!attacked && trees.length > 0) {
+                    if (rc.canStrike()) rc.strike();
+                } else if (trees.length > 0) {
                     for (TreeInfo t : trees) {
                         if (t.team != myTeam && rc.canChop(t.ID)) {
                             rc.chop(t.ID);
@@ -189,24 +176,7 @@ public strictfp class RobotPlayer {
                     }
                 }
                 
-                // 2. Movement logic (Aggressive Rush)
-                if (!rc.hasMoved()) {
-                    RobotInfo[] farEnemies = rc.senseNearbyRobots(-1, enemyTeam);
-                    if (farEnemies.length > 0) {
-                        // Move towards visible enemy
-                        tryMove(rc.getLocation().directionTo(farEnemies[0].location));
-                    } else if (target != null) {
-                        // Move towards initial enemy archon spawn
-                        if (rc.getLocation().distanceTo(target) < 4) {
-                            tryMove(randomDirection()); // We are there, hunt around
-                        } else {
-                            tryMove(rc.getLocation().directionTo(target));
-                        }
-                    } else {
-                        tryMove(randomDirection());
-                    }
-                }
-                
+                if (!rc.hasMoved()) tryMove(randomDirection());
                 Clock.yield();
             } catch (Exception e) {
                 e.printStackTrace();
