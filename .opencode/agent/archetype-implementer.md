@@ -51,6 +51,24 @@ Implement the archetype's strategy by modifying the variant's code. You have cre
 3. **Implement the key changes** - Address each item in the archetype's `key_changes` list
 4. **Maintain compilable code** - The variant MUST compile after your changes
 
+## CRITICAL: Mutation vs Exploration Archetypes
+
+Check the `type` field in your assigned archetype and adjust your implementation approach accordingly:
+
+**If type is "mutation":**
+- Make MINIMAL, targeted changes to the existing code
+- Focus on parameter adjustments, threshold changes, and small logic modifications
+- Do NOT rewrite entire files or restructure the core strategy
+- The bot should play similarly to the original, with specific tweaks
+- Typically modify only 1-3 specific values or small code blocks
+- If the archetype says "adjust X threshold", change ONLY that threshold — don't redesign surrounding logic
+
+**If type is "exploration":**
+- Make bold, significant changes to implement a fundamentally different strategy
+- You may restructure spending logic, combat behavior, and movement patterns
+- The bot should play noticeably differently from the original
+- Feel free to rewrite methods if needed to achieve the archetype's vision
+
 ## Implementation Guidelines
 
 ### Unit Building (BulletSpending.java)

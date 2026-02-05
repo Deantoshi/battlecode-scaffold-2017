@@ -134,6 +134,7 @@ fi
 
 # State directory
 STATE_DIR="src/$BOT/.state"
+STRATEGY_HISTORY="$STATE_DIR/strategy-history.json"
 mkdir -p "$STATE_DIR"
 
 # Count existing champions
@@ -210,10 +211,23 @@ for iter in $(seq 1 "$MAX_ITERS"); do
 
     # ─────────────────────────────────────────────────────────────────────────────
     # Clean slate: remove .state directory from previous iteration
+    # (preserving strategy-history.json for feedback loop)
     # ─────────────────────────────────────────────────────────────────────────────
     if [[ -d "$STATE_DIR" ]]; then
         printf '%s\n' "${BLUE}Cleaning .state directory for fresh iteration...${NC}"
+        # Back up strategy history before wiping
+        STRATEGY_HISTORY_TMP=""
+        if [[ -f "$STRATEGY_HISTORY" ]]; then
+            STRATEGY_HISTORY_TMP="/tmp/${BOT}_strategy_history_$$"
+            cp "$STRATEGY_HISTORY" "$STRATEGY_HISTORY_TMP"
+        fi
         rm -rf "$STATE_DIR"
+        mkdir -p "$STATE_DIR"
+        # Restore strategy history
+        if [[ -n "$STRATEGY_HISTORY_TMP" && -f "$STRATEGY_HISTORY_TMP" ]]; then
+            mv "$STRATEGY_HISTORY_TMP" "$STRATEGY_HISTORY"
+            printf '%s\n' "${BLUE}✓ Restored strategy history from previous iterations${NC}"
+        fi
     fi
 
     # ─────────────────────────────────────────────────────────────────────────────
@@ -385,6 +399,145 @@ print(data.get('goal_met', 'NO'))
     if [[ $NUM_CHAMPIONS -gt 0 ]]; then
         printf '%s\n' "${CYAN}Champions: $NUM_CHAMPIONS${NC}"
     fi
+
+    # ─────────────────────────────────────────────────────────────────────────────
+    # Step 4b: Update strategy history with this iteration's results
+    # ─────────────────────────────────────────────────────────────────────────────
+    printf '%s\n' "${BLUE}Updating strategy history...${NC}"
+    python3 << 'HISTORY_EOF' - "$STATE_DIR" "$iter"
+import json
+import os
+import sys
+
+state_dir = sys.argv[1]
+iteration = int(sys.argv[2])
+
+archetypes_file = os.path.join(state_dir, "archetypes.json")
+results_file = os.path.join(state_dir, "variant-results.json")
+history_file = os.path.join(state_dir, "strategy-history.json")
+
+# Load archetypes
+archetypes = []
+if os.path.exists(archetypes_file):
+    with open(archetypes_file) as f:
+        data = json.load(f)
+    archetypes = data.get("archetypes", data)
+    if not isinstance(archetypes, list):
+        archetypes = []
+
+# Load results
+results_data = {}
+if os.path.exists(results_file):
+    with open(results_file) as f:
+        results_data = json.load(f)
+
+# Build archetype lookup: v1 -> archetype[0], v2 -> archetype[1], etc.
+arch_lookup = {}
+for i, arch in enumerate(archetypes):
+    arch_lookup[f"v{i+1}"] = arch
+
+
+def generate_post_mortem(r):
+    """Generate a concise tactical summary from match results."""
+    primary_won = r.get("primary_won", False)
+    rounds = r.get("primary_rounds", 3000)
+
+    matches = r.get("matches", [])
+    primary_match = next(
+        (m for m in matches if m.get("opponent_label") == "opponent"), {}
+    )
+    kills = primary_match.get("enemy_kills", 0)
+    vp = primary_match.get("victory_points", 0)
+
+    # Build outcome phrase
+    if primary_won:
+        if rounds <= 1500:
+            outcome = f"Won fast ({rounds} rounds)"
+        elif rounds <= 2500:
+            outcome = f"Won ({rounds} rounds)"
+        else:
+            outcome = f"Won slowly ({rounds} rounds)"
+    else:
+        outcome = f"Lost ({rounds} rounds)"
+
+    # Add key stats
+    stats = []
+    if kills > 0:
+        stats.append(f"{kills} kills")
+    if vp > 0:
+        stats.append(f"{vp} VP")
+    if stats:
+        outcome += f" [{', '.join(stats)}]"
+
+    # Add tactical insight
+    if primary_won and rounds <= 1500:
+        insight = "Effective fast strategy."
+    elif primary_won and rounds > 2500:
+        insight = "Won but too slowly; needs faster execution."
+    elif primary_won:
+        insight = "Solid win; push for faster finish."
+    elif not primary_won and kills >= 5:
+        insight = "Good combat but couldn't close."
+    elif not primary_won and vp >= 500:
+        insight = "Strong VP progress but fell short."
+    elif not primary_won and vp >= 200:
+        insight = "Some VP progress; not enough to win."
+    else:
+        insight = "Strategy ineffective."
+
+    return f"{outcome}. {insight}"
+
+
+# Build history entry with archetype info + results
+variants = []
+for r in results_data.get("results", []):
+    name = r["name"]
+    arch = arch_lookup.get(name, {})
+
+    entry = {
+        "id": name,
+        "score": r.get("total_score", 0),
+        "primary_won": r.get("primary_won", False),
+        "primary_rounds": r.get("primary_rounds", 3000),
+        "post_mortem": generate_post_mortem(r),
+    }
+
+    if arch:
+        entry["archetype_name"] = arch.get("name", "Unknown")
+        entry["type"] = arch.get("type", "exploration")
+        entry["win_condition"] = arch.get("win_condition", "unknown")
+        entry["philosophy"] = arch.get("philosophy", "")
+    elif name == "original":
+        entry["archetype_name"] = "Original (baseline)"
+        entry["type"] = "baseline"
+
+    variants.append(entry)
+
+history_entry = {
+    "iteration": iteration,
+    "winner": results_data.get("winner", "original"),
+    "winner_score": results_data.get("winner_score", 0),
+    "promoted": results_data.get("should_promote", False),
+    "variants": variants,
+}
+
+# Load existing history or create new
+history = {"iterations": []}
+if os.path.exists(history_file):
+    try:
+        with open(history_file) as f:
+            history = json.load(f)
+    except (json.JSONDecodeError, IOError):
+        history = {"iterations": []}
+
+history["iterations"].append(history_entry)
+
+with open(history_file, "w") as f:
+    json.dump(history, f, indent=2)
+
+n = len(history["iterations"])
+print(f"Strategy history updated: {n} iteration(s) recorded")
+HISTORY_EOF
 
     # ─────────────────────────────────────────────────────────────────────────────
     # Step 5: Copy current bot to copy_bot for next iteration's opponent
