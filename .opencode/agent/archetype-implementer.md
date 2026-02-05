@@ -29,9 +29,10 @@ The variant folder is: `src/{BOT}_v{N}/`
 HOW_TO_PLAY_BATTLE_CODE_2017.md
 ```
 
-**Step 2:** Read your assigned archetype:
+**Step 2:** Read your assigned archetype. Check the variant-specific file first, then fall back to the shared file:
 ```
-src/{BOT}/.state/current-archetype.json
+src/{BOT}/.state/current-archetype-v{N}.json    (preferred — used in parallel runs)
+src/{BOT}/.state/current-archetype.json          (fallback — used in sequential runs)
 ```
 
 **Step 3:** Read the bot code snapshot (contains all Java files in one file):

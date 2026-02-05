@@ -262,13 +262,23 @@ for iter in $(seq 1 "$MAX_ITERS"); do
     # ─────────────────────────────────────────────────────────────────────────────
     # Step 2: Implement each archetype (fresh agent per variant)
     # ─────────────────────────────────────────────────────────────────────────────
-    printf '%s\n' "${BOLD}${GREEN}[STEP 2] Implementing archetypes into variants${NC}"
+    printf '%s\n' "${BOLD}${GREEN}[STEP 2] Implementing archetypes into variants (2 at a time)${NC}"
 
-    for v in $(seq 1 $NUM_VARIANTS); do
-        printf '%s\n' "${YELLOW}━━━ Implementing Variant $v / $NUM_VARIANTS ━━━${NC}"
+    PARALLEL=2
+    for batch_start in $(seq 1 $PARALLEL $NUM_VARIANTS); do
+        batch_end=$((batch_start + PARALLEL - 1))
+        if [[ $batch_end -gt $NUM_VARIANTS ]]; then
+            batch_end=$NUM_VARIANTS
+        fi
 
-        # Extract this variant's archetype from JSON
-        ARCHETYPE=$(python3 -c "
+        PIDS=()
+        BATCH_VARIANTS=()
+
+        for v in $(seq $batch_start $batch_end); do
+            printf '%s\n' "${YELLOW}━━━ Launching Variant $v / $NUM_VARIANTS ━━━${NC}"
+
+            # Extract this variant's archetype from JSON
+            ARCHETYPE=$(python3 -c "
 import json
 with open('$ARCHETYPES_FILE', 'r') as f:
     data = json.load(f)
@@ -279,16 +289,43 @@ else:
     print(json.dumps(archetypes.get('v$v', {})))
 " 2>/dev/null || echo "{}")
 
-        # Save archetype for this variant
-        echo "$ARCHETYPE" > "$STATE_DIR/current-archetype.json"
+            # Save archetype to variant-specific state dir to avoid race conditions
+            VARIANT_STATE_DIR="src/${BOT}_v${v}/.state"
+            mkdir -p "$VARIANT_STATE_DIR"
+            echo "$ARCHETYPE" > "$VARIANT_STATE_DIR/current-archetype.json"
+            # Also keep a copy in the main state dir for the agent to find
+            echo "$ARCHETYPE" > "$STATE_DIR/current-archetype-v${v}.json"
 
-        run_agent "archetype-implementer" "--bot $BOT --variant $v --opponent $OPPONENT" "iter:${iter}:v${v}"
+            # Run agent in background
+            (
+                run_agent "archetype-implementer" "--bot $BOT --variant $v --opponent $OPPONENT" "iter:${iter}:v${v}"
+            ) &
+            PIDS+=($!)
+            BATCH_VARIANTS+=($v)
+        done
 
-        # Verify compilation
-        printf '%s\n' "${BLUE}Verifying compilation for ${BOT}_v${v}...${NC}"
-        if ! ./gradlew compileJava -q 2>&1 | tail -5; then
-            printf '%s\n' "${RED}Warning: Compilation may have issues${NC}"
-        fi
+        printf '%s\n' "${BLUE}Waiting for variants ${BATCH_VARIANTS[*]} to complete...${NC}"
+
+        # Wait for all agents in this batch
+        BATCH_FAILED=0
+        for i in "${!PIDS[@]}"; do
+            pid=${PIDS[$i]}
+            v=${BATCH_VARIANTS[$i]}
+            if ! wait "$pid"; then
+                printf '%s\n' "${RED}Warning: Variant $v agent exited with error${NC}"
+                BATCH_FAILED=$((BATCH_FAILED + 1))
+            fi
+        done
+
+        # Verify compilation for this batch
+        for v in "${BATCH_VARIANTS[@]}"; do
+            printf '%s\n' "${BLUE}Verifying compilation for ${BOT}_v${v}...${NC}"
+            if ! ./gradlew compileJava -q 2>&1 | tail -5; then
+                printf '%s\n' "${RED}Warning: Compilation may have issues${NC}"
+            fi
+        done
+
+        printf '%s\n' "${GREEN}Batch (variants ${BATCH_VARIANTS[*]}) complete${NC}"
     done
     echo ""
 
