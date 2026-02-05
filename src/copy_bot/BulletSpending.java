@@ -9,14 +9,32 @@ import battlecode.common.*;
  * - rc.plantTree()
  * 
  * All bullet spending decisions are centralized here.
+ * 
+ * BALANCED ARMY COMPOSITION STRATEGY:
+ * - Produce equal numbers of scouts, soldiers, and lumberjacks
+ * - Individual unit caps: 4 each (12 total army units)
+ * - No round-based delays - produce based on balance
+ * - Cycle through SCOUT -> SOLDIER -> LUMBERJACK to maintain balance
  */
 public strictfp class BulletSpending {
     static RobotController rc;
     
     // Game constants
     static final int MAX_GARDENERS = 6;
-    static final int MAX_SCOUTS = 2;
     static final float VP_DONATE_THRESHOLD = 1000f;
+    
+    // Balanced army composition caps
+    static final int MAX_SCOUTS = 4;
+    static final int MAX_SOLDIERS = 4;
+    static final int MAX_LUMBERJACKS = 4;
+    static final int MAX_ARMY_SIZE = 12; // 4 + 4 + 4
+    
+    // Production rotation for balanced army
+    // 0 = SCOUT, 1 = SOLDIER, 2 = LUMBERJACK
+    static final int PRODUCTION_SCOUT = 0;
+    static final int PRODUCTION_SOLDIER = 1;
+    static final int PRODUCTION_LUMBERJACK = 2;
+    static int productionRotation = PRODUCTION_SCOUT; // Start with scout
     
     // Counters
     static int numGardeners = 0;
@@ -92,10 +110,11 @@ public strictfp class BulletSpending {
     
     /**
      * Gardener spending: plant trees, build units.
+     * Strategy: Balanced army composition - cycle through SCOUT->SOLDIER->LUMBERJACK
+     * No round-based delays, produce based on unit balance.
      */
     static void gardenerSpend() throws GameActionException {
         float bullets = rc.getTeamBullets();
-        int round = rc.getRoundNum();
         
         updateCounters();
         
@@ -112,44 +131,68 @@ public strictfp class BulletSpending {
             }
         }
         
-        // Build units based on game state
-        if (numScouts < MAX_SCOUTS && bullets >= RobotType.SCOUT.bulletCost) {
-            for (int i = 0; i < 8; i++) {
-                Direction dir = new Direction(i * (float)Math.PI / 4);
-                if (rc.canBuildRobot(RobotType.SCOUT, dir)) {
-                    rc.buildRobot(RobotType.SCOUT, dir);
-                    Comms.incrementCounter(6); // Scout counter
-                    return;
+        // Calculate total army size
+        int totalArmy = numScouts + numSoldiers + numLumberjacks;
+        
+        // Only build if we haven't reached max army size
+        if (totalArmy < MAX_ARMY_SIZE) {
+            // Balanced production: cycle through SCOUT -> SOLDIER -> LUMBERJACK
+            // Build the unit type based on current rotation
+            boolean built = false;
+            
+            switch (productionRotation) {
+                case PRODUCTION_SCOUT:
+                    built = tryBuildUnit(RobotType.SCOUT, 6);
+                    if (built || numScouts >= MAX_SCOUTS) {
+                        productionRotation = PRODUCTION_SOLDIER;
+                    }
+                    break;
+                    
+                case PRODUCTION_SOLDIER:
+                    built = tryBuildUnit(RobotType.SOLDIER, 7);
+                    if (built || numSoldiers >= MAX_SOLDIERS) {
+                        productionRotation = PRODUCTION_LUMBERJACK;
+                    }
+                    break;
+                    
+                case PRODUCTION_LUMBERJACK:
+                    built = tryBuildUnit(RobotType.LUMBERJACK, 8);
+                    if (built || numLumberjacks >= MAX_LUMBERJACKS) {
+                        productionRotation = PRODUCTION_SCOUT;
+                    }
+                    break;
+            }
+            
+            // If we didn't build this turn, try the next type (skip full caps)
+            if (!built) {
+                // Find the next type that isn't at cap
+                int attempts = 0;
+                while (attempts < 3) {
+                    productionRotation = (productionRotation + 1) % 3;
+                    boolean canBuild = false;
+                    
+                    switch (productionRotation) {
+                        case PRODUCTION_SCOUT:
+                            canBuild = numScouts < MAX_SCOUTS;
+                            break;
+                        case PRODUCTION_SOLDIER:
+                            canBuild = numSoldiers < MAX_SOLDIERS;
+                            break;
+                        case PRODUCTION_LUMBERJACK:
+                            canBuild = numLumberjacks < MAX_LUMBERJACKS;
+                            break;
+                    }
+                    
+                    if (canBuild) {
+                        break;
+                    }
+                    attempts++;
                 }
             }
         }
         
-        // Build Soldiers as main combat unit
-        if (bullets >= RobotType.SOLDIER.bulletCost && round < 1500) {
-            for (int i = 0; i < 8; i++) {
-                Direction dir = new Direction(i * (float)Math.PI / 4);
-                if (rc.canBuildRobot(RobotType.SOLDIER, dir)) {
-                    rc.buildRobot(RobotType.SOLDIER, dir);
-                    Comms.incrementCounter(7); // Soldier counter
-                    return;
-                }
-            }
-        }
-        
-        // Build Lumberjacks early for tree clearing
-        if (numLumberjacks < 2 && bullets >= RobotType.LUMBERJACK.bulletCost && round < 500) {
-            for (int i = 0; i < 8; i++) {
-                Direction dir = new Direction(i * (float)Math.PI / 4);
-                if (rc.canBuildRobot(RobotType.LUMBERJACK, dir)) {
-                    rc.buildRobot(RobotType.LUMBERJACK, dir);
-                    Comms.incrementCounter(8); // Lumberjack counter
-                    return;
-                }
-            }
-        }
-        
-        // Build Tanks late game
-        if (bullets >= RobotType.TANK.bulletCost && round > 1500) {
+        // Tanks: build if we have excess bullets (optional, not part of the 12-unit cap)
+        if (bullets >= RobotType.TANK.bulletCost + 200) {
             for (int i = 0; i < 8; i++) {
                 Direction dir = new Direction(i * (float)Math.PI / 4);
                 if (rc.canBuildRobot(RobotType.TANK, dir)) {
@@ -159,6 +202,51 @@ public strictfp class BulletSpending {
                 }
             }
         }
+    }
+    
+    /**
+     * Try to build a specific unit type.
+     * @return true if successfully built
+     */
+    static boolean tryBuildUnit(RobotType type, int counterChannel) throws GameActionException {
+        float bullets = rc.getTeamBullets();
+        
+        // Check if we have enough bullets
+        if (bullets < type.bulletCost) {
+            return false;
+        }
+        
+        // Check specific caps
+        boolean atCap = false;
+        switch (type) {
+            case SCOUT:
+                atCap = numScouts >= MAX_SCOUTS;
+                break;
+            case SOLDIER:
+                atCap = numSoldiers >= MAX_SOLDIERS;
+                break;
+            case LUMBERJACK:
+                atCap = numLumberjacks >= MAX_LUMBERJACKS;
+                break;
+            default:
+                atCap = false;
+        }
+        
+        if (atCap) {
+            return false;
+        }
+        
+        // Try to build in multiple directions
+        for (int i = 0; i < 8; i++) {
+            Direction dir = new Direction(i * (float)Math.PI / 4);
+            if (rc.canBuildRobot(type, dir)) {
+                rc.buildRobot(type, dir);
+                Comms.incrementCounter(counterChannel);
+                return true;
+            }
+        }
+        
+        return false;
     }
     
     static void soldierSpend() throws GameActionException {

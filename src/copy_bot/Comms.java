@@ -11,6 +11,7 @@ import battlecode.common.*;
  * 10-11: Enemy Gardener position
  * 12: Emergency flag
  * 13-14: Rally point
+ * 15: Enemy Gardener spotted flag (round number when last spotted)
  */
 public strictfp class Comms {
     static RobotController rc;
@@ -32,6 +33,7 @@ public strictfp class Comms {
     static final int EMERGENCY = 12;
     static final int RALLY_X = 13;
     static final int RALLY_Y = 14;
+    static final int ENEMY_GARDENER_SPOTTED_ROUND = 15;
     
     public static void init(RobotController rcIn) {
         rc = rcIn;
@@ -71,6 +73,19 @@ public strictfp class Comms {
     }
     
     /**
+     * Check if an enemy gardener has been spotted (for soldier production trigger).
+     */
+    public static boolean isEnemyGardenerSpotted() throws GameActionException {
+        int roundSpotted = rc.readBroadcast(ENEMY_GARDENER_SPOTTED_ROUND);
+        // Consider valid if spotted within last 100 rounds
+        if (roundSpotted > 0) {
+            int currentRound = rc.getRoundNum();
+            return (currentRound - roundSpotted) < 100;
+        }
+        return false;
+    }
+    
+    /**
      * Report enemy Archon location.
      */
     public static void reportEnemyArchon(MapLocation loc) throws GameActionException {
@@ -89,6 +104,8 @@ public strictfp class Comms {
      */
     public static void reportEnemyGardener(MapLocation loc) throws GameActionException {
         broadcastLocation(ENEMY_GARDENER_X, ENEMY_GARDENER_Y, loc);
+        // Also set the round spotted for triggering soldier production
+        rc.broadcast(ENEMY_GARDENER_SPOTTED_ROUND, rc.getRoundNum());
     }
     
     /**

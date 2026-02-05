@@ -2,19 +2,23 @@ package copy_bot;
 import battlecode.common.*;
 
 /**
- * Scout - Reconnaissance unit.
- * - DANGER_RADIUS: flee from combat
- * - Shake neutral trees for bullets
- * - Report enemy locations
- * - Harass Gardeners if safe
+ * Scout - Reconnaissance and harassment unit.
+ * - Part of balanced army composition (up to 4 scouts)
+ * - Kite at max range (7 distance) when attacking gardeners
+ * - Ignore soldiers/lumberjacks unless blocking path
+ * - Swarm behavior: 3+ scouts focus fire on same gardener
  */
 public strictfp class Scout {
     static RobotController rc;
     static final float DANGER_RADIUS = 7.0f;
-    static final float HARASS_RANGE = 3.0f;
+    static final float KITE_DISTANCE = 7.0f; // Max range for kiting
+    static final float SCOUT_SENSOR_RADIUS = 14.0f; // Scouts have extended vision
+    static final float SWARM_RADIUS = 10.0f; // Distance to check for allied scouts
+    static final int SWARM_THRESHOLD = 3; // Number of scouts for swarm behavior
     
     static boolean foundEnemyBase = false;
     static Direction exploreDir;
+    static MapLocation currentTargetGardener = null;
     
     public static void run(RobotController rc) throws GameActionException {
         Scout.rc = rc;
@@ -47,51 +51,92 @@ public strictfp class Scout {
             }
         }
         
-        // Sense for enemies
-        RobotInfo[] enemies = rc.senseNearbyRobots(DANGER_RADIUS, rc.getTeam().opponent());
+        // Sense for enemies - use extended sensor range
+        RobotInfo[] enemies = rc.senseNearbyRobots(SCOUT_SENSOR_RADIUS, rc.getTeam().opponent());
         
-        if (enemies.length > 0) {
+        // Look for enemy gardeners first
+        RobotInfo targetGardener = null;
+        RobotInfo targetArchon = null;
+        RobotInfo blockingEnemy = null;
+        
+        for (RobotInfo enemy : enemies) {
+            if (enemy.type == RobotType.GARDENER) {
+                if (targetGardener == null) {
+                    targetGardener = enemy;
+                }
+            } else if (enemy.type == RobotType.ARCHON) {
+                if (targetArchon == null) {
+                    targetArchon = enemy;
+                }
+            } else if (enemy.type == RobotType.SOLDIER || enemy.type == RobotType.LUMBERJACK) {
+                // Check if they're blocking our path to a gardener
+                if (targetGardener != null) {
+                    float distToEnemy = myLoc.distanceTo(enemy.location);
+                    float distToGardener = myLoc.distanceTo(targetGardener.location);
+                    if (distToEnemy < distToGardener && isBlockingPath(myLoc, targetGardener.location, enemy.location)) {
+                        blockingEnemy = enemy;
+                    }
+                }
+            }
+        }
+        
+        // Report enemy gardener if found
+        if (targetGardener != null) {
+            Comms.reportEnemyGardener(targetGardener.location);
+            currentTargetGardener = targetGardener.location;
+        }
+        
+        // Determine our target - prioritize gardeners
+        RobotInfo primaryTarget = targetGardener != null ? targetGardener : targetArchon;
+        
+        if (primaryTarget != null) {
             // Report all enemies
             for (RobotInfo enemy : enemies) {
                 Comms.reportEnemy(enemy);
             }
             
-            // Check if we should flee
-            boolean shouldFlee = false;
-            RobotInfo threat = null;
+            float distToTarget = myLoc.distanceTo(primaryTarget.location);
+            Direction toTarget = myLoc.directionTo(primaryTarget.location);
             
-            for (RobotInfo enemy : enemies) {
-                // Flee from combat units
-                if (enemy.type == RobotType.SOLDIER || 
-                    enemy.type == RobotType.LUMBERJACK || 
-                    enemy.type == RobotType.TANK ||
-                    enemy.type == RobotType.SCOUT) {
-                    float dist = myLoc.distanceTo(enemy.location);
-                    if (dist < DANGER_RADIUS) {
-                        shouldFlee = true;
-                        threat = enemy;
-                        break;
-                    }
+            // Check for nearby allied scouts for swarm behavior
+            int nearbyScouts = countNearbyScouts();
+            boolean isSwarming = nearbyScouts >= SWARM_THRESHOLD;
+            
+            // Kiting behavior: maintain KITE_DISTANCE (7.0)
+            if (distToTarget < KITE_DISTANCE - 0.5f) {
+                // Too close - back up while facing target
+                Nav.moveAwayFrom(primaryTarget.location);
+            } else if (distToTarget > KITE_DISTANCE + 0.5f) {
+                // Too far - move closer
+                Nav.moveToward(primaryTarget.location);
+            } else {
+                // At optimal range - strafe to avoid being hit
+                Direction strafeDir = toTarget.rotateRightDegrees(90);
+                if (!Nav.tryMove(strafeDir)) {
+                    strafeDir = toTarget.rotateLeftDegrees(90);
+                    Nav.tryMove(strafeDir);
                 }
             }
             
-            if (shouldFlee && threat != null) {
-                // Flee from threat
-                Nav.moveAwayFrom(threat.location);
-            } else {
-                // Look for gardeners to harass
-                RobotInfo targetGardener = null;
-                for (RobotInfo enemy : enemies) {
-                    if (enemy.type == RobotType.GARDENER || enemy.type == RobotType.ARCHON) {
-                        targetGardener = enemy;
-                        break;
-                    }
-                }
-                
-                if (targetGardener != null && rc.canFireSingleShot()) {
-                    // Shoot at gardener/archon
-                    Direction toTarget = myLoc.directionTo(targetGardener.location);
+            // Fire at target continuously
+            if (rc.canFireSingleShot()) {
+                // Check for friendly fire
+                boolean clearShot = !Utils.wouldHitAllies(rc, toTarget, distToTarget, 10.0f);
+                if (clearShot) {
                     rc.fireSingleShot(toTarget);
+                }
+            }
+            
+        } else if (blockingEnemy != null) {
+            // Only engage blocking enemies if they're in the way
+            float distToBlocker = myLoc.distanceTo(blockingEnemy.location);
+            if (distToBlocker < KITE_DISTANCE) {
+                Nav.moveAwayFrom(blockingEnemy.location);
+            }
+            if (rc.canFireSingleShot()) {
+                Direction toBlocker = myLoc.directionTo(blockingEnemy.location);
+                if (!Utils.wouldHitAllies(rc, toBlocker, distToBlocker, 10.0f)) {
+                    rc.fireSingleShot(toBlocker);
                 }
             }
         } else {
@@ -113,21 +158,49 @@ public strictfp class Scout {
             if (!rc.hasMoved()) {
                 // Try to find enemy base
                 MapLocation enemyArchon = Comms.getEnemyArchonLocation();
+                MapLocation enemyGardener = Comms.getEnemyGardenerLocation();
                 
-                if (enemyArchon == null) {
-                    // Explore in current direction, occasionally change
+                if (enemyGardener != null) {
+                    // Move toward last known gardener location
+                    Nav.moveToward(enemyGardener);
+                } else if (enemyArchon != null) {
+                    // Move toward enemy archon
+                    Nav.moveToward(enemyArchon);
+                } else {
+                    // Explore in current direction
                     if (!Nav.tryMove(exploreDir)) {
                         exploreDir = Nav.randomDirection();
                         Nav.tryMove(exploreDir);
                     }
-                } else {
-                    // Patrol around enemy base
-                    Nav.moveToward(enemyArchon);
                 }
             }
         }
         
         // Handle spending
         BulletSpending.spendPolicy(RobotType.SCOUT);
+    }
+    
+    /**
+     * Check if an enemy is blocking the path to the target
+     */
+    static boolean isBlockingPath(MapLocation from, MapLocation to, MapLocation blocker) {
+        Direction pathDir = from.directionTo(to);
+        Direction toBlocker = from.directionTo(blocker);
+        float angle = Math.abs(pathDir.degreesBetween(toBlocker));
+        return angle < 30.0f; // Within 30 degrees of path
+    }
+    
+    /**
+     * Count nearby allied scouts for swarm behavior
+     */
+    static int countNearbyScouts() throws GameActionException {
+        RobotInfo[] allies = rc.senseNearbyRobots(SWARM_RADIUS, rc.getTeam());
+        int scoutCount = 0;
+        for (RobotInfo ally : allies) {
+            if (ally.type == RobotType.SCOUT) {
+                scoutCount++;
+            }
+        }
+        return scoutCount;
     }
 }

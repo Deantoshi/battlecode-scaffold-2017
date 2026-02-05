@@ -1,9 +1,9 @@
-package kimi_k2_5_remaster;
+package kimi_k2_5_remaster_champion_0;
 import battlecode.common.*;
 
 /**
  * Scout - Reconnaissance and harassment unit.
- * - Part of balanced army composition (up to 4 scouts)
+ * - Mass produced (up to 6) to swarm enemy gardeners
  * - Kite at max range (7 distance) when attacking gardeners
  * - Ignore soldiers/lumberjacks unless blocking path
  * - Swarm behavior: 3+ scouts focus fire on same gardener

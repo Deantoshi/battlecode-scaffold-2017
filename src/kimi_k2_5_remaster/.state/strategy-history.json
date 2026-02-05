@@ -1,0 +1,385 @@
+{
+  "iterations": [
+    {
+      "iteration": 1,
+      "winner": "original",
+      "winner_score": 5298,
+      "promoted": false,
+      "variants": [
+        {
+          "id": "original",
+          "score": 5298,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [64 kills]. Good combat but couldn't close.",
+          "archetype_name": "Original (baseline)",
+          "type": "baseline"
+        },
+        {
+          "id": "v1",
+          "score": 5298,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [64 kills]. Good combat but couldn't close.",
+          "archetype_name": "Lower VP Threshold",
+          "type": "mutation",
+          "win_condition": "hybrid",
+          "philosophy": "Donate VP earlier at 600 bullets instead of 1000 to secure VP wins faster and avoid late-game uncertainty"
+        },
+        {
+          "id": "v3",
+          "score": 5298,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [64 kills]. Good combat but couldn't close.",
+          "archetype_name": "Extended Lumberjack Phase",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Clear more neutral trees early to expand map control and release contained resources"
+        },
+        {
+          "id": "v4",
+          "score": 5148,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [61 kills]. Good combat but couldn't close.",
+          "archetype_name": "Earlier Tank Transition",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Begin building tanks at round 1200 instead of 1500 for earlier heavy firepower"
+        },
+        {
+          "id": "v7",
+          "score": 5103,
+          "primary_won": false,
+          "primary_rounds": 713,
+          "post_mortem": "Lost (713 rounds) [16 kills]. Good combat but couldn't close.",
+          "archetype_name": "Lumberjack Rush",
+          "type": "exploration",
+          "win_condition": "elimination",
+          "philosophy": "Mass lumberjacks for early melee aggression - overwhelm before enemy can establish range advantage"
+        },
+        {
+          "id": "v8",
+          "score": 4894,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [56 kills]. Good combat but couldn't close.",
+          "archetype_name": "Scout Swarm Harassment",
+          "type": "exploration",
+          "win_condition": "elimination",
+          "philosophy": "Mass produce cheap scouts to harass enemy gardeners and archons while shaking trees for economy"
+        },
+        {
+          "id": "v9",
+          "score": 4247,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [43 kills]. Good combat but couldn't close.",
+          "archetype_name": "Defensive Fortress",
+          "type": "exploration",
+          "win_condition": "hybrid",
+          "philosophy": "Maximize tree density and defensive positioning, win through attrition and late-game VP"
+        },
+        {
+          "id": "v2",
+          "score": 4234,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [42 kills]. Good combat but couldn't close.",
+          "archetype_name": "Aggressive Early Soldiers",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Prioritize soldier production over scouts for stronger early military presence"
+        },
+        {
+          "id": "v5",
+          "score": 4151,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [41 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "Expanded Economy",
+          "type": "mutation",
+          "win_condition": "hybrid",
+          "philosophy": "Increase max gardeners from 6 to 8 for stronger late-game bullet production and VP generation"
+        },
+        {
+          "id": "v10",
+          "score": 3809,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [35 kills]. Good combat but couldn't close.",
+          "archetype_name": "Aggressive Tank Push",
+          "type": "exploration",
+          "win_condition": "elimination",
+          "philosophy": "Rush to tanks as early as possible and use pentad shots to break enemy lines"
+        },
+        {
+          "id": "v6",
+          "score": 2831,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [16 kills]. Good combat but couldn't close.",
+          "archetype_name": "VP Rush Strategy",
+          "type": "exploration",
+          "win_condition": "vp_rush",
+          "philosophy": "Prioritize victory points over military - donate bullets continuously throughout the game to reach 1000 VP quickly"
+        }
+      ]
+    },
+    {
+      "iteration": 2,
+      "winner": "v9",
+      "winner_score": 18849,
+      "promoted": true,
+      "variants": [
+        {
+          "id": "v9",
+          "score": 18849,
+          "primary_won": true,
+          "primary_rounds": 1151,
+          "post_mortem": "Won fast (1151 rounds) [8 kills]. Effective fast strategy.",
+          "archetype_name": "Early Scout Harassment",
+          "type": "exploration",
+          "win_condition": "elimination",
+          "philosophy": "Mass produce scouts (6+) to find and kill enemy gardeners before they can establish economy, crippling enemy production"
+        },
+        {
+          "id": "original",
+          "score": 5298,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [64 kills]. Good combat but couldn't close.",
+          "archetype_name": "Original (baseline)",
+          "type": "baseline"
+        },
+        {
+          "id": "v1",
+          "score": 5298,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [64 kills]. Good combat but couldn't close.",
+          "archetype_name": "Gradual VP Donation",
+          "type": "mutation",
+          "win_condition": "hybrid",
+          "philosophy": "Instead of waiting for 1000 bullets, donate small amounts continuously throughout mid-game to steadily accumulate VP and prevent sudden death"
+        },
+        {
+          "id": "v3",
+          "score": 5298,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [64 kills]. Good combat but couldn't close.",
+          "archetype_name": "More Lumberjacks Early",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Increase early lumberjack count from 2 to 4 to clear map faster and release contained bullets/robots from neutral trees"
+        },
+        {
+          "id": "v4",
+          "score": 5164,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [61 kills]. Good combat but couldn't close.",
+          "archetype_name": "Faster Soldier Production",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Remove the round < 1500 restriction on soldier building to allow continuous military production throughout the game"
+        },
+        {
+          "id": "v5",
+          "score": 4900,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [56 kills]. Good combat but couldn't close.",
+          "archetype_name": "Aggressive Pentad Tanks",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Lower tank transition round from 1500 to 1000 and use pentad shots when 3+ enemies are clustered to maximize damage output"
+        },
+        {
+          "id": "v7",
+          "score": 4534,
+          "primary_won": false,
+          "primary_rounds": 1812,
+          "post_mortem": "Lost (1812 rounds) [26 kills]. Good combat but couldn't close.",
+          "archetype_name": "Tree Farming Economy",
+          "type": "exploration",
+          "win_condition": "hybrid",
+          "philosophy": "Maximize tree density (6+ trees per gardener) and prioritize map control through bullet income, win through overwhelming VP production"
+        },
+        {
+          "id": "v10",
+          "score": 4294,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [45 kills]. Good combat but couldn't close.",
+          "archetype_name": "Bullet Denial Strategy",
+          "type": "exploration",
+          "win_condition": "hybrid",
+          "philosophy": "Control neutral trees by chopping them aggressively to deny enemy bullet income, while shaking all trees for own economy advantage"
+        },
+        {
+          "id": "v2",
+          "score": 4151,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [41 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "More Gardeners Earlier",
+          "type": "mutation",
+          "win_condition": "hybrid",
+          "philosophy": "Increase MAX_GARDENERS to 8 (like winning v5) and prioritize hiring them in first 300 rounds for stronger economy foundation"
+        },
+        {
+          "id": "v8",
+          "score": 3509,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [29 kills]. Good combat but couldn't close.",
+          "archetype_name": "Archon Snipe Focus",
+          "type": "exploration",
+          "win_condition": "elimination",
+          "philosophy": "Prioritize killing enemy archons above all else - modify targeting priority and movement to focus fire on archons when possible"
+        },
+        {
+          "id": "v6",
+          "score": 3361,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [21 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "Mid-Game Power Spike",
+          "type": "exploration",
+          "win_condition": "elimination",
+          "philosophy": "Skip early aggression, build economy for 800 rounds, then unleash a massive coordinated push with mixed army composition"
+        }
+      ]
+    },
+    {
+      "iteration": 3,
+      "winner": "v9",
+      "winner_score": 37238,
+      "promoted": true,
+      "variants": [
+        {
+          "id": "v9",
+          "score": 37238,
+          "primary_won": true,
+          "primary_rounds": 1381,
+          "post_mortem": "Won fast (1381 rounds) [9 kills]. Effective fast strategy.",
+          "archetype_name": "Balanced Army Composition",
+          "type": "exploration",
+          "win_condition": "hybrid",
+          "philosophy": "Produce equal numbers of scouts, soldiers, and lumberjacks for a versatile army that can adapt to any situation"
+        },
+        {
+          "id": "v10",
+          "score": 8178,
+          "primary_won": false,
+          "primary_rounds": 1315,
+          "post_mortem": "Lost (1315 rounds) [8 kills]. Good combat but couldn't close.",
+          "archetype_name": "Hyper-Aggressive Rush",
+          "type": "exploration",
+          "win_condition": "elimination",
+          "philosophy": "Build scouts AND soldiers simultaneously from the start - no economy phase, pure aggression to overwhelm before enemy can react"
+        },
+        {
+          "id": "v6",
+          "score": 6244,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [21 kills]. Good combat but couldn't close.",
+          "archetype_name": "Soldier Rush",
+          "type": "exploration",
+          "win_condition": "elimination",
+          "philosophy": "Skip scout phase entirely - build soldiers immediately for early military dominance and direct combat"
+        },
+        {
+          "id": "v1",
+          "score": 5680,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [16 kills]. Good combat but couldn't close.",
+          "archetype_name": "Max Scout Swarm",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Increase scout production from 6 to 10 for overwhelming early game pressure - more scouts means faster gardener elimination"
+        },
+        {
+          "id": "v3",
+          "score": 5610,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [14 kills]. Good combat but couldn't close.",
+          "archetype_name": "Expanded Economy",
+          "type": "mutation",
+          "win_condition": "hybrid",
+          "philosophy": "Increase max gardeners from 6 to 8 for stronger late-game bullet production and VP generation potential"
+        },
+        {
+          "id": "original",
+          "score": 5500,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [14 kills]. Good combat but couldn't close.",
+          "archetype_name": "Original (baseline)",
+          "type": "baseline"
+        },
+        {
+          "id": "v2",
+          "score": 5500,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [14 kills]. Good combat but couldn't close.",
+          "archetype_name": "Earlier Military Transition",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Start building soldiers at round 300 instead of 500 to capitalize on scout discoveries faster"
+        },
+        {
+          "id": "v4",
+          "score": 5500,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [14 kills]. Good combat but couldn't close.",
+          "archetype_name": "Lower VP Donation Threshold",
+          "type": "mutation",
+          "win_condition": "hybrid",
+          "philosophy": "Donate VP at 600 bullets instead of 1000 to secure VP wins faster and avoid late-game uncertainty"
+        },
+        {
+          "id": "v5",
+          "score": 5500,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [14 kills]. Good combat but couldn't close.",
+          "archetype_name": "No Tank Phase",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Remove tank production entirely, focus purely on scouts and soldiers for a more efficient army composition"
+        },
+        {
+          "id": "v8",
+          "score": 5500,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [14 kills]. Good combat but couldn't close.",
+          "archetype_name": "Lumberjack Melee Swarm",
+          "type": "exploration",
+          "win_condition": "elimination",
+          "philosophy": "Mass lumberjacks (6+) for early melee aggression - clear neutral trees while pushing, use strike damage to overwhelm"
+        },
+        {
+          "id": "v7",
+          "score": 5454,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [13 kills]. Good combat but couldn't close.",
+          "archetype_name": "Pentad Tank Wave",
+          "type": "exploration",
+          "win_condition": "elimination",
+          "philosophy": "Transition to tanks much earlier (round 800) and use pentad shots when 3+ enemies are clustered for massive damage"
+        }
+      ]
+    }
+  ]
+}

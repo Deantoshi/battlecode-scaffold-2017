@@ -1,4 +1,4 @@
-package kimi_k2_5_remaster;
+package kimi_k2_5_remaster_champion_1;
 import battlecode.common.*;
 
 /**
