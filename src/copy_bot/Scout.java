@@ -1,22 +1,28 @@
 package copy_bot;
 import battlecode.common.*;
 
+/**
+ * Scout - Reconnaissance unit.
+ * - DANGER_RADIUS: flee from combat
+ * - Shake neutral trees for bullets
+ * - Report enemy locations
+ * - Harass Gardeners if safe
+ */
 public strictfp class Scout {
     static RobotController rc;
-    static Direction exploreDir = null;
+    static final float DANGER_RADIUS = 7.0f;
+    static final float HARASS_RANGE = 3.0f;
+    
+    static boolean foundEnemyBase = false;
+    static Direction exploreDir;
     
     public static void run(RobotController rc) throws GameActionException {
         Scout.rc = rc;
         Nav.init(rc);
         Comms.init(rc);
+        BulletSpending.init(rc);
         
-        // Initialize explore direction toward enemy
-        MapLocation[] enemyArchons = rc.getInitialArchonLocations(rc.getTeam().opponent());
-        if (enemyArchons.length > 0) {
-            exploreDir = rc.getLocation().directionTo(enemyArchons[0]);
-        } else {
-            exploreDir = Nav.randomDirection();
-        }
+        exploreDir = Nav.randomDirection();
         
         while (true) {
             try {
@@ -30,101 +36,98 @@ public strictfp class Scout {
     }
     
     static void doTurn() throws GameActionException {
-        // Report alive
-        Comms.reportAlive();
-        
         MapLocation myLoc = rc.getLocation();
         
-        // Shake trees for bullets
-        shakeTrees();
+        // Shake neutral trees for bullets
+        TreeInfo[] neutralTrees = rc.senseNearbyTrees(rc.getType().sensorRadius, Team.NEUTRAL);
+        for (TreeInfo tree : neutralTrees) {
+            if (tree.containedBullets > 0 && rc.canShake(tree.getID())) {
+                rc.shake(tree.getID());
+                break;
+            }
+        }
         
-        // Check for dangerous enemies (Soldiers, Lumberjacks, Tanks)
-        RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
+        // Sense for enemies
+        RobotInfo[] enemies = rc.senseNearbyRobots(DANGER_RADIUS, rc.getTeam().opponent());
         
-        // Check for dangerous enemies nearby
-        RobotInfo danger = null;
-        RobotInfo gardenerTarget = null;
-        RobotInfo archonTarget = null;
-        
-        for (RobotInfo enemy : enemies) {
-            if (enemy.type == RobotType.SOLDIER || 
-                enemy.type == RobotType.LUMBERJACK || 
-                enemy.type == RobotType.TANK) {
-                if (danger == null || myLoc.distanceTo(enemy.location) < myLoc.distanceTo(danger.location)) {
-                    danger = enemy;
+        if (enemies.length > 0) {
+            // Report all enemies
+            for (RobotInfo enemy : enemies) {
+                Comms.reportEnemy(enemy);
+            }
+            
+            // Check if we should flee
+            boolean shouldFlee = false;
+            RobotInfo threat = null;
+            
+            for (RobotInfo enemy : enemies) {
+                // Flee from combat units
+                if (enemy.type == RobotType.SOLDIER || 
+                    enemy.type == RobotType.LUMBERJACK || 
+                    enemy.type == RobotType.TANK ||
+                    enemy.type == RobotType.SCOUT) {
+                    float dist = myLoc.distanceTo(enemy.location);
+                    if (dist < DANGER_RADIUS) {
+                        shouldFlee = true;
+                        threat = enemy;
+                        break;
+                    }
                 }
             }
-            if (enemy.type == RobotType.GARDENER) {
-                gardenerTarget = enemy;
-            }
-            if (enemy.type == RobotType.ARCHON) {
-                archonTarget = enemy;
-                // Report enemy Archon location!
-                Comms.broadcastEnemyArchon(enemy.location);
-            }
-        }
-        
-        // Flee from danger first
-        if (danger != null) {
-            float dist = myLoc.distanceTo(danger.location);
-            if (dist < 6.0f) {
-                Nav.moveAway(danger.location);
-                return;
-            }
-        }
-        
-        // Harass Gardeners if safe
-        if (gardenerTarget != null) {
-            float dist = myLoc.distanceTo(gardenerTarget.location);
             
-            // Attack if we can
-            Direction toGardener = myLoc.directionTo(gardenerTarget.location);
-            if (rc.canFireSingleShot() && dist < 6.0f) {
-                rc.fireSingleShot(toGardener);
-            }
-            
-            // Stay at range if no immediate danger
-            if (danger == null) {
-                if (dist > 5.0f && !rc.hasMoved()) {
-                    Nav.moveToward(gardenerTarget.location);
-                } else if (dist < 3.0f && !rc.hasMoved()) {
-                    Nav.moveAway(gardenerTarget.location);
+            if (shouldFlee && threat != null) {
+                // Flee from threat
+                Nav.moveAwayFrom(threat.location);
+            } else {
+                // Look for gardeners to harass
+                RobotInfo targetGardener = null;
+                for (RobotInfo enemy : enemies) {
+                    if (enemy.type == RobotType.GARDENER || enemy.type == RobotType.ARCHON) {
+                        targetGardener = enemy;
+                        break;
+                    }
+                }
+                
+                if (targetGardener != null && rc.canFireSingleShot()) {
+                    // Shoot at gardener/archon
+                    Direction toTarget = myLoc.directionTo(targetGardener.location);
+                    rc.fireSingleShot(toTarget);
                 }
             }
-            return;
-        }
-        
-        // Report Archon if found
-        if (archonTarget != null) {
-            Comms.broadcastEnemyArchon(archonTarget.location);
-        }
-        
-        // Explore toward enemy base
-        if (!rc.hasMoved()) {
-            // Occasionally change direction
-            if (Math.random() < 0.1) {
-                exploreDir = exploreDir.rotateLeftDegrees(45);
+        } else {
+            // No enemies - explore
+            
+            // Try to shake trees that contain bullets
+            for (TreeInfo tree : neutralTrees) {
+                if (tree.containedBullets > 0) {
+                    if (rc.canShake(tree.getID())) {
+                        rc.shake(tree.getID());
+                    } else {
+                        Nav.moveToward(tree.location);
+                    }
+                    break;
+                }
             }
             
-            if (!Nav.tryMove(exploreDir)) {
-                // Hit obstacle, rotate
-                exploreDir = Nav.randomDirection();
-                Nav.tryMove(exploreDir);
+            // Continue exploring if we haven't moved toward a tree
+            if (!rc.hasMoved()) {
+                // Try to find enemy base
+                MapLocation enemyArchon = Comms.getEnemyArchonLocation();
+                
+                if (enemyArchon == null) {
+                    // Explore in current direction, occasionally change
+                    if (!Nav.tryMove(exploreDir)) {
+                        exploreDir = Nav.randomDirection();
+                        Nav.tryMove(exploreDir);
+                    }
+                } else {
+                    // Patrol around enemy base
+                    Nav.moveToward(enemyArchon);
+                }
             }
         }
-    }
-    
-    /**
-     * Shake nearby trees for bullets.
-     */
-    static void shakeTrees() throws GameActionException {
-        TreeInfo[] trees = rc.senseNearbyTrees(-1, Team.NEUTRAL);
         
-        for (TreeInfo tree : trees) {
-            if (tree.containedBullets > 0 && rc.canShake(tree.ID)) {
-                rc.shake(tree.ID);
-                return;
-            }
-        }
+        // Handle spending
+        BulletSpending.spendPolicy(RobotType.SCOUT);
     }
 }

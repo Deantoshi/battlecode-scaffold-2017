@@ -1,14 +1,24 @@
 package copy_bot;
 import battlecode.common.*;
 
+/**
+ * Soldier - Main combat unit.
+ * - Target priority: Gardener > Archon > Scout > Soldier > Lumberjack > Tank
+ * - Friendly fire prevention (check allies)
+ * - Kiting behavior
+ * - Triad shots vs clusters
+ */
 public strictfp class Soldier {
     static RobotController rc;
-    static MapLocation lastEnemyLocation = null;
+    static final float FRIENDLY_FIRE_ANGLE = 15.0f;
+    static final float KITE_DISTANCE = 4.0f;
+    static final float SENSOR_RADIUS = 7.0f;
     
     public static void run(RobotController rc) throws GameActionException {
         Soldier.rc = rc;
         Nav.init(rc);
         Comms.init(rc);
+        BulletSpending.init(rc);
         
         while (true) {
             try {
@@ -22,93 +32,72 @@ public strictfp class Soldier {
     }
     
     static void doTurn() throws GameActionException {
-        // Report alive
-        Comms.reportAlive();
-        
         // Dodge bullets first
-        Nav.dodgeBullets();
+        Nav.tryDodgeBullets();
         
-        // Find enemies
-        RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
+        // Sense enemies
+        RobotInfo[] enemies = rc.senseNearbyRobots(SENSOR_RADIUS, rc.getTeam().opponent());
         
         if (enemies.length > 0) {
-            // Find priority target
-            RobotInfo target = Utils.findPriorityTarget(enemies);
-            lastEnemyLocation = target.location;
+            // Report enemies to comms
+            RobotInfo closest = Utils.findClosestEnemy(rc, enemies);
+            if (closest != null) {
+                Comms.reportEnemy(closest);
+            }
             
-            // Attack!
-            attackTarget(target);
+            // Find best target based on priority
+            RobotInfo target = Utils.findBestTarget(rc, enemies);
             
-            // Kite: maintain optimal distance
-            float dist = rc.getLocation().distanceTo(target.location);
-            if (dist < 3.0f) {
-                // Too close, back up
-                Nav.moveAway(target.location);
-            } else if (dist > 5.0f && !rc.hasMoved()) {
-                // Too far, move closer
-                Nav.moveToward(target.location);
+            if (target != null) {
+                MapLocation myLoc = rc.getLocation();
+                Direction toTarget = myLoc.directionTo(target.location);
+                float distToTarget = myLoc.distanceTo(target.location);
+                
+                // Determine shot type based on enemy clustering
+                int clusterSize = countNearbyEnemies(target.location, 3.0f);
+                BodyInfo[] targets = new BodyInfo[1];
+                targets[0] = target;
+                
+                // Check for friendly fire
+                boolean clearShot = !Utils.wouldHitAllies(rc, toTarget, distToTarget, FRIENDLY_FIRE_ANGLE);
+                
+                // Fire if we have a clear shot
+                if (clearShot) {
+                    if (clusterSize >= 2 && rc.canFireTriadShot()) {
+                        rc.fireTriadShot(toTarget);
+                    } else if (rc.canFireSingleShot()) {
+                        rc.fireSingleShot(toTarget);
+                    }
+                }
+                
+                // Kiting: maintain distance
+                if (distToTarget < KITE_DISTANCE) {
+                    Nav.moveAwayFrom(target.location);
+                } else if (distToTarget > rc.getType().bulletSpeed) {
+                    Nav.moveToward(target.location);
+                }
             }
         } else {
-            // No enemies visible
-            // Check for broadcast enemy Archon location
+            // No enemies visible - move toward enemy base or rally point
+            MapLocation rally = Comms.getRallyPoint();
             MapLocation enemyArchon = Comms.getEnemyArchonLocation();
-            if (enemyArchon != null) {
-                Nav.moveToward(enemyArchon);
-            } else if (lastEnemyLocation != null) {
-                // Move toward last known enemy position
-                Nav.moveToward(lastEnemyLocation);
-                if (rc.getLocation().distanceTo(lastEnemyLocation) < 3.0f) {
-                    lastEnemyLocation = null; // Clear if we reached it
-                }
-            } else {
-                // Explore toward enemy spawn
-                MapLocation[] enemyArchons = rc.getInitialArchonLocations(rc.getTeam().opponent());
-                if (enemyArchons.length > 0) {
-                    Nav.moveToward(enemyArchons[0]);
-                } else {
-                    Nav.tryMove(Nav.randomDirection());
-                }
-            }
-        }
-    }
-    
-    /**
-     * Attack a target robot.
-     */
-    static void attackTarget(RobotInfo target) throws GameActionException {
-        MapLocation myLoc = rc.getLocation();
-        Direction toEnemy = myLoc.directionTo(target.location);
-        float dist = myLoc.distanceTo(target.location);
-        
-        // Check if we can fire without hitting allies
-        if (!willHitAllies(toEnemy, dist)) {
-            if (rc.canFirePentadShot() && dist < 4.0f) {
-                rc.firePentadShot(toEnemy);
-            } else if (rc.canFireTriadShot() && dist < 5.0f) {
-                rc.fireTriadShot(toEnemy);
-            } else if (rc.canFireSingleShot()) {
-                rc.fireSingleShot(toEnemy);
-            }
-        }
-    }
-    
-    /**
-     * Check if firing in a direction will hit allies.
-     */
-    static boolean willHitAllies(Direction dir, float range) throws GameActionException {
-        RobotInfo[] allies = rc.senseNearbyRobots(range, rc.getTeam());
-        MapLocation myLoc = rc.getLocation();
-        
-        for (RobotInfo ally : allies) {
-            Direction toAlly = myLoc.directionTo(ally.location);
-            float angleDiff = Math.abs(dir.radiansBetween(toAlly));
-            float distToAlly = myLoc.distanceTo(ally.location);
             
-            // If ally is in firing cone and closer than target
-            if (angleDiff < Math.PI / 6 && distToAlly < range) {
-                return true;
+            if (rally != null) {
+                Nav.moveToward(rally);
+            } else if (enemyArchon != null) {
+                Nav.moveToward(enemyArchon);
+            } else {
+                // Explore randomly
+                Nav.tryMove(Nav.randomDirection());
             }
         }
-        return false;
+        
+        // Handle spending (though Soldiers don't spend directly)
+        BulletSpending.spendPolicy(RobotType.SOLDIER);
+    }
+    
+    static int countNearbyEnemies(MapLocation loc, float radius) {
+        RobotInfo[] nearby = rc.senseNearbyRobots(loc, radius, rc.getTeam().opponent());
+        return nearby.length;
     }
 }

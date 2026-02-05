@@ -1,57 +1,59 @@
 package copy_bot;
 import battlecode.common.*;
 
+/**
+ * Navigation utilities for robot movement.
+ */
 public strictfp class Nav {
     static RobotController rc;
     
-    public static void init(RobotController rc) {
-        Nav.rc = rc;
+    public static void init(RobotController rcIn) {
+        rc = rcIn;
     }
     
     /**
-     * Generate a random direction.
-     */
-    public static Direction randomDirection() {
-        return new Direction((float)Math.random() * 2 * (float)Math.PI);
-    }
-    
-    /**
-     * Try to move in a direction, rotating left/right if blocked.
-     * Returns true if movement succeeded.
+     * Attempts to move in a direction, trying multiple rotations if needed.
      */
     public static boolean tryMove(Direction dir) throws GameActionException {
-        return tryMove(dir, 20, 5);
+        return tryMove(dir, 20, 3);
     }
     
     /**
-     * Try to move in a direction with configurable rotation.
-     * @param dir The intended direction
-     * @param degreeOffset How many degrees to rotate each try
-     * @param checksPerSide How many rotations to try on each side
+     * Attempts to move in a direction with specified degree and check offsets.
      */
     public static boolean tryMove(Direction dir, float degreeOffset, int checksPerSide) throws GameActionException {
+        if (rc.hasMoved()) {
+            return false;
+        }
+        
+        int currentCheck = 1;
+        float offset = degreeOffset * ((float)Math.PI / 180);
+        
+        // Try original direction
         if (rc.canMove(dir)) {
             rc.move(dir);
             return true;
         }
         
-        // Try rotating left and right
-        int currentCheck = 1;
+        // Try rotated directions
         while (currentCheck <= checksPerSide) {
-            // Try right
+            // Try offset to the right
             Direction rightDir = dir.rotateRightDegrees(degreeOffset * currentCheck);
             if (rc.canMove(rightDir)) {
                 rc.move(rightDir);
                 return true;
             }
-            // Try left
+            
+            // Try offset to the left
             Direction leftDir = dir.rotateLeftDegrees(degreeOffset * currentCheck);
             if (rc.canMove(leftDir)) {
                 rc.move(leftDir);
                 return true;
             }
+            
             currentCheck++;
         }
+        
         return false;
     }
     
@@ -62,77 +64,104 @@ public strictfp class Nav {
         if (target == null) {
             return false;
         }
-        MapLocation myLoc = rc.getLocation();
-        Direction dir = myLoc.directionTo(target);
+        
+        Direction dir = rc.getLocation().directionTo(target);
         return tryMove(dir);
     }
     
     /**
-     * Move away from a location.
+     * Get a random direction.
      */
-    public static boolean moveAway(MapLocation threat) throws GameActionException {
-        if (threat == null) {
-            return false;
-        }
-        MapLocation myLoc = rc.getLocation();
-        Direction awayDir = threat.directionTo(myLoc);
-        return tryMove(awayDir);
+    public static Direction randomDirection() {
+        return new Direction((float)Math.random() * 2 * (float)Math.PI);
     }
     
     /**
-     * Try to dodge incoming bullets.
-     * Returns true if we moved to dodge.
+     * Attempt to dodge incoming bullets.
+     * Returns true if dodged.
      */
-    public static boolean dodgeBullets() throws GameActionException {
-        BulletInfo[] bullets = rc.senseNearbyBullets(5.0f);
+    public static boolean tryDodgeBullets() throws GameActionException {
+        BulletInfo[] bullets = rc.senseNearbyBullets(8.0f);
         if (bullets.length == 0) {
             return false;
         }
         
         MapLocation myLoc = rc.getLocation();
-        float myRadius = rc.getType().bodyRadius;
+        Direction dodgeDir = null;
+        float maxDanger = 0;
         
         for (BulletInfo bullet : bullets) {
             // Check if bullet is heading toward us
-            Direction bulletDir = bullet.dir;
             MapLocation bulletLoc = bullet.location;
+            Direction bulletDir = bullet.dir;
             
-            // Vector from bullet to us
-            Direction toMe = bulletLoc.directionTo(myLoc);
-            float angle = bulletDir.radiansBetween(toMe);
+            // Project bullet path
+            float distToBullet = myLoc.distanceTo(bulletLoc);
+            float angleToBullet = myLoc.directionTo(bulletLoc).radiansBetween(bulletDir);
             
-            // If bullet is heading somewhat toward us
-            if (Math.abs(angle) < Math.PI / 4) {
-                float dist = bulletLoc.distanceTo(myLoc);
+            // If bullet is generally heading toward us
+            if (Math.abs(angleToBullet) < Math.PI / 2) {
+                // Calculate closest point on bullet path
+                MapLocation projectedLoc = bulletLoc.add(bulletDir, distToBullet);
+                float distFromPath = myLoc.distanceTo(projectedLoc);
                 
-                // If bullet is close, try to dodge perpendicular
-                if (dist < 4.0f + myRadius) {
-                    Direction dodgeDir;
-                    if (angle > 0) {
+                // If we're in danger
+                if (distFromPath < rc.getType().bodyRadius + 1.0f) {
+                    float danger = bullet.damage / (distToBullet + 0.1f);
+                    if (danger > maxDanger) {
+                        maxDanger = danger;
+                        // Dodge perpendicular to bullet direction
                         dodgeDir = bulletDir.rotateRightDegrees(90);
-                    } else {
-                        dodgeDir = bulletDir.rotateLeftDegrees(90);
-                    }
-                    if (tryMove(dodgeDir, 10, 3)) {
-                        return true;
+                        if (Math.random() < 0.5) {
+                            dodgeDir = bulletDir.rotateLeftDegrees(90);
+                        }
                     }
                 }
             }
         }
+        
+        if (dodgeDir != null) {
+            return tryMove(dodgeDir, 30, 3);
+        }
+        
         return false;
     }
     
     /**
-     * Check if we can move in a direction.
+     * Move away from a location.
      */
-    public static boolean canMove(Direction dir) {
-        return rc.canMove(dir);
+    public static boolean moveAwayFrom(MapLocation target) throws GameActionException {
+        if (target == null) {
+            return false;
+        }
+        
+        Direction dir = target.directionTo(rc.getLocation());
+        return tryMove(dir);
     }
     
     /**
-     * Get distance to location.
+     * Attempt to move to a specific location.
      */
-    public static float distanceTo(MapLocation loc) {
-        return rc.getLocation().distanceTo(loc);
+    public static boolean tryMoveTo(MapLocation loc) throws GameActionException {
+        if (rc.hasMoved()) {
+            return false;
+        }
+        
+        if (rc.canMove(loc)) {
+            rc.move(loc);
+            return true;
+        }
+        
+        // Try to move toward the location
+        Direction dir = rc.getLocation().directionTo(loc);
+        return tryMove(dir);
+    }
+    
+    /**
+     * Check if a location is safe (no enemy units nearby).
+     */
+    public static boolean isSafe(MapLocation loc) {
+        RobotInfo[] enemies = rc.senseNearbyRobots(loc, 7.0f, rc.getTeam().opponent());
+        return enemies.length == 0;
     }
 }

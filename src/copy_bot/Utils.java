@@ -1,113 +1,180 @@
 package copy_bot;
 import battlecode.common.*;
 
+/**
+ * Utility functions for targeting and analysis.
+ */
 public strictfp class Utils {
     
     /**
-     * Find the enemy with lowest health from an array of enemies.
+     * Find the enemy with the lowest health.
      */
     public static RobotInfo findLowestHealthTarget(RobotInfo[] enemies) {
         if (enemies == null || enemies.length == 0) {
             return null;
         }
-        RobotInfo lowest = enemies[0];
+        
+        RobotInfo lowest = null;
+        float minHealth = Float.MAX_VALUE;
+        
         for (RobotInfo enemy : enemies) {
-            if (enemy.health < lowest.health) {
+            if (enemy.health < minHealth) {
+                minHealth = enemy.health;
                 lowest = enemy;
             }
         }
+        
         return lowest;
     }
     
     /**
-     * Find the tree with lowest health from an array of trees.
-     */
-    public static TreeInfo findLowestHealthTree(TreeInfo[] trees) {
-        if (trees == null || trees.length == 0) {
-            return null;
-        }
-        TreeInfo lowest = trees[0];
-        for (TreeInfo tree : trees) {
-            if (tree.health < lowest.health) {
-                lowest = tree;
-            }
-        }
-        return lowest;
-    }
-    
-    /**
-     * Find the closest enemy to the robot.
+     * Find the closest enemy.
      */
     public static RobotInfo findClosestEnemy(RobotController rc, RobotInfo[] enemies) {
         if (enemies == null || enemies.length == 0) {
             return null;
         }
+        
+        RobotInfo closest = null;
+        float minDist = Float.MAX_VALUE;
         MapLocation myLoc = rc.getLocation();
-        RobotInfo closest = enemies[0];
-        float closestDist = myLoc.distanceTo(closest.location);
+        
         for (RobotInfo enemy : enemies) {
             float dist = myLoc.distanceTo(enemy.location);
-            if (dist < closestDist) {
+            if (dist < minDist) {
+                minDist = dist;
                 closest = enemy;
-                closestDist = dist;
             }
         }
+        
         return closest;
     }
     
     /**
-     * Find priority target based on: Gardeners > low HP > Scouts > Soldiers
+     * Find the lowest health tree.
      */
-    public static RobotInfo findPriorityTarget(RobotInfo[] enemies) {
+    public static TreeInfo findLowestHealthTree(TreeInfo[] trees) {
+        if (trees == null || trees.length == 0) {
+            return null;
+        }
+        
+        TreeInfo lowest = null;
+        float minHealth = Float.MAX_VALUE;
+        
+        for (TreeInfo tree : trees) {
+            if (tree.health < minHealth) {
+                minHealth = tree.health;
+                lowest = tree;
+            }
+        }
+        
+        return lowest;
+    }
+    
+    /**
+     * Calculate priority score for targets.
+     * Higher score = higher priority.
+     * Priority: Gardener > Archon > Scout > Soldier > Lumberjack > Tank
+     */
+    public static float getTargetPriority(RobotType type) {
+        switch (type) {
+            case GARDENER:   return 1000f;
+            case ARCHON:     return 900f;
+            case SCOUT:      return 700f;
+            case SOLDIER:    return 600f;
+            case LUMBERJACK: return 500f;
+            case TANK:       return 400f;
+            default:         return 0f;
+        }
+    }
+    
+    /**
+     * Find the best target based on priority and distance.
+     */
+    public static RobotInfo findBestTarget(RobotController rc, RobotInfo[] enemies) {
         if (enemies == null || enemies.length == 0) {
             return null;
         }
-        RobotInfo best = enemies[0];
-        int bestPriority = getTargetPriority(best);
+        
+        RobotInfo best = null;
+        float bestScore = Float.MIN_VALUE;
+        MapLocation myLoc = rc.getLocation();
+        
         for (RobotInfo enemy : enemies) {
-            int priority = getTargetPriority(enemy);
-            if (priority > bestPriority) {
-                best = enemy;
-                bestPriority = priority;
-            } else if (priority == bestPriority && enemy.health < best.health) {
+            float priority = getTargetPriority(enemy.type);
+            float dist = myLoc.distanceTo(enemy.location);
+            float score = priority - dist * 10; // Distance penalty
+            
+            if (score > bestScore) {
+                bestScore = score;
                 best = enemy;
             }
         }
+        
         return best;
     }
     
     /**
-     * Get priority value for a robot type.
-     * Higher = more important to kill.
+     * Check if firing in a direction would hit allies.
      */
-    public static int getTargetPriority(RobotInfo robot) {
-        switch (robot.type) {
-            case GARDENER:   return 100;  // Highest priority - economy
-            case ARCHON:     return 90;   // High priority - leader
-            case SCOUT:      return 50;   // Medium priority - annoying
-            case SOLDIER:    return 40;   // Combat unit
-            case LUMBERJACK: return 35;   // Melee unit
-            case TANK:       return 30;   // Slow but dangerous
-            default:         return 0;
+    public static boolean wouldHitAllies(RobotController rc, Direction dir, float maxDist, float angleThreshold) {
+        RobotInfo[] allies = rc.senseNearbyRobots(maxDist, rc.getTeam());
+        
+        for (RobotInfo ally : allies) {
+            Direction toAlly = rc.getLocation().directionTo(ally.location);
+            float angle = Math.abs(dir.degreesBetween(toAlly));
+            
+            if (angle < angleThreshold) {
+                return true;
+            }
         }
+        
+        return false;
     }
     
     /**
-     * Check if a location is safe from enemy fire.
+     * Count nearby enemies.
      */
-    public static boolean isLocationSafe(RobotController rc, MapLocation loc, RobotInfo[] enemies) {
-        for (RobotInfo enemy : enemies) {
-            if (enemy.type == RobotType.SOLDIER || enemy.type == RobotType.TANK) {
-                if (loc.distanceTo(enemy.location) < 5.0f) {
-                    return false;
-                }
-            }
-            if (enemy.type == RobotType.LUMBERJACK) {
-                if (loc.distanceTo(enemy.location) < 3.0f) {
-                    return false;
-                }
+    public static int countNearbyEnemies(RobotController rc, float radius) {
+        RobotInfo[] enemies = rc.senseNearbyRobots(radius, rc.getTeam().opponent());
+        return enemies.length;
+    }
+    
+    /**
+     * Count nearby allies.
+     */
+    public static int countNearbyAllies(RobotController rc, float radius) {
+        RobotInfo[] allies = rc.senseNearbyRobots(radius, rc.getTeam());
+        return allies.length;
+    }
+    
+    /**
+     * Check if we have clear line of fire to target.
+     */
+    public static boolean hasClearShot(RobotController rc, MapLocation target) {
+        MapLocation myLoc = rc.getLocation();
+        Direction dir = myLoc.directionTo(target);
+        float dist = myLoc.distanceTo(target);
+        
+        // Check for trees in the way
+        TreeInfo[] trees = rc.senseNearbyTrees(dist / 2);
+        for (TreeInfo tree : trees) {
+            Direction toTree = myLoc.directionTo(tree.location);
+            float angle = Math.abs(dir.degreesBetween(toTree));
+            if (angle < 15 && myLoc.distanceTo(tree.location) < dist) {
+                return false;
             }
         }
+        
         return true;
+    }
+    
+    /**
+     * Check if enemy is within attack radius.
+     */
+    public static boolean isInAttackRange(RobotController rc, RobotInfo enemy) {
+        float dist = rc.getLocation().distanceTo(enemy.location);
+        return dist <= rc.getType().sensorRadius && 
+               dist <= rc.getType().bulletSpeed; // Rough approximation
     }
 }

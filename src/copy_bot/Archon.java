@@ -1,8 +1,15 @@
 package copy_bot;
 import battlecode.common.*;
 
+/**
+ * Archon - Leader unit.
+ * - Broadcasts position (channels 0,1)
+ * - Flee from enemies
+ * - Hires Gardeners via BulletSpending
+ */
 public strictfp class Archon {
     static RobotController rc;
+    static final float FLEE_DISTANCE = 8.0f;
     
     public static void run(RobotController rc) throws GameActionException {
         Archon.rc = rc;
@@ -22,31 +29,28 @@ public strictfp class Archon {
     }
     
     static void doTurn() throws GameActionException {
-        // Broadcast our position for other units
-        Comms.broadcastLocation(Comms.ARCHON_X, Comms.ARCHON_Y, rc.getLocation());
+        // Broadcast our position
+        Comms.broadcastArchonLocation(rc.getLocation());
         
-        // Reset counts at start of each round (first Archon only)
-        if (rc.getRoundNum() % 10 == 0) {
-            Comms.resetCounts();
-        }
-        
-        // Check for nearby enemies
-        RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
-        
+        // Check for enemies and flee if necessary
+        RobotInfo[] enemies = rc.senseNearbyRobots(FLEE_DISTANCE, rc.getTeam().opponent());
         if (enemies.length > 0) {
-            // Flee from enemies!
+            // Run away from the closest enemy
             RobotInfo closest = Utils.findClosestEnemy(rc, enemies);
             if (closest != null) {
-                Nav.moveAway(closest.location);
+                Nav.moveAwayFrom(closest.location);
+                Comms.setEmergency(true);
             }
         } else {
-            // No enemies, move randomly if possible
-            if (!rc.hasMoved()) {
-                Nav.tryMove(Nav.randomDirection());
-            }
+            Comms.setEmergency(false);
         }
         
-        // Spend bullets (hire gardeners)
-        BulletSpending.spendPolicy();
+        // Handle spending (hiring Gardeners)
+        BulletSpending.spendPolicy(RobotType.ARCHON);
+        
+        // Move randomly if we haven't moved yet
+        if (!rc.hasMoved()) {
+            Nav.tryMove(Nav.randomDirection());
+        }
     }
 }
