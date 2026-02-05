@@ -1,0 +1,151 @@
+⏺ Now I have a thorough understanding of both your pipeline and the DRQ paper. Here's my analysis.                                 
+                                                                                                                                      
+  ---                                                                                                                                 
+  Analysis: variant-loop.sh vs DRQ Principles                                                                                         
+                                                                                                                                      
+  Your pipeline is well-structured and shares several core ideas with DRQ: iterative improvement, growing champion history, and       
+  LLM-driven generation. But there are meaningful gaps between your current design and what the DRQ paper demonstrates works. I'll    
+  organize these from most impactful to least.                                                                                        
+                                                                                                                                      
+  ---                                                                                                                                 
+  1. No feedback from results to the next iteration's archetype generation
+
+  The problem: Every iteration wipes .state/ (line 214-217) and generates archetypes blind. The archetype-creator agent has no
+  knowledge of:
+  - Which archetypes were tried before
+  - Which ones won, lost, or by how much
+  - What specific strategies the current champion already uses
+  - What strategies the champions it must beat already use
+
+  What DRQ does differently: MAP-Elites mutates existing good solutions. The search is guided by fitness. A warrior that scores well
+  gets mutated to produce variations. A warrior that scores poorly is unlikely to be selected as a parent.
+
+  Concrete fix: Persist a strategy-history.json across iterations containing each iteration's archetypes, their scores, and a brief
+  description of why the winner won (or why losers lost, extracted from match data). Feed this to the archetype-creator. The agent
+  prompt should say: "Here's what we've tried, here's what worked, here's what failed. Design 10 new archetypes that build on
+  successes and explore gaps."
+
+  ---
+  2. No diversity preservation within an iteration (the MAP-Elites gap)
+
+  The problem: You generate 10 archetypes, test them, pick the single best, and discard everything else. The paper's strongest
+  empirical finding is that MAP-Elites (diversity preservation) is essential -- removing it significantly degrades performance (Figure
+   8).
+
+  What DRQ does differently: MAP-Elites maintains an archive of behaviorally diverse elites. Even a low-scoring variant is preserved
+  if it occupies a unique behavioral niche, because it might be a crucial stepping stone.
+
+  Concrete fix: Instead of just promoting the single best variant, maintain a behavioral archive. Define 2 behavioral axes relevant to
+   Battlecode, e.g.:
+  - Axis 1: Aggression level (enemy kills / total rounds)
+  - Axis 2: Economy focus (VP generated + trees planted)
+
+  Discretize these into a grid. After each iteration, place each variant into its behavioral cell. If it's the best performer in that
+  cell, it becomes that cell's elite. In subsequent iterations, the archetype-creator should receive this archive and be instructed to
+   generate archetypes that fill empty cells or improve existing cells, not just try random strategies.
+
+  ---
+  3. Only testing on a single map
+
+  The problem: Line 28: MAP="${3:-MagicWood}". Running on one map is the Battlecode equivalent of DRQ evaluating against a single
+  human warrior. The paper explicitly shows this produces specialists that defeat ~28% of opponents, not generalists.
+
+  What DRQ does differently: Each warrior is evaluated against ALL previous champions (multi-opponent). Generality is measured against
+   317 unseen human warriors.
+
+  Concrete fix: Run each variant against the opponent on all 5 maps (Shrine, Barrier, Bullseye, Lanes, Blitzkrieg) or at minimum 3.
+  Aggregate the scores. A variant that wins on 4/5 maps is more valuable than one that crushes on 1 map and loses on 4. This directly
+  creates the generality pressure that DRQ identifies as the mechanism for producing robust strategies.
+
+  ---
+  4. No refinement variants (exploitation vs exploration imbalance)
+
+  The problem: Every iteration generates 10 entirely new archetypes. This is pure exploration with no exploitation. DRQ's MAP-Elites
+  primarily mutates existing good solutions rather than generating from scratch.
+
+  Concrete fix: Split the 10 variants into two pools:
+  - 5 "mutation" variants: Small, targeted changes to the current champion (e.g., "tweak unit ratio," "adjust aggression timing,"
+  "modify spending thresholds"). These exploit what already works.
+  - 5 "exploration" variants: Fundamentally new archetypes as you currently do.
+
+  This mirrors how DRQ uses the LLM: sometimes to generate novel warriors, sometimes to mutate existing ones. The paper notes that
+  most progress comes from mutation of existing elites, not de novo generation.
+
+  ---
+  5. Champion history is underutilized
+
+  The problem: Champions are used as additional opponents to test against (line 302), which is good. But the archetype-creator and
+  archetype-implementer agents don't receive the champion code or strategies. They don't know what they need to beat.
+
+  What DRQ does differently: The growing history of opponents is the fitness landscape. Each new warrior is explicitly optimized to
+  defeat all prior champions.
+
+  Concrete fix: Include a summary of each champion's strategy in the context given to agents. Something like:
+  Champion 0: VP rush with early gardener spam, wins by round 2200
+  Champion 1: Soldier rush, aggressive early, wins by elimination ~1800
+  Champion 2: Tank+soldier hybrid, slow build, strong late game
+  The archetype-creator should explicitly be told: "Your archetypes must produce bots that can beat ALL of these strategies, not just
+  the main opponent." The implementer should know what it's up against.
+
+  ---
+  6. The scoring function doesn't reward generality
+
+  The problem: The scoring in rank-variants.sh aggregates scores across opponents additively. A variant that scores 20000 against the
+  main opponent but 0 against champions could still win over a variant that scores 15000 against everything.
+
+  Concrete fix: Use a minimum score across opponents or geometric mean rather than a sum. This forces the winner to be competent
+  against all opponents, not just dominant against one. DRQ's fitness is explicitly context-dependent on all opponents simultaneously.
+
+  Alternatively, weight the scoring: a variant must at least not lose to any champion. Any loss to a champion is heavily penalized.
+
+  ---
+  7. Parallelizing archetype implementation
+
+  The problem: Line 267-292 implements variants sequentially. Each one requires a full LLM agent invocation.
+
+  Concrete fix: Since variants are independent (each modifies its own folder), implement them in parallel. You could batch them into
+  2-3 parallel groups to respect API rate limits while cutting wall-clock time significantly.
+
+  ---
+  8. No cycle detection or prevention
+
+  The problem: The paper shows K=1 history produces many rock-paper-scissors cycles (77% more than full history). Your loop does
+  accumulate champions, but doesn't explicitly check for cycling.
+
+  Concrete fix: After each iteration, check if the new champion loses to any previous champion that the previous champion beat. If
+  cycling is detected, flag it and bias the next iteration's archetypes toward generalist strategies rather than specialist
+  counter-strategies.
+
+  ---
+  9. The copy_bot self-play is weak self-play
+
+  The problem: Line 356 copies the current best bot to copy_bot as the opponent. This means the bot plays against a frozen copy of
+  itself. But copy_bot is a single opponent -- the champion history provides additional opponents, but the primary opponent signal
+  comes from this one bot.
+
+  Concrete fix: Instead of always using copy_bot as the primary opponent, rotate through past champions or use a mixture of opponents.
+   DRQ uses all prior champions simultaneously. You could run matches against the original opponent AND all champions, weighting them
+  equally.
+
+  ---
+  10. No post-mortem analysis fed back into the loop
+
+  The problem: bc17_query.py extracts rich match data (combat stats, economy curves, unit compositions, build orders), but this data
+  is only used for scoring. None of it is fed back to the LLM agents.
+
+  Concrete fix: After ranking, extract a brief tactical summary for each variant: "Lost because ran out of bullets at round 800 after
+  overinvesting in trees" or "Won because early soldier pressure killed enemy archon before defenses formed." Feed these post-mortems
+  to the archetype-creator in the next iteration. This gives the LLM concrete tactical feedback rather than just win/loss signals,
+  analogous to how DRQ's fitness function provides gradient-like information to guide the evolutionary search.
+
+  ---
+  Priority ranking
+
+  If I had to pick the 3 changes most likely to produce measurably better bots:
+
+  1. Multi-map testing (#3) -- cheapest to implement, biggest generality gain
+  2. Feedback loop from results (#1 + #10) -- gives the LLM the information it needs to make intelligent improvements rather than
+  random ones
+  3. Exploitation/exploration split (#4) -- the current approach throws away refinement opportunities every iteration
+
+  The MAP-Elites behavioral archive (#2) would be the most impactful long-term but is also the most complex to implement properly.
