@@ -1,0 +1,258 @@
+{
+  "iterations": [
+    {
+      "iteration": 1,
+      "winner": "v6",
+      "winner_score": 59138,
+      "promoted": true,
+      "variants": [
+        {
+          "id": "v6",
+          "score": 59138,
+          "primary_won": true,
+          "primary_rounds": 860,
+          "post_mortem": "Won fast (860 rounds) [27 kills]. Effective fast strategy.",
+          "archetype_name": "Early Tank Rush",
+          "type": "exploration",
+          "win_condition": "elimination",
+          "philosophy": "Rush to tanks as fast as possible - their 5 damage shots and 200 HP make them dominant in combat"
+        },
+        {
+          "id": "v3",
+          "score": 59127,
+          "primary_won": true,
+          "primary_rounds": 871,
+          "post_mortem": "Won fast (871 rounds) [27 kills]. Effective fast strategy.",
+          "archetype_name": "Economy First",
+          "type": "mutation",
+          "win_condition": "hybrid",
+          "philosophy": "Lower bullet reserves for gardener hiring and tree planting to accelerate economy growth"
+        },
+        {
+          "id": "v7",
+          "score": 44665,
+          "primary_won": false,
+          "primary_rounds": 711,
+          "post_mortem": "Lost (711 rounds) [7 kills]. Good combat but couldn't close.",
+          "archetype_name": "Pure VP Rush",
+          "type": "exploration",
+          "win_condition": "vp_rush",
+          "philosophy": "Maximize bullet income and donate aggressively - race to 1000 VP before opponent can mount offense"
+        },
+        {
+          "id": "v10",
+          "score": 44489,
+          "primary_won": false,
+          "primary_rounds": 1065,
+          "post_mortem": "Lost (1065 rounds) [10 kills]. Good combat but couldn't close.",
+          "archetype_name": "Turtle Economy",
+          "type": "exploration",
+          "win_condition": "hybrid",
+          "philosophy": "Maximum tree farming early, build massive economy before transitioning to overwhelming army in late game"
+        },
+        {
+          "id": "v8",
+          "score": 44362,
+          "primary_won": false,
+          "primary_rounds": 1143,
+          "post_mortem": "Lost (1143 rounds) [10 kills]. Good combat but couldn't close.",
+          "archetype_name": "Scout Swarm",
+          "type": "exploration",
+          "win_condition": "elimination",
+          "philosophy": "Mass cheap scouts (80 bullets each) to harass enemy gardeners and economy - scouts move fast and shoot far"
+        },
+        {
+          "id": "v4",
+          "score": 43268,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [24 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "Skip Early Scout",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Skip the early scout and invest those bullets into faster military buildup"
+        },
+        {
+          "id": "v9",
+          "score": 42509,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [10 kills]. Good combat but couldn't close.",
+          "archetype_name": "Mass Soldiers Blitz",
+          "type": "exploration",
+          "win_condition": "elimination",
+          "philosophy": "Skip tanks entirely and mass soldiers for mid-game dominance - soldiers are more cost-efficient (100 vs 300 bullets)"
+        },
+        {
+          "id": "original",
+          "score": 42378,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [6 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "Original (baseline)",
+          "type": "baseline"
+        },
+        {
+          "id": "v2",
+          "score": 42378,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [6 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "Aggressive Soldier Cap",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Build more soldiers earlier to overwhelm enemy before they establish economy"
+        },
+        {
+          "id": "v1",
+          "score": 42373,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [6 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "Earlier VP Threshold",
+          "type": "mutation",
+          "win_condition": "hybrid",
+          "philosophy": "Same strategy but start donating VP earlier to close games faster and secure wins before late-game chaos"
+        },
+        {
+          "id": "v5",
+          "score": 42035,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds). Won but too slowly; needs faster execution.",
+          "archetype_name": "Lumberjack Heavy",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "On Clusters map with many trees, increase lumberjack count to clear paths faster and enable stronger pushes"
+        }
+      ]
+    },
+    {
+      "iteration": 2,
+      "winner": "original",
+      "winner_score": 5935,
+      "promoted": false,
+      "variants": [
+        {
+          "id": "original",
+          "score": 5935,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [77 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "Original (baseline)",
+          "type": "baseline"
+        },
+        {
+          "id": "v2",
+          "score": 5935,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [77 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "More Tanks",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Increase tank cap from 6 to 10 for overwhelming force - the current 860 round win suggests we need more firepower to close faster"
+        },
+        {
+          "id": "v5",
+          "score": 5935,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [77 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "Aggressive VP Finisher",
+          "type": "mutation",
+          "win_condition": "hybrid",
+          "philosophy": "Lower late-game VP donation threshold from round 2500 to 2000, donate more aggressively to close games faster when ahead"
+        },
+        {
+          "id": "v8",
+          "score": 5935,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [77 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "Gardener Snipe Focus",
+          "type": "exploration",
+          "win_condition": "elimination",
+          "philosophy": "Tanks are expensive - use a scout to find and report enemy gardener locations, then send tanks directly to kill gardeners and cripple enemy economy"
+        },
+        {
+          "id": "v9",
+          "score": 5935,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [77 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "Defensive Counter-Push",
+          "type": "exploration",
+          "win_condition": "elimination",
+          "philosophy": "Instead of rushing, build tanks defensively near base, let enemy come to us, then counter-attack with full force after defending"
+        },
+        {
+          "id": "v10",
+          "score": 5935,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [77 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "Soldier Frontline Tank Support",
+          "type": "exploration",
+          "win_condition": "elimination",
+          "philosophy": "Soldiers are cheaper (100 vs 300) and faster to produce - use 4-5 soldiers as frontline while 2-3 tanks provide heavy support from behind"
+        },
+        {
+          "id": "v1",
+          "score": 4590,
+          "primary_won": false,
+          "primary_rounds": 1183,
+          "post_mortem": "Lost (1183 rounds) [15 kills]. Good combat but couldn't close.",
+          "archetype_name": "Earlier Tank Rush",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Start tank production at round 200 instead of 300 to hit enemy faster before they can establish defenses"
+        },
+        {
+          "id": "v4",
+          "score": 4571,
+          "primary_won": false,
+          "primary_rounds": 1210,
+          "post_mortem": "Lost (1210 rounds) [15 kills]. Good combat but couldn't close.",
+          "archetype_name": "Tank + Lumberjack Combo",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Add 2-3 lumberjacks alongside tanks - lumberjacks clear paths for tanks and deal melee damage in forest maps like Clusters"
+        },
+        {
+          "id": "v6",
+          "score": 4465,
+          "primary_won": false,
+          "primary_rounds": 545,
+          "post_mortem": "Lost (545 rounds). Strategy ineffective.",
+          "archetype_name": "All-In Tank Blitz",
+          "type": "exploration",
+          "win_condition": "elimination",
+          "philosophy": "Extreme all-in strategy: Skip ALL early units, rush directly to tanks from round 1, gamble on tank superiority"
+        },
+        {
+          "id": "v7",
+          "score": 4228,
+          "primary_won": false,
+          "primary_rounds": 806,
+          "post_mortem": "Lost (806 rounds). Strategy ineffective.",
+          "archetype_name": "Tank + Economy Hybrid",
+          "type": "exploration",
+          "win_condition": "hybrid",
+          "philosophy": "Build economy alongside tanks - more gardeners (5+) and trees generate bullets to sustain tank production AND donate for VP win"
+        },
+        {
+          "id": "v3",
+          "score": 3192,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [23 kills]. Good combat but couldn't close.",
+          "archetype_name": "Double Gardener Start",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Hire 2 gardeners quickly before going all-in on tanks to enable faster tank production throughput"
+        }
+      ]
+    }
+  ]
+}

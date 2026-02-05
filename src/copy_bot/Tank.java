@@ -1,4 +1,4 @@
-package claude_opus_4_5;
+package copy_bot;
 import battlecode.common.*;
 
 /**

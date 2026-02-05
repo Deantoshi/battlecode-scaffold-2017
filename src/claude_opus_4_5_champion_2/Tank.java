@@ -1,4 +1,4 @@
-package claude_opus_4_5;
+package claude_opus_4_5_champion_2;
 import battlecode.common.*;
 
 /**
