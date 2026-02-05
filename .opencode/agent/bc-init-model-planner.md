@@ -42,7 +42,7 @@ The bot folder name is specified in the Arguments section. Parse this to get the
 Read these files to understand the game mechanics and best practices:
 
 ```
-/home/ddean/battlecode-scaffold-2017/TECHNICAL_DOCS.md
+/home/ddean/battlecode-scaffold-2017/HOW_TO_PLAY_BATTLE_CODE_2017.md
 /home/ddean/battlecode-scaffold-2017/src/examplefuncsplayer/RobotPlayer.java
 ```
 
