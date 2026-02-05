@@ -24,6 +24,12 @@ You are the Battlecode Init Model Builder agent. Your role is to **orchestrate**
 **This project uses Java 8. All code MUST be Java 8 compatible.**
 - Do NOT use Java 9+ features (var keyword, modules, etc.)
 
+### Bullet Spending Centralization
+**All bullet spending must be centralized in `BulletSpending.java`.**
+- `rc.donate()`, `rc.hireGardener()`, `rc.buildRobot()`, and `rc.plantTree()` must ONLY be called inside `BulletSpending.spendPolicy()`
+- No other file may call these methods directly
+- When fixing compilation errors, ensure spending logic stays centralized in `BulletSpending.spendPolicy()`
+
 ### Tooling Constraints
 **Do not use `edit` or `write` tools.** Use bash commands to modify files.
 

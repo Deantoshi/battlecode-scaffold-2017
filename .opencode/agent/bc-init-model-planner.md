@@ -19,6 +19,13 @@ You are the Battlecode Init Model Planner agent. Your role is to read the techni
 - Do NOT use Java 9+ features (var keyword, modules, Records, switch expressions, etc.)
 - Use traditional for loops, explicit types, anonymous classes instead of lambdas where needed
 
+### Bullet Spending Centralization
+**All bullet spending must be centralized in `BulletSpending.java`.**
+- `rc.donate()`, `rc.hireGardener()`, `rc.buildRobot()`, and `rc.plantTree()` must ONLY be called inside `BulletSpending.spendPolicy()`
+- No other file may call these methods directly
+- Other files call only `BulletSpending.spendPolicy()` — no other BulletSpending method
+- This makes economic intent and timing easy to audit and reason about
+
 ## Bot Name
 
 The bot folder name is specified in the Arguments section. Parse this to get the name for your new bot.
@@ -89,16 +96,17 @@ Your output MUST follow this exact format so bc-coder can parse and implement it
 
 ## File Structure
 src/{BOT_NAME}/
-├── RobotPlayer.java    (Entry point - dispatcher only)
-├── Archon.java         (Leader unit - hires Gardeners)
-├── Gardener.java       (Economy - plants trees, builds units)
-├── Soldier.java        (Ranged combat unit)
-├── Lumberjack.java     (Melee combat, tree clearing)
-├── Scout.java          (Fast recon, tree shaking)
-├── Tank.java           (Heavy ranged combat)
-├── Nav.java            (Navigation utilities)
-├── Comms.java          (Broadcast communication)
-└── Utils.java          (Shared helper functions)
+├── RobotPlayer.java      (Entry point - dispatcher only)
+├── Archon.java           (Leader unit - broadcasts position, avoids combat)
+├── Gardener.java         (Economy - waters trees, calls spend policy)
+├── Soldier.java          (Ranged combat unit)
+├── Lumberjack.java       (Melee combat, tree clearing)
+├── Scout.java            (Fast recon, tree shaking)
+├── Tank.java             (Heavy ranged combat)
+├── BulletSpending.java   (Centralized bullet spending - hiring, building, planting, donating)
+├── Nav.java              (Navigation utilities)
+├── Comms.java            (Broadcast communication)
+└── Utils.java            (Shared helper functions)
 
 ## Broadcast Channel Assignments
 | Channel | Purpose | Encoding |
@@ -142,13 +150,13 @@ public strictfp class RobotPlayer {
 ---
 
 ### 2. Archon.java
-**Purpose:** Leader unit that hires Gardeners and broadcasts position
+**Purpose:** Leader unit that broadcasts position and delegates spending to BulletSpending
 **Package:** {BOT_NAME}
 **Imports:** battlecode.common.*
 
 **Strategy:**
 - Broadcast own position every turn for units to rally toward
-- Hire Gardeners when bullets allow (cost: 100 bullets)
+- Call BulletSpending.spendPolicy() each turn (handles hiring Gardeners and VP donations)
 - Stay away from combat, move away from enemies
 - Dodge bullets when threatened
 
@@ -161,45 +169,28 @@ public strictfp class RobotPlayer {
 |--------|-----------|-------------|
 | run | `public static void run(RobotController rc) throws GameActionException` | Main loop with try-catch and Clock.yield() |
 | doTurn | `static void doTurn() throws GameActionException` | Turn logic |
-| tryHireGardener | `static boolean tryHireGardener() throws GameActionException` | Attempt to hire in any direction |
 
 **doTurn() Logic:**
 1. Broadcast current position using Comms.broadcastLocation(0, 1, rc.getLocation())
 2. Check for nearby enemies - if any, move away from closest
-3. If rc.getTeamBullets() >= 100, call tryHireGardener()
+3. Call BulletSpending.spendPolicy() (handles Gardener hiring and VP donations)
 4. If no action taken, move randomly using Nav.tryMove(Nav.randomDirection())
-
-**tryHireGardener() Implementation:**
-```java
-static boolean tryHireGardener() throws GameActionException {
-    for (int i = 0; i < 8; i++) {
-        Direction dir = new Direction(i * (float)Math.PI / 4);
-        if (rc.canHireGardener(dir)) {
-            rc.hireGardener(dir);
-            return true;
-        }
-    }
-    return false;
-}
-```
 
 ---
 
 ### 3. Gardener.java
-**Purpose:** Economy unit - plants trees, waters them, builds combat units
+**Purpose:** Economy unit - waters trees, calls BulletSpending.spendPolicy() for planting and building
 **Package:** {BOT_NAME}
 **Imports:** battlecode.common.*
 
 **Strategy:**
 - Move away from Archon initially to find open space
-- Plant trees in 5 directions (leaving one open for unit building)
-- Water the lowest health tree each turn
-- Build units based on game phase: Scouts early, then Soldiers
+- Water the lowest health tree each turn (watering is free, not bullet spending)
+- Call BulletSpending.spendPolicy() for tree planting and unit building
+- Spending policy handles build order: Scouts early, then Soldiers, then Soldiers/Tanks
 
 **Static fields:**
 - `static RobotController rc;`
-- `static int treesPlanted = 0;`
-- `static Direction buildDirection = Direction.SOUTH;` // Reserved for units
 
 **Methods:**
 
@@ -208,14 +199,11 @@ static boolean tryHireGardener() throws GameActionException {
 | run | `public static void run(RobotController rc) throws GameActionException` | Main loop |
 | doTurn | `static void doTurn() throws GameActionException` | Turn logic |
 | waterLowestHealthTree | `static void waterLowestHealthTree() throws GameActionException` | Find and water lowest HP tree |
-| tryPlantTree | `static boolean tryPlantTree() throws GameActionException` | Plant in available direction |
-| tryBuildUnit | `static boolean tryBuildUnit() throws GameActionException` | Build combat unit |
 
 **doTurn() Logic:**
-1. Call waterLowestHealthTree() first (always prioritize watering)
-2. If treesPlanted < 5, call tryPlantTree()
-3. Else call tryBuildUnit() to produce combat units
-4. If nothing else to do, move randomly
+1. Call waterLowestHealthTree() first (always prioritize watering — this is free, not bullet spending)
+2. Call BulletSpending.spendPolicy() (handles tree planting, unit building, and VP donations)
+3. If nothing else to do, move randomly
 
 **waterLowestHealthTree() Implementation:**
 ```java
@@ -232,43 +220,6 @@ static void waterLowestHealthTree() throws GameActionException {
     if (lowestTree != null) {
         rc.water(lowestTree.ID);
     }
-}
-```
-
-**tryPlantTree() Implementation:**
-```java
-static boolean tryPlantTree() throws GameActionException {
-    // Plant in 5 directions, skip buildDirection
-    for (int i = 0; i < 6; i++) {
-        Direction dir = new Direction(i * (float)Math.PI / 3);
-        if (Math.abs(dir.radians - buildDirection.radians) < 0.5f) continue;
-        if (rc.canPlantTree(dir)) {
-            rc.plantTree(dir);
-            treesPlanted++;
-            return true;
-        }
-    }
-    return false;
-}
-```
-
-**tryBuildUnit() Implementation:**
-```java
-static boolean tryBuildUnit() throws GameActionException {
-    int round = rc.getRoundNum();
-    RobotType toBuild;
-    if (round < 100) {
-        toBuild = RobotType.SCOUT;
-    } else if (round < 300) {
-        toBuild = RobotType.SOLDIER;
-    } else {
-        toBuild = Math.random() < 0.7 ? RobotType.SOLDIER : RobotType.TANK;
-    }
-    if (rc.canBuildRobot(toBuild, buildDirection)) {
-        rc.buildRobot(toBuild, buildDirection);
-        return true;
-    }
-    return false;
 }
 ```
 
@@ -644,6 +595,117 @@ public strictfp class Utils {
 
 ---
 
+### 11. BulletSpending.java
+**Purpose:** Centralized bullet spending — all hiring, building, planting, and donating
+**Package:** {BOT_NAME}
+**Imports:** battlecode.common.*
+
+**CRITICAL:** This is the ONLY file that may call `rc.hireGardener()`, `rc.buildRobot()`, `rc.plantTree()`, or `rc.donate()`. All other files call `BulletSpending.spendPolicy()` only.
+
+**Static fields:**
+- `static RobotController rc;`
+- `private static int treesPlanted = 0;` (Gardener-specific, safe because each robot runs in its own context)
+- `private static Direction buildDirection = new Direction((float)Math.PI);` (reserved Gardener direction for unit building)
+
+**Methods:**
+
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| init | `public static void init(RobotController rc)` | Store rc reference |
+| spendPolicy | `public static void spendPolicy() throws GameActionException` | Centralized spending entry point — the ONLY public spending method |
+
+**Complete Implementation:**
+```java
+package {BOT_NAME};
+import battlecode.common.*;
+
+public strictfp class BulletSpending {
+    static RobotController rc;
+
+    // Gardener state (each robot has its own statics)
+    private static int treesPlanted = 0;
+    private static Direction buildDirection = new Direction((float)Math.PI);
+
+    public static void init(RobotController rc) {
+        BulletSpending.rc = rc;
+    }
+
+    /**
+     * Centralized spending policy. Called once per turn by any robot.
+     * This is the ONLY method other files should call.
+     */
+    public static void spendPolicy() throws GameActionException {
+        float bullets = rc.getTeamBullets();
+        int round = rc.getRoundNum();
+
+        // 1. Instant VP win check (any robot can donate)
+        float vpCost = rc.getVictoryPointCost();
+        int vpNeeded = 1000 - rc.getTeamVictoryPoints();
+        if (bullets >= vpNeeded * vpCost) {
+            rc.donate(vpNeeded * vpCost);
+            return;
+        }
+
+        // 2. Late game VP donation
+        if (round > 2500 && bullets > 200) {
+            float donateAmount = ((int)(bullets / vpCost)) * vpCost;
+            if (donateAmount >= vpCost) {
+                rc.donate(donateAmount);
+            }
+        }
+
+        // 3. Type-specific spending
+        RobotType myType = rc.getType();
+        if (myType == RobotType.ARCHON) {
+            archonSpend(bullets, round);
+        } else if (myType == RobotType.GARDENER) {
+            gardenerSpend(bullets, round);
+        }
+    }
+
+    private static void archonSpend(float bullets, int round) throws GameActionException {
+        if (bullets < 100) return;
+        for (int i = 0; i < 8; i++) {
+            Direction dir = new Direction(i * (float)Math.PI / 4);
+            if (rc.canHireGardener(dir)) {
+                rc.hireGardener(dir);
+                return;
+            }
+        }
+    }
+
+    private static void gardenerSpend(float bullets, int round) throws GameActionException {
+        // Plant trees first (up to 5), leaving buildDirection open for units
+        if (treesPlanted < 5) {
+            for (int i = 0; i < 6; i++) {
+                Direction dir = new Direction(i * (float)Math.PI / 3);
+                if (Math.abs(dir.radians - buildDirection.radians) < 0.5f) continue;
+                if (rc.canPlantTree(dir)) {
+                    rc.plantTree(dir);
+                    treesPlanted++;
+                    return;
+                }
+            }
+        }
+
+        // Build combat units based on game phase
+        RobotType toBuild;
+        if (round < 100) {
+            toBuild = RobotType.SCOUT;
+        } else if (round < 300) {
+            toBuild = RobotType.SOLDIER;
+        } else {
+            toBuild = Math.random() < 0.7 ? RobotType.SOLDIER : RobotType.TANK;
+        }
+        if (rc.canBuildRobot(toBuild, buildDirection)) {
+            rc.buildRobot(toBuild, buildDirection);
+        }
+    }
+}
+```
+
+---
+
 ## Combat Micro Specifications
 
 ### Bullet Dodging Algorithm
@@ -698,7 +760,9 @@ static boolean isSafeToFire(Direction fireDir, float range) throws GameActionExc
 
 ## Build Order Timeline
 
-| Round | Archon Actions | Gardener Actions |
+**Note:** All spending actions below are executed through `BulletSpending.spendPolicy()`, not directly by Archon/Gardener code.
+
+| Round | Archon Actions (via spendPolicy) | Gardener Actions (via spendPolicy) |
 |-------|----------------|------------------|
 | 1-50 | Hire 1 Gardener immediately | Build Scout, then move to open space |
 | 51-200 | Hire Gardeners if >200 bullets | Plant trees, water, build Lumberjacks |
@@ -709,13 +773,14 @@ static boolean isSafeToFire(Direction fireDir, float range) throws GameActionExc
 
 ## Initialization Pattern
 
-**CRITICAL:** Every robot class must initialize Nav and Comms in their run() method:
+**CRITICAL:** Every robot class must initialize Nav, Comms, and BulletSpending in their run() method:
 
 ```java
 public static void run(RobotController rc) throws GameActionException {
     {ClassName}.rc = rc;
     Nav.init(rc);
     Comms.init(rc);
+    BulletSpending.init(rc);
 
     while (true) {
         try {
