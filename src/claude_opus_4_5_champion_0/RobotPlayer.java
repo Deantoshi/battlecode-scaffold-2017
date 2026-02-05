@@ -1,14 +1,15 @@
-package copy_bot;
+package claude_opus_4_5_champion_0;
 import battlecode.common.*;
 
 /**
- * Late Game Titan Strategy
+ * Scout Swarm Harass Strategy
  * 
- * Philosophy: Turtle with economy early, then transition to unstoppable tank army.
- * Maximize economy for ~500 rounds, then overwhelm with tanks while VP provides 
- * backup win condition.
+ * Philosophy: Mass cheap scouts to harass enemy gardeners and economy
+ * while collecting bullets from neutral trees. Win through economic
+ * disruption and opportunistic VP pushes.
  * 
- * Engagement Style: Passive early, overwhelming late. Tanks push as unstoppable deathball.
+ * Scouts use 1.25 stride to outmaneuver enemies, target gardeners,
+ * and flee from soldiers. Collect neutral tree bullets.
  */
 public strictfp class RobotPlayer {
     static RobotController rc;
@@ -42,14 +43,11 @@ public strictfp class RobotPlayer {
             case SCOUT:
                 runScout();
                 break;
-            case TANK:
-                runTank();
-                break;
         }
 	}
 
     static void runArchon() throws GameActionException {
-        System.out.println("I'm an archon! Building economy for tank army.");
+        System.out.println("I'm an archon!");
 
         // The code you want your robot to perform every round should be in this loop
         while (true) {
@@ -60,18 +58,8 @@ public strictfp class RobotPlayer {
                 // Centralized spend policy (hire/build/donate)
                 BulletSpending.spendPolicy();
 
-                // Archon stays relatively safe - avoid enemies
-                RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
-                if (enemies.length > 0) {
-                    // Move away from nearest enemy
-                    Direction away = enemies[0].location.directionTo(rc.getLocation());
-                    tryMove(away);
-                } else {
-                    // Move slowly, stay defensive
-                    if (Math.random() < 0.3) {
-                        tryMove(randomDirection());
-                    }
-                }
+                // Move randomly
+                tryMove(randomDirection());
 
                 // Broadcast archon's location for other robots on the team to know
                 MapLocation myLocation = rc.getLocation();
@@ -89,7 +77,7 @@ public strictfp class RobotPlayer {
     }
 
 	static void runGardener() throws GameActionException {
-        System.out.println("I'm a gardener! Building tree farm.");
+        System.out.println("I'm a gardener!");
 
         // The code you want your robot to perform every round should be in this loop
         while (true) {
@@ -102,7 +90,7 @@ public strictfp class RobotPlayer {
                 int yPos = rc.readBroadcast(1);
                 MapLocation archonLoc = new MapLocation(xPos,yPos);
 
-                // Water trees to maintain healthy economy - CRITICAL for tree income
+                // Water trees to maintain healthy economy
                 TreeInfo[] trees = rc.senseNearbyTrees(-1, rc.getTeam());
                 if (trees.length > 0) {
                     // Find the tree with lowest health percentage
@@ -115,8 +103,8 @@ public strictfp class RobotPlayer {
                             lowestHealthPercent = healthPercent;
                         }
                     }
-                    // Water the tree if it needs it (critical for bullet income)
-                    if (lowestHealthTree != null && lowestHealthPercent < 0.95f) {
+                    // Water the tree if it needs it
+                    if (lowestHealthTree != null && lowestHealthPercent < 0.8f) {
                         rc.water(lowestHealthTree.ID);
                     }
                 }
@@ -124,24 +112,8 @@ public strictfp class RobotPlayer {
                 // Centralized spend policy (plant/build/donate)
                 BulletSpending.spendPolicy();
 
-                // Gardener positioning: Stay near archon for protection, but spread out for tree farming
-                MapLocation myLocation = rc.getLocation();
-                float distToArchon = myLocation.distanceTo(archonLoc);
-                
-                // If too far from archon, move closer
-                if (distToArchon > 12f) {
-                    Direction toArchon = myLocation.directionTo(archonLoc);
-                    tryMove(toArchon);
-                } else if (distToArchon < 6f && trees.length < 5) {
-                    // Move away from archon to spread out tree farms
-                    Direction awayFromArchon = archonLoc.directionTo(myLocation);
-                    tryMove(awayFromArchon);
-                } else {
-                    // Move randomly to find good planting spots
-                    if (Math.random() < 0.2) {
-                        tryMove(randomDirection());
-                    }
-                }
+                // Move randomly
+                tryMove(randomDirection());
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();
@@ -153,124 +125,8 @@ public strictfp class RobotPlayer {
         }
     }
 
-    /**
-     * Tank: The unstoppable deathball unit
-     * - Move toward enemy as a group (deathball)
-     * - High HP (200) allows sustained pushing
-     * - Can body-damage trees for path clearing
-     * - Fire pentad shots for maximum destruction
-     */
-    static void runTank() throws GameActionException {
-        System.out.println("I'm a tank! Time to push!");
-        Team enemy = rc.getTeam().opponent();
-        Team myTeam = rc.getTeam();
-
-        while (true) {
-            try {
-                MapLocation myLocation = rc.getLocation();
-                
-                // Find enemy targets
-                RobotInfo[] enemies = rc.senseNearbyRobots(-1, enemy);
-                
-                // Priority targeting: Archon > Gardener > Combat units
-                RobotInfo target = null;
-                RobotInfo archonTarget = null;
-                RobotInfo gardenerTarget = null;
-                
-                for (RobotInfo r : enemies) {
-                    if (r.type == RobotType.ARCHON) {
-                        archonTarget = r;
-                    } else if (r.type == RobotType.GARDENER) {
-                        if (gardenerTarget == null || 
-                            myLocation.distanceTo(r.location) < myLocation.distanceTo(gardenerTarget.location)) {
-                            gardenerTarget = r;
-                        }
-                    } else if (target == null) {
-                        target = r;
-                    }
-                }
-                
-                // Select best target
-                if (archonTarget != null) {
-                    target = archonTarget;
-                } else if (gardenerTarget != null) {
-                    target = gardenerTarget;
-                }
-                
-                // Fire at enemies if we have a target
-                if (target != null) {
-                    Direction toTarget = myLocation.directionTo(target.location);
-                    float dist = myLocation.distanceTo(target.location);
-                    
-                    // Use pentad at close range for max damage, triad at medium range
-                    if (dist < 5f && rc.canFirePentadShot()) {
-                        // Check for friendly fire
-                        RobotInfo[] allies = rc.senseNearbyRobots(dist - 0.5f, myTeam);
-                        boolean clearShot = true;
-                        for (RobotInfo ally : allies) {
-                            Direction toAlly = myLocation.directionTo(ally.location);
-                            float angleDiff = Math.abs(toTarget.degreesBetween(toAlly));
-                            if (angleDiff < 20f && myLocation.distanceTo(ally.location) < dist) {
-                                clearShot = false;
-                                break;
-                            }
-                        }
-                        if (clearShot) {
-                            rc.firePentadShot(toTarget);
-                        }
-                    } else if (dist < 7f && rc.canFireTriadShot()) {
-                        // Check for friendly fire
-                        RobotInfo[] allies = rc.senseNearbyRobots(dist - 0.5f, myTeam);
-                        boolean clearShot = true;
-                        for (RobotInfo ally : allies) {
-                            Direction toAlly = myLocation.directionTo(ally.location);
-                            float angleDiff = Math.abs(toTarget.degreesBetween(toAlly));
-                            if (angleDiff < 15f && myLocation.distanceTo(ally.location) < dist) {
-                                clearShot = false;
-                                break;
-                            }
-                        }
-                        if (clearShot) {
-                            rc.fireTriadShot(toTarget);
-                        }
-                    } else if (rc.canFireSingleShot()) {
-                        rc.fireSingleShot(toTarget);
-                    }
-                    
-                    // Move toward target (tanks can push through trees)
-                    tryMove(toTarget);
-                } else {
-                    // No enemies visible - push toward enemy territory
-                    MapLocation[] enemyArchons = rc.getInitialArchonLocations(enemy);
-                    if (enemyArchons.length > 0) {
-                        // Move toward closest enemy starting position
-                        MapLocation closestEnemy = enemyArchons[0];
-                        float closestDist = myLocation.distanceTo(closestEnemy);
-                        for (MapLocation loc : enemyArchons) {
-                            float dist = myLocation.distanceTo(loc);
-                            if (dist < closestDist) {
-                                closestDist = dist;
-                                closestEnemy = loc;
-                            }
-                        }
-                        Direction toEnemy = myLocation.directionTo(closestEnemy);
-                        tryMove(toEnemy);
-                    } else {
-                        tryMove(randomDirection());
-                    }
-                }
-
-                Clock.yield();
-
-            } catch (Exception e) {
-                System.out.println("Tank Exception");
-                e.printStackTrace();
-            }
-        }
-    }
-
     static void runSoldier() throws GameActionException {
-        System.out.println("I'm a soldier!");
+        System.out.println("I'm an soldier!");
         Team enemy = rc.getTeam().opponent();
 
         // The code you want your robot to perform every round should be in this loop
@@ -305,51 +161,103 @@ public strictfp class RobotPlayer {
         }
     }
 
+    /**
+     * Scout: Hit-and-run harassment specialist
+     * - Target enemy gardeners first (economic disruption)
+     * - Collect bullets from neutral trees (shake)
+     * - Flee from soldiers and tanks
+     * - Use 1.25 stride advantage to outmaneuver enemies
+     */
     static void runScout() throws GameActionException {
-        System.out.println("I'm a scout!");
+        System.out.println("I'm a scout! Time to harass!");
         Team enemy = rc.getTeam().opponent();
+        Team myTeam = rc.getTeam();
 
         while (true) {
             try {
                 MapLocation myLocation = rc.getLocation();
 
-                // Collect bullets from neutral trees (shake)
+                // Priority 1: Collect bullets from neutral trees (shake)
                 TreeInfo[] neutralTrees = rc.senseNearbyTrees(-1, Team.NEUTRAL);
                 for (TreeInfo tree : neutralTrees) {
                     if (tree.containedBullets > 0 && rc.canShake(tree.ID)) {
                         rc.shake(tree.ID);
-                        break;
+                        break;  // Can only shake once per turn
                     }
                 }
 
-                // Find enemies
+                // Priority 2: Find enemies, especially gardeners
                 RobotInfo[] enemies = rc.senseNearbyRobots(-1, enemy);
+                RobotInfo targetGardener = null;
+                RobotInfo targetArchon = null;
+                RobotInfo dangerousEnemy = null;
                 
-                if (enemies.length > 0) {
-                    // Fire at enemy if we can
+                for (RobotInfo r : enemies) {
+                    if (r.type == RobotType.GARDENER) {
+                        targetGardener = r;
+                    } else if (r.type == RobotType.ARCHON) {
+                        targetArchon = r;
+                    } else if (r.type == RobotType.SOLDIER || r.type == RobotType.TANK || r.type == RobotType.LUMBERJACK) {
+                        float dist = myLocation.distanceTo(r.location);
+                        if (dist < 5f) {  // Close dangerous enemy
+                            dangerousEnemy = r;
+                        }
+                    }
+                }
+
+                // Priority 3: Decide movement - flee from danger or chase targets
+                boolean shouldFlee = dangerousEnemy != null;
+                RobotInfo primaryTarget = targetGardener != null ? targetGardener : targetArchon;
+                
+                if (shouldFlee && dangerousEnemy != null) {
+                    // Flee from dangerous enemy (use 1.25 stride to escape)
+                    Direction awayFromDanger = dangerousEnemy.location.directionTo(myLocation);
+                    tryMove(awayFromDanger);
+                } else if (primaryTarget != null) {
+                    // Move toward gardener/archon for harassment
+                    Direction toTarget = myLocation.directionTo(primaryTarget.location);
+                    float distToTarget = myLocation.distanceTo(primaryTarget.location);
+                    
+                    // If close enough, try to fire at them
+                    if (distToTarget < 4f && rc.canFireSingleShot()) {
+                        rc.fireSingleShot(toTarget);
+                    }
+                    
+                    // Kite: stay at medium range, not too close
+                    if (distToTarget > 3f) {
+                        tryMove(toTarget);
+                    } else if (distToTarget < 2f) {
+                        // Too close, back off slightly
+                        tryMove(toTarget.opposite());
+                    }
+                } else if (enemies.length > 0) {
+                    // Fire at any enemy if we can
                     if (rc.canFireSingleShot()) {
                         rc.fireSingleShot(myLocation.directionTo(enemies[0].location));
                     }
-                    // Kite away
+                    // Kite away after firing
                     Direction away = enemies[0].location.directionTo(myLocation);
                     tryMove(away);
                 } else {
-                    // Scout toward neutral trees or enemy
-                    TreeInfo nearestWithBullets = null;
+                    // No enemies visible - explore toward neutral trees or enemy archon
+                    TreeInfo nearestNeutralWithBullets = null;
                     for (TreeInfo tree : neutralTrees) {
                         if (tree.containedBullets > 0) {
-                            nearestWithBullets = tree;
+                            nearestNeutralWithBullets = tree;
                             break;
                         }
                     }
                     
-                    if (nearestWithBullets != null) {
-                        Direction toTree = myLocation.directionTo(nearestWithBullets.location);
+                    if (nearestNeutralWithBullets != null) {
+                        // Move toward neutral tree with bullets
+                        Direction toTree = myLocation.directionTo(nearestNeutralWithBullets.location);
                         tryMove(toTree);
                     } else {
+                        // Scout toward enemy territory (use initial archon locations)
                         MapLocation[] enemyArchons = rc.getInitialArchonLocations(enemy);
                         if (enemyArchons.length > 0) {
-                            tryMove(myLocation.directionTo(enemyArchons[0]));
+                            Direction toEnemy = myLocation.directionTo(enemyArchons[0]);
+                            tryMove(toEnemy);
                         } else {
                             tryMove(randomDirection());
                         }
