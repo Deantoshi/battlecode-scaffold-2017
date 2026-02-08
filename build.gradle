@@ -10,6 +10,8 @@ buildscript {
     repositories {
         mavenLocal()
         mavenCentral()
+        maven { url 'http://battlecode-maven.s3-website-us-east-1.amazonaws.com' }
+        maven { url 'https://maven.bioviz.org/repo2' }
     }
     dependencies {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$versions.kotlin"
@@ -28,7 +30,11 @@ targetCompatibility = 1.8
 // Engine source set (the game server)
 sourceSets {
     engine {
-        java.srcDirs = ["engine"]
+        java {
+            srcDirs = ["engine"]
+            // Exclude Javadoc taglets that require JDK8 doclet APIs.
+            exclude 'battlecode/doc/**'
+        }
         resources.srcDirs = ["engine"]
         output.classesDir = "$buildDir/engine-classes"
         output.resourcesDir = "$buildDir/engine-classes"
@@ -53,6 +59,8 @@ sourceSets {
 repositories {
     mavenLocal()
     mavenCentral()
+    maven { url 'http://battlecode-maven.s3-website-us-east-1.amazonaws.com' }
+    maven { url 'https://maven.bioviz.org/repo2' }
 }
 
 dependencies {
@@ -68,7 +76,7 @@ dependencies {
         [group: 'com.github.davidmoten', name: 'flatbuffers-java', version: '1.4.0.1'],
         [group: 'org.java-websocket', name: 'Java-WebSocket', version: '1.3.0'],
         [group: 'org.hibernate', name: 'hibernate-search', version: '3.1.0.GA'],
-        [group: 'net.sf.jsi', name: 'jsi', version: '1.1.0-SNAPSHOT'],
+        [group: 'net.sf.jsi', name: 'jsi', version: '1.0.1'],
         [group: 'net.sf.trove4j', name: 'trove4j', version: '3.0.3'],
         [group: 'org.jetbrains.kotlin', name: 'kotlin-stdlib', version: versions.kotlin]
     )

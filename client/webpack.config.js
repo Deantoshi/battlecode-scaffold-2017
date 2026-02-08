@@ -6,13 +6,32 @@ var merge = require('webpack-merge');
 var path = require('path');
 var CopyWebpackPlugin = require('copy-webpack-plugin');
 
+// Fix for WSL: Convert UNC paths to Unix paths
+function toUnixPath(p) {
+  // Convert \\wsl.localhost\Ubuntu-K\path to /path
+  // Convert \\wsl$\Ubuntu-K\path to /path
+  if (p.startsWith('\\\\wsl')) {
+    // Match \\wsl.localhost\distro\path or \\wsl$\distro\path
+    p = p.replace(/^\\\\wsl[.$][^\\]*\\[^\\]*/, '');
+  }
+  // Convert backslashes to forward slashes
+  p = p.replace(/\\/g, '/');
+  // Ensure path starts with /
+  if (!p.startsWith('/')) {
+    p = '/' + p;
+  }
+  return p;
+}
+
+var baseDir = toUnixPath(__dirname);
+
 var conf = {
-  context: path.resolve(__dirname, 'src'),
+  context: baseDir + '/src',
   entry: {
     app: './app.ts',
   },
   output: {
-    path: path.resolve(__dirname, 'bc17'),
+    path: baseDir + '/bc17',
     publicPath: '/bc17/',
     filename: 'bundle.js'
   },
@@ -48,8 +67,8 @@ module.exports = function(env) {
           var fs = require('fs');
           var path = require('path');
           var cp = require('child_process');
-          
-          var projectRoot = path.resolve(__dirname, '..');
+
+          var projectRoot = baseDir + '/..';
           var sourcePath = path.join(projectRoot, 'src');
           var mapPath = path.join(projectRoot, 'maps');
           var matchesPath = path.join(projectRoot, 'matches');
