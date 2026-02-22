@@ -4,8 +4,8 @@
 # Usage: ./scripts/variant-loop.sh <bot> <opponent> [map] [max-iterations]
 #
 # This script orchestrates variant-based bot improvement:
-#   1. Archetype creator agent generates 10 variant archetypes (once)
-#   2. Creates 10 variant folders as copies of original
+#   1. Archetype creator agent generates 16 variant archetypes (once)
+#   2. Creates 16 variant folders as copies of original
 #   3. For each variant, an agent implements its archetype
 #   4. All variants + original run against opponent
 #   5. Best performer is promoted if better than original
@@ -27,7 +27,7 @@ BOT="${1:-}"
 OPPONENT="${2:-}"
 MAP="${3:-MagicWood}"
 MAX_ITERS="${4:-20}"
-NUM_VARIANTS=10
+NUM_VARIANTS=16
 
 # AI Engine
 AI_ENGINE="${AI_ENGINE:-opencode}"
@@ -234,7 +234,7 @@ for iter in $(seq 1 "$MAX_ITERS"); do
     # Step 0: Generate fresh archetypes for this iteration
     # ─────────────────────────────────────────────────────────────────────────────
     mkdir -p "$STATE_DIR"
-    printf '%s\n' "${BOLD}${GREEN}[STEP 0] Generating 10 Variant Archetypes${NC}"
+    printf '%s\n' "${BOLD}${GREEN}[STEP 0] Generating $NUM_VARIANTS Variant Archetypes${NC}"
 
     # Prepare context for archetype creator
     {
@@ -262,7 +262,7 @@ for iter in $(seq 1 "$MAX_ITERS"); do
     # Step 1: Create variant folders
     # ─────────────────────────────────────────────────────────────────────────────
     printf '%s\n' "${BOLD}${GREEN}[STEP 1] Creating $NUM_VARIANTS variant folders${NC}"
-    ./scripts/create-10-variants.sh "$BOT"
+    ./scripts/create-16-variants.sh "$BOT" "$NUM_VARIANTS"
 
     # Copy bot-code-snapshot.txt to each variant's .state folder
     for v in $(seq 1 $NUM_VARIANTS); do

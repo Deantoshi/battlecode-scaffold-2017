@@ -1,15 +1,20 @@
 #!/bin/bash
-# create-10-variants.sh - Creates 10 variant folders from original bot
+# create-16-variants.sh - Creates variant folders from original bot
 #
-# Usage: ./scripts/create-10-variants.sh <bot>
+# Usage: ./scripts/create-16-variants.sh <bot> [num-variants]
 
 set -e
 
 BOT="${1:-}"
-NUM_VARIANTS=10
+NUM_VARIANTS="${2:-16}"
 
 if [[ -z "$BOT" ]]; then
-    echo "Usage: $0 <bot>"
+    echo "Usage: $0 <bot> [num-variants]"
+    exit 1
+fi
+
+if [[ ! "$NUM_VARIANTS" =~ ^[0-9]+$ ]] || [[ "$NUM_VARIANTS" -lt 1 ]]; then
+    echo "Error: num-variants must be a positive integer (got: $NUM_VARIANTS)"
     exit 1
 fi
 
@@ -55,4 +60,4 @@ echo "All $NUM_VARIANTS variants created successfully."
 # Verify by listing
 echo ""
 echo "Variant folders:"
-ls -d src/${BOT}_v* 2>/dev/null | head -15
+ls -d src/${BOT}_v* 2>/dev/null | head -20

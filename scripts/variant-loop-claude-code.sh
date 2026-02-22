@@ -194,7 +194,7 @@ for iter in $(seq 1 "$MAX_ITERS"); do
     # Step 1: Create variant folders
     # ─────────────────────────────────────────────────────────────────────────────
     printf '%s\n' "${BOLD}${GREEN}[STEP 1] Creating $NUM_VARIANTS variant folders${NC}"
-    ./scripts/create-10-variants.sh "$BOT"
+    ./scripts/create-16-variants.sh "$BOT" "$NUM_VARIANTS"
 
     # Copy bot-code-snapshot.txt to each variant's .state folder
     for v in $(seq 1 $NUM_VARIANTS); do

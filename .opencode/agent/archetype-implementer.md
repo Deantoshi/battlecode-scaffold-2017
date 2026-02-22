@@ -17,7 +17,7 @@ You implement a specific strategic archetype into a Battlecode bot variant. Your
 
 Parse for:
 - `--bot NAME` - Base bot name
-- `--variant N` - Variant number (1-10)
+- `--variant N` - Variant number (1-16)
 - `--opponent NAME` - Opponent bot name
 
 The variant folder is: `src/{BOT}_v{N}/`

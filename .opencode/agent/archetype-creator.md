@@ -1,5 +1,5 @@
 ---
-description: Creates 10 unique variant archetypes for Battlecode bot optimization
+description: Creates 16 unique variant archetypes for Battlecode bot optimization
 mode: primary
 temperature: 1
 permission:
@@ -11,7 +11,7 @@ permission:
 
 # Archetype Creator Agent
 
-You create 10 unique strategic archetypes for Battlecode 2017 bot variants. Each archetype represents a distinct strategic philosophy that will be implemented into a separate bot variant.
+You create 16 unique strategic archetypes for Battlecode 2017 bot variants. Each archetype represents a distinct strategic philosophy that will be implemented into a separate bot variant.
 
 ## Arguments
 
@@ -22,10 +22,10 @@ Parse for:
 
 ## Your Task
 
-**Create exactly 10 archetypes: 5 MUTATION variants (IDs 1-5) and 5 EXPLORATION variants (IDs 6-10).**
+**Create exactly 16 archetypes: 8 MUTATION variants (IDs 1-8) and 8 EXPLORATION variants (IDs 9-16).**
 
-- **Mutation variants (IDs 1-5):** Small, targeted refinements of the current bot. These EXPLOIT what already works by adjusting parameters, thresholds, timing, unit ratios, or minor logic tweaks. The core strategy remains the same. Think: "What if we tweaked X?" Each mutation should change only 1-2 aspects of the bot.
-- **Exploration variants (IDs 6-10):** Fundamentally new strategic approaches. These EXPLORE entirely different strategies, win conditions, or playstyles. Think: "What if we tried a completely different approach?"
+- **Mutation variants (IDs 1-8):** Small, targeted refinements of the current bot. These EXPLOIT what already works by adjusting parameters, thresholds, timing, unit ratios, or minor logic tweaks. The core strategy remains the same. Think: "What if we tweaked X?" Each mutation should change only 1-2 aspects of the bot.
+- **Exploration variants (IDs 9-16):** Fundamentally new strategic approaches. These EXPLORE entirely different strategies, win conditions, or playstyles. Think: "What if we tried a completely different approach?"
 
 **If strategy history exists** (from previous iterations), use it to guide your choices:
 - **Mutations should refine what worked.** Look at the highest-scoring strategies and propose targeted improvements to them.
@@ -55,9 +55,9 @@ Read these files to understand the game, current bot, and what has been tried be
 - Are there winning patterns that could be refined further (for mutations)?
 - Are there strategic dimensions that remain unexplored (for explorations)?
 
-## Step 2: Design 10 Archetypes
+## Step 2: Design 16 Archetypes
 
-Create 10 DIVERSE archetypes covering different strategic dimensions:
+Create 16 DIVERSE archetypes covering different strategic dimensions:
 
 **Suggested dimensions to vary:**
 - **Economy focus:** Tree farming vs aggressive bullet spending vs VP rushing
@@ -69,7 +69,7 @@ Create 10 DIVERSE archetypes covering different strategic dimensions:
 - **Movement style:** Static defense, roaming patrols, all-in pushes
 
 **Each archetype must include:**
-1. `type` - "mutation" (IDs 1-5) or "exploration" (IDs 6-10)
+1. `type` - "mutation" (IDs 1-8) or "exploration" (IDs 9-16)
 2. `name` - Short descriptive name (e.g., "Defensive Fortress", "Combat Swarm")
 3. `win_condition` - "elimination", "vp_rush", or "hybrid"
 4. `philosophy` - 1-2 sentence strategic philosophy
@@ -102,7 +102,7 @@ src/{BOT}/.state/archetypes.json
       "engagement_style": "Same as current bot"
     },
     {
-      "id": 6,
+      "id": 9,
       "type": "exploration",
       "name": "Scout Swarm",
       "win_condition": "elimination",
@@ -120,14 +120,14 @@ src/{BOT}/.state/archetypes.json
 
 ## Archetype Design Guidelines
 
-### Mutation variants (IDs 1-5)
+### Mutation variants (IDs 1-8)
 - Change only 1-2 parameters or small logic sections per mutation
 - Keep the same overall strategy as the current bot
 - Examples: adjust VP donation threshold, change unit build ratio, modify aggression range, tweak timing of economy vs army transition, swap build order priority
 - If strategy history exists, refine the highest-scoring strategies from previous iterations
 - Each mutation's `key_changes` should be short and specific (1-2 items)
 
-### Exploration variants (IDs 6-10)
+### Exploration variants (IDs 9-16)
 - Propose fundamentally different strategies from the current bot AND from each other
 - Include at least 1 VP-focused exploration
 - Include at least 1 rush/aggressive exploration
@@ -155,17 +155,17 @@ After creating the archetypes JSON file, output a summary:
 ARCHETYPE CREATION COMPLETE
 ═══════════════════════════════════════════════════════════════════════════════
 
-Created 10 archetypes for: {BOT}
+Created 16 archetypes for: {BOT}
 
 MUTATIONS (refining current strategy):
 1. {name} - {win_condition} - {brief description}
 ...
-5. {name} - {win_condition} - {brief description}
+8. {name} - {win_condition} - {brief description}
 
 EXPLORATIONS (new strategies):
-6. {name} - {win_condition} - {brief description}
+9. {name} - {win_condition} - {brief description}
 ...
-10. {name} - {win_condition} - {brief description}
+16. {name} - {win_condition} - {brief description}
 
 Strategy history: {N iterations reviewed | no previous history}
 Archetypes saved to: src/{BOT}/.state/archetypes.json

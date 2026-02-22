@@ -20,7 +20,7 @@ BOT="${1:-}"
 OPPONENT="${2:-}"
 MAP="${3:-MagicWood}"
 NUM_CHAMPIONS="${4:-0}"
-NUM_VARIANTS=10
+NUM_VARIANTS=16
 
 if [[ -z "$BOT" || -z "$OPPONENT" ]]; then
     echo "Usage: $0 <bot> <opponent> [map] [num_champions]"
