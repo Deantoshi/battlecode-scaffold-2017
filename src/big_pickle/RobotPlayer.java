@@ -1,25 +1,36 @@
 package big_pickle;
+
 import battlecode.common.*;
+
+import java.util.Random;
 
 public strictfp class RobotPlayer {
     static RobotController rc;
-    static MapLocation archonLocation = null;
-    static boolean archonLocationSet = false;
+    static Team us;
+    static Team them;
 
-    /**
-     * run() is the method that is called when a robot is instantiated in the Battlecode world.
-     * If this method returns, the robot dies!
-    **/
+    public static Random rand;
+
+    static MapLocation[] initialEnemyArchons;
+    static Direction wanderDirection;
+
+    // Gardener-local state (static is per robot instance in Battlecode runtime).
+    public static boolean gardenerSettled = false;
+    public static Direction gardenerPlantDirection = null;
+
     @SuppressWarnings("unused")
-    public static void run(RobotController rc) throws GameActionException {
+    public static void run(RobotController controller) throws GameActionException {
+        rc = controller;
+        us = rc.getTeam();
+        them = us.opponent();
+        rand = new Random(rc.getID() * 17L + rc.getRoundNum() * 131L);
+        initialEnemyArchons = rc.getInitialArchonLocations(them);
+        wanderDirection = Utils.randomDirection(rand);
 
-        // This is the RobotController object. You use it to perform actions from this robot,
-        // and to get information on its current status.
-        RobotPlayer.rc = rc;
+        Comms.init(rc);
+        Nav.init(rc, rand);
         BulletSpending.init(rc);
 
-        // Here, we've separated the controls into a different method for each RobotType.
-        // You can add the missing ones or rewrite this into your own control structure.
         switch (rc.getType()) {
             case ARCHON:
                 runArchon();
@@ -39,521 +50,641 @@ public strictfp class RobotPlayer {
             case TANK:
                 runTank();
                 break;
-        }
-	}
-
-    static void runArchon() throws GameActionException {
-        System.out.println("I'm an archon!");
-
-        // Store archon location for rush coordination
-        archonLocation = rc.getLocation();
-        archonLocationSet = true;
-
-        // The code you want your robot to perform every round should be in this loop
-        while (true) {
-
-            // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
-            try {
-
-                // Early Rush Horde: Use centralized spending policy for maximum early military production
-                BulletSpending.spendPolicy();
-
-                // Early Rush Horde: Archons support rush with aggressive positioning
-                if (rc.getRoundNum() < 200) {
-                    // Early game: position to maximize rush effectiveness
-                    tryMoveAggressive(randomDirection());
-                } else {
-                    // Later game: maintain position to continue supporting rush
-                    maintainRushPosition();
-                }
-
-                // Broadcast archon's location for rush coordination
-                if (archonLocation != null) {
-                    rc.broadcast(0,(int)archonLocation.x);
-                    rc.broadcast(1,(int)archonLocation.y);
-                }
-
-                // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
-                Clock.yield();
-
-            } catch (Exception e) {
-                System.out.println("Archon Exception");
-                e.printStackTrace();
-            }
+            default:
+                runSoldier();
         }
     }
 
-	static void runGardener() throws GameActionException {
-        System.out.println("I'm a gardener!");
-
-        // The code you want your robot to perform every round should be in this loop
+    private static void runArchon() throws GameActionException {
         while (true) {
-
-            // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
             try {
+                commonTurnStart();
 
-                // Listen for home archon's location
-                int xPos = rc.readBroadcast(0);
-                int yPos = rc.readBroadcast(1);
-                MapLocation archonLoc = new MapLocation(xPos,yPos);
-                if (!archonLocationSet) {
-                    archonLocation = archonLoc;
-                    archonLocationSet = true;
-                }
-
-                // Early Rush Horde: Use centralized spending policy - pure rush focus
-                BulletSpending.spendPolicy();
-
-                // Early Rush Horde: Gardeners position to maximize rush unit production
-                maintainRushProductionPosition(archonLoc);
-
-                // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
-                Clock.yield();
-
-            } catch (Exception e) {
-                System.out.println("Gardener Exception");
-                e.printStackTrace();
-            }
-        }
-    }
-
-    static void runSoldier() throws GameActionException {
-        System.out.println("I'm a soldier!");
-        Team enemy = rc.getTeam().opponent();
-
-        // The code you want your robot to perform every round should be in this loop
-        while (true) {
-
-            // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
-            try {
-                MapLocation myLocation = rc.getLocation();
-
-                // Early Rush Horde: Soldiers attack closest enemy regardless of type
-                RobotInfo[] robots = rc.senseNearbyRobots(-1, enemy);
-
-                if (robots.length > 0) {
-                    RobotInfo target = selectClosestTarget(robots);
-                    float distToTarget = myLocation.distanceTo(target.location);
-                    
-                    // Early Rush Horde: Attack closest target aggressively
-                    if (distToTarget <= 6) {
-                        if (rc.canFireSingleShot()) {
-                            rc.fireSingleShot(myLocation.directionTo(target.location));
-                        }
-                        // Use triad shots if very close regardless of target type
-                        if (distToTarget <= 4 && rc.canFireTriadShot()) {
-                            rc.fireTriadShot(myLocation.directionTo(target.location));
-                        }
-                    }
-                    
-                    // Early Rush Horde: Pursue closest target relentlessly
-                    if (distToTarget > 2) {
-                        Direction toTarget = myLocation.directionTo(target.location);
-                        tryMoveAggressive(toTarget);
+                RobotInfo[] closeEnemies = rc.senseNearbyRobots(9f, them);
+                if (closeEnemies.length > 0) {
+                    RobotInfo threat = Utils.pickBestEnemy(closeEnemies, rc.getLocation());
+                    Comms.reportEnemy(threat);
+                    if (!rc.hasMoved()) {
+                        Direction retreat = threat.location.directionTo(rc.getLocation());
+                        Nav.moveInDirection(retreat, true);
                     }
                 } else {
-                    // No targets - rush toward enemy base
-                    rushEnemyBase();
+                    if (rand.nextFloat() < 0.17f) {
+                        wanderDirection = wanderDirection.rotateLeftDegrees(30f - rand.nextFloat() * 60f);
+                    }
+                    if (!rc.hasMoved()) {
+                        Nav.wander(wanderDirection);
+                    }
                 }
 
-                // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
-                Clock.yield();
-
+                BulletSpending.spendPolicy();
             } catch (Exception e) {
-                System.out.println("Soldier Exception");
+                System.out.println("Archon exception");
                 e.printStackTrace();
             }
+            Clock.yield();
         }
     }
 
-    static void runLumberjack() throws GameActionException {
-        System.out.println("I'm a lumberjack!");
-        Team enemy = rc.getTeam().opponent();
+    private static void runGardener() throws GameActionException {
+        gardenerSettled = false;
+        gardenerPlantDirection = Utils.randomDirection(rand);
 
-        // The code you want your robot to perform every round should be in this loop
         while (true) {
-
-            // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
             try {
+                commonTurnStart();
 
-                // Early Rush Horde: Lumberjacks attack closest enemy and support rush
-                MapLocation myLocation = rc.getLocation();
-                
-                // Priority 1: Strike closest enemy if in range
-                RobotInfo[] enemyRobots = rc.senseNearbyRobots(2, enemy);
-                
-                if (enemyRobots.length > 0 && rc.canStrike()) {
-                    // Strike regardless of target type for maximum pressure
+                if (!gardenerSettled && canSettleHere()) {
+                    gardenerSettled = true;
+                }
+
+                RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(7f, them);
+                if (nearbyEnemies.length > 0 && !rc.hasMoved()) {
+                    RobotInfo threat = Utils.pickBestEnemy(nearbyEnemies, rc.getLocation());
+                    Direction retreat = threat.location.directionTo(rc.getLocation());
+                    Nav.moveInDirection(retreat, true);
+                }
+
+                if (!gardenerSettled && !rc.hasMoved()) {
+                    MapLocation settleTarget = pickSettleTarget();
+                    if (settleTarget != null) {
+                        Nav.moveToward(settleTarget, true);
+                    } else {
+                        Nav.wander(wanderDirection);
+                    }
+                    if (canSettleHere()) {
+                        gardenerSettled = true;
+                    }
+                }
+
+                waterLowestHealthTree();
+                BulletSpending.spendPolicy();
+            } catch (Exception e) {
+                System.out.println("Gardener exception");
+                e.printStackTrace();
+            }
+            Clock.yield();
+        }
+    }
+
+    private static void runSoldier() throws GameActionException {
+        while (true) {
+            try {
+                commonTurnStart();
+
+                RobotInfo[] enemies = rc.senseNearbyRobots(-1, them);
+                if (enemies.length > 0) {
+                    RobotInfo target = Utils.pickBestEnemy(enemies, rc.getLocation());
+                    Comms.reportEnemy(target);
+                    soldierMove(target);
+                } else {
+                    moveToIntelOrExplore();
+                }
+
+                soldierFire();
+            } catch (Exception e) {
+                System.out.println("Soldier exception");
+                e.printStackTrace();
+            }
+            Clock.yield();
+        }
+    }
+
+    private static void runTank() throws GameActionException {
+        while (true) {
+            try {
+                commonTurnStart();
+
+                RobotInfo[] enemies = rc.senseNearbyRobots(-1, them);
+                if (enemies.length > 0) {
+                    RobotInfo target = Utils.pickBestEnemy(enemies, rc.getLocation());
+                    Comms.reportEnemy(target);
+
+                    if (!rc.hasMoved()) {
+                        float dist = rc.getLocation().distanceTo(target.location);
+                        if (dist > 4.1f) {
+                            Nav.moveToward(target.location, true);
+                        } else {
+                            Direction strafe = rc.getLocation().directionTo(target.location)
+                                    .rotateLeftDegrees(rand.nextBoolean() ? 60f : -60f);
+                            Nav.moveInDirection(strafe, true);
+                        }
+                    }
+                } else {
+                    moveToIntelOrExplore();
+                }
+
+                tankFire();
+            } catch (Exception e) {
+                System.out.println("Tank exception");
+                e.printStackTrace();
+            }
+            Clock.yield();
+        }
+    }
+
+    private static void runLumberjack() throws GameActionException {
+        while (true) {
+            try {
+                commonTurnStart();
+
+                float strikeRadius = RobotType.LUMBERJACK.bodyRadius + GameConstants.LUMBERJACK_STRIKE_RADIUS;
+                RobotInfo[] enemiesInStrike = rc.senseNearbyRobots(strikeRadius, them);
+                if (enemiesInStrike.length > 0 && rc.canStrike() && shouldStrike()) {
                     rc.strike();
                 } else {
-                    // Priority 2: Chop trees that block rush paths
-                    TreeInfo[] trees = rc.senseNearbyTrees(-1);
-                    TreeInfo blockingTree = selectBlockingTree(trees);
-                    
-                    if (blockingTree != null) {
-                        float distToTree = myLocation.distanceTo(blockingTree.location);
-                        if (distToTree <= RobotType.LUMBERJACK.bodyRadius + 1.0f) {
-                            rc.chop(blockingTree.location);
+                    TreeInfo tree = pickBestTreeTarget();
+                    RobotInfo[] enemies = rc.senseNearbyRobots(-1, them);
+
+                    if (enemies.length > 0) {
+                        RobotInfo target = Utils.pickBestEnemy(enemies, rc.getLocation());
+                        Comms.reportEnemy(target);
+                        if (!rc.hasMoved()) {
+                            Nav.moveToward(target.location, true);
+                        }
+                    } else if (tree != null) {
+                        if (rc.canChop(tree.ID)) {
+                            rc.chop(tree.ID);
+                        } else if (!rc.hasMoved()) {
+                            Nav.moveToward(tree.location, true);
+                        }
+                    } else {
+                        moveToIntelOrExplore();
+                    }
+                }
+            } catch (Exception e) {
+                System.out.println("Lumberjack exception");
+                e.printStackTrace();
+            }
+            Clock.yield();
+        }
+    }
+
+    private static void runScout() throws GameActionException {
+        while (true) {
+            try {
+                commonTurnStart();
+
+                RobotInfo[] enemies = rc.senseNearbyRobots(-1, them);
+                if (enemies.length > 0) {
+                    RobotInfo target = pickScoutTarget(enemies);
+                    Comms.reportEnemy(target);
+
+                    float dist = rc.getLocation().distanceTo(target.location);
+                    if (!rc.hasMoved()) {
+                        if (isDangerous(target.type) && dist < 5.5f) {
+                            Direction away = target.location.directionTo(rc.getLocation());
+                            Nav.moveInDirection(away, true);
+                        } else if (dist > 4f) {
+                            Nav.moveToward(target.location, true);
                         } else {
-                            Direction toTree = myLocation.directionTo(blockingTree.location);
-                            tryMoveAggressive(toTree);
-                        }
-                    } else {
-                        // Priority 3: Rush toward enemy base
-                        rushEnemyBase();
-                    }
-                }
-
-                // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
-                Clock.yield();
-
-            } catch (Exception e) {
-                System.out.println("Lumberjack Exception");
-                e.printStackTrace();
-            }
-        }
-    }
-
-    static void runScout() throws GameActionException {
-        System.out.println("I'm a scout!");
-        Team enemy = rc.getTeam().opponent();
-
-        while (true) {
-            try {
-                MapLocation myLocation = rc.getLocation();
-
-                // Early Rush Horde: Scouts attack closest enemy regardless of type
-                RobotInfo[] robots = rc.senseNearbyRobots(-1, enemy);
-                
-                RobotInfo closestTarget = null;
-                float minDistance = Float.MAX_VALUE;
-                
-                // Find closest enemy regardless of type
-                for (RobotInfo robot : robots) {
-                    float dist = myLocation.distanceTo(robot.location);
-                    if (dist < minDistance) {
-                        minDistance = dist;
-                        closestTarget = robot;
-                    }
-                }
-                
-                if (closestTarget != null) {
-                    // Early Rush Horde: Attack closest target relentlessly
-                    if (minDistance <= 5) {
-                        if (rc.canFireSingleShot()) {
-                            rc.fireSingleShot(myLocation.directionTo(closestTarget.location));
+                            Direction strafe = rc.getLocation().directionTo(target.location)
+                                    .rotateLeftDegrees(rand.nextBoolean() ? 85f : -85f);
+                            Nav.moveInDirection(strafe, true);
                         }
                     }
-                    
-                    // Early Rush Horde: Pursue closest target aggressively
-                    if (minDistance > 1) {
-                        Direction toTarget = myLocation.directionTo(closestTarget.location);
-                        tryMoveAggressive(toTarget);
-                    } else {
-                        // Close range - circle to maintain pressure
-                        tryMoveAggressive(randomDirection());
+
+                    if (rc.canFireSingleShot()) {
+                        Direction fire = rc.getLocation().directionTo(target.location);
+                        float distance = rc.getLocation().distanceTo(target.location);
+                        if (isSafeToFire(fire, distance, 1)) {
+                            rc.fireSingleShot(fire);
+                        }
                     }
                 } else {
-                    // No targets - rush toward enemy base
-                    rushEnemyBase();
+                    TreeInfo shakeTree = pickTreeToShake();
+                    if (shakeTree != null && rc.canShake(shakeTree.ID)) {
+                        rc.shake(shakeTree.ID);
+                    } else {
+                        moveToIntelOrExplore();
+                    }
                 }
-
-                Clock.yield();
-
             } catch (Exception e) {
-                System.out.println("Scout Exception");
+                System.out.println("Scout exception");
                 e.printStackTrace();
             }
+            Clock.yield();
         }
     }
 
-    static void runTank() throws GameActionException {
-        System.out.println("I'm a tank!");
-        Team enemy = rc.getTeam().opponent();
+    private static void commonTurnStart() throws GameActionException {
+        Comms.reportUnitCount(rc.getType());
+        shakeBestTreeIfPossible();
 
-        while (true) {
-            try {
-                MapLocation myLocation = rc.getLocation();
-
-                // Early Rush Horde: Tanks attack closest enemy regardless of type
-                RobotInfo[] robots = rc.senseNearbyRobots(-1, enemy);
-
-                if (robots.length > 0) {
-                    RobotInfo closestTarget = selectClosestTarget(robots);
-                    float distToTarget = myLocation.distanceTo(closestTarget.location);
-                    
-                    // Early Rush Horde: Attack closest target with heavy firepower
-                    if (distToTarget <= 8) {
-                        if (rc.canFireSingleShot()) {
-                            rc.fireSingleShot(myLocation.directionTo(closestTarget.location));
-                        }
-                        // Use pentad shots on close targets regardless of type
-                        if (distToTarget <= 6 && rc.canFirePentadShot()) {
-                            rc.firePentadShot(myLocation.directionTo(closestTarget.location));
-                        }
-                    }
-                    
-                    // Early Rush Horde: Move toward closest target
-                    if (distToTarget > 4) {
-                        Direction toTarget = myLocation.directionTo(closestTarget.location);
-                        tryMoveAggressive(toTarget);
-                    }
-                } else {
-                    // No targets - support rush
-                    supportRush();
-                }
-
-                Clock.yield();
-
-            } catch (Exception e) {
-                System.out.println("Tank Exception");
-                e.printStackTrace();
-            }
+        RobotInfo[] enemies = rc.senseNearbyRobots(-1, them);
+        if (enemies.length > 0) {
+            Comms.reportEnemy(Utils.pickBestEnemy(enemies, rc.getLocation()));
         }
     }
 
-    // Helper methods for Early Rush Horde strategy
-    
-    private static RobotInfo selectClosestTarget(RobotInfo[] enemies) {
-        RobotInfo closestTarget = null;
-        float minDistance = Float.MAX_VALUE;
-        
+    private static void moveToIntelOrExplore() throws GameActionException {
+        if (rc.hasMoved()) {
+            return;
+        }
+
+        MapLocation intel = Comms.getEnemyLocation();
+        if (intel == null) {
+            intel = pickClosestInitialEnemyArchon();
+        }
+
+        if (intel != null) {
+            if (!Nav.moveToward(intel, true)) {
+                Nav.wander(wanderDirection);
+            }
+        } else {
+            Nav.wander(wanderDirection);
+        }
+    }
+
+    private static void soldierMove(RobotInfo target) throws GameActionException {
+        if (rc.hasMoved()) {
+            return;
+        }
+
+        MapLocation myLoc = rc.getLocation();
+        float dist = myLoc.distanceTo(target.location);
+        Direction toTarget = myLoc.directionTo(target.location);
+
+        if (target.type == RobotType.LUMBERJACK && dist < 3.8f) {
+            Nav.moveInDirection(toTarget.opposite(), true);
+            return;
+        }
+
+        if (dist > 4.6f) {
+            Nav.moveToward(target.location, true);
+            return;
+        }
+
+        Direction strafe = toTarget.rotateLeftDegrees(rand.nextBoolean() ? 70f : -70f);
+        Nav.moveInDirection(strafe, true);
+    }
+
+    private static void soldierFire() throws GameActionException {
+        if (rc.hasAttacked()) {
+            return;
+        }
+
+        RobotInfo[] enemies = rc.senseNearbyRobots(-1, them);
+        if (enemies.length == 0) {
+            return;
+        }
+
+        RobotInfo target = Utils.pickBestEnemy(enemies, rc.getLocation());
+        Direction fireDir = rc.getLocation().directionTo(target.location);
+        float dist = rc.getLocation().distanceTo(target.location);
+        int nearbyEnemyCount = countEnemiesNear(target.location, 2.6f, enemies);
+
+        if (rc.canFirePentadShot()
+                && rc.getTeamBullets() > 80f
+                && dist < 3.3f
+                && nearbyEnemyCount >= 2
+                && isSafeToFire(fireDir, dist, 3)) {
+            rc.firePentadShot(fireDir);
+            return;
+        }
+
+        if (rc.canFireTriadShot()
+                && rc.getTeamBullets() > 30f
+                && dist < 5.2f
+                && (nearbyEnemyCount >= 2 || target.type == RobotType.TANK)
+                && isSafeToFire(fireDir, dist, 2)) {
+            rc.fireTriadShot(fireDir);
+            return;
+        }
+
+        if (rc.canFireSingleShot() && isSafeToFire(fireDir, dist, 1)) {
+            rc.fireSingleShot(fireDir);
+        }
+    }
+
+    private static void tankFire() throws GameActionException {
+        if (rc.hasAttacked()) {
+            return;
+        }
+
+        RobotInfo[] enemies = rc.senseNearbyRobots(-1, them);
+        if (enemies.length == 0) {
+            return;
+        }
+
+        RobotInfo target = Utils.pickBestEnemy(enemies, rc.getLocation());
+        Direction fireDir = rc.getLocation().directionTo(target.location);
+        float dist = rc.getLocation().distanceTo(target.location);
+
+        if (rc.canFirePentadShot() && dist < 5.4f && isSafeToFire(fireDir, dist, 3)) {
+            rc.firePentadShot(fireDir);
+            return;
+        }
+
+        if (rc.canFireTriadShot() && isSafeToFire(fireDir, dist, 2)) {
+            rc.fireTriadShot(fireDir);
+            return;
+        }
+
+        if (rc.canFireSingleShot() && isSafeToFire(fireDir, dist, 1)) {
+            rc.fireSingleShot(fireDir);
+        }
+    }
+
+    private static boolean isSafeToFire(Direction dir, float targetDistance, int pattern) throws GameActionException {
+        MapLocation myLoc = rc.getLocation();
+
+        float[] offsets;
+        if (pattern == 3) {
+            offsets = new float[]{-30f, -15f, 0f, 15f, 30f};
+        } else if (pattern == 2) {
+            offsets = new float[]{-20f, 0f, 20f};
+        } else {
+            offsets = new float[]{0f};
+        }
+
+        RobotInfo[] allies = rc.senseNearbyRobots(targetDistance + 1.5f, us);
+        TreeInfo[] trees = rc.senseNearbyTrees(targetDistance + 1.5f);
+
+        for (float offset : offsets) {
+            Direction shotDir = offset == 0f
+                    ? dir
+                    : (offset > 0f ? dir.rotateLeftDegrees(offset) : dir.rotateRightDegrees(-offset));
+
+            for (RobotInfo ally : allies) {
+                if (ally.ID == rc.getID()) {
+                    continue;
+                }
+                float allyDist = myLoc.distanceTo(ally.location);
+                if (allyDist >= targetDistance - 0.05f) {
+                    continue;
+                }
+                if (Utils.rayIntersectsCircle(myLoc, shotDir, ally.location, ally.type.bodyRadius, targetDistance)) {
+                    return false;
+                }
+            }
+
+            for (TreeInfo tree : trees) {
+                float treeDist = myLoc.distanceTo(tree.location);
+                if (treeDist >= targetDistance - 0.05f) {
+                    continue;
+                }
+                if (Utils.rayIntersectsCircle(myLoc, shotDir, tree.location, tree.radius, targetDistance)) {
+                    if (tree.team == us || tree.team == Team.NEUTRAL) {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        return true;
+    }
+
+    private static int countEnemiesNear(MapLocation center, float radius, RobotInfo[] enemies) {
+        int count = 0;
         for (RobotInfo enemy : enemies) {
-            float dist = rc.getLocation().distanceTo(enemy.location);
-            if (dist < minDistance) {
-                minDistance = dist;
-                closestTarget = enemy;
+            if (center.distanceTo(enemy.location) <= radius) {
+                count++;
             }
         }
-        
-        return closestTarget;
+        return count;
     }
 
-    private static TreeInfo selectBlockingTree(TreeInfo[] trees) {
-        TreeInfo blockingTree = null;
-        float bestScore = Float.MIN_VALUE;
-        
+    private static boolean shouldStrike() throws GameActionException {
+        float strikeRadius = RobotType.LUMBERJACK.bodyRadius + GameConstants.LUMBERJACK_STRIKE_RADIUS;
+        RobotInfo[] enemies = rc.senseNearbyRobots(strikeRadius, them);
+        RobotInfo[] allies = rc.senseNearbyRobots(strikeRadius, us);
+
+        int allyCount = 0;
+        for (RobotInfo ally : allies) {
+            if (ally.ID != rc.getID()) {
+                allyCount++;
+            }
+        }
+
+        return enemies.length > allyCount;
+    }
+
+    private static TreeInfo pickBestTreeTarget() throws GameActionException {
+        TreeInfo[] trees = rc.senseNearbyTrees(-1);
+        TreeInfo best = null;
+        float bestScore = -99999f;
+
         for (TreeInfo tree : trees) {
-            float score = 0;
-            float dist = rc.getLocation().distanceTo(tree.location);
-            
-            // Priority for trees that block rush paths to enemy
-            MapLocation myLoc = rc.getLocation();
-            MapLocation[] enemyArchons = rc.getInitialArchonLocations(rc.getTeam().opponent());
-            
-            float minDistToEnemyArchons = Float.MAX_VALUE;
-            for (MapLocation archon : enemyArchons) {
-                float archonDist = tree.location.distanceTo(archon);
-                minDistToEnemyArchons = Math.min(minDistToEnemyArchons, archonDist);
+            if (tree.team == us) {
+                continue;
             }
-            
-            if (tree.team == Team.NEUTRAL) {
-                // Trees near enemy base have highest priority for clearing
-                if (minDistToEnemyArchons < 20) {
-                    score = 400 - dist - minDistToEnemyArchons;
-                } else {
-                    score = 50 - dist;
-                }
-            } else if (tree.team == rc.getTeam().opponent()) {
-                // Enemy trees are good targets
-                score = 200 - dist;
+
+            float score = 0f;
+            if (tree.containedRobot != null) {
+                score += 80f;
             }
-            
+            score += tree.containedBullets * 3f;
+            if (tree.team == them) {
+                score += 45f;
+            }
+            score -= rc.getLocation().distanceTo(tree.location) * 1.4f;
+
             if (score > bestScore) {
                 bestScore = score;
-                blockingTree = tree;
+                best = tree;
             }
         }
-        
-        return blockingTree;
+
+        return best;
     }
 
-    private static void maintainRushPosition() throws GameActionException {
-        MapLocation center = getRushCenter();
-        float distToCenter = rc.getLocation().distanceTo(center);
-        
-        // Archons maintain position to support rush but stay mobile
-        if (distToCenter > 10) {
-            Direction toCenter = rc.getLocation().directionTo(center);
-            tryMoveAggressive(toCenter);
-        } else {
-            // Aggressive repositioning for rush support
-            if (Math.random() < 0.6) {
-                tryMoveAggressive(randomDirection());
+    private static TreeInfo pickTreeToShake() throws GameActionException {
+        TreeInfo[] trees = rc.senseNearbyTrees(-1);
+        TreeInfo best = null;
+        float bestDist = 9999f;
+
+        for (TreeInfo tree : trees) {
+            if (tree.containedBullets <= 0) {
+                continue;
             }
+            float dist = rc.getLocation().distanceTo(tree.location);
+            if (dist < bestDist) {
+                bestDist = dist;
+                best = tree;
+            }
+        }
+
+        return best;
+    }
+
+    private static void waterLowestHealthTree() throws GameActionException {
+        if (rc.getType() != RobotType.GARDENER) {
+            return;
+        }
+
+        TreeInfo[] trees = rc.senseNearbyTrees(2.5f, us);
+        TreeInfo toWater = null;
+        float minHealth = 99999f;
+
+        for (TreeInfo tree : trees) {
+            if (!rc.canWater(tree.ID)) {
+                continue;
+            }
+            if (tree.health < minHealth) {
+                minHealth = tree.health;
+                toWater = tree;
+            }
+        }
+
+        if (toWater != null) {
+            rc.water(toWater.ID);
         }
     }
 
-    private static void maintainRushProductionPosition(MapLocation archonLoc) throws GameActionException {
-        float distToArchon = rc.getLocation().distanceTo(archonLoc);
-        
-        // Position for optimal rush unit production
-        if (distToArchon > 15) {
-            Direction toArchon = rc.getLocation().directionTo(archonLoc);
-            tryMoveAggressive(toArchon);
-        } else if (distToArchon < 5) {
-            Direction awayFromArchon = archonLoc.directionTo(rc.getLocation());
-            tryMoveAggressive(awayFromArchon);
-        } else {
-            // Reposition frequently for better rush unit angles
-            if (Math.random() < 0.4) {
-                tryMoveAggressive(randomDirection());
+    private static void shakeBestTreeIfPossible() throws GameActionException {
+        TreeInfo[] trees = rc.senseNearbyTrees(2.5f);
+        TreeInfo best = null;
+        int bullets = 0;
+
+        for (TreeInfo tree : trees) {
+            if (tree.containedBullets > bullets && rc.canShake(tree.ID)) {
+                bullets = tree.containedBullets;
+                best = tree;
             }
+        }
+
+        if (best != null) {
+            rc.shake(best.ID);
         }
     }
 
-    private static void rushEnemyBase() throws GameActionException {
-        // Move toward enemy base for rush
-        MapLocation[] enemyArchons = rc.getInitialArchonLocations(rc.getTeam().opponent());
+    private static boolean canSettleHere() throws GameActionException {
         MapLocation myLoc = rc.getLocation();
-        
-        MapLocation closestArchon = enemyArchons[0];
-        float minDist = myLoc.distanceTo(closestArchon);
-        
-        for (MapLocation archon : enemyArchons) {
-            float dist = myLoc.distanceTo(archon);
-            if (dist < minDist) {
-                minDist = dist;
-                closestArchon = archon;
-            }
-        }
-        
-        Direction toEnemy = myLoc.directionTo(closestArchon);
-        tryMoveAggressive(toEnemy);
-    }
 
-    private static void supportRush() throws GameActionException {
-        // Tanks support rush by moving toward enemy locations
-        MapLocation[] enemyArchons = rc.getInitialArchonLocations(rc.getTeam().opponent());
-        MapLocation myLoc = rc.getLocation();
-        
-        MapLocation closestArchon = enemyArchons[0];
-        float minDist = myLoc.distanceTo(closestArchon);
-        
-        for (MapLocation archon : enemyArchons) {
-            float dist = myLoc.distanceTo(archon);
-            if (dist < minDist) {
-                minDist = dist;
-                closestArchon = archon;
-            }
-        }
-        
-        // Tanks move toward enemy to support rush
-        if (minDist > 20) {
-            Direction toEnemy = myLoc.directionTo(closestArchon);
-            tryMoveAggressive(toEnemy);
-        } else {
-            // Close to enemy - aggressive positioning
-            if (Math.random() < 0.5) {
-                tryMoveAggressive(randomDirection());
-            }
-        }
-    }
-
-    private static MapLocation getRushCenter() {
-        if (archonLocation != null) {
-            return archonLocation;
-        }
-        // Fallback: try to read from broadcast
-        try {
-            int xPos = rc.readBroadcast(0);
-            int yPos = rc.readBroadcast(1);
-            return new MapLocation(xPos, yPos);
-        } catch (Exception e) {
-            return rc.getLocation(); // Last resort
-        }
-    }
-
-    /**
-     * Returns a random Direction
-     * @return a random Direction
-     */
-    static Direction randomDirection() {
-        return new Direction((float)Math.random() * 2 * (float)Math.PI);
-    }
-
-    /**
-     * Early Rush Horde: Very aggressive movement for maximum pressure
-     * Extremely aggressive movement with minimal safety checks for fastest rush.
-     *
-     * @param dir The intended direction of movement
-     * @return true if a move was performed
-     * @throws GameActionException
-     */
-    static boolean tryMoveAggressive(Direction dir) throws GameActionException {
-        return tryMove(dir,15,2); // Very aggressive movement with minimal angle checks
-    }
-
-    /**
-     * Attempts to move in a given direction, while avoiding small obstacles direction in the path.
-     *
-     * @param dir The intended direction of movement
-     * @param degreeOffset Spacing between checked directions (degrees)
-     * @param checksPerSide Number of extra directions checked on each side, if intended direction was unavailable
-     * @return true if a move was performed
-     * @throws GameActionException
-     */
-    static boolean tryMove(Direction dir, float degreeOffset, int checksPerSide) throws GameActionException {
-
-        // First, try intended direction
-        if (rc.canMove(dir)) {
-            rc.move(dir);
-            return true;
-        }
-
-        // Now try a bunch of similar angles
-        boolean moved = false;
-        int currentCheck = 1;
-
-        while(currentCheck<=checksPerSide) {
-            // Try the offset of the left side
-            if(rc.canMove(dir.rotateLeftDegrees(degreeOffset*currentCheck))) {
-                rc.move(dir.rotateLeftDegrees(degreeOffset*currentCheck));
-                return true;
-            }
-            // Try the offset on the right side
-            if(rc.canMove(dir.rotateRightDegrees(degreeOffset*currentCheck))) {
-                rc.move(dir.rotateRightDegrees(degreeOffset*currentCheck));
-                return true;
-            }
-            // No move performed, try slightly further
-            currentCheck++;
-        }
-
-        // A move never happened, so return false.
-        return false;
-    }
-
-    /**
-     * A slightly more complicated example function, this returns true if the given bullet is on a collision
-     * course with the current robot. Doesn't take into account objects between the bullet and this robot.
-     *
-     * @param bullet The bullet in question
-     * @return True if the line of the bullet's path intersects with this robot's current position.
-     */
-    static boolean willCollideWithMe(BulletInfo bullet) {
-        MapLocation myLocation = rc.getLocation();
-
-        // Get relevant bullet information
-        Direction propagationDirection = bullet.dir;
-        MapLocation bulletLocation = bullet.location;
-
-        // Calculate bullet relations to this robot
-        Direction directionToRobot = bulletLocation.directionTo(myLocation);
-        float distToRobot = bulletLocation.distanceTo(myLocation);
-        float theta = propagationDirection.radiansBetween(directionToRobot);
-
-        // If theta > 90 degrees, then the bullet is traveling away from us and we can break early
-        if (Math.abs(theta) > Math.PI/2) {
+        if (rc.senseNearbyRobots(6f, them).length > 0) {
             return false;
         }
 
-        // distToRobot is our hypotenuse, theta is our angle, and we want to know this length of the opposite leg.
-        // This is the distance of a line that goes from myLocation and intersects perpendicularly with propagationDirection.
-        // This corresponds to the smallest radius circle centered at our location that would intersect with the
-        // line that is the path of the bullet.
-        float perpendicularDist = (float)Math.abs(distToRobot * Math.sin(theta)); // soh cah toa :)
+        int openSpots = countOpenPlantSpots(myLoc);
+        if (openSpots < 4) {
+            return false;
+        }
 
-        return (perpendicularDist <= rc.getType().bodyRadius);
+        RobotInfo[] nearbyAllies = rc.senseNearbyRobots(6f, us);
+        for (RobotInfo ally : nearbyAllies) {
+            if (ally.type == RobotType.GARDENER && ally.ID != rc.getID()) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static MapLocation pickSettleTarget() throws GameActionException {
+        MapLocation myLoc = rc.getLocation();
+        MapLocation best = null;
+        float bestScore = -99999f;
+
+        for (int i = 0; i < 12; i++) {
+            Direction dir = new Direction((float) (i * Math.PI / 6f));
+            MapLocation candidate = myLoc.add(dir, 2.2f);
+
+            if (!rc.onTheMap(candidate, 1f)) {
+                continue;
+            }
+
+            int openSpots = countOpenPlantSpots(candidate);
+            float score = openSpots * 8f;
+
+            RobotInfo[] closeAllies = rc.senseNearbyRobots(candidate, 4.5f, us);
+            for (RobotInfo ally : closeAllies) {
+                if (ally.type == RobotType.GARDENER) {
+                    score -= 10f;
+                }
+            }
+
+            RobotInfo[] closeEnemies = rc.senseNearbyRobots(candidate, 6f, them);
+            score -= closeEnemies.length * 14f;
+
+            if (score > bestScore) {
+                bestScore = score;
+                best = candidate;
+            }
+        }
+
+        return best;
+    }
+
+    private static int countOpenPlantSpots(MapLocation center) throws GameActionException {
+        int open = 0;
+        float dist = RobotType.GARDENER.bodyRadius + GameConstants.GENERAL_SPAWN_OFFSET + GameConstants.BULLET_TREE_RADIUS;
+
+        for (int i = 0; i < 6; i++) {
+            Direction dir = gardenerPlantDirection.rotateLeftDegrees(i * 60f);
+            MapLocation spot = center.add(dir, dist);
+            if (!rc.onTheMap(spot, GameConstants.BULLET_TREE_RADIUS)) {
+                continue;
+            }
+            if (!rc.isCircleOccupiedExceptByThisRobot(spot, GameConstants.BULLET_TREE_RADIUS)) {
+                open++;
+            }
+        }
+
+        return open;
+    }
+
+    private static MapLocation pickClosestInitialEnemyArchon() {
+        if (initialEnemyArchons == null || initialEnemyArchons.length == 0) {
+            return null;
+        }
+
+        MapLocation myLoc = rc.getLocation();
+        MapLocation best = initialEnemyArchons[0];
+        float bestDist = myLoc.distanceTo(best);
+
+        for (int i = 1; i < initialEnemyArchons.length; i++) {
+            float dist = myLoc.distanceTo(initialEnemyArchons[i]);
+            if (dist < bestDist) {
+                bestDist = dist;
+                best = initialEnemyArchons[i];
+            }
+        }
+
+        return best;
+    }
+
+    private static RobotInfo pickScoutTarget(RobotInfo[] enemies) {
+        RobotInfo best = enemies[0];
+        float bestScore = -99999f;
+
+        MapLocation myLoc = rc.getLocation();
+        for (RobotInfo enemy : enemies) {
+            float score;
+            switch (enemy.type) {
+                case GARDENER:
+                    score = 70f;
+                    break;
+                case SCOUT:
+                    score = 55f;
+                    break;
+                case SOLDIER:
+                    score = 35f;
+                    break;
+                case LUMBERJACK:
+                    score = 20f;
+                    break;
+                case ARCHON:
+                    score = 25f;
+                    break;
+                case TANK:
+                    score = 15f;
+                    break;
+                default:
+                    score = 10f;
+            }
+
+            score -= myLoc.distanceTo(enemy.location) * 2f;
+            if (score > bestScore) {
+                bestScore = score;
+                best = enemy;
+            }
+        }
+
+        return best;
+    }
+
+    private static boolean isDangerous(RobotType type) {
+        return type == RobotType.SOLDIER || type == RobotType.LUMBERJACK || type == RobotType.TANK;
     }
 }
