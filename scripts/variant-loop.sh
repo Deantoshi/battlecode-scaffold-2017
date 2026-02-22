@@ -4,9 +4,9 @@
 # Usage: ./scripts/variant-loop.sh <bot> <opponent> [map] [max-iterations]
 #
 # This script orchestrates variant-based bot improvement:
-#   1. Archetype creator agent generates 16 variant archetypes (once)
+#   1. A pi worker generates 16 variant archetypes
 #   2. Creates 16 variant folders as copies of original
-#   3. For each variant, an agent implements its archetype
+#   3. Parallel pi workers implement each archetype
 #   4. All variants + original run against opponent
 #   5. Best performer is promoted if better than original
 #   6. Loop until goal achieved or max iterations
@@ -29,86 +29,22 @@ MAP="${3:-MagicWood}"
 MAX_ITERS="${4:-20}"
 NUM_VARIANTS=16
 
-# AI Engine
-AI_ENGINE="${AI_ENGINE:-opencode}"
-
-# Model override (e.g., google/antigravity-claude-opus-4-5-thinking)
+# AI runtime (pi workers)
+AI_ENGINE="${AI_ENGINE:-pi}"
 MODEL="${MODEL:-}"
-VARIANT="${VARIANT:-}"
+PI_THINKING="${PI_THINKING:-}"
 RUN_ID="${RUN_ID:-$(date +%Y%m%d-%H%M%S)-$$}"
 
-# If using opencode, default to the TUI-selected model/variant when not explicitly set.
-# This reads from opencode's state file: $XDG_STATE_HOME/opencode/model.json (fallback: ~/.local/state).
-if [[ "$AI_ENGINE" == "opencode" ]]; then
-    OPENCODE_STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/state}"
-    OPENCODE_MODEL_JSON="${OPENCODE_MODEL_JSON:-$OPENCODE_STATE_HOME/opencode/model.json}"
-    if [[ -f "$OPENCODE_MODEL_JSON" ]]; then
-        { read -r OPENCODE_SELECTED_MODEL; read -r OPENCODE_SELECTED_VARIANT; } < <(python3 - "$OPENCODE_MODEL_JSON" "${MODEL:-}" <<'PY'
-import json
-import sys
+if [[ "$AI_ENGINE" != "pi" ]]; then
+    printf '%s\n' "${RED}Unsupported AI_ENGINE: $AI_ENGINE${NC}"
+    printf '%s\n' "${RED}This script now uses pi worker sessions only.${NC}"
+    printf '%s\n' "${RED}Set AI_ENGINE=pi (or leave unset).${NC}"
+    exit 1
+fi
 
-path = sys.argv[1]
-requested = sys.argv[2] if len(sys.argv) > 2 else ""
-
-def emit(model: str, variant: str) -> None:
-    print(model or "")
-    print(variant or "")
-
-try:
-    with open(path, "r") as f:
-        data = json.load(f)
-except Exception:
-    emit("", "")
-    sys.exit(0)
-
-current = data.get("current") or {}
-provider = current.get("providerID")
-model_id = current.get("modelID")
-current_model = f"{provider}/{model_id}" if provider and model_id else ""
-
-if not current_model:
-    recent = data.get("recent") or []
-    if isinstance(recent, list) and recent:
-        item = recent[0] or {}
-        provider = item.get("providerID")
-        model_id = item.get("modelID")
-        if provider and model_id:
-            current_model = f"{provider}/{model_id}"
-
-model_for_variant = requested or current_model
-variant_map = data.get("variant") or {}
-variant = variant_map.get(model_for_variant, "") if model_for_variant else ""
-
-emit(current_model, variant)
-PY
-        ) || true
-
-        if [[ -z "$MODEL" && -n "$OPENCODE_SELECTED_MODEL" ]]; then
-            MODEL="$OPENCODE_SELECTED_MODEL"
-        fi
-        if [[ -z "$VARIANT" && -n "$OPENCODE_SELECTED_VARIANT" ]]; then
-            VARIANT="$OPENCODE_SELECTED_VARIANT"
-        fi
-    fi
-
-    # Require a resolved model — abort early so you never run blind
-    if [[ -z "$MODEL" ]]; then
-        printf '%s\n' "${RED}═══════════════════════════════════════════════════════════════════════════════${NC}"
-        printf '%s\n' "${RED}  ERROR: Could not detect active opencode model.${NC}"
-        printf '%s\n' "${RED}  State file: ${OPENCODE_MODEL_JSON:-<not set>}${NC}"
-        printf '%s\n' "${RED}  Either select a model in the TUI first, or override with:${NC}"
-        printf '%s\n' "${RED}    MODEL=provider/model-id ./scripts/variant-loop.sh ...${NC}"
-        printf '%s\n' "${RED}═══════════════════════════════════════════════════════════════════════════════${NC}"
-        exit 1
-    fi
-
-    printf '%s\n' "${GREEN}═══════════════════════════════════════════════════════════════════════════════${NC}"
-    printf '%s\n' "${GREEN}  Model detected from opencode state file:${NC}"
-    printf '%s\n' "${BOLD}    MODEL:   ${MODEL}${NC}"
-    printf '%s\n' "${BOLD}    VARIANT: ${VARIANT:-<none>}${NC}"
-    printf '%s\n' "${GREEN}  Source: ${OPENCODE_MODEL_JSON}${NC}"
-    printf '%s\n' "${GREEN}═══════════════════════════════════════════════════════════════════════════════${NC}"
-    echo ""
+if ! command -v pi >/dev/null 2>&1; then
+    printf '%s\n' "${RED}Error: 'pi' CLI not found in PATH${NC}"
+    exit 1
 fi
 
 # Validate arguments
@@ -157,38 +93,55 @@ printf '%s\n' "${BLUE}Variants:${NC}   $NUM_VARIANTS"
 printf '%s\n' "${BLUE}Champions:${NC}  $NUM_CHAMPIONS"
 printf '%s\n' "${BLUE}AI Engine:${NC}  $AI_ENGINE"
 [[ -n "$MODEL" ]] && printf '%s\n' "${BLUE}Model:${NC}      $MODEL"
-[[ -n "$VARIANT" ]] && printf '%s\n' "${BLUE}Variant:${NC}    $VARIANT"
+[[ -n "$PI_THINKING" ]] && printf '%s\n' "${BLUE}Thinking:${NC}   $PI_THINKING"
+printf '%s\n' "${BLUE}Run ID:${NC}     $RUN_ID"
 echo ""
 
-# Function to run an agent
+# Function to run a pi worker session
 run_agent() {
     local agent_name="$1"
     local args="$2"
     local context="$3"
     local exit_code=0
+    local worker_prompt=""
 
-    printf '%s\n' "${YELLOW}━━━ Running @${agent_name} ━━━${NC}"
-
-    case "$AI_ENGINE" in
-        opencode)
-            local model_args=""
-            [[ -n "$MODEL" ]] && model_args="--model $MODEL"
-            [[ -n "$VARIANT" ]] && model_args="$model_args --variant $VARIANT"
-            local title="variant-loop:${RUN_ID}:${BOT}:${OPPONENT}:${MAP}:${agent_name}"
-            [[ -n "$context" ]] && title="${title}:${context}"
-            opencode run --agent "${agent_name}" --title "${title}" $model_args --format default -- "${args}" || exit_code=$?
+    case "$agent_name" in
+        archetype-creator)
+            worker_prompt="scripts/pi-workers/archetype-creator.md"
             ;;
-        claude)
-            ./ralphy/ralphy.sh "@${agent_name} ${args}" || exit_code=$?
+        archetype-implementer)
+            worker_prompt="scripts/pi-workers/archetype-implementer.md"
             ;;
         *)
-            printf '%s\n' "${RED}Unknown AI engine: $AI_ENGINE${NC}"
-            exit 1
+            printf '%s\n' "${RED}Unknown worker: $agent_name${NC}"
+            return 1
             ;;
     esac
 
+    if [[ ! -f "$worker_prompt" ]]; then
+        printf '%s\n' "${RED}Worker prompt not found: $worker_prompt${NC}"
+        return 1
+    fi
+
+    printf '%s\n' "${YELLOW}━━━ Running pi worker: ${agent_name} ━━━${NC}"
+
+    local -a pi_cmd=(pi -p --no-session)
+    [[ -n "$MODEL" ]] && pi_cmd+=(--model "$MODEL")
+    [[ -n "$PI_THINKING" ]] && pi_cmd+=(--thinking "$PI_THINKING")
+
+    local worker_message
+    worker_message=$(cat <<EOF
+You are running as worker "${agent_name}" for battlecode variant-loop.
+Arguments: ${args}
+Run metadata: run_id=${RUN_ID}, context=${context:-none}, bot=${BOT}, opponent=${OPPONENT}, map=${MAP}
+Follow the attached worker spec exactly.
+EOF
+)
+
+    "${pi_cmd[@]}" "@${worker_prompt}" "$worker_message" || exit_code=$?
+
     if [[ $exit_code -ne 0 ]]; then
-        printf '%s\n' "${RED}Agent @${agent_name} failed with exit code: $exit_code${NC}"
+        printf '%s\n' "${RED}Worker ${agent_name} failed with exit code: $exit_code${NC}"
         return $exit_code
     fi
 }
@@ -274,7 +227,7 @@ for iter in $(seq 1 "$MAX_ITERS"); do
     echo ""
 
     # ─────────────────────────────────────────────────────────────────────────────
-    # Step 2: Implement each archetype (fresh agent per variant)
+    # Step 2: Implement each archetype (fresh pi worker per variant)
     # ─────────────────────────────────────────────────────────────────────────────
     printf '%s\n' "${BOLD}${GREEN}[STEP 2] Implementing archetypes into variants (2 at a time)${NC}"
 
@@ -307,10 +260,10 @@ else:
             VARIANT_STATE_DIR="src/${BOT}_v${v}/.state"
             mkdir -p "$VARIANT_STATE_DIR"
             echo "$ARCHETYPE" > "$VARIANT_STATE_DIR/current-archetype.json"
-            # Also keep a copy in the main state dir for the agent to find
+            # Also keep a copy in the main state dir for the worker to find
             echo "$ARCHETYPE" > "$STATE_DIR/current-archetype-v${v}.json"
 
-            # Run agent in background
+            # Run worker in background
             (
                 run_agent "archetype-implementer" "--bot $BOT --variant $v --opponent $OPPONENT" "iter:${iter}:v${v}"
             ) &
@@ -320,13 +273,13 @@ else:
 
         printf '%s\n' "${BLUE}Waiting for variants ${BATCH_VARIANTS[*]} to complete...${NC}"
 
-        # Wait for all agents in this batch
+        # Wait for all workers in this batch
         BATCH_FAILED=0
         for i in "${!PIDS[@]}"; do
             pid=${PIDS[$i]}
             v=${BATCH_VARIANTS[$i]}
             if ! wait "$pid"; then
-                printf '%s\n' "${RED}Warning: Variant $v agent exited with error${NC}"
+                printf '%s\n' "${RED}Warning: Variant $v worker exited with error${NC}"
                 BATCH_FAILED=$((BATCH_FAILED + 1))
             fi
         done
