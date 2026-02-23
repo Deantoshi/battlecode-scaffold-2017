@@ -8,7 +8,7 @@ from pathlib import Path
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Build a shell command that launches a delegated Battlecode coding CLI session"
+        description="Build a shell command that launches a delegated Battlecode coding CLI run (non-interactive mode)"
     )
     parser.add_argument("agent", help="claude | opencode | codex")
     parser.add_argument("src_folder", help="Target folder under src/")
@@ -53,9 +53,9 @@ def main() -> None:
     validate_src_folder(src_folder)
 
     agent_map = {
-        "claude": "claude --dangerously-skip-permissions",
-        "opencode": "opencode",
-        "codex": "codex",
+        "claude": "claude -p --dangerously-skip-permissions",
+        "opencode": "opencode run",
+        "codex": "codex exec --dangerously-bypass-approvals-and-sandbox",
     }
 
     if agent not in agent_map:
@@ -65,6 +65,12 @@ def main() -> None:
     agent_cmd = agent_map[agent]
 
     prompt = f"""You are an autonomous Battlecode 2017 coding agent working inside this repository.
+
+RUNTIME MODE
+- You are running in NON-INTERACTIVE CLI mode.
+- Do not ask questions.
+- Do not wait for user input.
+- Make reasonable assumptions and complete the full task in this single run.
 
 MANDATORY TASK
 - Build the strongest bot you can in src/{src_folder}/.
@@ -92,7 +98,7 @@ OUTPUT REQUIREMENTS
   - short rationale of strategy
   - final successful gradle output summary
 
-Important: Do not end your session before FINAL_STATUS: SUCCESS is printed after a successful runWithSummary execution.
+Important: Do not end before FINAL_STATUS: SUCCESS is printed after a successful runWithSummary execution.
 """
 
     extra_text = read_extra(args.extra_file)
