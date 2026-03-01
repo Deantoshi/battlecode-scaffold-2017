@@ -10,7 +10,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Build a shell command that launches a delegated Battlecode coding CLI run (non-interactive mode)"
     )
-    parser.add_argument("agent", help="claude | opencode | codex")
+    parser.add_argument("agent", help="claude | opencode | codex | pi")
     parser.add_argument("src_folder", help="Target folder under src/")
     parser.add_argument(
         "--extra-file",
@@ -56,10 +56,11 @@ def main() -> None:
         "claude": "claude -p --dangerously-skip-permissions",
         "opencode": "opencode run",
         "codex": "codex exec --dangerously-bypass-approvals-and-sandbox",
+        "pi": "pi -p --no-session",
     }
 
     if agent not in agent_map:
-        print("agent must be one of: claude, opencode, codex", file=sys.stderr)
+        print("agent must be one of: claude, opencode, codex, pi", file=sys.stderr)
         sys.exit(1)
 
     agent_cmd = agent_map[agent]

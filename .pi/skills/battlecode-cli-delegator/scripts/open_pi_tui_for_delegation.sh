@@ -10,10 +10,10 @@ agent="$1"
 src_folder="$2"
 
 case "$agent" in
-  claude|opencode|codex)
+  claude|opencode|codex|pi)
     ;;
   *)
-    echo "agent must be one of: claude, opencode, codex" >&2
+    echo "agent must be one of: claude, opencode, codex, pi" >&2
     exit 1
     ;;
 esac

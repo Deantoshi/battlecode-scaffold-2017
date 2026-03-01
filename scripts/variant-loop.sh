@@ -35,12 +35,17 @@ MODEL="${MODEL:-}"
 PI_THINKING="${PI_THINKING:-}"
 RUN_ID="${RUN_ID:-$(date +%Y%m%d-%H%M%S)-$$}"
 
-if [[ "$AI_ENGINE" != "pi" ]]; then
-    printf '%s\n' "${RED}Unsupported AI_ENGINE: $AI_ENGINE${NC}"
-    printf '%s\n' "${RED}This script now uses pi worker sessions only.${NC}"
-    printf '%s\n' "${RED}Set AI_ENGINE=pi (or leave unset).${NC}"
-    exit 1
-fi
+case "$AI_ENGINE" in
+    pi|pi-coding-agent)
+        AI_ENGINE="pi"
+        ;;
+    *)
+        printf '%s\n' "${RED}Unsupported AI_ENGINE: $AI_ENGINE${NC}"
+        printf '%s\n' "${RED}This script uses pi worker sessions only.${NC}"
+        printf '%s\n' "${RED}Set AI_ENGINE=pi (or leave unset).${NC}"
+        exit 1
+        ;;
+esac
 
 if ! command -v pi >/dev/null 2>&1; then
     printf '%s\n' "${RED}Error: 'pi' CLI not found in PATH${NC}"

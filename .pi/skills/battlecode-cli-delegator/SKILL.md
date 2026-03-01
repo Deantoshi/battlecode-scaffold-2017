@@ -1,11 +1,11 @@
 ---
 name: battlecode-cli-delegator
-description: Run Battlecode 2017 delegated bot-building from inside the Pi TUI using non-interactive CLI modes (claude -p / opencode run / codex exec), enforce src-folder read limits by instruction, require compile-until-success, and independently verify with Gradle.
+description: Run Battlecode 2017 delegated bot-building from inside the Pi TUI using non-interactive CLI modes (claude -p / opencode run / codex exec / pi -p), enforce src-folder read limits by instruction, require compile-until-success, and independently verify with Gradle.
 ---
 
 # Battlecode CLI Delegator
 
-Use this skill when you want **Pi (in the TUI)** to orchestrate another coding CLI (Claude, OpenCode, or Codex) to build a Battlecode bot while Pi remains the orchestrator.
+Use this skill when you want **Pi (in the TUI)** to orchestrate another coding CLI (Claude, OpenCode, Codex, or Pi CLI) to build a Battlecode bot while Pi remains the orchestrator.
 
 This version is **CLI-only** for delegates (no `interactive_shell`, no delegate TUI sessions).
 
@@ -53,7 +53,7 @@ Expected args:
 <agent> <src_folder>
 ```
 
-- `<agent>` must be one of: `claude`, `opencode`, `codex`
+- `<agent>` must be one of: `claude`, `opencode`, `codex`, `pi`
 - `<src_folder>` is a folder name under `src/` (example: `claude_sonet_4_6_high`)
 
 ## Hard Rules
@@ -89,6 +89,7 @@ Expected args:
   - `claude -p ...`
   - `opencode run ...`
   - `codex exec ...`
+  - `pi -p --no-session ...`
 - Use one-shot initial prompt (all instructions in first command).
 - Pi reports summary and verification result, but Pi does not author bot code directly.
 - Helper scripts:
