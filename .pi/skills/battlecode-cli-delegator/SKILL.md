@@ -85,6 +85,26 @@ POLL_SECONDS=5 MAX_SECONDS=1800 bash .pi/skills/battlecode-cli-delegator/scripts
 - Writes full logs to `.pi/skills/battlecode-cli-delegator/runtime/`
 - Extracts token metrics (when present in provider output) into per-run JSON files
 
+Parallel 16-variant orchestration (2 workers, then matches + ranking/promotion):
+
+```bash
+python3 .pi/skills/battlecode-cli-delegator/scripts/run_parallel_variant_iteration.py <bot> <opponent> \
+  --map MagicWood \
+  --agents claude,codex \
+  --parallel 2 \
+  --num-variants 16 \
+  --drop-failed-variants
+```
+
+What this does:
+- optionally creates `src/<bot>_v1..v16`
+- runs delegated `run_delegation_flow.py` jobs in parallel (default 2 at a time)
+- verifies global compile once delegation finishes
+- runs `scripts/run-all-variants.sh` against opponent + **all detected champions** (`src/<bot>_champion_0..N`)
+- runs `scripts/rank-variants.sh` for scoring, promotion, and champion saving
+- writes iteration artifacts into `.pi/skills/battlecode-cli-delegator/runtime/parallel_iteration_*`
+- appends iteration summaries to `src/<bot>/.state/delegated-variant-iterations.jsonl`
+
 ## Notes
 
 - Delegates are run via CLI commands only:
@@ -101,3 +121,4 @@ POLL_SECONDS=5 MAX_SECONDS=1800 bash .pi/skills/battlecode-cli-delegator/scripts
   - `scripts/run_delegation_with_watch.sh` → runs delegate + polls frequently for progress and `FINAL_STATUS: SUCCESS`; also extracts per-run token metrics to JSON
   - `scripts/extract_token_usage.py` → parse a delegate log and emit token usage metrics JSON
   - `scripts/run_delegation_flow.py` → full retry/verification loop with cycle-wide token accounting and reports
+  - `scripts/run_parallel_variant_iteration.py` → orchestrates 16-variant delegation with configurable parallelism, then runs matches + ranking/promotion with persisted iteration summaries

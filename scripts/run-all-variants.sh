@@ -1,7 +1,7 @@
 #!/bin/bash
 # run-all-variants.sh - Runs all variants + original against opponent (+ champions)
 #
-# Usage: ./scripts/run-all-variants.sh <bot> <opponent> <map> [num_champions]
+# Usage: ./scripts/run-all-variants.sh <bot> <opponent> <map> [num_champions|auto]
 #
 # Creates match files and databases for analysis
 # Uses batchRun Gradle task for memory-efficient sequential execution
@@ -11,12 +11,25 @@ set -e
 BOT="${1:-}"
 OPPONENT="${2:-}"
 MAP="${3:-MagicWood}"
-NUM_CHAMPIONS="${4:-0}"
+NUM_CHAMPIONS_INPUT="${4:-auto}"
 NUM_VARIANTS=16
 
 if [[ -z "$BOT" || -z "$OPPONENT" ]]; then
-    echo "Usage: $0 <bot> <opponent> [map] [num_champions]"
+    echo "Usage: $0 <bot> <opponent> [map] [num_champions|auto]"
     exit 1
+fi
+
+if [[ "$NUM_CHAMPIONS_INPUT" == "auto" ]]; then
+    NUM_CHAMPIONS=0
+    while [[ -d "src/${BOT}_champion_${NUM_CHAMPIONS}" ]]; do
+        NUM_CHAMPIONS=$((NUM_CHAMPIONS + 1))
+    done
+else
+    if [[ ! "$NUM_CHAMPIONS_INPUT" =~ ^[0-9]+$ ]]; then
+        echo "num_champions must be a non-negative integer or 'auto'"
+        exit 1
+    fi
+    NUM_CHAMPIONS="$NUM_CHAMPIONS_INPUT"
 fi
 
 MATCHES_DIR="matches"

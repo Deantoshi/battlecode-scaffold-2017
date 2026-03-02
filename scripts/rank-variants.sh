@@ -1,7 +1,7 @@
 #!/bin/bash
 # rank-variants.sh - Analyzes match results, ranks variants, and promotes winner
 #
-# Usage: ./scripts/rank-variants.sh <bot> <opponent> <map> [num_champions]
+# Usage: ./scripts/rank-variants.sh <bot> <opponent> <map> [num_champions|auto]
 #
 # Scoring:
 #   Win in ≤1500 rounds: SCORE = 20000 - rounds (goal met - pure speed)
@@ -19,12 +19,25 @@ set -e
 BOT="${1:-}"
 OPPONENT="${2:-}"
 MAP="${3:-MagicWood}"
-NUM_CHAMPIONS="${4:-0}"
+NUM_CHAMPIONS_INPUT="${4:-auto}"
 NUM_VARIANTS=16
 
 if [[ -z "$BOT" || -z "$OPPONENT" ]]; then
-    echo "Usage: $0 <bot> <opponent> [map] [num_champions]"
+    echo "Usage: $0 <bot> <opponent> [map] [num_champions|auto]"
     exit 1
+fi
+
+if [[ "$NUM_CHAMPIONS_INPUT" == "auto" ]]; then
+    NUM_CHAMPIONS=0
+    while [[ -d "src/${BOT}_champion_${NUM_CHAMPIONS}" ]]; do
+        NUM_CHAMPIONS=$((NUM_CHAMPIONS + 1))
+    done
+else
+    if [[ ! "$NUM_CHAMPIONS_INPUT" =~ ^[0-9]+$ ]]; then
+        echo "num_champions must be a non-negative integer or 'auto'"
+        exit 1
+    fi
+    NUM_CHAMPIONS="$NUM_CHAMPIONS_INPUT"
 fi
 
 STATE_DIR="src/$BOT/.state"
@@ -339,6 +352,49 @@ PYEOF
 
 echo ""
 echo "Results saved to: $RESULTS_FILE"
+
+# Persist score snapshots/history so rankings remain auditable across iterations
+TIMESTAMP_UTC="$(date -u +%Y%m%dT%H%M%SZ)"
+SNAPSHOT_FILE="$STATE_DIR/variant-results-${TIMESTAMP_UTC}.json"
+HISTORY_FILE="$STATE_DIR/variant-results-history.jsonl"
+
+cp "$RESULTS_FILE" "$SNAPSHOT_FILE"
+
+python3 << 'PYEOF' - "$RESULTS_FILE" "$HISTORY_FILE" "$BOT" "$OPPONENT" "$MAP" "$NUM_CHAMPIONS" "$TIMESTAMP_UTC" "$SNAPSHOT_FILE"
+import json
+import sys
+from pathlib import Path
+
+results_file = Path(sys.argv[1])
+history_file = Path(sys.argv[2])
+bot = sys.argv[3]
+opponent = sys.argv[4]
+map_name = sys.argv[5]
+num_champions = int(sys.argv[6])
+timestamp_utc = sys.argv[7]
+snapshot_file = sys.argv[8]
+
+payload = {}
+if results_file.exists():
+    payload = json.loads(results_file.read_text(encoding='utf-8', errors='replace'))
+
+record = {
+    "timestamp_utc": timestamp_utc,
+    "bot": bot,
+    "opponent": opponent,
+    "map": map_name,
+    "num_champions": num_champions,
+    "snapshot_file": snapshot_file,
+    "results": payload,
+}
+
+history_file.parent.mkdir(parents=True, exist_ok=True)
+with history_file.open('a', encoding='utf-8') as fh:
+    fh.write(json.dumps(record, sort_keys=True) + "\n")
+PYEOF
+
+echo "Results snapshot saved to: $SNAPSHOT_FILE"
+echo "Results history appended to: $HISTORY_FILE"
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # PROMOTE WINNER IF APPLICABLE
