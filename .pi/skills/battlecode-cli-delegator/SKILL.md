@@ -63,7 +63,7 @@ bash .pi/skills/battlecode-cli-delegator/scripts/open_pi_tui_for_delegation.sh c
 ### Variant tournament mode
 
 ```text
-variants <bot> [--agents AGENTS] [--parallel N] [--num-variants N] [--map MAP] [--drop-failed-variants]
+variants <bot> [--agents AGENTS] [--parallel N] [--num-variants N] [--map MAP] [--drop-failed-variants] [--variant-flow FLOW] [--mutation-count N]
 ```
 
 - First arg must be the literal word `variants`
@@ -73,6 +73,11 @@ variants <bot> [--agents AGENTS] [--parallel N] [--num-variants N] [--map MAP] [
 - `--num-variants` number of variant bots to create and delegate (default: `16`)
 - `--map` map for matches (default: `Clusters`)
 - `--drop-failed-variants` delete failed variant folders before matches
+- `--variant-flow` split policy for variants (default: `mutation-exploration`)
+  - `mutation-exploration`: v1..vK are mutations, remaining are explorations
+  - `none`: no automatic mutation/exploration guidance
+- `--mutation-count` optional override for K (default: `ceil(num_variants/2)`) when `--variant-flow mutation-exploration`
+- `--feedback-dir` still works and takes precedence over auto-generated split guidance files
 
 ## Hard Rules
 
@@ -127,12 +132,15 @@ This mode creates multiple variant bots in parallel, runs a round-robin match to
      --agents <AGENTS> \
      --parallel <N> \
      --num-variants <N> \
+     --variant-flow <FLOW> \
+     --mutation-count <N> \
      --drop-failed-variants
    ```
-   Defaults if not specified by user: `--map Clusters --agents claude,codex --parallel 2 --num-variants 16 --drop-failed-variants`
+   Defaults if not specified by user: `--map Clusters --agents claude,codex --parallel 2 --num-variants 16 --variant-flow mutation-exploration --drop-failed-variants`
 3. Run the command and stream output. The script handles the full pipeline:
    - Prepares `src/copy_bot` from `src/<bot>/` (fallback: `src/examplefuncsplayer/`)
    - Creates `src/<bot>_v1..<bot>_vN` variant folders
+   - Applies mutation/exploration split guidance by default (`v1..vK` mutation, rest exploration; default `K=ceil(N/2)`)
    - Delegates coding to LLM agents in parallel (each variant gets its own `run_delegation_flow.py` cycle)
    - Verifies global compile
    - Runs `scripts/run-all-variants.sh` — all variants play against `copy_bot` + all existing champions
@@ -140,7 +148,7 @@ This mode creates multiple variant bots in parallel, runs a round-robin match to
 4. Wait for final status line: `FINAL_STATUS: SUCCESS` or `FINAL_STATUS: FAILED_*`
 5. Read and report the iteration summary to the user:
    - `SUMMARY_FILE` path (printed by the script)
-   - Key fields: `status`, `delegation.succeeded`, `delegation.failed`, `ranking.winner`, `ranking.winner_score`, `ranking.should_promote`
+   - Key fields: `status`, `variant_flow.mode`, `variant_flow.mutation_count`, `variant_flow.exploration_count`, `variant_flow.unassigned_count`, `delegation.succeeded`, `delegation.failed`, `delegation.succeeded_mutations`, `delegation.succeeded_explorations`, `ranking.winner`, `ranking.winner_score`, `ranking.should_promote`
    - If ranking produced a winner, report which variant won and its score
    - If failures occurred, report which variants failed
 
@@ -175,4 +183,4 @@ POLL_SECONDS=5 MAX_SECONDS=1800 bash .pi/skills/battlecode-cli-delegator/scripts
   - `scripts/run_delegation_with_watch.sh` → runs delegate + polls frequently for progress and `FINAL_STATUS: SUCCESS`; also extracts per-run token metrics to JSON
   - `scripts/extract_token_usage.py` → parse a delegate log and emit token usage metrics JSON
   - `scripts/run_delegation_flow.py` → full retry/verification loop with cycle-wide token accounting and reports
-  - `scripts/run_parallel_variant_iteration.py` → orchestrates 16-variant delegation with configurable parallelism, then runs matches + ranking/promotion with persisted iteration summaries
+  - `scripts/run_parallel_variant_iteration.py` → orchestrates multi-variant delegation with configurable parallelism, built-in mutation/exploration split guidance, then runs matches + ranking/promotion with persisted iteration summaries
