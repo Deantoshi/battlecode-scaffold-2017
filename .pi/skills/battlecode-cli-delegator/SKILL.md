@@ -124,8 +124,7 @@ What this does:
 - Helper scripts:
   - `scripts/open_pi_tui_for_delegation.sh` → convenience launcher into Pi TUI + skill command
   - `scripts/prepare_copy_bot.py` → prepares `src/copy_bot` from `src/<src_folder>` (or fallback) and rewrites package/imports to `copy_bot`
-  - `scripts/prepare_delegation_command.sh` → creates folder + prints delegated command
-  - `scripts/build_delegation_command.py` → prints command only (supports `--extra-file`)
+  - `scripts/build_delegation_command.py` → creates target folder, inlines HOW_TO_PLAY into prompt, and prints delegated command (supports `--extra-file`)
   - `scripts/run_delegation_with_watch.sh` → runs delegate + polls frequently for progress and `FINAL_STATUS: SUCCESS`; also extracts per-run token metrics to JSON
   - `scripts/extract_token_usage.py` → parse a delegate log and emit token usage metrics JSON
   - `scripts/run_delegation_flow.py` → full retry/verification loop with cycle-wide token accounting and reports

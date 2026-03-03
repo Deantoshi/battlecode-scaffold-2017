@@ -58,9 +58,9 @@ echo "[watch] preparing src/copy_bot for this run..."
 python3 "${script_dir}/prepare_copy_bot.py" "$src_folder"
 
 if [[ -n "$extra_file" ]]; then
-  delegate_cmd="$(bash "${script_dir}/prepare_delegation_command.sh" "$agent" "$src_folder" "$extra_file")"
+  delegate_cmd="$(python3 "${script_dir}/build_delegation_command.py" "$agent" "$src_folder" --extra-file "$extra_file")"
 else
-  delegate_cmd="$(bash "${script_dir}/prepare_delegation_command.sh" "$agent" "$src_folder")"
+  delegate_cmd="$(python3 "${script_dir}/build_delegation_command.py" "$agent" "$src_folder")"
 fi
 
 extract_tokens() {

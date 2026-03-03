@@ -62,6 +62,14 @@ def format_numbered_lines(lines: list[str]) -> str:
     return "\n".join(f"  {idx}) {line}" for idx, line in enumerate(lines, start=1))
 
 
+def read_howto(project_root: Path) -> str:
+    howto_path = project_root / "HOW_TO_PLAY_BATTLE_CODE_2017.md"
+    if not howto_path.exists():
+        print(f"HOW_TO_PLAY file not found: {howto_path}", file=sys.stderr)
+        sys.exit(1)
+    return howto_path.read_text(encoding="utf-8", errors="replace").strip()
+
+
 def main() -> None:
     args = parse_args()
     agent = args.agent.strip().lower()
@@ -81,8 +89,13 @@ def main() -> None:
         sys.exit(1)
 
     project_root = project_root_from_script(Path(__file__))
+
+    # Ensure target folder exists (previously done by prepare_delegation_command.sh)
+    (project_root / "src" / src_folder).mkdir(parents=True, exist_ok=True)
+
     opponents = detect_opponents(project_root, src_folder)
     required_commands = build_required_commands(src_folder, opponents)
+    howto_content = read_howto(project_root)
 
     agent_cmd = agent_map[agent]
 
@@ -99,12 +112,14 @@ MANDATORY TASK
 - If src/{src_folder}/ does not exist, create it.
 - Implement/update src/{src_folder}/RobotPlayer.java.
 
-MANDATORY READING
-1) Read HOW_TO_PLAY_BATTLE_CODE_2017.md first.
-2) You may read src/examplefuncsplayer/ as reference.
-3) You are NOT allowed to read any other src/ folders except:
+REFERENCE MATERIAL
+- You may read src/examplefuncsplayer/ as reference.
+- You are NOT allowed to read any other src/ folders except:
    - src/{src_folder}/
    - src/examplefuncsplayer/
+
+## HOW TO PLAY BATTLECODE 2017 (pre-loaded, do NOT re-read this file)
+{howto_content}
 
 MATCH OPPONENTS FOR THIS RUN (ALREADY PREPARED BY ORCHESTRATOR)
 - Opponents to validate against:

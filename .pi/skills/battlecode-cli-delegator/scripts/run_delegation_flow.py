@@ -101,12 +101,12 @@ def combine_verify_commands(commands: list[str]) -> str:
 
 
 def prepare_delegate_command(script_dir: Path, agent: str, src_folder: str, extra_file: Optional[Path]) -> str:
-    cmd = ["bash", str(script_dir / "prepare_delegation_command.sh"), agent, src_folder]
+    cmd = ["python3", str(script_dir / "build_delegation_command.py"), agent, src_folder]
     if extra_file:
-        cmd.append(str(extra_file))
+        cmd.extend(["--extra-file", str(extra_file)])
     out = subprocess.check_output(cmd, text=True).strip()
     if not out:
-        raise RuntimeError("prepare_delegation_command.sh returned an empty command")
+        raise RuntimeError("build_delegation_command.py returned an empty command")
     return out
 
 
