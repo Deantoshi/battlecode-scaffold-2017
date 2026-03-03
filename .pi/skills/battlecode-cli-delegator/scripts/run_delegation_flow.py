@@ -15,6 +15,7 @@ if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
 from token_usage_utils import aggregate_token_metrics, extract_token_usage_from_text
+from opponent_utils import detect_opponents, prepare_copy_bot, project_root_from_script
 
 MARKER = "FINAL_STATUS: SUCCESS"
 
@@ -31,7 +32,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--tail-lines", type=int, default=2, help="tail lines in progress output")
     parser.add_argument(
         "--verify-command",
-        help="override verification command (default: ./gradlew runWithSummary -PteamA=<src_folder> -PteamB=examplefuncsplayer -Pmaps=Shrine)",
+        help=(
+            "override verification command. Default runs runWithSummary against copy_bot and all "
+            "detected src/<src_folder>_champion_<N> opponents."
+        ),
     )
     parser.add_argument(
         "--verify-timeout-seconds",
@@ -42,6 +46,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--extra-feedback-file",
         help="optional initial feedback file to seed the first attempt",
+    )
+    parser.add_argument(
+        "--skip-copy-bot-setup",
+        action="store_true",
+        help="skip src/copy_bot preparation (for outer orchestrators that already prepared it)",
     )
     return parser.parse_args()
 
@@ -67,6 +76,28 @@ def inline_tail(path: Path, num_lines: int) -> str:
     if not lines:
         return "<no output yet>"
     return " ".join(" ".join(lines).split())
+
+
+def build_default_verify_commands(src_folder: str, opponents: list[str]) -> list[str]:
+    return [
+        f"./gradlew runWithSummary -PteamA={src_folder} -PteamB={opp} -Pmaps=Shrine"
+        for opp in opponents
+    ]
+
+
+def combine_verify_commands(commands: list[str]) -> str:
+    if not commands:
+        raise ValueError("at least one verification command is required")
+
+    if len(commands) == 1:
+        return commands[0]
+
+    lines = ["set -e"]
+    total = len(commands)
+    for idx, cmd in enumerate(commands, start=1):
+        lines.append(f"echo '[verify] {idx}/{total}: {cmd}'")
+        lines.append(cmd)
+    return "\n".join(lines)
 
 
 def prepare_delegate_command(script_dir: Path, agent: str, src_folder: str, extra_file: Optional[Path]) -> str:
@@ -254,6 +285,7 @@ def write_cycle_report(cycle_summary: dict, report_path: Path) -> None:
     lines.append(f"Cycle ID: {cycle_summary.get('cycle_id')}")
     lines.append(f"Agent: {cycle_summary.get('agent')}")
     lines.append(f"src_folder: {cycle_summary.get('src_folder')}")
+    lines.append(f"opponents: {', '.join(cycle_summary.get('opponents', []))}")
     lines.append(f"Success: {cycle_summary.get('success')}")
     lines.append(f"Attempts: {cycle_summary.get('attempt_count')}")
     lines.append("")
@@ -302,10 +334,20 @@ def main() -> None:
         print("agent must be one of: claude, opencode, codex, pi", file=sys.stderr)
         sys.exit(1)
 
-    verify_command = (
-        args.verify_command
-        or f"./gradlew runWithSummary -PteamA={args.src_folder} -PteamB=examplefuncsplayer -Pmaps=Shrine"
-    )
+    project_root = project_root_from_script(Path(__file__))
+
+    copy_bot_meta: dict = {"skipped": True}
+    if not args.skip_copy_bot_setup:
+        try:
+            copy_bot_meta = prepare_copy_bot(project_root, args.src_folder)
+        except Exception as exc:  # noqa: BLE001
+            print(f"copy_bot setup failed: {type(exc).__name__}: {exc}", file=sys.stderr)
+            sys.exit(1)
+
+    opponents = detect_opponents(project_root, args.src_folder)
+    verify_commands_default = build_default_verify_commands(args.src_folder, opponents)
+
+    verify_command = args.verify_command or combine_verify_commands(verify_commands_default)
 
     runtime_dir = SCRIPT_DIR.parent / "runtime"
     runtime_dir.mkdir(parents=True, exist_ok=True)
@@ -321,6 +363,15 @@ def main() -> None:
 
     print(f"[flow] cycle id: {cycle_id}")
     print(f"[flow] runtime dir: {cycle_dir}")
+    if args.skip_copy_bot_setup:
+        print("[flow] copy_bot setup: skipped by flag")
+    else:
+        print(
+            "[flow] copy_bot setup: "
+            f"src/{copy_bot_meta.get('source_folder')} -> src/{copy_bot_meta.get('target_folder')} "
+            f"(rewritten_java_files={copy_bot_meta.get('java_files_rewritten')})"
+        )
+    print(f"[flow] opponents: {', '.join(opponents)}")
     print(f"[flow] verify command: {verify_command}")
 
     initial_feedback: Optional[Path] = None
@@ -431,6 +482,10 @@ def main() -> None:
         "attempt_count": len(attempts),
         "max_attempts": args.max_attempts,
         "success": success,
+        "opponents": opponents,
+        "copy_bot_setup_skipped": args.skip_copy_bot_setup,
+        "copy_bot": copy_bot_meta,
+        "verify_commands_default": verify_commands_default,
         "verify_command": verify_command,
         "token_totals": token_totals,
         "attempts": attempts,
@@ -445,6 +500,7 @@ def main() -> None:
         "cycle_id": cycle_id,
         "agent": args.agent,
         "src_folder": args.src_folder,
+        "opponents": opponents,
         "success": success,
         "attempt_count": len(attempts),
         "token_totals": token_totals,

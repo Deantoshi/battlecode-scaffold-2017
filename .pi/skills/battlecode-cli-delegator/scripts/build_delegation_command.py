@@ -5,6 +5,12 @@ import shlex
 import sys
 from pathlib import Path
 
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
+from opponent_utils import detect_opponents, project_root_from_script
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -45,6 +51,17 @@ def read_extra(extra_file: str | None) -> str:
     return text
 
 
+def build_required_commands(src_folder: str, opponents: list[str]) -> list[str]:
+    return [
+        f"./gradlew runWithSummary -PteamA={src_folder} -PteamB={opp} -Pmaps=Shrine"
+        for opp in opponents
+    ]
+
+
+def format_numbered_lines(lines: list[str]) -> str:
+    return "\n".join(f"  {idx}) {line}" for idx, line in enumerate(lines, start=1))
+
+
 def main() -> None:
     args = parse_args()
     agent = args.agent.strip().lower()
@@ -62,6 +79,10 @@ def main() -> None:
     if agent not in agent_map:
         print("agent must be one of: claude, opencode, codex, pi", file=sys.stderr)
         sys.exit(1)
+
+    project_root = project_root_from_script(Path(__file__))
+    opponents = detect_opponents(project_root, src_folder)
+    required_commands = build_required_commands(src_folder, opponents)
 
     agent_cmd = agent_map[agent]
 
@@ -85,11 +106,16 @@ MANDATORY READING
    - src/{src_folder}/
    - src/examplefuncsplayer/
 
+MATCH OPPONENTS FOR THIS RUN (ALREADY PREPARED BY ORCHESTRATOR)
+- Opponents to validate against:
+{format_numbered_lines(opponents)}
+- Do not edit opponent folders (including src/copy_bot or champion folders).
+
 MANDATORY LOOP (DO NOT STOP EARLY)
-- Keep iterating until this command succeeds without compile/runtime errors:
-  ./gradlew runWithSummary -PteamA={src_folder} -PteamB=examplefuncsplayer -Pmaps=Shrine
-- If the command fails, fix issues and rerun.
-- Continue until success.
+- Keep iterating until EVERY command below succeeds without compile/runtime errors:
+{format_numbered_lines(required_commands)}
+- If any command fails, fix issues and rerun all required commands.
+- Continue until all required commands are successful.
 
 OUTPUT REQUIREMENTS
 - When done, print exactly:
@@ -99,7 +125,7 @@ OUTPUT REQUIREMENTS
   - short rationale of strategy
   - final successful gradle output summary
 
-Important: Do not end before FINAL_STATUS: SUCCESS is printed after a successful runWithSummary execution.
+Important: Do not end before FINAL_STATUS: SUCCESS is printed after all required runWithSummary commands succeed.
 """
 
     extra_text = read_extra(args.extra_file)
@@ -109,7 +135,7 @@ Important: Do not end before FINAL_STATUS: SUCCESS is printed after a successful
 ADDITIONAL VERIFICATION FEEDBACK FROM PI (MUST ADDRESS)
 {extra_text}
 
-You must fix these issues and rerun the required gradle command until successful, then print FINAL_STATUS: SUCCESS.
+You must fix these issues and rerun all required gradle commands until successful, then print FINAL_STATUS: SUCCESS.
 """
 
     print(f"{agent_cmd} {shlex.quote(prompt)}")

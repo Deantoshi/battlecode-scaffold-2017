@@ -54,6 +54,9 @@ timestamp="$(date +%Y%m%d_%H%M%S)"
 log_file="${runtime_dir}/delegation_${agent}_${src_folder}_${timestamp}.log"
 token_file="${runtime_dir}/tokens_${agent}_${src_folder}_${timestamp}.json"
 
+echo "[watch] preparing src/copy_bot for this run..."
+python3 "${script_dir}/prepare_copy_bot.py" "$src_folder"
+
 if [[ -n "$extra_file" ]]; then
   delegate_cmd="$(bash "${script_dir}/prepare_delegation_command.sh" "$agent" "$src_folder" "$extra_file")"
 else

@@ -13,6 +13,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
+from opponent_utils import prepare_copy_bot
+
 SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
 PI_DIR = SKILL_DIR.parent.parent
@@ -47,7 +49,12 @@ def parse_args() -> argparse.Namespace:
         )
     )
     parser.add_argument("bot", help="base bot package folder under src/ (e.g. mybot)")
-    parser.add_argument("opponent", help="primary opponent package folder")
+    parser.add_argument(
+        "opponent",
+        nargs="?",
+        default="copy_bot",
+        help="optional primary opponent; currently overridden to copy_bot by skill policy",
+    )
     parser.add_argument("--map", default="MagicWood", help="map for run-all-variants/rank-variants (default: MagicWood)")
     parser.add_argument("--num-variants", type=int, default=16, help="number of variants (default: 16)")
     parser.add_argument(
@@ -175,6 +182,7 @@ def run_variant_task(task: VariantTask, args: argparse.Namespace, iteration_dir:
         str(args.tail_lines),
         "--verify-timeout-seconds",
         str(args.verify_timeout_seconds),
+        "--skip-copy-bot-setup",
     ]
     if task.feedback_file:
         cmd.extend(["--extra-feedback-file", str(task.feedback_file)])
@@ -237,6 +245,20 @@ def main() -> None:
         print(f"bot folder not found: {bot_dir}", file=sys.stderr)
         sys.exit(1)
 
+    requested_opponent = args.opponent
+    if args.opponent != "copy_bot":
+        print(
+            f"[parallel] overriding opponent '{requested_opponent}' -> 'copy_bot' "
+            "(skill policy: evaluate against copy_bot + champions)"
+        )
+    args.opponent = "copy_bot"
+
+    try:
+        copy_bot_meta = prepare_copy_bot(PROJECT_ROOT, args.bot)
+    except Exception as exc:  # noqa: BLE001
+        print(f"copy_bot setup failed: {type(exc).__name__}: {exc}", file=sys.stderr)
+        sys.exit(1)
+
     if args.skip_ranking and not args.skip_matches:
         print("note: matches will run but ranking/promotion is skipped (--skip-ranking)")
 
@@ -261,6 +283,11 @@ def main() -> None:
     print(f"[parallel] project root: {PROJECT_ROOT}")
     print(f"[parallel] runtime dir: {iteration_dir}")
     print(f"[parallel] bot={args.bot} opponent={args.opponent} map={args.map}")
+    print(
+        "[parallel] copy_bot setup: "
+        f"src/{copy_bot_meta.get('source_folder')} -> src/{copy_bot_meta.get('target_folder')} "
+        f"(rewritten_java_files={copy_bot_meta.get('java_files_rewritten')})"
+    )
     print(f"[parallel] agents={','.join(agents)} parallel={args.parallel}")
 
     run_started = now_iso()
@@ -293,6 +320,8 @@ def main() -> None:
                 "ended_at": now_iso(),
                 "bot": args.bot,
                 "opponent": args.opponent,
+                "requested_opponent": requested_opponent,
+                "copy_bot": copy_bot_meta,
                 "map": args.map,
                 "status": "FAILED_CREATE_VARIANTS",
                 "create_variants": create_variants_record,
@@ -441,6 +470,8 @@ def main() -> None:
         "ended_at": now_iso(),
         "bot": args.bot,
         "opponent": args.opponent,
+        "requested_opponent": requested_opponent,
+        "copy_bot": copy_bot_meta,
         "map": args.map,
         "num_variants": args.num_variants,
         "agents": agents,

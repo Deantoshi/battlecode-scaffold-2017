@@ -48,15 +48,19 @@ Expected args:
 
 ## Hard Rules
 
-1. **Pi must not make coding edits** in `src/` for this workflow.
-2. Pi may orchestrate with tools (`read`, `bash`, `write`) and may create the target directory plus runtime feedback/report files under `.pi/skills/battlecode-cli-delegator/runtime/`.
-3. Delegated coding CLI must be instructed to:
+1. **Pi must not make coding edits** in `src/` for this workflow, except automated `src/copy_bot/` preparation.
+2. Pi may orchestrate with tools (`read`, `bash`, `write`) and may create/update `src/copy_bot`, the target directory, plus runtime feedback/report files under `.pi/skills/battlecode-cli-delegator/runtime/`.
+3. At the beginning of each delegation run, Pi must prepare `src/copy_bot`:
+   - if `src/<src_folder>/` already has Java code, clone that into `src/copy_bot/`
+   - otherwise clone `src/examplefuncsplayer/` into `src/copy_bot/`
+   - rewrite package/import references so copied files use package `copy_bot`
+4. Delegated coding CLI must be instructed to:
    - read `HOW_TO_PLAY_BATTLE_CODE_2017.md`
    - read/write only inside `src/<src_folder>/` and read from `src/examplefuncsplayer/`
    - not read any other `src/*` folders
-   - keep iterating until compile/run has no errors
-4. Pi must verify completion itself by running a gradle command after delegate claims success.
-5. Pi must retain token usage logs for the full cycle when available from provider output.
+   - keep iterating until compile/run has no errors against opponents: `copy_bot` + any `src/<src_folder>_champion_<N>` folders
+5. Pi must verify completion itself by running Gradle after delegate claims success, against the same opponent set (`copy_bot` + champions).
+6. Pi must retain token usage logs for the full cycle when available from provider output.
 
 ## Required Pi Workflow (Default)
 
@@ -70,7 +74,7 @@ Expected args:
    - `cycle_summary.json`
    - `token_report.txt`
 
-The loop script automatically performs delegate command creation, retries with feedback, independent Gradle verification, and cycle-wide token aggregation.
+The loop script automatically prepares `src/copy_bot`, creates delegate commands, retries with feedback, verifies against `copy_bot` + champions, and writes cycle-wide token aggregation.
 
 ## Optional Utilities
 
@@ -88,7 +92,7 @@ POLL_SECONDS=5 MAX_SECONDS=1800 bash .pi/skills/battlecode-cli-delegator/scripts
 Parallel 16-variant orchestration (2 workers, then matches + ranking/promotion):
 
 ```bash
-python3 .pi/skills/battlecode-cli-delegator/scripts/run_parallel_variant_iteration.py <bot> <opponent> \
+python3 .pi/skills/battlecode-cli-delegator/scripts/run_parallel_variant_iteration.py <bot> \
   --map MagicWood \
   --agents claude,codex \
   --parallel 2 \
@@ -96,11 +100,14 @@ python3 .pi/skills/battlecode-cli-delegator/scripts/run_parallel_variant_iterati
   --drop-failed-variants
 ```
 
+(If an opponent positional arg is supplied, it is overridden to `copy_bot` by policy.)
+
 What this does:
+- prepares `src/copy_bot` from `src/<bot>/` (fallback: `src/examplefuncsplayer/`) with package/import rewrite to `copy_bot`
 - optionally creates `src/<bot>_v1..v16`
 - runs delegated `run_delegation_flow.py` jobs in parallel (default 2 at a time)
 - verifies global compile once delegation finishes
-- runs `scripts/run-all-variants.sh` against opponent + **all detected champions** (`src/<bot>_champion_0..N`)
+- runs `scripts/run-all-variants.sh` against `copy_bot` + **all detected champions** (`src/<bot>_champion_0..N`)
 - runs `scripts/rank-variants.sh` for scoring, promotion, and champion saving
 - writes iteration artifacts into `.pi/skills/battlecode-cli-delegator/runtime/parallel_iteration_*`
 - appends iteration summaries to `src/<bot>/.state/delegated-variant-iterations.jsonl`
@@ -116,6 +123,7 @@ What this does:
 - Pi reports summary and verification result, but Pi does not author bot code directly.
 - Helper scripts:
   - `scripts/open_pi_tui_for_delegation.sh` → convenience launcher into Pi TUI + skill command
+  - `scripts/prepare_copy_bot.py` → prepares `src/copy_bot` from `src/<src_folder>` (or fallback) and rewrites package/imports to `copy_bot`
   - `scripts/prepare_delegation_command.sh` → creates folder + prints delegated command
   - `scripts/build_delegation_command.py` → prints command only (supports `--extra-file`)
   - `scripts/run_delegation_with_watch.sh` → runs delegate + polls frequently for progress and `FINAL_STATUS: SUCCESS`; also extracts per-run token metrics to JSON
