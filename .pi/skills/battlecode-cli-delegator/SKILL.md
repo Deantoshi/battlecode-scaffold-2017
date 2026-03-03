@@ -1,6 +1,6 @@
 ---
 name: battlecode-cli-delegator
-description: Run Battlecode 2017 delegated bot-building from inside the Pi TUI using non-interactive CLI modes (claude -p / opencode run / codex exec / pi -p), enforce src-folder read limits by instruction, require compile-until-success, independently verify with Gradle, and log token usage across the full loop.
+description: Run Battlecode 2017 delegated bot-building from inside the Pi TUI. Supports single bot delegation and variant tournament mode (parallel delegation + matches + ranking/promotion). Uses non-interactive CLI modes (claude -p / opencode run / codex exec / pi -p).
 ---
 
 # Battlecode CLI Delegator
@@ -17,7 +17,7 @@ Start Pi in your terminal:
 pi
 ```
 
-Then in Pi, run:
+### Single bot delegation
 
 ```text
 /skill:battlecode-cli-delegator <agent> <src_folder>
@@ -29,6 +29,20 @@ Example:
 /skill:battlecode-cli-delegator claude claude_sonet_4_6_high
 ```
 
+### Variant tournament (parallel delegation + matches + ranking)
+
+```text
+/skill:battlecode-cli-delegator variants <bot> [options]
+```
+
+Examples:
+
+```text
+/skill:battlecode-cli-delegator variants my_bot
+/skill:battlecode-cli-delegator variants my_bot --agents claude,codex --parallel 2 --num-variants 16
+/skill:battlecode-cli-delegator variants my_bot --map Clusters --num-variants 10 --agents claude
+```
+
 Optional launcher (opens Pi TUI with the skill command as initial prompt):
 
 ```bash
@@ -37,7 +51,7 @@ bash .pi/skills/battlecode-cli-delegator/scripts/open_pi_tui_for_delegation.sh c
 
 ## Inputs
 
-Expected args:
+### Single bot mode
 
 ```text
 <agent> <src_folder>
@@ -45,6 +59,20 @@ Expected args:
 
 - `<agent>` must be one of: `claude`, `opencode`, `codex`, `pi`
 - `<src_folder>` is a folder name under `src/` (example: `claude_sonet_4_6_high`)
+
+### Variant tournament mode
+
+```text
+variants <bot> [--agents AGENTS] [--parallel N] [--num-variants N] [--map MAP] [--drop-failed-variants]
+```
+
+- First arg must be the literal word `variants`
+- `<bot>` is the base bot folder under `src/` (must already exist with Java code, or `examplefuncsplayer` is used as fallback)
+- `--agents` comma-separated delegate agents (default: `claude,codex`)
+- `--parallel` max concurrent delegation workers (default: `2`)
+- `--num-variants` number of variant bots to create and delegate (default: `16`)
+- `--map` map for matches (default: `Clusters`)
+- `--drop-failed-variants` delete failed variant folders before matches
 
 ## Hard Rules
 
@@ -55,17 +83,26 @@ Expected args:
    - otherwise clone `src/examplefuncsplayer/` into `src/copy_bot/`
    - rewrite package/import references so copied files use package `copy_bot`
 4. Delegated coding CLI must be instructed to:
-   - read `HOW_TO_PLAY_BATTLE_CODE_2017.md`
+   - `HOW_TO_PLAY_BATTLE_CODE_2017.md` is pre-loaded into the delegate prompt (no file read needed)
    - read/write only inside `src/<src_folder>/` and read from `src/examplefuncsplayer/`
    - not read any other `src/*` folders
    - keep iterating until compile/run has no errors against opponents: `copy_bot` + any `src/<src_folder>_champion_<N>` folders
 5. Pi must verify completion itself by running Gradle after delegate claims success, against the same opponent set (`copy_bot` + champions).
 6. Pi must retain token usage logs for the full cycle when available from provider output.
 
-## Required Pi Workflow (Default)
+## Required Pi Workflow — Mode Detection
+
+Pi must detect which mode the user requested based on the first argument:
+
+- If the first arg is `variants` → run the **Variant Tournament Workflow**
+- Otherwise → run the **Single Bot Workflow**
+
+---
+
+## Single Bot Workflow
 
 1. Parse args (`agent`, `src_folder`). If missing/invalid, ask user.
-2. Run the full orchestrated loop script (this is the default path):
+2. Run the full orchestrated loop script:
    - `python3 .pi/skills/battlecode-cli-delegator/scripts/run_delegation_flow.py <agent> <src_folder>`
 3. Wait for final cycle status in output:
    - `CYCLE_RESULT: SUCCESS` or `CYCLE_RESULT: FAILED`
@@ -75,6 +112,39 @@ Expected args:
    - `token_report.txt`
 
 The loop script automatically prepares `src/copy_bot`, creates delegate commands, retries with feedback, verifies against `copy_bot` + champions, and writes cycle-wide token aggregation.
+
+---
+
+## Variant Tournament Workflow
+
+This mode creates multiple variant bots in parallel, runs a round-robin match tournament, and promotes the winner as a new champion.
+
+1. Parse args. The first arg is the literal `variants`. Second arg is `<bot>` (the base bot folder). Remaining args are optional flags. If `<bot>` is missing/invalid, ask user.
+2. Build the command from user-provided args (all flags are optional with sensible defaults):
+   ```
+   python3 .pi/skills/battlecode-cli-delegator/scripts/run_parallel_variant_iteration.py <bot> \
+     --map <MAP> \
+     --agents <AGENTS> \
+     --parallel <N> \
+     --num-variants <N> \
+     --drop-failed-variants
+   ```
+   Defaults if not specified by user: `--map Clusters --agents claude,codex --parallel 2 --num-variants 16 --drop-failed-variants`
+3. Run the command and stream output. The script handles the full pipeline:
+   - Prepares `src/copy_bot` from `src/<bot>/` (fallback: `src/examplefuncsplayer/`)
+   - Creates `src/<bot>_v1..<bot>_vN` variant folders
+   - Delegates coding to LLM agents in parallel (each variant gets its own `run_delegation_flow.py` cycle)
+   - Verifies global compile
+   - Runs `scripts/run-all-variants.sh` — all variants play against `copy_bot` + all existing champions
+   - Runs `scripts/rank-variants.sh` — scores, ranks, promotes winner as new champion
+4. Wait for final status line: `FINAL_STATUS: SUCCESS` or `FINAL_STATUS: FAILED_*`
+5. Read and report the iteration summary to the user:
+   - `SUMMARY_FILE` path (printed by the script)
+   - Key fields: `status`, `delegation.succeeded`, `delegation.failed`, `ranking.winner`, `ranking.winner_score`, `ranking.should_promote`
+   - If ranking produced a winner, report which variant won and its score
+   - If failures occurred, report which variants failed
+
+---
 
 ## Optional Utilities
 
@@ -88,29 +158,6 @@ POLL_SECONDS=5 MAX_SECONDS=1800 bash .pi/skills/battlecode-cli-delegator/scripts
 - Streams periodic status using log tail snapshots
 - Writes full logs to `.pi/skills/battlecode-cli-delegator/runtime/`
 - Extracts token metrics (when present in provider output) into per-run JSON files
-
-Parallel 16-variant orchestration (2 workers, then matches + ranking/promotion):
-
-```bash
-python3 .pi/skills/battlecode-cli-delegator/scripts/run_parallel_variant_iteration.py <bot> \
-  --map MagicWood \
-  --agents claude,codex \
-  --parallel 2 \
-  --num-variants 16 \
-  --drop-failed-variants
-```
-
-(If an opponent positional arg is supplied, it is overridden to `copy_bot` by policy.)
-
-What this does:
-- prepares `src/copy_bot` from `src/<bot>/` (fallback: `src/examplefuncsplayer/`) with package/import rewrite to `copy_bot`
-- optionally creates `src/<bot>_v1..v16`
-- runs delegated `run_delegation_flow.py` jobs in parallel (default 2 at a time)
-- verifies global compile once delegation finishes
-- runs `scripts/run-all-variants.sh` against `copy_bot` + **all detected champions** (`src/<bot>_champion_0..N`)
-- runs `scripts/rank-variants.sh` for scoring, promotion, and champion saving
-- writes iteration artifacts into `.pi/skills/battlecode-cli-delegator/runtime/parallel_iteration_*`
-- appends iteration summaries to `src/<bot>/.state/delegated-variant-iterations.jsonl`
 
 ## Notes
 

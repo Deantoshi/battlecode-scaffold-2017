@@ -53,7 +53,7 @@ def read_extra(extra_file: str | None) -> str:
 
 def build_required_commands(src_folder: str, opponents: list[str]) -> list[str]:
     return [
-        f"./gradlew runWithSummary -PteamA={src_folder} -PteamB={opp} -Pmaps=Shrine"
+        f"./gradlew runWithSummary -PteamA={src_folder} -PteamB={opp} -Pmaps=Clusters"
         for opp in opponents
     ]
 

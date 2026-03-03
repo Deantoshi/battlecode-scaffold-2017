@@ -55,7 +55,7 @@ def parse_args() -> argparse.Namespace:
         default="copy_bot",
         help="optional primary opponent; currently overridden to copy_bot by skill policy",
     )
-    parser.add_argument("--map", default="MagicWood", help="map for run-all-variants/rank-variants (default: MagicWood)")
+    parser.add_argument("--map", default="Clusters", help="map for run-all-variants/rank-variants (default: Clusters)")
     parser.add_argument("--num-variants", type=int, default=16, help="number of variants (default: 16)")
     parser.add_argument(
         "--agents",

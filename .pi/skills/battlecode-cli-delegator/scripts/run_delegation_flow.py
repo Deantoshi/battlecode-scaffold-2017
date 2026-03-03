@@ -80,7 +80,7 @@ def inline_tail(path: Path, num_lines: int) -> str:
 
 def build_default_verify_commands(src_folder: str, opponents: list[str]) -> list[str]:
     return [
-        f"./gradlew runWithSummary -PteamA={src_folder} -PteamB={opp} -Pmaps=Shrine"
+        f"./gradlew runWithSummary -PteamA={src_folder} -PteamB={opp} -Pmaps=Clusters"
         for opp in opponents
     ]
 
