@@ -1,11 +1,11 @@
 #!/bin/bash
 # variant-loop.sh - Variant archetype optimization loop
 #
-# Usage: ./scripts/variant-loop.sh <bot> <opponent> [map] [max-iterations]
+# Usage: ./scripts/variant-loop.sh <bot> [opponent] [map] [max-iterations] [num-variants]
 #
 # This script orchestrates variant-based bot improvement:
-#   1. A pi worker generates 16 variant archetypes
-#   2. Creates 16 variant folders as copies of original
+#   1. A pi worker generates variant archetypes
+#   2. Creates variant folders as copies of original
 #   3. Parallel pi workers implement each archetype
 #   4. All variants + original run against opponent
 #   5. Best performer is promoted if better than original
@@ -24,10 +24,10 @@ NC=$'\033[0m'
 
 # Arguments
 BOT="${1:-}"
-OPPONENT="${2:-}"
+OPPONENT="${2:-copy_bot}"
 MAP="${3:-MagicWood}"
 MAX_ITERS="${4:-20}"
-NUM_VARIANTS=16
+NUM_VARIANTS="${5:-16}"
 
 # AI runtime (pi workers)
 AI_ENGINE="${AI_ENGINE:-pi}"
@@ -53,17 +53,24 @@ if ! command -v pi >/dev/null 2>&1; then
 fi
 
 # Validate arguments
-if [[ -z "$BOT" || -z "$OPPONENT" ]]; then
-    printf '%s\n' "${RED}Usage: $0 <bot> <opponent> [map] [max-iterations]${NC}"
+if [[ -z "$BOT" ]]; then
+    printf '%s\n' "${RED}Usage: $0 <bot> [opponent] [map] [max-iterations] [num-variants]${NC}"
     echo ""
     echo "Arguments:"
     echo "  bot            Your bot folder name (required)"
-    echo "  opponent       Opponent bot folder name (required)"
+    echo "  opponent       Opponent bot folder name (default: copy_bot)"
     echo "  map            Map name (default: MagicWood)"
     echo "  max-iterations Maximum improvement cycles (default: 20)"
+    echo "  num-variants   Variants generated per iteration (default: 16)"
     echo ""
     echo "Example:"
-    echo "  $0 grok_code_fast_1 copy_bot MagicWood 15"
+    echo "  $0 grok_code_fast_1"
+    echo "  $0 grok_code_fast_1 copy_bot MagicWood 15 24"
+    exit 1
+fi
+
+if [[ ! "$NUM_VARIANTS" =~ ^[0-9]+$ ]] || [[ "$NUM_VARIANTS" -lt 1 ]]; then
+    printf '%s\n' "${RED}Error: num-variants must be a positive integer (got: $NUM_VARIANTS)${NC}"
     exit 1
 fi
 
@@ -207,7 +214,7 @@ for iter in $(seq 1 "$MAX_ITERS"); do
         done
     } > "$STATE_DIR/bot-code-snapshot.txt"
 
-    run_agent "archetype-creator" "--bot $BOT --opponent $OPPONENT --map $MAP" "iter:${iter}:phase0"
+    run_agent "archetype-creator" "--bot $BOT --opponent $OPPONENT --map $MAP --num-variants $NUM_VARIANTS" "iter:${iter}:phase0"
 
     if [[ ! -f "$ARCHETYPES_FILE" ]]; then
         printf '%s\n' "${RED}Error: Archetypes file not created at $ARCHETYPES_FILE${NC}"
