@@ -1,12 +1,12 @@
 #!/bin/bash
 # variant-loop.sh - Variant archetype optimization loop
 #
-# Usage: ./scripts/variant-loop.sh <bot> [opponent] [map] [max-iterations] [num-variants]
+# Usage: ./scripts/variant-loop.sh --bot <bot> [options]
 #
 # This script orchestrates variant-based bot improvement:
-#   1. A pi worker generates variant archetypes
+#   1. A coding-agent worker generates variant archetypes
 #   2. Creates variant folders as copies of original
-#   3. Parallel pi workers implement each archetype
+#   3. Parallel coding-agent workers implement each archetype
 #   4. All variants + original run against opponent
 #   5. Best performer is promoted if better than original
 #   6. Loop until goal achieved or max iterations
@@ -22,55 +22,160 @@ CYAN=$'\033[0;36m'
 BOLD=$'\033[1m'
 NC=$'\033[0m'
 
-# Arguments
-BOT="${1:-}"
-OPPONENT="${2:-copy_bot}"
-MAP="${3:-MagicWood}"
-MAX_ITERS="${4:-20}"
-NUM_VARIANTS="${5:-16}"
+# Defaults
+BOT=""
+OPPONENT="copy_bot"
+MAP="Clusters"
+MAX_ITERS="20"
+NUM_VARIANTS="16"
+CODING_AGENT="${CODING_AGENT:-${AI_ENGINE:-pi}}"
 
-# AI runtime (pi workers)
-AI_ENGINE="${AI_ENGINE:-pi}"
+# Agent/runtime options
 MODEL="${MODEL:-}"
 PI_THINKING="${PI_THINKING:-}"
 RUN_ID="${RUN_ID:-$(date +%Y%m%d-%H%M%S)-$$}"
 
-case "$AI_ENGINE" in
-    pi|pi-coding-agent)
-        AI_ENGINE="pi"
-        ;;
-    *)
-        printf '%s\n' "${RED}Unsupported AI_ENGINE: $AI_ENGINE${NC}"
-        printf '%s\n' "${RED}This script uses pi worker sessions only.${NC}"
-        printf '%s\n' "${RED}Set AI_ENGINE=pi (or leave unset).${NC}"
-        exit 1
-        ;;
-esac
+print_usage() {
+    echo "Usage: $0 --bot <bot> [options]"
+    echo ""
+    echo "Required:"
+    echo "  -b, --bot <name>            Your bot folder name under src/"
+    echo ""
+    echo "Options:"
+    echo "  -o, --opponent <name>       Opponent bot folder (default: copy_bot)"
+    echo "  -m, --map <name>            Map name (default: Clusters)"
+    echo "  -i, --max-iters <n>         Maximum improvement cycles (default: 20)"
+    echo "  -n, --num-variants <n>      Variants generated per iteration (default: 16)"
+    echo "  -a, --agent <name>          Worker CLI: claude | pi | opencode | codex (default: pi)"
+    echo "      --model <name>          Optional model (pi only)"
+    echo "      --thinking <level>      Optional thinking level (pi only)"
+    echo "  -h, --help                  Show this help"
+    echo ""
+    echo "Examples:"
+    echo "  $0 --bot grok_code_fast_1"
+    echo "  $0 --bot grok_code_fast_1 --max-iters 1 --num-variants 2 --agent opencode"
+}
 
-if ! command -v pi >/dev/null 2>&1; then
-    printf '%s\n' "${RED}Error: 'pi' CLI not found in PATH${NC}"
-    exit 1
+POSITIONAL=()
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -b|--bot)
+            [[ $# -lt 2 ]] && { printf '%s\n' "${RED}Missing value for $1${NC}"; exit 1; }
+            BOT="$2"
+            shift 2
+            ;;
+        -o|--opponent)
+            [[ $# -lt 2 ]] && { printf '%s\n' "${RED}Missing value for $1${NC}"; exit 1; }
+            OPPONENT="$2"
+            shift 2
+            ;;
+        -m|--map)
+            [[ $# -lt 2 ]] && { printf '%s\n' "${RED}Missing value for $1${NC}"; exit 1; }
+            MAP="$2"
+            shift 2
+            ;;
+        -i|--max-iters|--max-iterations)
+            [[ $# -lt 2 ]] && { printf '%s\n' "${RED}Missing value for $1${NC}"; exit 1; }
+            MAX_ITERS="$2"
+            shift 2
+            ;;
+        -n|--num-variants)
+            [[ $# -lt 2 ]] && { printf '%s\n' "${RED}Missing value for $1${NC}"; exit 1; }
+            NUM_VARIANTS="$2"
+            shift 2
+            ;;
+        -a|--agent|--coding-agent)
+            [[ $# -lt 2 ]] && { printf '%s\n' "${RED}Missing value for $1${NC}"; exit 1; }
+            CODING_AGENT="$2"
+            shift 2
+            ;;
+        --model)
+            [[ $# -lt 2 ]] && { printf '%s\n' "${RED}Missing value for $1${NC}"; exit 1; }
+            MODEL="$2"
+            shift 2
+            ;;
+        --thinking)
+            [[ $# -lt 2 ]] && { printf '%s\n' "${RED}Missing value for $1${NC}"; exit 1; }
+            PI_THINKING="$2"
+            shift 2
+            ;;
+        -h|--help)
+            print_usage
+            exit 0
+            ;;
+        --)
+            shift
+            while [[ $# -gt 0 ]]; do
+                POSITIONAL+=("$1")
+                shift
+            done
+            ;;
+        -*)
+            printf '%s\n' "${RED}Unknown option: $1${NC}"
+            print_usage
+            exit 1
+            ;;
+        *)
+            POSITIONAL+=("$1")
+            shift
+            ;;
+    esac
+done
+
+if [[ ${#POSITIONAL[@]} -gt 0 ]]; then
+    if [[ -z "$BOT" ]]; then
+        printf '%s\n' "${YELLOW}Warning: positional args are deprecated; please use flags.${NC}"
+        BOT="${POSITIONAL[0]:-}"
+        OPPONENT="${POSITIONAL[1]:-$OPPONENT}"
+        MAP="${POSITIONAL[2]:-$MAP}"
+        MAX_ITERS="${POSITIONAL[3]:-$MAX_ITERS}"
+        NUM_VARIANTS="${POSITIONAL[4]:-$NUM_VARIANTS}"
+        CODING_AGENT="${POSITIONAL[5]:-$CODING_AGENT}"
+        if [[ ${#POSITIONAL[@]} -gt 6 ]]; then
+            printf '%s\n' "${RED}Too many positional arguments${NC}"
+            print_usage
+            exit 1
+        fi
+    else
+        printf '%s\n' "${RED}Unexpected positional arguments: ${POSITIONAL[*]}${NC}"
+        print_usage
+        exit 1
+    fi
 fi
 
 # Validate arguments
 if [[ -z "$BOT" ]]; then
-    printf '%s\n' "${RED}Usage: $0 <bot> [opponent] [map] [max-iterations] [num-variants]${NC}"
-    echo ""
-    echo "Arguments:"
-    echo "  bot            Your bot folder name (required)"
-    echo "  opponent       Opponent bot folder name (default: copy_bot)"
-    echo "  map            Map name (default: MagicWood)"
-    echo "  max-iterations Maximum improvement cycles (default: 20)"
-    echo "  num-variants   Variants generated per iteration (default: 16)"
-    echo ""
-    echo "Example:"
-    echo "  $0 grok_code_fast_1"
-    echo "  $0 grok_code_fast_1 copy_bot MagicWood 15 24"
+    printf '%s\n' "${RED}Error: --bot is required${NC}"
+    print_usage
+    exit 1
+fi
+
+if [[ ! "$MAX_ITERS" =~ ^[0-9]+$ ]] || [[ "$MAX_ITERS" -lt 1 ]]; then
+    printf '%s\n' "${RED}Error: --max-iters must be a positive integer (got: $MAX_ITERS)${NC}"
     exit 1
 fi
 
 if [[ ! "$NUM_VARIANTS" =~ ^[0-9]+$ ]] || [[ "$NUM_VARIANTS" -lt 1 ]]; then
-    printf '%s\n' "${RED}Error: num-variants must be a positive integer (got: $NUM_VARIANTS)${NC}"
+    printf '%s\n' "${RED}Error: --num-variants must be a positive integer (got: $NUM_VARIANTS)${NC}"
+    exit 1
+fi
+
+CODING_AGENT="$(printf '%s' "$CODING_AGENT" | tr '[:upper:]' '[:lower:]')"
+case "$CODING_AGENT" in
+    pi|pi-coding-agent)
+        CODING_AGENT="pi"
+        ;;
+    claude|opencode|codex)
+        ;;
+    *)
+        printf '%s\n' "${RED}Unsupported coding-agent: $CODING_AGENT${NC}"
+        printf '%s\n' "${RED}Supported coding agents: claude, pi, opencode, codex${NC}"
+        exit 1
+        ;;
+esac
+
+if ! command -v "$CODING_AGENT" >/dev/null 2>&1; then
+    printf '%s\n' "${RED}Error: '$CODING_AGENT' CLI not found in PATH${NC}"
     exit 1
 fi
 
@@ -103,13 +208,13 @@ printf '%s\n' "${BLUE}Map:${NC}        $MAP"
 printf '%s\n' "${BLUE}Max Iters:${NC}  $MAX_ITERS"
 printf '%s\n' "${BLUE}Variants:${NC}   $NUM_VARIANTS"
 printf '%s\n' "${BLUE}Champions:${NC}  $NUM_CHAMPIONS"
-printf '%s\n' "${BLUE}AI Engine:${NC}  $AI_ENGINE"
+printf '%s\n' "${BLUE}Coding Agent:${NC} $CODING_AGENT"
 [[ -n "$MODEL" ]] && printf '%s\n' "${BLUE}Model:${NC}      $MODEL"
 [[ -n "$PI_THINKING" ]] && printf '%s\n' "${BLUE}Thinking:${NC}   $PI_THINKING"
 printf '%s\n' "${BLUE}Run ID:${NC}     $RUN_ID"
 echo ""
 
-# Function to run a pi worker session
+# Function to run a coding-agent worker session
 run_agent() {
     local agent_name="$1"
     local args="$2"
@@ -135,11 +240,7 @@ run_agent() {
         return 1
     fi
 
-    printf '%s\n' "${YELLOW}━━━ Running pi worker: ${agent_name} ━━━${NC}"
-
-    local -a pi_cmd=(pi -p --no-session)
-    [[ -n "$MODEL" ]] && pi_cmd+=(--model "$MODEL")
-    [[ -n "$PI_THINKING" ]] && pi_cmd+=(--thinking "$PI_THINKING")
+    printf '%s\n' "${YELLOW}━━━ Running ${CODING_AGENT} worker: ${agent_name} ━━━${NC}"
 
     local worker_message
     worker_message=$(cat <<EOF
@@ -150,7 +251,43 @@ Follow the attached worker spec exactly.
 EOF
 )
 
-    "${pi_cmd[@]}" "@${worker_prompt}" "$worker_message" || exit_code=$?
+    local worker_spec
+    worker_spec="$(<"$worker_prompt")"
+
+    local full_prompt
+    full_prompt=$(cat <<EOF
+${worker_spec}
+
+---
+Runtime Invocation Context (from orchestrator):
+${worker_message}
+EOF
+)
+
+    local -a agent_cmd=()
+    case "$CODING_AGENT" in
+        pi)
+            agent_cmd=(pi -p --no-session)
+            [[ -n "$MODEL" ]] && agent_cmd+=(--model "$MODEL")
+            [[ -n "$PI_THINKING" ]] && agent_cmd+=(--thinking "$PI_THINKING")
+            agent_cmd+=("@${worker_prompt}" "$worker_message")
+            ;;
+        claude)
+            agent_cmd=(claude -p --dangerously-skip-permissions "$full_prompt")
+            ;;
+        opencode)
+            agent_cmd=(opencode run "$full_prompt")
+            ;;
+        codex)
+            agent_cmd=(codex exec --dangerously-bypass-approvals-and-sandbox "$full_prompt")
+            ;;
+        *)
+            printf '%s\n' "${RED}Unsupported coding-agent at runtime: $CODING_AGENT${NC}"
+            return 1
+            ;;
+    esac
+
+    "${agent_cmd[@]}" || exit_code=$?
 
     if [[ $exit_code -ne 0 ]]; then
         printf '%s\n' "${RED}Worker ${agent_name} failed with exit code: $exit_code${NC}"
@@ -239,7 +376,7 @@ for iter in $(seq 1 "$MAX_ITERS"); do
     echo ""
 
     # ─────────────────────────────────────────────────────────────────────────────
-    # Step 2: Implement each archetype (fresh pi worker per variant)
+    # Step 2: Implement each archetype (fresh coding-agent worker per variant)
     # ─────────────────────────────────────────────────────────────────────────────
     printf '%s\n' "${BOLD}${GREEN}[STEP 2] Implementing archetypes into variants (2 at a time)${NC}"
 
