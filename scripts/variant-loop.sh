@@ -200,16 +200,25 @@ accumulate_usage() {
 import json, sys
 try:
     data = json.loads(sys.argv[1])
+
+    # Model is in modelUsage dict (keys are model names, values are per-model usage)
+    model_usage = data.get('modelUsage', {})
+    model = ', '.join(model_usage.keys()) if model_usage else 'unknown'
+
+    cost = data.get('total_cost_usd', 0)
+    usage = data.get('usage', {})
+
     entry = {
         'worker': sys.argv[2],
-        'model': data.get('model', 'unknown'),
-        'cost_usd': data.get('cost_usd', 0),
+        'model': model,
+        'cost_usd': cost,
         'duration_ms': data.get('duration_ms', 0),
         'num_turns': data.get('num_turns', 0),
-        'input_tokens': data.get('usage', {}).get('input_tokens', 0),
-        'output_tokens': data.get('usage', {}).get('output_tokens', 0),
-        'cache_read_tokens': data.get('usage', {}).get('cache_read_input_tokens', 0),
-        'cache_creation_tokens': data.get('usage', {}).get('cache_creation_input_tokens', 0),
+        'input_tokens': usage.get('input_tokens', 0),
+        'output_tokens': usage.get('output_tokens', 0),
+        'cache_read_tokens': usage.get('cache_read_input_tokens', 0),
+        'cache_creation_tokens': usage.get('cache_creation_input_tokens', 0),
+        'fast_mode': data.get('fast_mode_state', 'unknown'),
     }
     print(json.dumps(entry))
 except Exception as e:
