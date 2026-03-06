@@ -1,4 +1,4 @@
-package copy_bot;
+package gpt_5_4;
 import battlecode.common.*;
 
 public class BulletSpending {
