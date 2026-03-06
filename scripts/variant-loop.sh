@@ -33,6 +33,7 @@ CODING_AGENT="${CODING_AGENT:-${AI_ENGINE:-pi}}"
 # Agent/runtime options
 MODEL="${MODEL:-}"
 PI_THINKING="${PI_THINKING:-}"
+CODEX_REASONING_EFFORT="${CODEX_REASONING_EFFORT:-${MODEL_REASONING_EFFORT:-}}"
 RUN_ID="${RUN_ID:-$(date +%Y%m%d-%H%M%S)-$$}"
 
 print_usage() {
@@ -47,8 +48,9 @@ print_usage() {
     echo "  -i, --max-iters <n>         Maximum improvement cycles (default: 20)"
     echo "  -n, --num-variants <n>      Variants generated per iteration (default: 16)"
     echo "  -a, --agent <name>          Worker CLI: claude | pi | opencode | codex (default: pi)"
-    echo "      --model <name>          Optional model (pi only)"
+    echo "      --model <name>          Optional model override (pi or codex)"
     echo "      --thinking <level>      Optional thinking level (pi only)"
+    echo "      --reasoning-effort <level>  Optional reasoning effort (codex)"
     echo "  -h, --help                  Show this help"
     echo ""
     echo "Examples:"
@@ -97,6 +99,11 @@ while [[ $# -gt 0 ]]; do
         --thinking)
             [[ $# -lt 2 ]] && { printf '%s\n' "${RED}Missing value for $1${NC}"; exit 1; }
             PI_THINKING="$2"
+            shift 2
+            ;;
+        --reasoning-effort)
+            [[ $# -lt 2 ]] && { printf '%s\n' "${RED}Missing value for $1${NC}"; exit 1; }
+            CODEX_REASONING_EFFORT="$2"
             shift 2
             ;;
         -h|--help)
@@ -191,39 +198,125 @@ STRATEGY_HISTORY="$STATE_DIR/strategy-history.json"
 USAGE_LOG="$STATE_DIR/usage-log.jsonl"
 mkdir -p "$STATE_DIR"
 
-# Function to accumulate usage stats from claude JSON output
+resolve_codex_setting() {
+    local key="$1"
+    local config_file="${HOME}/.codex/config.toml"
+    [[ -f "$config_file" ]] || return 0
+    python3 - "$config_file" "$key" <<'PY'
+import re
+import sys
+
+config_file, key = sys.argv[1], sys.argv[2]
+pattern = re.compile(r'^\s*' + re.escape(key) + r'\s*=\s*"([^"]*)"')
+with open(config_file, 'r', encoding='utf-8') as f:
+    for line in f:
+        if line.lstrip().startswith('['):
+            break
+        match = pattern.match(line)
+        if match:
+            print(match.group(1))
+            break
+PY
+}
+
+if [[ "$CODING_AGENT" == "codex" ]]; then
+    [[ -z "$MODEL" ]] && MODEL="$(resolve_codex_setting model)"
+    [[ -z "$CODEX_REASONING_EFFORT" ]] && CODEX_REASONING_EFFORT="$(resolve_codex_setting model_reasoning_effort)"
+fi
+
+# Function to accumulate usage stats from agent JSON output
 accumulate_usage() {
-    local json_output="$1"
-    local worker_label="$2"
+    local agent_kind="$1"
+    local json_output="$2"
+    local worker_label="$3"
+    local requested_model="$4"
+    local reasoning_effort="$5"
+    local measured_duration_ms="$6"
     # Append a line to the JSONL usage log
     python3 -c "
 import json, sys
 try:
-    data = json.loads(sys.argv[1])
+    agent_kind = sys.argv[1]
+    raw_output = sys.argv[2]
+    worker_label = sys.argv[3]
+    requested_model = sys.argv[4]
+    reasoning_effort = sys.argv[5]
+    measured_duration_ms = int(sys.argv[6] or '0')
 
-    # Model is in modelUsage dict (keys are model names, values are per-model usage)
-    model_usage = data.get('modelUsage', {})
-    model = ', '.join(model_usage.keys()) if model_usage else 'unknown'
+    model = requested_model or 'unknown'
+    cost = 0
+    duration_ms = 0
+    num_turns = 0
+    input_tokens = 0
+    output_tokens = 0
+    cache_read_tokens = 0
+    cache_creation_tokens = 0
+    fast_mode = 'unknown'
 
-    cost = data.get('total_cost_usd', 0)
-    usage = data.get('usage', {})
+    if agent_kind == 'claude':
+        data = json.loads(raw_output)
+        model_usage = data.get('modelUsage', {})
+        if model_usage:
+            model = ', '.join(model_usage.keys())
+        elif data.get('model'):
+            model = data.get('model')
+
+        cost = data.get('total_cost_usd', 0)
+        duration_ms = data.get('duration_ms', 0)
+        num_turns = data.get('num_turns', 0)
+        usage = data.get('usage', {})
+        input_tokens = usage.get('input_tokens', 0)
+        output_tokens = usage.get('output_tokens', 0)
+        cache_read_tokens = usage.get('cache_read_input_tokens', 0)
+        cache_creation_tokens = usage.get('cache_creation_input_tokens', 0)
+        fast_mode = data.get('fast_mode_state', 'unknown')
+    elif agent_kind == 'codex':
+        for line in raw_output.splitlines():
+            line = line.strip()
+            if not line or not line.startswith('{'):
+                continue
+            try:
+                event = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+
+            if event.get('type') == 'turn.completed':
+                usage = event.get('usage', {})
+                input_tokens = usage.get('input_tokens', 0)
+                output_tokens = usage.get('output_tokens', 0)
+                cache_read_tokens = usage.get('cached_input_tokens', 0)
+                num_turns += 1
+
+            if event.get('type') == 'item.completed':
+                item = event.get('item', {})
+                if isinstance(item, dict):
+                    maybe_model = item.get('model')
+                    if maybe_model:
+                        model = maybe_model
+    else:
+        raise ValueError(f'Unsupported agent_kind: {agent_kind}')
+
+    if duration_ms <= 0 and measured_duration_ms > 0:
+        duration_ms = measured_duration_ms
 
     entry = {
-        'worker': sys.argv[2],
+        'agent': agent_kind,
+        'worker': worker_label,
         'model': model,
+        'reasoning_effort': reasoning_effort or 'unknown',
         'cost_usd': cost,
-        'duration_ms': data.get('duration_ms', 0),
-        'num_turns': data.get('num_turns', 0),
-        'input_tokens': usage.get('input_tokens', 0),
-        'output_tokens': usage.get('output_tokens', 0),
-        'cache_read_tokens': usage.get('cache_read_input_tokens', 0),
-        'cache_creation_tokens': usage.get('cache_creation_input_tokens', 0),
-        'fast_mode': data.get('fast_mode_state', 'unknown'),
+        'duration_ms': duration_ms,
+        'num_turns': num_turns,
+        'input_tokens': input_tokens,
+        'output_tokens': output_tokens,
+        'cache_read_tokens': cache_read_tokens,
+        'cache_creation_tokens': cache_creation_tokens,
+        'fast_mode': fast_mode,
     }
     print(json.dumps(entry))
 except Exception as e:
-    print(json.dumps({'worker': sys.argv[2], 'error': str(e)}), file=sys.stderr)
-" "$json_output" "$worker_label" >> "$USAGE_LOG" 2>/dev/null
+    print(json.dumps({'agent': sys.argv[1], 'worker': sys.argv[3], 'error': str(e)}), file=sys.stderr)
+" "$agent_kind" "$json_output" "$worker_label" "$requested_model" "$reasoning_effort" "$measured_duration_ms" >> "$USAGE_LOG" 2>/dev/null
 }
 
 # Function to print usage summary for current iteration
@@ -243,6 +336,7 @@ total_cache_create = 0
 total_duration = 0
 total_turns = 0
 model_set = set()
+reasoning_set = set()
 entries = []
 
 with open(log_file) as f:
@@ -263,6 +357,9 @@ with open(log_file) as f:
             m = e.get("model", "")
             if m and m != "unknown":
                 model_set.add(m)
+            r = e.get("reasoning_effort", "")
+            if r and r != "unknown":
+                reasoning_set.add(r)
         except json.JSONDecodeError:
             continue
 
@@ -274,6 +371,8 @@ print(f"\033[1m\033[36m  USAGE SUMMARY ({len(entries)} worker calls)\033[0m")
 print(f"\033[1m\033[36m{'─' * 60}\033[0m")
 if model_set:
     print(f"  Model(s):        {', '.join(sorted(model_set))}")
+if reasoning_set:
+    print(f"  Reasoning:       {', '.join(sorted(reasoning_set))}")
 print(f"  Total cost:      ${total_cost:.4f}")
 print(f"  Input tokens:    {total_input:,}")
 print(f"  Output tokens:   {total_output:,}")
@@ -321,6 +420,7 @@ printf '%s\n' "${BLUE}Champions:${NC}  $NUM_CHAMPIONS"
 printf '%s\n' "${BLUE}Coding Agent:${NC} $CODING_AGENT"
 [[ -n "$MODEL" ]] && printf '%s\n' "${BLUE}Model:${NC}      $MODEL"
 [[ -n "$PI_THINKING" ]] && printf '%s\n' "${BLUE}Thinking:${NC}   $PI_THINKING"
+[[ -n "$CODEX_REASONING_EFFORT" ]] && printf '%s\n' "${BLUE}Reasoning:${NC}  $CODEX_REASONING_EFFORT"
 printf '%s\n' "${BLUE}Run ID:${NC}     $RUN_ID"
 echo ""
 
@@ -389,7 +489,10 @@ EOF
             agent_cmd=(opencode run "$full_prompt")
             ;;
         codex)
-            agent_cmd=(codex exec --dangerously-bypass-approvals-and-sandbox "$full_prompt")
+            agent_cmd=(codex exec --json --dangerously-bypass-approvals-and-sandbox)
+            [[ -n "$MODEL" ]] && agent_cmd+=(--model "$MODEL")
+            [[ -n "$CODEX_REASONING_EFFORT" ]] && agent_cmd+=(-c "model_reasoning_effort=\"$CODEX_REASONING_EFFORT\"")
+            agent_cmd+=("$full_prompt")
             ;;
         *)
             printf '%s\n' "${RED}Unsupported coding-agent at runtime: $CODING_AGENT${NC}"
@@ -397,10 +500,16 @@ EOF
             ;;
     esac
 
-    if [[ "$CODING_AGENT" == "claude" ]]; then
+    if [[ "$CODING_AGENT" == "claude" || "$CODING_AGENT" == "codex" ]]; then
         # Capture JSON output to extract usage stats
         local agent_output
+        local start_ms
+        local end_ms
+        local elapsed_ms
+        start_ms=$(python3 -c 'import time; print(int(time.time() * 1000))')
         agent_output=$("${agent_cmd[@]}" 2>&1) || exit_code=$?
+        end_ms=$(python3 -c 'import time; print(int(time.time() * 1000))')
+        elapsed_ms=$((end_ms - start_ms))
 
         if [[ $exit_code -ne 0 ]]; then
             printf '%s\n' "${RED}Worker ${agent_name} failed with exit code: $exit_code${NC}"
@@ -409,7 +518,7 @@ EOF
         fi
 
         # Log usage stats
-        accumulate_usage "$agent_output" "${agent_name}:${context}"
+        accumulate_usage "$CODING_AGENT" "$agent_output" "${agent_name}:${context}" "$MODEL" "$CODEX_REASONING_EFFORT" "$elapsed_ms"
     else
         "${agent_cmd[@]}" || exit_code=$?
 
@@ -776,9 +885,9 @@ print(f"Strategy history updated: {n} iteration(s) recorded")
 HISTORY_EOF
 
     # ─────────────────────────────────────────────────────────────────────────────
-    # Usage summary (claude agent only)
+    # Usage summary (agents with usage logging)
     # ─────────────────────────────────────────────────────────────────────────────
-    if [[ "$CODING_AGENT" == "claude" ]]; then
+    if [[ "$CODING_AGENT" == "claude" || "$CODING_AGENT" == "codex" ]]; then
         print_usage_summary
     fi
 
@@ -809,7 +918,7 @@ printf '%s\n' "${NC}"
 echo "Best result saved in src/$BOT/"
 
 # Final cumulative usage summary
-if [[ "$CODING_AGENT" == "claude" && -f "$USAGE_LOG" ]]; then
+if [[ ("$CODING_AGENT" == "claude" || "$CODING_AGENT" == "codex") && -f "$USAGE_LOG" ]]; then
     printf '\n%s\n' "${BOLD}${CYAN}CUMULATIVE USAGE (all iterations)${NC}"
     print_usage_summary
 fi
