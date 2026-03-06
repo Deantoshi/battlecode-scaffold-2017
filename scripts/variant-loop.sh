@@ -34,6 +34,7 @@ CODING_AGENT="${CODING_AGENT:-${AI_ENGINE:-pi}}"
 MODEL="${MODEL:-}"
 PI_THINKING="${PI_THINKING:-}"
 CODEX_REASONING_EFFORT="${CODEX_REASONING_EFFORT:-${MODEL_REASONING_EFFORT:-}}"
+OPENCODE_VARIANT="${OPENCODE_VARIANT:-${MODEL_VARIANT:-}}"
 RUN_ID="${RUN_ID:-$(date +%Y%m%d-%H%M%S)-$$}"
 
 print_usage() {
@@ -48,9 +49,10 @@ print_usage() {
     echo "  -i, --max-iters <n>         Maximum improvement cycles (default: 20)"
     echo "  -n, --num-variants <n>      Variants generated per iteration (default: 16)"
     echo "  -a, --agent <name>          Worker CLI: claude | pi | opencode | codex (default: pi)"
-    echo "      --model <name>          Optional model override (pi or codex)"
+    echo "      --model <name>          Optional model override (pi, opencode, or codex)"
     echo "      --thinking <level>      Optional thinking level (pi only)"
     echo "      --reasoning-effort <level>  Optional reasoning effort (codex)"
+    echo "      --variant <name>        Optional model variant / reasoning mode (opencode)"
     echo "  -h, --help                  Show this help"
     echo ""
     echo "Examples:"
@@ -104,6 +106,11 @@ while [[ $# -gt 0 ]]; do
         --reasoning-effort)
             [[ $# -lt 2 ]] && { printf '%s\n' "${RED}Missing value for $1${NC}"; exit 1; }
             CODEX_REASONING_EFFORT="$2"
+            shift 2
+            ;;
+        --variant)
+            [[ $# -lt 2 ]] && { printf '%s\n' "${RED}Missing value for $1${NC}"; exit 1; }
+            OPENCODE_VARIANT="$2"
             shift 2
             ;;
         -h|--help)
@@ -224,6 +231,40 @@ if [[ "$CODING_AGENT" == "codex" ]]; then
     [[ -z "$CODEX_REASONING_EFFORT" ]] && CODEX_REASONING_EFFORT="$(resolve_codex_setting model_reasoning_effort)"
 fi
 
+usage_logging_enabled() {
+    case "$1" in
+        claude|codex|opencode)
+            return 0
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
+make_opencode_session_title() {
+    local agent_name="$1"
+    local context="$2"
+    if [[ "$context" == iter:* ]]; then
+        printf 'variant-loop:%s:%s:%s:%s:%s:%s' \
+            "$RUN_ID" \
+            "$BOT" \
+            "$OPPONENT" \
+            "$MAP" \
+            "$agent_name" \
+            "$context"
+    else
+        printf 'variant-loop:%s:%s:%s:%s:%s:iter:%s:%s' \
+            "$RUN_ID" \
+            "$BOT" \
+            "$OPPONENT" \
+            "$MAP" \
+            "$agent_name" \
+            "${iter:-0}" \
+            "$context"
+    fi
+}
+
 # Function to accumulate usage stats from agent JSON output
 accumulate_usage() {
     local agent_kind="$1"
@@ -232,9 +273,94 @@ accumulate_usage() {
     local requested_model="$4"
     local reasoning_effort="$5"
     local measured_duration_ms="$6"
+    local session_title="$7"
     # Append a line to the JSONL usage log
     python3 -c "
-import json, sys
+import collections
+import json, os, sqlite3, sys, time
+from pathlib import Path
+
+def lookup_opencode_session(title):
+    if not title:
+        return None
+
+    cwd = os.getcwd()
+    db_path = Path.home() / '.local' / 'share' / 'opencode' / 'opencode.db'
+
+    for _ in range(12):
+        if db_path.is_file():
+            try:
+                conn = sqlite3.connect(str(db_path))
+                conn.row_factory = sqlite3.Row
+                cur = conn.cursor()
+                session = cur.execute(
+                    '''
+                    select id, title, directory, time_updated
+                    from session
+                    where title = ? and directory = ?
+                    order by time_updated desc
+                    limit 1
+                    ''',
+                    (title, cwd),
+                ).fetchone()
+                if session:
+                    session_id = session['id']
+                    rows = cur.execute(
+                        '''
+                        select
+                            json_extract(data, '$.id') as id,
+                            json_extract(data, '$.role') as role,
+                            json_extract(data, '$.parentID') as parent_id,
+                            json_extract(data, '$.modelID') as model_id,
+                            json_extract(data, '$.providerID') as provider_id,
+                            json_extract(data, '$.variant') as variant
+                        from message
+                        where session_id = ?
+                        order by time_created asc
+                        ''',
+                        (session_id,),
+                    ).fetchall()
+                    conn.close()
+
+                    model_counts = collections.Counter()
+                    variant_counts = collections.Counter()
+                    messages_by_id = {}
+
+                    for row in rows:
+                        row_id = row['id']
+                        if row_id:
+                            messages_by_id[row_id] = dict(row)
+
+                    for row in rows:
+                        if row['role'] != 'assistant':
+                            continue
+                        provider = row['provider_id'] or ''
+                        model = row['model_id'] or ''
+                        if model:
+                            if provider:
+                                model_counts[f'{provider}/{model}'] += 1
+                            else:
+                                model_counts[model] += 1
+
+                        parent_id = row['parent_id']
+                        if parent_id:
+                            parent = messages_by_id.get(parent_id) or {}
+                            variant = parent.get('variant') or ''
+                            if variant:
+                                variant_counts[variant] += 1
+
+                    return {
+                        'session_id': session_id,
+                        'model': model_counts.most_common(1)[0][0] if model_counts else None,
+                        'variant': variant_counts.most_common(1)[0][0] if variant_counts else None,
+                    }
+                conn.close()
+            except Exception:
+                pass
+        time.sleep(0.25)
+
+    return None
+
 try:
     agent_kind = sys.argv[1]
     raw_output = sys.argv[2]
@@ -242,6 +368,7 @@ try:
     requested_model = sys.argv[4]
     reasoning_effort = sys.argv[5]
     measured_duration_ms = int(sys.argv[6] or '0')
+    session_title = sys.argv[7]
 
     model = requested_model or 'unknown'
     cost = 0
@@ -249,6 +376,7 @@ try:
     num_turns = 0
     input_tokens = 0
     output_tokens = 0
+    reasoning_tokens = 0
     cache_read_tokens = 0
     cache_creation_tokens = 0
     fast_mode = 'unknown'
@@ -267,9 +395,57 @@ try:
         usage = data.get('usage', {})
         input_tokens = usage.get('input_tokens', 0)
         output_tokens = usage.get('output_tokens', 0)
+        reasoning_tokens = usage.get('reasoning_tokens', 0)
         cache_read_tokens = usage.get('cache_read_input_tokens', 0)
         cache_creation_tokens = usage.get('cache_creation_input_tokens', 0)
         fast_mode = data.get('fast_mode_state', 'unknown')
+    elif agent_kind == 'opencode':
+        session_meta = lookup_opencode_session(session_title)
+        if session_meta:
+            if session_meta.get('model'):
+                model = session_meta['model']
+            if session_meta.get('variant'):
+                reasoning_effort = session_meta['variant']
+        for line in raw_output.splitlines():
+            line = line.strip()
+            if not line or not line.startswith('{'):
+                continue
+            try:
+                event = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+
+            if event.get('type') == 'step_finish':
+                part = event.get('part') or {}
+                tokens = part.get('tokens') or {}
+                cache = tokens.get('cache') or {}
+
+                input_tokens += tokens.get('input', 0) or 0
+                output_tokens += tokens.get('output', 0) or 0
+                reasoning_tokens += tokens.get('reasoning', 0) or 0
+                cache_read_tokens += cache.get('read', 0) or 0
+                cache_creation_tokens += cache.get('write', 0) or 0
+                num_turns += 1
+
+                maybe_cost = part.get('cost')
+                if isinstance(maybe_cost, (int, float)):
+                    cost += maybe_cost
+
+                maybe_model = (
+                    part.get('modelID')
+                    or (part.get('message') or {}).get('modelID')
+                    or event.get('modelID')
+                )
+                if maybe_model:
+                    model = maybe_model
+
+                maybe_variant = (
+                    part.get('variant')
+                    or (part.get('message') or {}).get('variant')
+                    or reasoning_effort
+                )
+                if maybe_variant:
+                    reasoning_effort = maybe_variant
     elif agent_kind == 'codex':
         for line in raw_output.splitlines():
             line = line.strip()
@@ -284,6 +460,7 @@ try:
                 usage = event.get('usage', {})
                 input_tokens = usage.get('input_tokens', 0)
                 output_tokens = usage.get('output_tokens', 0)
+                reasoning_tokens = usage.get('reasoning_tokens', 0)
                 cache_read_tokens = usage.get('cached_input_tokens', 0)
                 num_turns += 1
 
@@ -303,12 +480,13 @@ try:
         'agent': agent_kind,
         'worker': worker_label,
         'model': model,
-        'reasoning_effort': reasoning_effort or 'unknown',
+        'reasoning_effort': reasoning_effort or ('default' if agent_kind == 'opencode' else 'unknown'),
         'cost_usd': cost,
         'duration_ms': duration_ms,
         'num_turns': num_turns,
         'input_tokens': input_tokens,
         'output_tokens': output_tokens,
+        'reasoning_tokens': reasoning_tokens,
         'cache_read_tokens': cache_read_tokens,
         'cache_creation_tokens': cache_creation_tokens,
         'fast_mode': fast_mode,
@@ -316,7 +494,7 @@ try:
     print(json.dumps(entry))
 except Exception as e:
     print(json.dumps({'agent': sys.argv[1], 'worker': sys.argv[3], 'error': str(e)}), file=sys.stderr)
-" "$agent_kind" "$json_output" "$worker_label" "$requested_model" "$reasoning_effort" "$measured_duration_ms" >> "$USAGE_LOG" 2>/dev/null
+" "$agent_kind" "$json_output" "$worker_label" "$requested_model" "$reasoning_effort" "$measured_duration_ms" "$session_title" >> "$USAGE_LOG" 2>/dev/null
 }
 
 # Function to print usage summary for current iteration
@@ -331,6 +509,7 @@ log_file = sys.argv[1]
 total_cost = 0.0
 total_input = 0
 total_output = 0
+total_reasoning = 0
 total_cache_read = 0
 total_cache_create = 0
 total_duration = 0
@@ -350,6 +529,7 @@ with open(log_file) as f:
             total_cost += e.get("cost_usd", 0)
             total_input += e.get("input_tokens", 0)
             total_output += e.get("output_tokens", 0)
+            total_reasoning += e.get("reasoning_tokens", 0)
             total_cache_read += e.get("cache_read_tokens", 0)
             total_cache_create += e.get("cache_creation_tokens", 0)
             total_duration += e.get("duration_ms", 0)
@@ -376,6 +556,8 @@ if reasoning_set:
 print(f"  Total cost:      ${total_cost:.4f}")
 print(f"  Input tokens:    {total_input:,}")
 print(f"  Output tokens:   {total_output:,}")
+if total_reasoning > 0:
+    print(f"  Reasoning:       {total_reasoning:,}")
 if total_cache_read > 0:
     print(f"  Cache read:      {total_cache_read:,}")
 if total_cache_create > 0:
@@ -421,6 +603,7 @@ printf '%s\n' "${BLUE}Coding Agent:${NC} $CODING_AGENT"
 [[ -n "$MODEL" ]] && printf '%s\n' "${BLUE}Model:${NC}      $MODEL"
 [[ -n "$PI_THINKING" ]] && printf '%s\n' "${BLUE}Thinking:${NC}   $PI_THINKING"
 [[ -n "$CODEX_REASONING_EFFORT" ]] && printf '%s\n' "${BLUE}Reasoning:${NC}  $CODEX_REASONING_EFFORT"
+[[ -n "$OPENCODE_VARIANT" ]] && printf '%s\n' "${BLUE}Variant:${NC}    $OPENCODE_VARIANT"
 printf '%s\n' "${BLUE}Run ID:${NC}     $RUN_ID"
 echo ""
 
@@ -431,6 +614,8 @@ run_agent() {
     local context="$3"
     local exit_code=0
     local worker_prompt=""
+    local usage_reasoning_effort="$CODEX_REASONING_EFFORT"
+    local usage_session_title=""
 
     case "$agent_name" in
         archetype-creator)
@@ -486,7 +671,14 @@ EOF
             agent_cmd=(claude -p --dangerously-skip-permissions --output-format json "$full_prompt")
             ;;
         opencode)
-            agent_cmd=(opencode run "$full_prompt")
+            local session_title
+            session_title="$(make_opencode_session_title "$agent_name" "$context")"
+            usage_session_title="$session_title"
+            usage_reasoning_effort="$OPENCODE_VARIANT"
+            agent_cmd=(env "OPENCODE_PERMISSION={\"*\":\"allow\"}" opencode run --format json --title "$session_title")
+            [[ -n "$MODEL" ]] && agent_cmd+=(--model "$MODEL")
+            [[ -n "$OPENCODE_VARIANT" ]] && agent_cmd+=(--variant "$OPENCODE_VARIANT")
+            agent_cmd+=("$full_prompt")
             ;;
         codex)
             agent_cmd=(codex exec --json --dangerously-bypass-approvals-and-sandbox)
@@ -500,7 +692,7 @@ EOF
             ;;
     esac
 
-    if [[ "$CODING_AGENT" == "claude" || "$CODING_AGENT" == "codex" ]]; then
+    if usage_logging_enabled "$CODING_AGENT"; then
         # Capture JSON output to extract usage stats
         local agent_output
         local start_ms
@@ -518,7 +710,7 @@ EOF
         fi
 
         # Log usage stats
-        accumulate_usage "$CODING_AGENT" "$agent_output" "${agent_name}:${context}" "$MODEL" "$CODEX_REASONING_EFFORT" "$elapsed_ms"
+        accumulate_usage "$CODING_AGENT" "$agent_output" "${agent_name}:${context}" "$MODEL" "$usage_reasoning_effort" "$elapsed_ms" "$usage_session_title"
     else
         "${agent_cmd[@]}" || exit_code=$?
 
@@ -887,7 +1079,7 @@ HISTORY_EOF
     # ─────────────────────────────────────────────────────────────────────────────
     # Usage summary (agents with usage logging)
     # ─────────────────────────────────────────────────────────────────────────────
-    if [[ "$CODING_AGENT" == "claude" || "$CODING_AGENT" == "codex" ]]; then
+    if usage_logging_enabled "$CODING_AGENT"; then
         print_usage_summary
     fi
 
@@ -918,7 +1110,7 @@ printf '%s\n' "${NC}"
 echo "Best result saved in src/$BOT/"
 
 # Final cumulative usage summary
-if [[ ("$CODING_AGENT" == "claude" || "$CODING_AGENT" == "codex") && -f "$USAGE_LOG" ]]; then
+if usage_logging_enabled "$CODING_AGENT" && [[ -f "$USAGE_LOG" ]]; then
     printf '\n%s\n' "${BOLD}${CYAN}CUMULATIVE USAGE (all iterations)${NC}"
     print_usage_summary
 fi
