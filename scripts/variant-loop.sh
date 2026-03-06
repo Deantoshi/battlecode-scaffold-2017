@@ -188,7 +188,108 @@ fi
 # State directory
 STATE_DIR="src/$BOT/.state"
 STRATEGY_HISTORY="$STATE_DIR/strategy-history.json"
+USAGE_LOG="$STATE_DIR/usage-log.jsonl"
 mkdir -p "$STATE_DIR"
+
+# Function to accumulate usage stats from claude JSON output
+accumulate_usage() {
+    local json_output="$1"
+    local worker_label="$2"
+    # Append a line to the JSONL usage log
+    python3 -c "
+import json, sys
+try:
+    data = json.loads(sys.argv[1])
+    entry = {
+        'worker': sys.argv[2],
+        'model': data.get('model', 'unknown'),
+        'cost_usd': data.get('cost_usd', 0),
+        'duration_ms': data.get('duration_ms', 0),
+        'num_turns': data.get('num_turns', 0),
+        'input_tokens': data.get('usage', {}).get('input_tokens', 0),
+        'output_tokens': data.get('usage', {}).get('output_tokens', 0),
+        'cache_read_tokens': data.get('usage', {}).get('cache_read_input_tokens', 0),
+        'cache_creation_tokens': data.get('usage', {}).get('cache_creation_input_tokens', 0),
+    }
+    print(json.dumps(entry))
+except Exception as e:
+    print(json.dumps({'worker': sys.argv[2], 'error': str(e)}), file=sys.stderr)
+" "$json_output" "$worker_label" >> "$USAGE_LOG" 2>/dev/null
+}
+
+# Function to print usage summary for current iteration
+print_usage_summary() {
+    if [[ ! -f "$USAGE_LOG" ]]; then
+        return
+    fi
+    python3 << 'USAGE_EOF' - "$USAGE_LOG"
+import json, sys
+
+log_file = sys.argv[1]
+total_cost = 0.0
+total_input = 0
+total_output = 0
+total_cache_read = 0
+total_cache_create = 0
+total_duration = 0
+total_turns = 0
+model_set = set()
+entries = []
+
+with open(log_file) as f:
+    for line in f:
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            e = json.loads(line)
+            entries.append(e)
+            total_cost += e.get("cost_usd", 0)
+            total_input += e.get("input_tokens", 0)
+            total_output += e.get("output_tokens", 0)
+            total_cache_read += e.get("cache_read_tokens", 0)
+            total_cache_create += e.get("cache_creation_tokens", 0)
+            total_duration += e.get("duration_ms", 0)
+            total_turns += e.get("num_turns", 0)
+            m = e.get("model", "")
+            if m and m != "unknown":
+                model_set.add(m)
+        except json.JSONDecodeError:
+            continue
+
+if not entries:
+    return
+
+print(f"\033[1m\033[36m{'─' * 60}\033[0m")
+print(f"\033[1m\033[36m  USAGE SUMMARY ({len(entries)} worker calls)\033[0m")
+print(f"\033[1m\033[36m{'─' * 60}\033[0m")
+if model_set:
+    print(f"  Model(s):        {', '.join(sorted(model_set))}")
+print(f"  Total cost:      ${total_cost:.4f}")
+print(f"  Input tokens:    {total_input:,}")
+print(f"  Output tokens:   {total_output:,}")
+if total_cache_read > 0:
+    print(f"  Cache read:      {total_cache_read:,}")
+if total_cache_create > 0:
+    print(f"  Cache creation:  {total_cache_create:,}")
+print(f"  Total turns:     {total_turns:,}")
+dur_s = total_duration / 1000
+if dur_s >= 60:
+    print(f"  Total duration:  {dur_s/60:.1f}m")
+else:
+    print(f"  Total duration:  {dur_s:.1f}s")
+print(f"\033[1m\033[36m{'─' * 60}\033[0m")
+
+# Per-worker breakdown
+print(f"  {'Worker':<30} {'Cost':>8} {'In':>8} {'Out':>8}")
+for e in entries:
+    w = e.get("worker", "?")
+    c = e.get("cost_usd", 0)
+    i = e.get("input_tokens", 0)
+    o = e.get("output_tokens", 0)
+    print(f"  {w:<30} ${c:>7.4f} {i:>7,} {o:>7,}")
+USAGE_EOF
+}
 
 # Count existing champions
 NUM_CHAMPIONS=0
@@ -273,7 +374,7 @@ EOF
             agent_cmd+=("@${worker_prompt}" "$worker_message")
             ;;
         claude)
-            agent_cmd=(claude -p --dangerously-skip-permissions "$full_prompt")
+            agent_cmd=(claude -p --dangerously-skip-permissions --output-format json "$full_prompt")
             ;;
         opencode)
             agent_cmd=(opencode run "$full_prompt")
@@ -287,11 +388,26 @@ EOF
             ;;
     esac
 
-    "${agent_cmd[@]}" || exit_code=$?
+    if [[ "$CODING_AGENT" == "claude" ]]; then
+        # Capture JSON output to extract usage stats
+        local agent_output
+        agent_output=$("${agent_cmd[@]}" 2>&1) || exit_code=$?
 
-    if [[ $exit_code -ne 0 ]]; then
-        printf '%s\n' "${RED}Worker ${agent_name} failed with exit code: $exit_code${NC}"
-        return $exit_code
+        if [[ $exit_code -ne 0 ]]; then
+            printf '%s\n' "${RED}Worker ${agent_name} failed with exit code: $exit_code${NC}"
+            printf '%s\n' "$agent_output" >&2
+            return $exit_code
+        fi
+
+        # Log usage stats
+        accumulate_usage "$agent_output" "${agent_name}:${context}"
+    else
+        "${agent_cmd[@]}" || exit_code=$?
+
+        if [[ $exit_code -ne 0 ]]; then
+            printf '%s\n' "${RED}Worker ${agent_name} failed with exit code: $exit_code${NC}"
+            return $exit_code
+        fi
     fi
 }
 
@@ -317,18 +433,27 @@ for iter in $(seq 1 "$MAX_ITERS"); do
     # ─────────────────────────────────────────────────────────────────────────────
     if [[ -d "$STATE_DIR" ]]; then
         printf '%s\n' "${BLUE}Cleaning .state directory for fresh iteration...${NC}"
-        # Back up strategy history before wiping
+        # Back up persistent files before wiping
         STRATEGY_HISTORY_TMP=""
+        USAGE_LOG_TMP=""
         if [[ -f "$STRATEGY_HISTORY" ]]; then
             STRATEGY_HISTORY_TMP="/tmp/${BOT}_strategy_history_$$"
             cp "$STRATEGY_HISTORY" "$STRATEGY_HISTORY_TMP"
         fi
+        if [[ -f "$USAGE_LOG" ]]; then
+            USAGE_LOG_TMP="/tmp/${BOT}_usage_log_$$"
+            cp "$USAGE_LOG" "$USAGE_LOG_TMP"
+        fi
         rm -rf "$STATE_DIR"
         mkdir -p "$STATE_DIR"
-        # Restore strategy history
+        # Restore persistent files
         if [[ -n "$STRATEGY_HISTORY_TMP" && -f "$STRATEGY_HISTORY_TMP" ]]; then
             mv "$STRATEGY_HISTORY_TMP" "$STRATEGY_HISTORY"
             printf '%s\n' "${BLUE}✓ Restored strategy history from previous iterations${NC}"
+        fi
+        if [[ -n "$USAGE_LOG_TMP" && -f "$USAGE_LOG_TMP" ]]; then
+            mv "$USAGE_LOG_TMP" "$USAGE_LOG"
+            printf '%s\n' "${BLUE}✓ Restored usage log from previous iterations${NC}"
         fi
     fi
 
@@ -642,6 +767,13 @@ print(f"Strategy history updated: {n} iteration(s) recorded")
 HISTORY_EOF
 
     # ─────────────────────────────────────────────────────────────────────────────
+    # Usage summary (claude agent only)
+    # ─────────────────────────────────────────────────────────────────────────────
+    if [[ "$CODING_AGENT" == "claude" ]]; then
+        print_usage_summary
+    fi
+
+    # ─────────────────────────────────────────────────────────────────────────────
     # Step 5: Copy current bot to copy_bot for next iteration's opponent
     # ─────────────────────────────────────────────────────────────────────────────
     printf '%s\n' "${BLUE}Copying $BOT to copy_bot...${NC}"
@@ -666,4 +798,10 @@ echo "════════════════════════�
 printf '%s\n' "${NC}"
 
 echo "Best result saved in src/$BOT/"
+
+# Final cumulative usage summary
+if [[ "$CODING_AGENT" == "claude" && -f "$USAGE_LOG" ]]; then
+    printf '\n%s\n' "${BOLD}${CYAN}CUMULATIVE USAGE (all iterations)${NC}"
+    print_usage_summary
+fi
 exit 0
