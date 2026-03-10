@@ -271,7 +271,7 @@ accumulate_usage() {
     local json_output="$2"
     local worker_label="$3"
     local requested_model="$4"
-    local reasoning_effort="$5"
+    local requested_reasoning_effort="$5"
     local measured_duration_ms="$6"
     local session_title="$7"
     # Append a line to the JSONL usage log
@@ -280,83 +280,241 @@ import collections
 import json, os, sqlite3, sys, time
 from pathlib import Path
 
+def normalize_model(provider, model):
+    provider = (provider or '').strip()
+    model = (model or '').strip()
+    if not model:
+        return None
+    if provider:
+        return f'{provider}/{model}'
+    return model
+
+def lookup_opencode_default_variant(model):
+    model = (model or '').strip()
+    if not model:
+        return None
+
+    state_file = Path.home() / '.local' / 'state' / 'opencode' / 'model.json'
+    if not state_file.is_file():
+        return None
+
+    try:
+        state = json.loads(state_file.read_text(encoding='utf-8'))
+    except Exception:
+        return None
+
+    variants = state.get('variant')
+    if not isinstance(variants, dict):
+        return None
+
+    direct = variants.get(model)
+    if isinstance(direct, str) and direct.strip():
+        return direct.strip()
+
+    if '/' in model:
+        _, model_id = model.split('/', 1)
+        fallback = variants.get(model_id)
+        if isinstance(fallback, str) and fallback.strip():
+            return fallback.strip()
+    else:
+        suffix = f'/{model}'
+        for key, value in variants.items():
+            if not isinstance(key, str) or not isinstance(value, str):
+                continue
+            if key.endswith(suffix) and value.strip():
+                return value.strip()
+
+    return None
+
+def resolve_opencode_reasoning_effort(requested_effort, observed_effort, reasoning_tokens, resolved_model):
+    observed_effort = (observed_effort or '').strip()
+    requested_effort = (requested_effort or '').strip()
+
+    if observed_effort:
+        return observed_effort
+    if requested_effort:
+        return requested_effort
+
+    default_variant = lookup_opencode_default_variant(resolved_model)
+    if default_variant:
+        return default_variant
+
+    if (reasoning_tokens or 0) > 0:
+        return 'default'
+
+    return 'none'
+
+def extract_opencode_session_meta(session_id, messages):
+    if not messages:
+        return None
+
+    assistant_model_counts = collections.Counter()
+    requested_model_counts = collections.Counter()
+    variant_counts = collections.Counter()
+    messages_by_id = {}
+
+    for msg in messages:
+        if not isinstance(msg, dict):
+            continue
+        msg_id = msg.get('id')
+        if msg_id:
+            messages_by_id[msg_id] = msg
+
+    for msg in messages:
+        if not isinstance(msg, dict):
+            continue
+
+        role = msg.get('role') or ''
+        model_obj = msg.get('model') or {}
+        provider = msg.get('providerID') or model_obj.get('providerID') or ''
+        model = msg.get('modelID') or model_obj.get('modelID') or ''
+        normalized_model = normalize_model(provider, model)
+        variant = (msg.get('variant') or model_obj.get('variant') or '').strip()
+
+        if role == 'assistant' and normalized_model:
+            assistant_model_counts[normalized_model] += 1
+        elif role == 'user' and normalized_model:
+            requested_model_counts[normalized_model] += 1
+
+        if variant:
+            variant_counts[variant] += 1
+
+        parent_id = msg.get('parentID')
+        if parent_id:
+            parent = messages_by_id.get(parent_id) or {}
+            parent_variant = (parent.get('variant') or '').strip()
+            if parent_variant:
+                variant_counts[parent_variant] += 1
+
+    resolved_model = None
+    if assistant_model_counts:
+        resolved_model = assistant_model_counts.most_common(1)[0][0]
+    elif requested_model_counts:
+        resolved_model = requested_model_counts.most_common(1)[0][0]
+
+    resolved_variant = variant_counts.most_common(1)[0][0] if variant_counts else None
+
+    return {
+        'session_id': session_id,
+        'model': resolved_model,
+        'variant': resolved_variant,
+    }
+
+def lookup_opencode_session_db(title, cwd):
+    db_path = Path.home() / '.local' / 'share' / 'opencode' / 'opencode.db'
+    if not db_path.is_file():
+        return None
+
+    conn = sqlite3.connect(str(db_path))
+    conn.row_factory = sqlite3.Row
+    try:
+        cur = conn.cursor()
+        session = cur.execute(
+            '''
+            select id
+            from session
+            where title = ? and directory = ?
+            order by time_updated desc
+            limit 1
+            ''',
+            (title, cwd),
+        ).fetchone()
+        if not session:
+            return None
+
+        rows = cur.execute(
+            '''
+            select data
+            from message
+            where session_id = ?
+            order by time_created asc
+            ''',
+            (session['id'],),
+        ).fetchall()
+    finally:
+        conn.close()
+
+    messages = []
+    for row in rows:
+        try:
+            messages.append(json.loads(row['data']))
+        except Exception:
+            continue
+
+    return extract_opencode_session_meta(session['id'], messages)
+
+def lookup_opencode_session_storage(title, cwd):
+    storage_root = Path.home() / '.local' / 'share' / 'opencode' / 'storage'
+    session_root = storage_root / 'session'
+    message_root = storage_root / 'message'
+    if not session_root.is_dir():
+        return None
+
+    candidates = []
+    for session_file in session_root.glob('*/*.json'):
+        try:
+            session = json.loads(session_file.read_text(encoding='utf-8'))
+        except Exception:
+            continue
+        if session.get('title') != title:
+            continue
+        if os.path.realpath(session.get('directory') or '') != cwd:
+            continue
+        updated = ((session.get('time') or {}).get('updated')) or 0
+        candidates.append((updated, session.get('id')))
+
+    for _, session_id in sorted(candidates, reverse=True):
+        if not session_id:
+            continue
+        message_dir = message_root / session_id
+        if not message_dir.is_dir():
+            continue
+        messages = []
+        for message_file in sorted(message_dir.glob('*.json')):
+            try:
+                messages.append(json.loads(message_file.read_text(encoding='utf-8')))
+            except Exception:
+                continue
+        meta = extract_opencode_session_meta(session_id, messages)
+        if meta:
+            return meta
+
+    return None
+
 def lookup_opencode_session(title):
     if not title:
         return None
 
-    cwd = os.getcwd()
-    db_path = Path.home() / '.local' / 'share' / 'opencode' / 'opencode.db'
+    cwd = os.path.realpath(os.getcwd())
 
-    for _ in range(12):
-        if db_path.is_file():
-            try:
-                conn = sqlite3.connect(str(db_path))
-                conn.row_factory = sqlite3.Row
-                cur = conn.cursor()
-                session = cur.execute(
-                    '''
-                    select id, title, directory, time_updated
-                    from session
-                    where title = ? and directory = ?
-                    order by time_updated desc
-                    limit 1
-                    ''',
-                    (title, cwd),
-                ).fetchone()
-                if session:
-                    session_id = session['id']
-                    rows = cur.execute(
-                        '''
-                        select
-                            json_extract(data, '$.id') as id,
-                            json_extract(data, '$.role') as role,
-                            json_extract(data, '$.parentID') as parent_id,
-                            json_extract(data, '$.modelID') as model_id,
-                            json_extract(data, '$.providerID') as provider_id,
-                            json_extract(data, '$.variant') as variant
-                        from message
-                        where session_id = ?
-                        order by time_created asc
-                        ''',
-                        (session_id,),
-                    ).fetchall()
-                    conn.close()
+    for _ in range(40):
+        db_meta = None
+        storage_meta = None
 
-                    model_counts = collections.Counter()
-                    variant_counts = collections.Counter()
-                    messages_by_id = {}
+        try:
+            db_meta = lookup_opencode_session_db(title, cwd)
+        except Exception:
+            db_meta = None
 
-                    for row in rows:
-                        row_id = row['id']
-                        if row_id:
-                            messages_by_id[row_id] = dict(row)
+        try:
+            storage_meta = lookup_opencode_session_storage(title, cwd)
+        except Exception:
+            storage_meta = None
 
-                    for row in rows:
-                        if row['role'] != 'assistant':
-                            continue
-                        provider = row['provider_id'] or ''
-                        model = row['model_id'] or ''
-                        if model:
-                            if provider:
-                                model_counts[f'{provider}/{model}'] += 1
-                            else:
-                                model_counts[model] += 1
+        merged = db_meta or storage_meta
+        if db_meta and storage_meta:
+            merged = {
+                'session_id': db_meta.get('session_id') or storage_meta.get('session_id'),
+                'model': db_meta.get('model') or storage_meta.get('model'),
+                'variant': db_meta.get('variant') or storage_meta.get('variant'),
+            }
 
-                        parent_id = row['parent_id']
-                        if parent_id:
-                            parent = messages_by_id.get(parent_id) or {}
-                            variant = parent.get('variant') or ''
-                            if variant:
-                                variant_counts[variant] += 1
+        if merged and (merged.get('model') or merged.get('variant')):
+            return merged
 
-                    return {
-                        'session_id': session_id,
-                        'model': model_counts.most_common(1)[0][0] if model_counts else None,
-                        'variant': variant_counts.most_common(1)[0][0] if variant_counts else None,
-                    }
-                conn.close()
-            except Exception:
-                pass
+        if merged:
+            return merged
+
         time.sleep(0.25)
 
     return None
@@ -366,11 +524,12 @@ try:
     raw_output = sys.argv[2]
     worker_label = sys.argv[3]
     requested_model = sys.argv[4]
-    reasoning_effort = sys.argv[5]
+    requested_reasoning_effort = sys.argv[5]
     measured_duration_ms = int(sys.argv[6] or '0')
     session_title = sys.argv[7]
 
     model = requested_model or 'unknown'
+    reasoning_effort = requested_reasoning_effort
     cost = 0
     duration_ms = 0
     num_turns = 0
@@ -436,16 +595,31 @@ try:
                     or (part.get('message') or {}).get('modelID')
                     or event.get('modelID')
                 )
+                maybe_provider = (
+                    part.get('providerID')
+                    or (part.get('message') or {}).get('providerID')
+                    or event.get('providerID')
+                )
                 if maybe_model:
-                    model = maybe_model
+                    normalized_model = normalize_model(maybe_provider, maybe_model)
+                    if normalized_model:
+                        model = normalized_model
+                    elif model in ('', 'unknown') or '/' not in str(model):
+                        model = maybe_model
 
                 maybe_variant = (
                     part.get('variant')
                     or (part.get('message') or {}).get('variant')
-                    or reasoning_effort
                 )
                 if maybe_variant:
                     reasoning_effort = maybe_variant
+
+        reasoning_effort = resolve_opencode_reasoning_effort(
+            requested_reasoning_effort,
+            reasoning_effort,
+            reasoning_tokens,
+            model,
+        )
     elif agent_kind == 'codex':
         for line in raw_output.splitlines():
             line = line.strip()
@@ -480,7 +654,8 @@ try:
         'agent': agent_kind,
         'worker': worker_label,
         'model': model,
-        'reasoning_effort': reasoning_effort or ('default' if agent_kind == 'opencode' else 'unknown'),
+        'reasoning_effort': reasoning_effort or ('unknown' if agent_kind != 'opencode' else 'default'),
+        'reasoning_effort_requested': requested_reasoning_effort or ('default' if agent_kind == 'opencode' else 'unknown'),
         'cost_usd': cost,
         'duration_ms': duration_ms,
         'num_turns': num_turns,
@@ -494,7 +669,7 @@ try:
     print(json.dumps(entry))
 except Exception as e:
     print(json.dumps({'agent': sys.argv[1], 'worker': sys.argv[3], 'error': str(e)}), file=sys.stderr)
-" "$agent_kind" "$json_output" "$worker_label" "$requested_model" "$reasoning_effort" "$measured_duration_ms" "$session_title" >> "$USAGE_LOG" 2>/dev/null
+" "$agent_kind" "$json_output" "$worker_label" "$requested_model" "$requested_reasoning_effort" "$measured_duration_ms" "$session_title" >> "$USAGE_LOG" 2>/dev/null
 }
 
 # Function to print usage summary for current iteration
