@@ -33,6 +33,7 @@ CODING_AGENT="${CODING_AGENT:-${AI_ENGINE:-pi}}"
 # Agent/runtime options
 MODEL="${MODEL:-}"
 PI_THINKING="${PI_THINKING:-}"
+PI_THINKING_RESOLVED=""
 CODEX_REASONING_EFFORT="${CODEX_REASONING_EFFORT:-${MODEL_REASONING_EFFORT:-}}"
 OPENCODE_VARIANT="${OPENCODE_VARIANT:-${MODEL_VARIANT:-}}"
 RUN_ID="${RUN_ID:-$(date +%Y%m%d-%H%M%S)-$$}"
@@ -226,14 +227,68 @@ with open(config_file, 'r', encoding='utf-8') as f:
 PY
 }
 
+resolve_pi_default_thinking() {
+    local model_hint="$1"
+    python3 - "$model_hint" <<'PY'
+import json
+import os
+import re
+import sys
+from pathlib import Path
+
+model_hint = (sys.argv[1] if len(sys.argv) > 1 else "") or ""
+levels = {"off", "minimal", "low", "medium", "high", "xhigh"}
+
+m = re.search(r':(off|minimal|low|medium|high|xhigh)$', model_hint.strip().lower())
+if m:
+    print(m.group(1))
+    raise SystemExit(0)
+
+agent_dir = os.environ.get("PI_CODING_AGENT_DIR")
+if agent_dir:
+    global_settings = Path(agent_dir).expanduser() / "settings.json"
+else:
+    global_settings = Path.home() / ".pi" / "agent" / "settings.json"
+project_settings = Path.cwd() / ".pi" / "settings.json"
+
+
+def load(path: Path) -> dict:
+    if not path.is_file():
+        return {}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+    return data if isinstance(data, dict) else {}
+
+resolved = None
+for settings in (load(global_settings), load(project_settings)):
+    value = settings.get("defaultThinkingLevel")
+    if isinstance(value, str):
+        candidate = value.strip().lower()
+        if candidate in levels:
+            resolved = candidate
+
+if resolved:
+    print(resolved)
+PY
+}
+
 if [[ "$CODING_AGENT" == "codex" ]]; then
     [[ -z "$MODEL" ]] && MODEL="$(resolve_codex_setting model)"
     [[ -z "$CODEX_REASONING_EFFORT" ]] && CODEX_REASONING_EFFORT="$(resolve_codex_setting model_reasoning_effort)"
 fi
 
+if [[ "$CODING_AGENT" == "pi" ]]; then
+    PI_THINKING_RESOLVED="$PI_THINKING"
+    if [[ -z "$PI_THINKING_RESOLVED" ]]; then
+        PI_THINKING_RESOLVED="$(resolve_pi_default_thinking "$MODEL")"
+    fi
+fi
+
 usage_logging_enabled() {
     case "$1" in
-        claude|codex|opencode)
+        claude|codex|opencode|pi)
             return 0
             ;;
         *)
@@ -521,12 +576,12 @@ def lookup_opencode_session(title):
 
 try:
     agent_kind = sys.argv[1]
-    raw_output = sys.argv[2]
-    worker_label = sys.argv[3]
-    requested_model = sys.argv[4]
-    requested_reasoning_effort = sys.argv[5]
-    measured_duration_ms = int(sys.argv[6] or '0')
-    session_title = sys.argv[7]
+    worker_label = sys.argv[2]
+    requested_model = sys.argv[3]
+    requested_reasoning_effort = sys.argv[4]
+    measured_duration_ms = int(sys.argv[5] or '0')
+    session_title = sys.argv[6]
+    raw_output = sys.stdin.read()
 
     model = requested_model or 'unknown'
     reasoning_effort = requested_reasoning_effort
@@ -644,6 +699,69 @@ try:
                     maybe_model = item.get('model')
                     if maybe_model:
                         model = maybe_model
+    elif agent_kind == 'pi':
+        turn_events = []
+        fallback_assistant_messages = []
+
+        for line in raw_output.splitlines():
+            line = line.strip()
+            if not line or not line.startswith('{'):
+                continue
+            try:
+                event = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+
+            event_type = event.get('type')
+            if event_type == 'turn_end':
+                turn_events.append(event)
+            elif event_type == 'agent_end':
+                for msg in event.get('messages') or []:
+                    if isinstance(msg, dict) and (msg.get('role') or '') == 'assistant':
+                        fallback_assistant_messages.append(msg)
+
+        messages = []
+        if turn_events:
+            num_turns = len(turn_events)
+            for event in turn_events:
+                msg = event.get('message')
+                if isinstance(msg, dict):
+                    messages.append(msg)
+        else:
+            if fallback_assistant_messages:
+                num_turns = len(fallback_assistant_messages)
+                messages = fallback_assistant_messages
+
+        for msg in messages:
+            maybe_model = msg.get('model') or msg.get('modelID')
+            maybe_provider = msg.get('provider') or msg.get('providerID')
+            if maybe_model:
+                normalized_model = normalize_model(maybe_provider, maybe_model)
+                if normalized_model:
+                    model = normalized_model
+                else:
+                    model = maybe_model
+
+            usage = msg.get('usage') or {}
+            if not isinstance(usage, dict):
+                usage = {}
+
+            input_tokens += int(usage.get('input') or usage.get('input_tokens') or 0)
+            output_tokens += int(usage.get('output') or usage.get('output_tokens') or 0)
+            reasoning_tokens += int(usage.get('reasoning') or usage.get('reasoning_tokens') or 0)
+            cache_read_tokens += int(usage.get('cacheRead') or usage.get('cache_read_input_tokens') or 0)
+            cache_creation_tokens += int(usage.get('cacheWrite') or usage.get('cache_creation_input_tokens') or 0)
+
+            usage_cost = usage.get('cost')
+            if isinstance(usage_cost, dict):
+                maybe_total = usage_cost.get('total')
+                if isinstance(maybe_total, (int, float)):
+                    cost += maybe_total
+            elif isinstance(usage_cost, (int, float)):
+                cost += usage_cost
+
+        if not reasoning_effort:
+            reasoning_effort = requested_reasoning_effort or 'unknown'
     else:
         raise ValueError(f'Unsupported agent_kind: {agent_kind}')
 
@@ -668,8 +786,10 @@ try:
     }
     print(json.dumps(entry))
 except Exception as e:
-    print(json.dumps({'agent': sys.argv[1], 'worker': sys.argv[3], 'error': str(e)}), file=sys.stderr)
-" "$agent_kind" "$json_output" "$worker_label" "$requested_model" "$requested_reasoning_effort" "$measured_duration_ms" "$session_title" >> "$USAGE_LOG" 2>/dev/null
+    agent = sys.argv[1] if len(sys.argv) > 1 else 'unknown'
+    worker = sys.argv[2] if len(sys.argv) > 2 else 'unknown'
+    print(json.dumps({'agent': agent, 'worker': worker, 'error': str(e)}), file=sys.stderr)
+" "$agent_kind" "$worker_label" "$requested_model" "$requested_reasoning_effort" "$measured_duration_ms" "$session_title" >> "$USAGE_LOG" 2>/dev/null <<< "$json_output"
 }
 
 # Function to print usage summary for current iteration
@@ -776,7 +896,13 @@ printf '%s\n' "${BLUE}Variants:${NC}   $NUM_VARIANTS"
 printf '%s\n' "${BLUE}Champions:${NC}  $NUM_CHAMPIONS"
 printf '%s\n' "${BLUE}Coding Agent:${NC} $CODING_AGENT"
 [[ -n "$MODEL" ]] && printf '%s\n' "${BLUE}Model:${NC}      $MODEL"
-[[ -n "$PI_THINKING" ]] && printf '%s\n' "${BLUE}Thinking:${NC}   $PI_THINKING"
+if [[ "$CODING_AGENT" == "pi" && -n "$PI_THINKING_RESOLVED" ]]; then
+    if [[ -n "$PI_THINKING" ]]; then
+        printf '%s\n' "${BLUE}Thinking:${NC}   $PI_THINKING"
+    else
+        printf '%s\n' "${BLUE}Thinking:${NC}   $PI_THINKING_RESOLVED (default)"
+    fi
+fi
 [[ -n "$CODEX_REASONING_EFFORT" ]] && printf '%s\n' "${BLUE}Reasoning:${NC}  $CODEX_REASONING_EFFORT"
 [[ -n "$OPENCODE_VARIANT" ]] && printf '%s\n' "${BLUE}Variant:${NC}    $OPENCODE_VARIANT"
 printf '%s\n' "${BLUE}Run ID:${NC}     $RUN_ID"
@@ -789,7 +915,7 @@ run_agent() {
     local context="$3"
     local exit_code=0
     local worker_prompt=""
-    local usage_reasoning_effort="$CODEX_REASONING_EFFORT"
+    local usage_reasoning_effort=""
     local usage_session_title=""
 
     case "$agent_name" in
@@ -837,9 +963,10 @@ EOF
     local -a agent_cmd=()
     case "$CODING_AGENT" in
         pi)
-            agent_cmd=(pi -p --no-session)
+            usage_reasoning_effort="$PI_THINKING_RESOLVED"
+            agent_cmd=(pi -p --no-session --mode json)
             [[ -n "$MODEL" ]] && agent_cmd+=(--model "$MODEL")
-            [[ -n "$PI_THINKING" ]] && agent_cmd+=(--thinking "$PI_THINKING")
+            [[ -n "$PI_THINKING_RESOLVED" ]] && agent_cmd+=(--thinking "$PI_THINKING_RESOLVED")
             agent_cmd+=("@${worker_prompt}" "$worker_message")
             ;;
         claude)
@@ -856,6 +983,7 @@ EOF
             agent_cmd+=("$full_prompt")
             ;;
         codex)
+            usage_reasoning_effort="$CODEX_REASONING_EFFORT"
             agent_cmd=(codex exec --json --dangerously-bypass-approvals-and-sandbox)
             [[ -n "$MODEL" ]] && agent_cmd+=(--model "$MODEL")
             [[ -n "$CODEX_REASONING_EFFORT" ]] && agent_cmd+=(-c "model_reasoning_effort=\"$CODEX_REASONING_EFFORT\"")
