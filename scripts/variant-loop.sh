@@ -194,9 +194,32 @@ if ! command -v "$CODING_AGENT" >/dev/null 2>&1; then
     exit 1
 fi
 
-# Verify bot exists
+# Auto-scaffold bot from examplefuncsplayer if missing required files
+NEEDS_SCAFFOLD=false
 if [[ ! -d "src/$BOT" ]]; then
-    printf '%s\n' "${RED}Error: Bot folder not found: src/$BOT${NC}"
+    NEEDS_SCAFFOLD=true
+elif [[ ! -f "src/$BOT/RobotPlayer.java" ]] || [[ ! -f "src/$BOT/BulletSpending.java" ]]; then
+    NEEDS_SCAFFOLD=true
+fi
+
+if [[ "$NEEDS_SCAFFOLD" == true ]]; then
+    printf '%s\n' "${YELLOW}Bot folder src/$BOT missing required files — scaffolding from examplefuncsplayer...${NC}"
+    mkdir -p "src/$BOT"
+    for f in src/examplefuncsplayer/*.java; do
+        [[ -f "$f" ]] || continue
+        TARGET="src/$BOT/$(basename "$f")"
+        # Only copy files that don't already exist
+        if [[ ! -f "$TARGET" ]]; then
+            sed "s/^package examplefuncsplayer;/package $BOT;/" "$f" > "$TARGET"
+            printf '%s\n' "${GREEN}  + $(basename "$f")${NC}"
+        fi
+    done
+    printf '%s\n' "${GREEN}✓ src/$BOT scaffolded${NC}"
+fi
+
+# Verify bot exists
+if [[ ! -f "src/$BOT/RobotPlayer.java" ]] || [[ ! -f "src/$BOT/BulletSpending.java" ]]; then
+    printf '%s\n' "${RED}Error: src/$BOT missing RobotPlayer.java or BulletSpending.java${NC}"
     exit 1
 fi
 
