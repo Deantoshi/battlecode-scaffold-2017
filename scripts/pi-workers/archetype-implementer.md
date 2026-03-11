@@ -38,12 +38,24 @@ Implement the assigned archetype into this variant's Java code.
 - Use `read`, `edit`, `write`, and `bash` tools as needed.
 - Do not use shell text hacks (no sed/awk perl rewrites).
 
-## Compile
-Do not run full project compile in this worker; parent loop handles batch compilation.
-But do basic sanity checks by re-reading modified files for obvious syntax mistakes.
+## MANDATORY: Verify Compilation
+
+After ALL changes are complete, run:
+```bash
+./gradlew compileJava 2>&1 | tail -50
+```
+
+**If compilation fails:**
+1. Read the error messages carefully
+2. Fix the syntax/type errors
+3. Re-run compilation
+4. Repeat until successful
+
+**DO NOT EXIT until compilation succeeds.**
 
 ## Output
-Print a short implementation summary:
+After successful compilation, print a short implementation summary:
 - Archetype name/type/win condition
 - Files modified
 - Key strategic changes applied
+- Compilation: SUCCESS

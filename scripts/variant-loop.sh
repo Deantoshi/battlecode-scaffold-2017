@@ -200,6 +200,15 @@ if [[ ! -d "src/$BOT" ]]; then
     exit 1
 fi
 
+# Read game rules once for inclusion in agent prompts
+GAME_RULES_FILE="HOW_TO_PLAY_BATTLE_CODE_2017.md"
+GAME_RULES_CONTENT=""
+if [[ -f "$GAME_RULES_FILE" ]]; then
+    GAME_RULES_CONTENT="$(<"$GAME_RULES_FILE")"
+else
+    printf '%s\n' "${YELLOW}Warning: $GAME_RULES_FILE not found; agents will need to read it themselves${NC}"
+fi
+
 # State directory
 STATE_DIR="src/$BOT/.state"
 STRATEGY_HISTORY="$STATE_DIR/strategy-history.json"
@@ -951,12 +960,23 @@ EOF
     worker_spec="$(<"$worker_prompt")"
 
     local full_prompt
+    local game_rules_section=""
+    if [[ -n "$GAME_RULES_CONTENT" ]]; then
+        game_rules_section=$(cat <<RULES
+
+---
+Game Rules Reference (HOW_TO_PLAY_BATTLE_CODE_2017.md):
+${GAME_RULES_CONTENT}
+RULES
+)
+    fi
     full_prompt=$(cat <<EOF
 ${worker_spec}
 
 ---
 Runtime Invocation Context (from orchestrator):
 ${worker_message}
+${game_rules_section}
 EOF
 )
 
@@ -1168,14 +1188,6 @@ else:
             if ! wait "$pid"; then
                 printf '%s\n' "${RED}Warning: Variant $v worker exited with error${NC}"
                 BATCH_FAILED=$((BATCH_FAILED + 1))
-            fi
-        done
-
-        # Verify compilation for this batch
-        for v in "${BATCH_VARIANTS[@]}"; do
-            printf '%s\n' "${BLUE}Verifying compilation for ${BOT}_v${v}...${NC}"
-            if ! ./gradlew compileJava -q 2>&1 | tail -5; then
-                printf '%s\n' "${RED}Warning: Compilation may have issues${NC}"
             fi
         done
 
