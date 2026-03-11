@@ -24,7 +24,7 @@ NC=$'\033[0m'
 
 # Defaults
 BOT=""
-OPPONENT="copy_bot"
+OPPONENT=""
 MAP="Clusters"
 MAX_ITERS="20"
 NUM_VARIANTS="16"
@@ -45,7 +45,7 @@ print_usage() {
     echo "  -b, --bot <name>            Your bot folder name under src/"
     echo ""
     echo "Options:"
-    echo "  -o, --opponent <name>       Opponent bot folder (default: copy_bot)"
+    echo "  -o, --opponent <name>       Opponent bot folder (default: same as --bot)"
     echo "  -m, --map <name>            Map name (default: Clusters)"
     echo "  -i, --max-iters <n>         Maximum improvement cycles (default: 20)"
     echo "  -n, --num-variants <n>      Variants generated per iteration (default: 16)"
@@ -223,10 +223,10 @@ if [[ ! -f "src/$BOT/RobotPlayer.java" ]] || [[ ! -f "src/$BOT/BulletSpending.ja
     exit 1
 fi
 
-# Sync copy_bot with the current bot before the loop starts
-printf '%s\n' "${BLUE}Syncing copy_bot from src/$BOT...${NC}"
-bash "$(cd "$(dirname "$0")" && pwd)/copy_bot.sh" "src/$BOT"
-printf '%s\n' "${GREEN}✓ copy_bot synced${NC}"
+# Default opponent to the bot itself (self-play)
+if [[ -z "$OPPONENT" ]]; then
+    OPPONENT="$BOT"
+fi
 
 # Read game rules once for inclusion in agent prompts
 GAME_RULES_FILE="HOW_TO_PLAY_BATTLE_CODE_2017.md"
@@ -1444,12 +1444,6 @@ HISTORY_EOF
     if usage_logging_enabled "$CODING_AGENT"; then
         print_usage_summary
     fi
-
-    # ─────────────────────────────────────────────────────────────────────────────
-    # Step 5: Copy current bot to copy_bot for next iteration's opponent
-    # ─────────────────────────────────────────────────────────────────────────────
-    printf '%s\n' "${BLUE}Copying $BOT to copy_bot...${NC}"
-    bash "$(cd "$(dirname "$0")" && pwd)/copy_bot.sh" "src/$BOT"
 
     # Stop Gradle daemon to free heap memory (~200-500MB) between iterations
     printf '%s\n' "${BLUE}Stopping Gradle daemon to free memory...${NC}"
