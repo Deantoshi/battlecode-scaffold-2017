@@ -223,6 +223,11 @@ if [[ ! -f "src/$BOT/RobotPlayer.java" ]] || [[ ! -f "src/$BOT/BulletSpending.ja
     exit 1
 fi
 
+# Sync copy_bot with the current bot before the loop starts
+printf '%s\n' "${BLUE}Syncing copy_bot from src/$BOT...${NC}"
+bash "$(cd "$(dirname "$0")" && pwd)/copy_bot.sh" "src/$BOT"
+printf '%s\n' "${GREEN}✓ copy_bot synced${NC}"
+
 # Read game rules once for inclusion in agent prompts
 GAME_RULES_FILE="HOW_TO_PLAY_BATTLE_CODE_2017.md"
 GAME_RULES_CONTENT=""
