@@ -119,17 +119,17 @@ After ALL changes are complete, run:
 ./gradlew compileJava 2>&1 | tail -50
 ```
 
-**If compilation fails:**
+**If compilation fails (max 3 attempts total):**
 1. Read the error messages carefully
 2. Fix the syntax/type errors
 3. Re-run compilation
-4. Repeat until successful
+4. If still failing after 3 attempts, exit and report the remaining errors — do not continue looping
 
-**DO NOT EXIT until compilation succeeds.**
+**You have a maximum of 3 compile attempts. If all 3 fail, exit with a summary of unresolved errors.**
 
 ## Output Summary
 
-After successful compilation, output:
+After compilation (successful or exhausted retries), output:
 
 ```
 ═══════════════════════════════════════════════════════════════════════════════
