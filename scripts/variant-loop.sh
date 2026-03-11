@@ -1159,23 +1159,47 @@ for iter in $(seq 1 "$MAX_ITERS"); do
     # ─────────────────────────────────────────────────────────────────────────────
     # Step 2: Implement each archetype (fresh coding-agent worker per variant)
     # ─────────────────────────────────────────────────────────────────────────────
-    printf '%s\n' "${BOLD}${GREEN}[STEP 2] Implementing archetypes into variants (2 at a time)${NC}"
+    printf '%s\n' "${BOLD}${GREEN}[STEP 2] Implementing archetypes into variants (2 slots, sliding window)${NC}"
 
     PARALLEL=2
-    for batch_start in $(seq 1 $PARALLEL $NUM_VARIANTS); do
-        batch_end=$((batch_start + PARALLEL - 1))
-        if [[ $batch_end -gt $NUM_VARIANTS ]]; then
-            batch_end=$NUM_VARIANTS
-        fi
+    POOL_PIDS=()
+    POOL_VARIANTS=()
+    TOTAL_FAILED=0
 
-        PIDS=()
-        BATCH_VARIANTS=()
+    # Helper: reap any finished workers from the pool
+    reap_finished() {
+        local new_pids=()
+        local new_variants=()
+        for i in "${!POOL_PIDS[@]}"; do
+            if kill -0 "${POOL_PIDS[$i]}" 2>/dev/null; then
+                new_pids+=("${POOL_PIDS[$i]}")
+                new_variants+=("${POOL_VARIANTS[$i]}")
+            else
+                if ! wait "${POOL_PIDS[$i]}" 2>/dev/null; then
+                    printf '%s\n' "${RED}Warning: Variant ${POOL_VARIANTS[$i]} worker exited with error${NC}"
+                    TOTAL_FAILED=$((TOTAL_FAILED + 1))
+                else
+                    printf '%s\n' "${GREEN}✓ Variant ${POOL_VARIANTS[$i]} complete${NC}"
+                fi
+            fi
+        done
+        POOL_PIDS=("${new_pids[@]}")
+        POOL_VARIANTS=("${new_variants[@]}")
+    }
 
-        for v in $(seq $batch_start $batch_end); do
-            printf '%s\n' "${YELLOW}━━━ Launching Variant $v / $NUM_VARIANTS ━━━${NC}"
+    for v in $(seq 1 $NUM_VARIANTS); do
+        # Wait until a slot is free
+        while [[ ${#POOL_PIDS[@]} -ge $PARALLEL ]]; do
+            reap_finished
+            if [[ ${#POOL_PIDS[@]} -ge $PARALLEL ]]; then
+                sleep 2
+            fi
+        done
 
-            # Extract this variant's archetype from JSON
-            ARCHETYPE=$(python3 -c "
+        printf '%s\n' "${YELLOW}━━━ Launching Variant $v / $NUM_VARIANTS ━━━${NC}"
+
+        # Extract this variant's archetype from JSON
+        ARCHETYPE=$(python3 -c "
 import json
 with open('$ARCHETYPES_FILE', 'r') as f:
     data = json.load(f)
@@ -1186,36 +1210,31 @@ else:
     print(json.dumps(archetypes.get('v$v', {})))
 " 2>/dev/null || echo "{}")
 
-            # Save archetype to variant-specific state dir to avoid race conditions
-            VARIANT_STATE_DIR="src/${BOT}_v${v}/.state"
-            mkdir -p "$VARIANT_STATE_DIR"
-            echo "$ARCHETYPE" > "$VARIANT_STATE_DIR/current-archetype.json"
-            # Also keep a copy in the main state dir for the worker to find
-            echo "$ARCHETYPE" > "$STATE_DIR/current-archetype-v${v}.json"
+        # Save archetype to variant-specific state dir to avoid race conditions
+        VARIANT_STATE_DIR="src/${BOT}_v${v}/.state"
+        mkdir -p "$VARIANT_STATE_DIR"
+        echo "$ARCHETYPE" > "$VARIANT_STATE_DIR/current-archetype.json"
+        # Also keep a copy in the main state dir for the worker to find
+        echo "$ARCHETYPE" > "$STATE_DIR/current-archetype-v${v}.json"
 
-            # Run worker in background
-            (
-                run_agent "archetype-implementer" "--bot $BOT --variant $v --opponent $OPPONENT" "iter:${iter}:v${v}"
-            ) &
-            PIDS+=($!)
-            BATCH_VARIANTS+=($v)
-        done
-
-        printf '%s\n' "${BLUE}Waiting for variants ${BATCH_VARIANTS[*]} to complete...${NC}"
-
-        # Wait for all workers in this batch
-        BATCH_FAILED=0
-        for i in "${!PIDS[@]}"; do
-            pid=${PIDS[$i]}
-            v=${BATCH_VARIANTS[$i]}
-            if ! wait "$pid"; then
-                printf '%s\n' "${RED}Warning: Variant $v worker exited with error${NC}"
-                BATCH_FAILED=$((BATCH_FAILED + 1))
-            fi
-        done
-
-        printf '%s\n' "${GREEN}Batch (variants ${BATCH_VARIANTS[*]}) complete${NC}"
+        # Run worker in background
+        (
+            run_agent "archetype-implementer" "--bot $BOT --variant $v --opponent $OPPONENT" "iter:${iter}:v${v}"
+        ) &
+        POOL_PIDS+=($!)
+        POOL_VARIANTS+=($v)
     done
+
+    # Drain remaining workers
+    printf '%s\n' "${BLUE}Waiting for remaining ${#POOL_PIDS[@]} worker(s) to finish...${NC}"
+    while [[ ${#POOL_PIDS[@]} -gt 0 ]]; do
+        reap_finished
+        if [[ ${#POOL_PIDS[@]} -gt 0 ]]; then
+            sleep 2
+        fi
+    done
+
+    printf '%s\n' "${GREEN}All $NUM_VARIANTS variants complete ($TOTAL_FAILED failed)${NC}"
     echo ""
 
     # ─────────────────────────────────────────────────────────────────────────────
