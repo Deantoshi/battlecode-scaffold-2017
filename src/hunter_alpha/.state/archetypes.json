@@ -1,0 +1,244 @@
+{
+  "archetypes": [
+    {
+      "id": 1,
+      "type": "mutation",
+      "name": "Turbo Tree Baron",
+      "win_condition": "hybrid",
+      "philosophy": "Reduce bullet reserve to 100 and increase tree planting probability to 60%, establishing a massive economy within the first 300 rounds to fund rapid unit production or VP accumulation.",
+      "key_changes": [
+        "Reduce BULLET_RESERVE from 300 to 100",
+        "Increase tree planting probability from 0.25 to 0.60",
+        "Increase gardener hire probability from 0.01 to 0.03",
+        "Add tree-watering logic to maintain tree health and income"
+      ],
+      "unit_priority": ["GARDENER", "SOLDIER", "LUMBERJACK"],
+      "engagement_style": "Economy-first transition to aggression"
+    },
+    {
+      "id": 2,
+      "type": "mutation",
+      "name": "Soldier Swarm v2",
+      "win_condition": "elimination",
+      "philosophy": "Increase soldier production from 1% to 10% per gardener per turn, and have soldiers use triad shots for superior firepower to overwhelm opponents with sheer ranged volume.",
+      "key_changes": [
+        "Increase soldier build probability from 0.01 to 0.10",
+        "Add triad shot firing logic for soldiers",
+        "Have soldiers converge toward archon broadcast location for grouping",
+        "Reduce tree planting to 10% to prioritize unit production"
+      ],
+      "unit_priority": ["SOLDIER", "SOLDIER", "GARDENER", "LUMBERJACK"],
+      "engagement_style": "Aggressive ranged swarm"
+    },
+    {
+      "id": 3,
+      "type": "mutation",
+      "name": "Rapid VP Harvester",
+      "win_condition": "vp_rush",
+      "philosophy": "Lower the bullet reserve to 50 and donate every excess bullet immediately, while building only minimal military (one gardener, occasional soldier) to hit 1000 VP before round 1500.",
+      "key_changes": [
+        "Reduce BULLET_RESERVE from 300 to 50",
+        "Remove donate threshold — donate all excess bullets each turn",
+        "Limit gardener count to 1, tree count to 2",
+        "Build one soldier every 50 rounds for minimal defense"
+      ],
+      "unit_priority": ["GARDENER", "SOLDIER"],
+      "engagement_style": "Pure economic focus with minimal defense"
+    },
+    {
+      "id": 4,
+      "type": "mutation",
+      "name": "Aggressive Gardener",
+      "win_condition": "hybrid",
+      "philosophy": "Hire gardeners at 5% chance instead of 1%, and have each gardener build soldiers at 8% chance while maintaining moderate tree economy for sustained production.",
+      "key_changes": [
+        "Increase gardener hire probability from 0.01 to 0.05",
+        "Increase soldier build probability from 0.01 to 0.08",
+        "Increase tree planting to 40% for economy backbone",
+        "Have gardeners move toward nearest friendly archon for protection"
+      ],
+      "unit_priority": ["GARDENER", "SOLDIER", "LUMBERJACK", "TREE"],
+      "engagement_style": "Balanced economy with fast military ramp"
+    },
+    {
+      "id": 5,
+      "type": "mutation",
+      "name": "Specialized Economy",
+      "win_condition": "hybrid",
+      "philosophy": "Use broadcast channels to designate gardeners as either 'planter' (80% tree planting, no building) or 'builder' (80% building, no planting) for efficient resource allocation.",
+      "key_changes": [
+        "Add broadcast-based gardener role assignment using channels 10-11",
+        "Planter gardeners: 80% plant tree, 5% build soldier",
+        "Builder gardeners: 5% plant tree, 30% build soldier",
+        "Archon alternates hiring planter and builder gardeners"
+      ],
+      "unit_priority": ["GARDENER", "SOLDIER", "TREE", "LUMBERJACK"],
+      "engagement_style": "Structured economy-to-military pipeline"
+    },
+    {
+      "id": 6,
+      "type": "mutation",
+      "name": "Lumberjack Tree Raider",
+      "win_condition": "elimination",
+      "philosophy": "Prioritize lumberjacks (30% build chance) to chop neutral trees for free bullet income and early robot spawns, then swarm enemies with melee pressure.",
+      "key_changes": [
+        "Increase lumberjack build probability to 0.30",
+        "Add neutral tree chopping logic before enemy chasing",
+        "Have lumberjacks shake trees for contained bullets",
+        "Reduce soldier builds to 2% — rely on lumberjacks for early combat"
+      ],
+      "unit_priority": ["LUMBERJACK", "LUMBERJACK", "GARDENER", "SOLDIER"],
+      "engagement_style": "Aggressive melee disruption with tree income"
+    },
+    {
+      "id": 7,
+      "type": "mutation",
+      "name": "Combat Micro Soldiers",
+      "win_condition": "elimination",
+      "philosophy": "Keep standard production rates but add bullet-dodging, pentad shots when enemies are clustered, and tactical retreat when low on health to dramatically improve soldier survivability and kill efficiency.",
+      "key_changes": [
+        "Add willCollideWithMe-based dodge movement for soldiers",
+        "Add pentad shot when 3+ enemies in sensor range",
+        "Add retreat logic when soldier HP drops below 50%",
+        "Have soldiers move toward nearest enemy instead of randomly"
+      ],
+      "unit_priority": ["SOLDIER", "GARDENER", "LUMBERJACK"],
+      "engagement_style": "Tactical ranged combat with micro"
+    },
+    {
+      "id": 8,
+      "type": "mutation",
+      "name": "Fast Start Archon",
+      "win_condition": "hybrid",
+      "philosophy": "Focus the first 100 rounds on rapid gardener hiring (15% chance) and tree planting (50%) to establish economy momentum, then transition to 10% soldier builds for military.",
+      "key_changes": [
+        "First 100 rounds: gardener hire at 15%, tree plant at 50%",
+        "After round 100: gardener hire drops to 1%, soldier builds increase to 10%",
+        "Archon moves toward map center early for positioning",
+        "Donate only after round 200 to avoid starving early economy"
+      ],
+      "unit_priority": ["GARDENER", "TREE", "SOLDIER", "LUMBERJACK"],
+      "engagement_style": "Fast economic bootstrapping into military"
+    },
+    {
+      "id": 9,
+      "type": "exploration",
+      "name": "Tank Commander",
+      "win_condition": "elimination",
+      "philosophy": "Rush Tanks as the primary combat unit — their 200 HP and 5 attack power dominate the battlefield. Use triad shots and tree body-ramming to crush through defenses.",
+      "key_changes": [
+        "Add Tank building in BulletSpending (30% chance when possible)",
+        "Create Tank.java with triad shot combat and tree ramming",
+        "Keep 2 gardeners producing tanks exclusively",
+        "Add tank group movement toward nearest enemy location"
+      ],
+      "unit_priority": ["TANK", "TANK", "GARDENER", "SOLDIER"],
+      "engagement_style": "Heavy armor frontal assault"
+    },
+    {
+      "id": 10,
+      "type": "exploration",
+      "name": "Scout Harassment Fleet",
+      "win_condition": "vp_rush",
+      "philosophy": "Build cheap Scouts (80 bullets) to harass enemies, collect bullets from across the map via tree shaking, and funnel all surplus into VP donations while scouts keep the enemy distracted.",
+      "key_changes": [
+        "Create Scout.java with harassment, bullet collection, and tree shaking",
+        "Build scouts at 25% chance — they're cheap and fast",
+        "Scouts shake every tree they pass for free bullets",
+        "All excess bullets donated to VP; scouts provide map control"
+      ],
+      "unit_priority": ["SCOUT", "SCOUT", "GARDENER"],
+      "engagement_style": "Hit-and-run harassment funding VP rush"
+    },
+    {
+      "id": 11,
+      "type": "exploration",
+      "name": "Lumberjack Horde",
+      "win_condition": "elimination",
+      "philosophy": "Flood the map with lumberjacks (60% build rate) — they're cheap melee units that can chop trees for income, strike in area-of-effect, and overwhelm opponents who can't handle close-range pressure.",
+      "key_changes": [
+        "Set lumberjack build probability to 60%",
+        "Stop building soldiers entirely",
+        "Lumberjacks prioritize chopping neutral trees then striking enemies",
+        "Use lumberjack AOE strike as primary damage source"
+      ],
+      "unit_priority": ["LUMBERJACK", "LUMBERJACK", "LUMBERJACK", "GARDENER"],
+      "engagement_style": "Massive melee swarm with AOE strikes"
+    },
+    {
+      "id": 12,
+      "type": "exploration",
+      "name": "VP Blitz Donator",
+      "win_condition": "vp_rush",
+      "philosophy": "Abandon all military production and tree economy. Hire exactly one gardener, build zero units, plant zero trees, and donate every single bullet above 0 to rush 1000 VP as fast as mathematically possible.",
+      "key_changes": [
+        "Remove all building and planting logic",
+        "Hire one gardener then stop hiring",
+        "BULLET_RESERVE set to 0 — donate all bullets every turn",
+        "Gardener does nothing but exist; archon moves to safety"
+      ],
+      "unit_priority": ["GARDENER"],
+      "engagement_style": "Pure VP rush with zero military"
+    },
+    {
+      "id": 13,
+      "type": "exploration",
+      "name": "Multi-Vector Strike",
+      "win_condition": "elimination",
+      "philosophy": "Use broadcast channels to split forces into two groups that attack from different angles simultaneously, preventing the enemy from defending one chokepoint and creating crossfire opportunities.",
+      "key_changes": [
+        "Archon assigns units to group A or B using broadcast channel 20",
+        "Groups move to opposite sides of the enemy archon location",
+        "Soldiers use triad shots for area denial",
+        "Add group-based movement logic instead of random wandering"
+      ],
+      "unit_priority": ["SOLDIER", "SOLDIER", "GARDENER", "LUMBERJACK"],
+      "engagement_style": "Coordinated multi-pronged attack"
+    },
+    {
+      "id": 14,
+      "type": "exploration",
+      "name": "Military Gardener Factory",
+      "win_condition": "elimination",
+      "philosophy": "Gardeners never plant trees — instead they focus 100% on building soldiers (40% build chance) and tanks (15% build chance) to maximize military output from day one.",
+      "key_changes": [
+        "Remove all tree planting from gardeners",
+        "Increase soldier build to 40% and add tank builds at 15%",
+        "Archon hires gardeners at 8% chance for rapid factory setup",
+        "BULLET_RESERVE stays at 200 for sustained production"
+      ],
+      "unit_priority": ["SOLDIER", "TANK", "GARDENER"],
+      "engagement_style": "Pure military production pipeline"
+    },
+    {
+      "id": 15,
+      "type": "exploration",
+      "name": "Ambush Predator",
+      "win_condition": "hybrid",
+      "philosophy": "Build a moderate military (soldiers and lumberjacks) but have them hold position near the archon instead of roaming. Let enemies come to you, then counter-attack with superior positioning and triad/pentad shots.",
+      "key_changes": [
+        "Units stay within sensor radius of nearest archon broadcast location",
+        "Soldiers use pentad shots when enemies are within range 5",
+        "Lumberjacks only move to strike when enemies enter their range",
+        "Counter-attack: once enemy retreats, pursue with full force"
+      ],
+      "unit_priority": ["SOLDIER", "LUMBERJACK", "GARDENER"],
+      "engagement_style": "Defensive positioning with devastating counter-attacks"
+    },
+    {
+      "id": 16,
+      "type": "exploration",
+      "name": "Mixed Arms Doctrine",
+      "win_condition": "hybrid",
+      "philosophy": "Build all unit types in balanced proportions — scouts for vision and harassment, soldiers for ranged DPS, tanks for frontline durability, and lumberjacks for tree income and melee — creating a combined-arms force with no single counter.",
+      "key_changes": [
+        "Create Scout.java and Tank.java for full unit roster",
+        "Gardener builds: 20% soldier, 10% tank, 10% scout, 10% lumberjack",
+        "Scouts scout ahead and report enemy locations via broadcast",
+        "Tanks tank damage while soldiers and lumberjacks deal damage"
+      ],
+      "unit_priority": ["SOLDIER", "TANK", "LUMBERJACK", "SCOUT", "GARDENER"],
+      "engagement_style": "Balanced combined-arms with role specialization"
+    }
+  ]
+}

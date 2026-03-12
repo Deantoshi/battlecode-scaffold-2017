@@ -1,0 +1,65 @@
+{
+  "iterations": [
+    {
+      "iteration": 1,
+      "winner": "v3",
+      "winner_score": 2416,
+      "promoted": true,
+      "variants": [
+        {
+          "id": "v3",
+          "score": 2416,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [5 kills]. Good combat but couldn't close.",
+          "archetype_name": "Tree Baron",
+          "type": "mutation",
+          "win_condition": "hybrid",
+          "philosophy": "Build a massive tree economy early for bullet income superiority, then convert surplus bullets into units or VP as needed."
+        },
+        {
+          "id": "v2",
+          "score": 2394,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [7 kills]. Good combat but couldn't close.",
+          "archetype_name": "Soldier Swarm",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Dramatically increase soldier production rate to overwhelm opponents with numbers, prioritizing sheer volume of ranged firepower."
+        },
+        {
+          "id": "original",
+          "score": 2311,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [5 kills]. Good combat but couldn't close.",
+          "archetype_name": "Original (baseline)",
+          "type": "baseline"
+        },
+        {
+          "id": "v4",
+          "score": 2018,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds). Won but too slowly; needs faster execution.",
+          "archetype_name": "VP Harvester",
+          "type": "mutation",
+          "win_condition": "vp_rush",
+          "philosophy": "Keep minimal military for defense and focus the economy on rapid VP accumulation through aggressive donation, aiming to hit 1000 VP before the opponent can counter."
+        },
+        {
+          "id": "v1",
+          "score": 2016,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds). Won but too slowly; needs faster execution.",
+          "archetype_name": "Rapid Gardener",
+          "type": "mutation",
+          "win_condition": "hybrid",
+          "philosophy": "Hire gardeners at a much higher rate to establish tree economy and unit production earlier, keeping the random movement and combat model intact."
+        }
+      ]
+    }
+  ]
+}
