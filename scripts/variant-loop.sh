@@ -894,7 +894,7 @@ with open(log_file) as f:
             continue
 
 if not entries:
-    return
+    sys.exit(0)
 
 print(f"\033[1m\033[36m{'─' * 60}\033[0m")
 print(f"\033[1m\033[36m  USAGE SUMMARY ({len(entries)} worker calls)\033[0m")
