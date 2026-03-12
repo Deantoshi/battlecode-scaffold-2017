@@ -1033,7 +1033,7 @@ EOF
             agent_cmd=(pi -p --no-session --mode json)
             [[ -n "$MODEL" ]] && agent_cmd+=(--model "$MODEL")
             [[ -n "$PI_THINKING_RESOLVED" ]] && agent_cmd+=(--thinking "$PI_THINKING_RESOLVED")
-            agent_cmd+=("@${worker_prompt}" "$worker_message")
+            agent_cmd+=("$full_prompt")
             ;;
         claude)
             agent_cmd=(claude -p --dangerously-skip-permissions --output-format json "$full_prompt")
