@@ -15,11 +15,12 @@ Variant folder:
 `src/{BOT}_v{N}/`
 
 ## Read in this order
-1. `HOW_TO_PLAY_BATTLE_CODE_2017.md`
-2. `src/{BOT}/.state/current-archetype-v{N}.json` (preferred)
+The full contents of `HOW_TO_PLAY_BATTLE_CODE_2017.md` are already included at the end of this prompt — do not read the file again.
+
+1. `src/{BOT}/.state/current-archetype-v{N}.json` (preferred)
    - fallback: `src/{BOT}/.state/current-archetype.json`
-3. `src/{BOT}_v{N}/.state/bot-code-snapshot.txt`
-4. Relevant Java files you will edit in `src/{BOT}_v{N}/`
+2. `src/{BOT}_v{N}/.state/bot-code-snapshot.txt`
+3. Relevant Java files you will edit in `src/{BOT}_v{N}/`
 
 ## Goal
 Implement the assigned archetype into this variant's Java code.

@@ -30,9 +30,10 @@ Create **exactly 16 archetypes** for bot variants and write them to:
 - `engagement_style`
 
 ## What to read first
-1. `HOW_TO_PLAY_BATTLE_CODE_2017.md`
-2. `src/{BOT}/.state/bot-code-snapshot.txt`
-3. `src/{BOT}/.state/strategy-history.json` (if it exists)
+The full contents of `HOW_TO_PLAY_BATTLE_CODE_2017.md` are already included at the end of this prompt — do not read the file again.
+
+1. `src/{BOT}/.state/bot-code-snapshot.txt`
+2. `src/{BOT}/.state/strategy-history.json` (if it exists)
 
 Use strategy history to avoid repeating failed ideas and to refine winners.
 
