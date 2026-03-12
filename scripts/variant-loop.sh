@@ -49,8 +49,8 @@ print_usage() {
     echo "  -m, --map <name>            Map name (default: Clusters)"
     echo "  -i, --max-iters <n>         Maximum improvement cycles (default: 20)"
     echo "  -n, --num-variants <n>      Variants generated per iteration (default: 16)"
-    echo "  -a, --agent <name>          Worker CLI: claude | pi | opencode | codex (default: pi)"
-    echo "      --model <name>          Optional model override (pi, opencode, or codex)"
+    echo "  -a, --agent <name>          Worker CLI: claude | pi | opencode | codex | gemini (default: pi)"
+    echo "      --model <name>          Optional model override (pi, opencode, codex, or gemini)"
     echo "      --thinking <level>      Optional thinking level (pi only)"
     echo "      --reasoning-effort <level>  Optional reasoning effort (codex)"
     echo "      --variant <name>        Optional model variant / reasoning mode (opencode)"
@@ -180,11 +180,11 @@ case "$CODING_AGENT" in
     pi|pi-coding-agent)
         CODING_AGENT="pi"
         ;;
-    claude|opencode|codex)
+    claude|opencode|codex|gemini)
         ;;
     *)
         printf '%s\n' "${RED}Unsupported coding-agent: $CODING_AGENT${NC}"
-        printf '%s\n' "${RED}Supported coding agents: claude, pi, opencode, codex${NC}"
+        printf '%s\n' "${RED}Supported coding agents: claude, pi, opencode, codex, gemini${NC}"
         exit 1
         ;;
 esac
@@ -325,7 +325,7 @@ fi
 
 usage_logging_enabled() {
     case "$1" in
-        claude|codex|opencode|pi)
+        claude|codex|opencode|pi|gemini)
             return 0
             ;;
         *)
@@ -799,6 +799,24 @@ try:
 
         if not reasoning_effort:
             reasoning_effort = requested_reasoning_effort or 'unknown'
+    elif agent_kind == 'gemini':
+        data = json.loads(raw_output)
+        stats = data.get('stats', {})
+        models_data = stats.get('models', {})
+
+        # Aggregate tokens across all models used in the session
+        for model_name, model_info in models_data.items():
+            model = model_name  # last one wins as primary model
+            tokens = model_info.get('tokens', {})
+            input_tokens += tokens.get('input', 0) or 0
+            output_tokens += tokens.get('candidates', 0) or 0
+            reasoning_tokens += tokens.get('thoughts', 0) or 0
+            cache_read_tokens += tokens.get('cached', 0) or 0
+
+            api_info = model_info.get('api', {})
+            num_turns += api_info.get('totalRequests', 0) or 0
+
+        reasoning_effort = requested_reasoning_effort or 'default'
     else:
         raise ValueError(f'Unsupported agent_kind: {agent_kind}')
 
@@ -1037,6 +1055,10 @@ EOF
             [[ -n "$CODEX_REASONING_EFFORT" ]] && agent_cmd+=(-c "model_reasoning_effort=\"$CODEX_REASONING_EFFORT\"")
             agent_cmd+=("$full_prompt")
             ;;
+        gemini)
+            agent_cmd=(gemini -p "$full_prompt" -o json --yolo)
+            [[ -n "$MODEL" ]] && agent_cmd+=(-m "$MODEL")
+            ;;
         *)
             printf '%s\n' "${RED}Unsupported coding-agent at runtime: $CODING_AGENT${NC}"
             return 1
@@ -1050,7 +1072,12 @@ EOF
         local end_ms
         local elapsed_ms
         start_ms=$(python3 -c 'import time; print(int(time.time() * 1000))')
-        agent_output=$("${agent_cmd[@]}" 2>&1) || exit_code=$?
+        if [[ "$CODING_AGENT" == "gemini" ]]; then
+            # Gemini outputs clean JSON on stdout; capture stderr separately
+            agent_output=$("${agent_cmd[@]}" 2>/dev/null) || exit_code=$?
+        else
+            agent_output=$("${agent_cmd[@]}" 2>&1) || exit_code=$?
+        fi
         end_ms=$(python3 -c 'import time; print(int(time.time() * 1000))')
         elapsed_ms=$((end_ms - start_ms))
 
