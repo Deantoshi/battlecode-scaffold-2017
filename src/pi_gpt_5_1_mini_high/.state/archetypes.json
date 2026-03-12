@@ -1,0 +1,276 @@
+{
+  "archetypes": [
+    {
+      "id": 1,
+      "type": "mutation",
+      "name": "Stable Safe Arc Throttle",
+      "win_condition": "hybrid",
+      "philosophy": "After seeing Staggered Gardener Cadence still reach round 2999, requiring longer safe arcs ensures gardeners arrive with escorts so the army can stay focused on fast closing instead of babysitting stray builds.",
+      "key_changes": [
+        "Extend SafeArcTimer in BulletSpending.scanForSafeHireDirection() from three to five consecutive alignment checks before returning a stableDirection.",
+        "Add BulletSpending.isSafeArcStable() and guard RobotPlayer.runArchon() so BulletSpending.spendPolicy() is only invoked when the arc has persisted for the extended window."
+      ],
+      "unit_priority": [
+        "Archon",
+        "Gardener",
+        "Soldier"
+      ],
+      "engagement_style": "Patient base defense that ripples out once the build arc is locked."
+    },
+    {
+      "id": 2,
+      "type": "mutation",
+      "name": "Broadcasted Soldier Patrol",
+      "win_condition": "elimination",
+      "philosophy": "Reactive Soldier Orbit was too free-form; broadcasting a rally direction keeps soldiers patrolling close and only chasing when we have coordinated intel.",
+      "key_changes": [
+        "Have RobotPlayer.runArchon() write the current rally direction to two new shared channels whenever the safe arc is stable.",
+        "Update RobotPlayer.runSoldier() to consult those rally channels, move along that vector when no enemies are sensed, and only chase fresh sightings."
+      ],
+      "unit_priority": [
+        "Soldier",
+        "Archon",
+        "Gardener"
+      ],
+      "engagement_style": "Orbiting the rally beacon with conditional pursuit on fresh contact."
+    },
+    {
+      "id": 3,
+      "type": "mutation",
+      "name": "Tree-Focused Gardener Cadence",
+      "win_condition": "hybrid",
+      "philosophy": "To prevent hybrid economies from stalling, gardeners alternate between planting/watering and soldier builds, keeping tree health and bullets steady while still producing combat units.",
+      "key_changes": [
+        "Introduce a gardenPhase flag broadcasted from the gardener so BulletSpending.spendPolicy() knows when to enter a tree cycle versus a soldier cycle.",
+        "Within RobotPlayer.runGardener(), track the last build round to force at least three turns of watering after planting before committing to another soldier."
+      ],
+      "unit_priority": [
+        "Gardener",
+        "Soldier",
+        "Lumberjack"
+      ],
+      "engagement_style": "Slow, deliberate build that tightens tree health before releasing soldiers."
+    },
+    {
+      "id": 4,
+      "type": "mutation",
+      "name": "Buffered Lumberjack Bulwark",
+      "win_condition": "elimination",
+      "philosophy": "Lumberjacks guard the archon with tighter rules\u2014retreating to the home base when no enemies are nearby and striking only when a wave is close\u2014to avoid bleed from aimless brawls.",
+      "key_changes": [
+        "Have RobotPlayer.runLumberjack() reread the archon locator channels and retreat there when no hostile robots have been seen for several turns.",
+        "Add a shouldStrikeGuard() helper that only allows strikes when enemies are within 2.2 units and otherwise keeps lumberjacks focused on chopping near the rally point."
+      ],
+      "unit_priority": [
+        "Lumberjack",
+        "Soldier",
+        "Gardener"
+      ],
+      "engagement_style": "Perimeter guard with measured strikes and fallback to the archon."
+    },
+    {
+      "id": 5,
+      "type": "mutation",
+      "name": "Responsive Soldier Burst",
+      "win_condition": "elimination",
+      "philosophy": "When enemies are spotted we throttle soldier production and push them toward that vector, turning the previous wandering orbit into a quick burst on contact.",
+      "key_changes": [
+        "Let RobotPlayer.runSoldier() broadcast enemy contact direction when foes appear within sensor range.",
+        "Have BulletSpending.spendPolicy() monitor that broadcast and temporarily raise the soldier build probability, spawning soldiers toward the reported vector."
+      ],
+      "unit_priority": [
+        "Soldier",
+        "Archon",
+        "Gardener"
+      ],
+      "engagement_style": "Short pursuit bursts triggered by fresh sightings."
+    },
+    {
+      "id": 6,
+      "type": "mutation",
+      "name": "Donation Stabilizer",
+      "win_condition": "vp_rush",
+      "philosophy": "Instead of hoarding bullets until the very end we donate in controlled increments once the tree economy is online, keeping the VP meter growing without starving builds.",
+      "key_changes": [
+        "Add a MIN_DONATE_RESERVE in BulletSpending.getDonateAmount() so we donate whenever bullets exceed 600 and at least one gardener exists.",
+        "Track lastDonationRound via broadcast and only donate twice per 100 rounds to prevent overreacting to every minor shoreline swing."
+      ],
+      "unit_priority": [
+        "Archon",
+        "Gardener",
+        "Soldier"
+      ],
+      "engagement_style": "Slow VP pressure that supplements the base with periodic donations."
+    },
+    {
+      "id": 7,
+      "type": "mutation",
+      "name": "Archon Rally Beacon",
+      "win_condition": "elimination",
+      "philosophy": "Sharing the archon's safe arc direction directly with soldiers and lumberjacks keeps the team on the same page, preventing isolated units from drifting off.",
+      "key_changes": [
+        "Have RobotPlayer.runArchon() broadcast the normalized safe arc vector on channels 4/5 whenever computeSafeHireDirection() returns non-null.",
+        "In RobotPlayer.runSoldier() and RobotPlayer.runLumberjack(), read channels 4/5 and bias tryMove() toward the beacon when their immediate sensors are quiet."
+      ],
+      "unit_priority": [
+        "Archon",
+        "Soldier",
+        "Lumberjack"
+      ],
+      "engagement_style": "Coordinated beacon following with rapid reaction to enemy noise."
+    },
+    {
+      "id": 8,
+      "type": "mutation",
+      "name": "Watering Discipline",
+      "win_condition": "hybrid",
+      "philosophy": "Watering is too random right now; we dedicate gardeners to track a primary team tree and keep it at full health, stabilizing bullet income.",
+      "key_changes": [
+        "Broadcast the preferred tree's ID or location from the gardener and have subsequent gardeners continue to water that target until it is destroyed.",
+        "In RobotPlayer.runGardener(), add a shouldWater() branch that loops on watering before planting when the tracked tree is below 60% health."
+      ],
+      "unit_priority": [
+        "Gardener",
+        "Soldier",
+        "Lumberjack"
+      ],
+      "engagement_style": "Static tree farm maintainers with guard-heavy backup."
+    },
+    {
+      "id": 9,
+      "type": "exploration",
+      "name": "VP Accelerator Fleet",
+      "win_condition": "vp_rush",
+      "philosophy": "After every promoted champion still capped out at round 2999 we pivot to a VP rush that donates aggressively once we cross 700 bullets, ending the match before elimination drags on.",
+      "key_changes": [
+        "Add VictoryPointManager logic in BulletSpending.getDonateAmount() to compute donation batches once team bullets exceed 700 while honoring a VP_DONATION_BUFFER before building.",
+        "Broadcast a readyToDonate bit from RobotPlayer.runArchon() after waves of gardeners plant so BulletSpending.spendPolicy() knows donations can fire without starving defense."
+      ],
+      "unit_priority": [
+        "Archon",
+        "Gardener",
+        "Soldier"
+      ],
+      "engagement_style": "Minimal skirmish while the VP meter climbs via disciplined donations."
+    },
+    {
+      "id": 10,
+      "type": "exploration",
+      "name": "Lumberjack Blitz",
+      "win_condition": "elimination",
+      "philosophy": "This aggressive exploration builds a lumberjack rush that knows where the enemy is and hits them before their tree economy matures.",
+      "key_changes": [
+        "Have BulletSpending.spendPolicy() prioritize RobotType.LUMBERJACK for the first three gardener builds and continue spawning them until round 120.",
+        "Extend RobotPlayer.runLumberjack() with rushPathToEnemy() that uses rc.getInitialArchonLocations(rc.getTeam().opponent()) and commits to running straight toward the nearest enemy archon."
+      ],
+      "unit_priority": [
+        "Lumberjack",
+        "Soldier",
+        "Gardener"
+      ],
+      "engagement_style": "Early-game rush with lumberjacks charging toward the enemy archon."
+    },
+    {
+      "id": 11,
+      "type": "exploration",
+      "name": "Tank Line Siege",
+      "win_condition": "elimination",
+      "philosophy": "Heavy tanks break standoffs by body-rushing trees and punching through enemy lines, a new direction compatible with our central spending rule.",
+      "key_changes": [
+        "Add a TankBuildPriority in BulletSpending.spendPolicy() so gardeners build one tank every 200 bullets after two gardeners exist.",
+        "Introduce RobotPlayer.runTank() that reads a tankPushDir channel and charges in formation while RobotPlayer.runSoldier() designates bullet lanes for them."
+      ],
+      "unit_priority": [
+        "Tank",
+        "Soldier",
+        "Gardener"
+      ],
+      "engagement_style": "Slow, unstoppable push that shoves through neutral trees and enemy front lines."
+    },
+    {
+      "id": 12,
+      "type": "exploration",
+      "name": "Phalanx Rotation",
+      "win_condition": "elimination",
+      "philosophy": "We dedicate a rotating phalanx of soldiers that stays lumped near the archon until a confirmed engagement swings them as a consolidated group.",
+      "key_changes": [
+        "Track a phalanxCenter via broadcasts and have RobotPlayer.runSoldier() stay within three units of that point until a charge is signaled.",
+        "Let RobotPlayer.runArchon() set phalanxChargeDirection channels when an enemy appears so the entire group pushes together."
+      ],
+      "unit_priority": [
+        "Soldier",
+        "Archon",
+        "Gardener"
+      ],
+      "engagement_style": "Tightly grouped soldier rotation that lines up one decisive charge."
+    },
+    {
+      "id": 13,
+      "type": "exploration",
+      "name": "Tree Farm Surge",
+      "win_condition": "hybrid",
+      "philosophy": "We spawn three gardeners quickly, plant a dense lattice, and defend it with minimal soldiers while waiting for bullet income to snowball.",
+      "key_changes": [
+        "Let RobotPlayer.runArchon() relax safe-arc gating temporarily to hire gardeners in two distinct directions and store their slots in broadcast.",
+        "Teach each gardener to plant the next tree in the lattice even if a soldier cooldown exists, prioritizing planting over soldier builds during the surge."
+      ],
+      "unit_priority": [
+        "Gardener",
+        "Soldier",
+        "Archon"
+      ],
+      "engagement_style": "Dense tree lattice economy protected by a skinny soldier screen."
+    },
+    {
+      "id": 14,
+      "type": "exploration",
+      "name": "Archon Mobile Burst",
+      "win_condition": "hybrid",
+      "philosophy": "Instead of sitting with the safe arc, the archon advances to the enemy quadrant with escorts, dragging gardeners and soldiers along to pressure the early map.",
+      "key_changes": [
+        "Add advanceTarget so RobotPlayer.runArchon() uses tryMove(moveTarget) toward the enemy initial location after broadcasting and only hires gardeners when moveTarget is within six units.",
+        "Signal the target direction via new channels so gardeners and soldiers can reposition ahead of the archon."
+      ],
+      "unit_priority": [
+        "Archon",
+        "Soldier",
+        "Lumberjack"
+      ],
+      "engagement_style": "Mobile archon spearhead that pushes the frontline forward."
+    },
+    {
+      "id": 15,
+      "type": "exploration",
+      "name": "Rapid Gardener Expansion",
+      "win_condition": "hybrid",
+      "philosophy": "We shotgun multiple gardeners in different arcs and then spread them out instead of waiting for a single safe candidate.",
+      "key_changes": [
+        "In BulletSpending.spendPolicy(), queue up two gardeners by writing pending directions into slots and only decrement the queue when a gardener is actually hired.",
+        "Add a GardenerSpread helper in RobotPlayer.runGardener() so gardeners move outward in their assigned quadrant before planting."
+      ],
+      "unit_priority": [
+        "Gardener",
+        "Soldier",
+        "Archon"
+      ],
+      "engagement_style": "Fast, outward-spreading gardeners that create multiple farms before the enemy reacts."
+    },
+    {
+      "id": 16,
+      "type": "exploration",
+      "name": "Hybrid Ambush",
+      "win_condition": "elimination",
+      "philosophy": "Lumberjack escorts combine with soldiers for ambushes near enemy tree clusters, mixing new pressure with our prior hybrid baseline.",
+      "key_changes": [
+        "Alternate soldier and lumberjack builds in BulletSpending.spendPolicy() once enemy trees have been sensed so there is always a chopping escort ready.",
+        "Add a lumberjackEscortDir broadcast that both soldiers and lumberjacks read so they can converge on the same ambush location."
+      ],
+      "unit_priority": [
+        "Soldier",
+        "Lumberjack",
+        "Gardener"
+      ],
+      "engagement_style": "Paired ambushes where lumberjacks chop while soldiers provide covering fire."
+    }
+  ]
+}

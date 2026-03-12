@@ -1,0 +1,182 @@
+{
+  "iterations": [
+    {
+      "iteration": 1,
+      "winner": "v1",
+      "winner_score": 2355,
+      "promoted": true,
+      "variants": [
+        {
+          "id": "v1",
+          "score": 2355,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [6 kills]. Good combat but couldn't close.",
+          "archetype_name": "Tight Gardener Spacing",
+          "type": "mutation",
+          "win_condition": "hybrid",
+          "philosophy": "Refine archon gardener hires to wait for clean arcs and keep each fresh gardener surrounded by safe positioning. We only spend bullets on a gardener when we can guarantee a 120-degree clear corridor and the archon is close enough to shepherd the new builder."
+        },
+        {
+          "id": "original",
+          "score": 2311,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [5 kills]. Good combat but couldn't close.",
+          "archetype_name": "Original (baseline)",
+          "type": "baseline"
+        },
+        {
+          "id": "v4",
+          "score": 2311,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [5 kills]. Good combat but couldn't close.",
+          "archetype_name": "Lumberjack Safety Net",
+          "type": "mutation",
+          "win_condition": "hybrid",
+          "philosophy": "Lumberjacks guard the archon by striking enemies that cross their defensive perimeter and then retreating to minimize casualties."
+        },
+        {
+          "id": "v2",
+          "score": 2261,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [4 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "Reactive Soldier Patrol",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Turn soldiers into disciplined patrols that orbit the home archon and only chase enemies once inside sensor range; this minimizes lost units from blind wandering."
+        },
+        {
+          "id": "v3",
+          "score": 2210,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [2 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "Selective Soldier Spam",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Let archons and gardeners only build soldiers when enemy pressure is detected while quiet periods are reserved for tree growth."
+        }
+      ]
+    },
+    {
+      "iteration": 1,
+      "winner": "original",
+      "winner_score": 4294,
+      "promoted": false,
+      "variants": [
+        {
+          "id": "original",
+          "score": 4294,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [2 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "Original (baseline)",
+          "type": "baseline"
+        },
+        {
+          "id": "v2",
+          "score": 4184,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [1 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "Reactive Soldier Orbit",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Reactive Soldier Orbit extends the previous patrol idea by keeping soldiers in a tight orbit until confirmed enemy sightings arrive, reducing aimless wandering while still punishing pressure. Soldiers only chase after broadcasted contact, letting the archon and gardeners handle passive tree economy otherwise."
+        },
+        {
+          "id": "v1",
+          "score": 4022,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds). Won but too slowly; needs faster execution.",
+          "archetype_name": "Cautious Gardener Cadence",
+          "type": "mutation",
+          "win_condition": "hybrid",
+          "philosophy": "Cautious Gardener Cadence waits for the same safe hiring arc to persist for several rounds so the archon never fumbles new gardeners, keeping builders shepherded before committing to additional hires. The tighter cadence keeps tree farms and soldier queues synchronized with the archon's awareness of the map."
+        }
+      ]
+    },
+    {
+      "iteration": 1,
+      "winner": "v1",
+      "winner_score": 4694,
+      "promoted": true,
+      "variants": [
+        {
+          "id": "v1",
+          "score": 4694,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [6 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "Staggered Gardener Cadence",
+          "type": "mutation",
+          "win_condition": "hybrid",
+          "philosophy": "Builds on the safe-arc lessons by forcing a multi-round confirmation before spending bullets on a gardener so officers arrive with an escort and tree farms begin with protection."
+        },
+        {
+          "id": "v2",
+          "score": 4302,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [2 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "Archon Escort Trail",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Keeps the archon in close proximity to the freshest gardener so it can shepherd expansion while still hunting enemies between escort sweeps."
+        },
+        {
+          "id": "original",
+          "score": 4294,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [2 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "Original (baseline)",
+          "type": "baseline"
+        }
+      ]
+    },
+    {
+      "iteration": 2,
+      "winner": "v2",
+      "winner_score": 6946,
+      "promoted": true,
+      "variants": [
+        {
+          "id": "v2",
+          "score": 6946,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [6 kills]. Good combat but couldn't close.",
+          "archetype_name": "Broadcasted Soldier Patrol",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Reactive Soldier Orbit was too free-form; broadcasting a rally direction keeps soldiers patrolling close and only chasing when we have coordinated intel."
+        },
+        {
+          "id": "original",
+          "score": 6737,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [3 kills]. Strategy ineffective.",
+          "archetype_name": "Original (baseline)",
+          "type": "baseline"
+        },
+        {
+          "id": "v1",
+          "score": 6720,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [3 kills]. Strategy ineffective.",
+          "archetype_name": "Stable Safe Arc Throttle",
+          "type": "mutation",
+          "win_condition": "hybrid",
+          "philosophy": "After seeing Staggered Gardener Cadence still reach round 2999, requiring longer safe arcs ensures gardeners arrive with escorts so the army can stay focused on fast closing instead of babysitting stray builds."
+        }
+      ]
+    }
+  ]
+}
