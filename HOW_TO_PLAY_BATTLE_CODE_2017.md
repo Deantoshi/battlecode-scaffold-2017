@@ -2,6 +2,28 @@
 
 This document summarizes the gameplay rules, mechanics, and API behavior as implemented in the 2017 Battlecode engine in `engine/`. It is intended to be a compact, accurate reference for LLMs that need to understand the game and build strong bots.
 
+---
+
+## ⚠️ CRITICAL: Primary Optimization Target — Win Fast
+
+**This is the single most important directive for bot design.**
+
+There are exactly **two ways to win a match**:
+1. **Elimination** — destroy every enemy robot (reduce their robot count to 0).
+2. **VP Rush** — accumulate **1000 Victory Points** (via `rc.donate(bullets)`) before the opponent does.
+
+**The speed of your win is critical.** Winning by round 1500 or earlier is the target. The match runs for up to 3000 rounds, but a slow win is a weak result. Every bot strategy must be designed to achieve one of the two win conditions **as fast as possible**.
+
+**What this means in practice:**
+- Do not play passively. Passive play leads to slow or no wins.
+- Economy building is only valuable if it directly enables a faster win (more units, faster VP purchase, faster aggression).
+- A strategy that wins in round 800 is vastly better than one that wins in round 2800.
+- If a strategy cannot win by round 1500, it needs to be more aggressive, more economical, or pivot its win condition.
+
+**Prioritize above all else:** aggressive unit production, decisive combat, and/or focused VP accumulation to end the game before round 1500.
+
+---
+
 ## High-Level Game Loop
 - The game runs for a fixed number of rounds (default 3000). The engine increments the round counter at the start of each round, then executes robots (first robot turns see `getRoundNum() == 1`).
 - Each robot gets one turn per round (sequentially). Bullets also update once per round.
