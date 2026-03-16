@@ -1,4 +1,4 @@
-package hunter_alpha_v1;
+package hunter_alpha_champion_1;
 import battlecode.common.*;
 
 public strictfp class RobotPlayer {
@@ -46,11 +46,18 @@ public strictfp class RobotPlayer {
                 // Centralized spend policy (hire/build/donate)
                 BulletSpending.spendPolicy();
 
-                // Move randomly
-                tryMove(randomDirection());
+                // Flee from enemies instead of random movement
+                MapLocation myLocation = rc.getLocation();
+                RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
+                if (enemies.length > 0) {
+                    // Move away from the nearest enemy
+                    Direction awayFromEnemy = enemies[0].getLocation().directionTo(myLocation);
+                    tryMove(awayFromEnemy);
+                } else {
+                    tryMove(randomDirection());
+                }
 
                 // Broadcast archon's location for other robots on the team to know
-                MapLocation myLocation = rc.getLocation();
                 rc.broadcast(0,(int)myLocation.x);
                 rc.broadcast(1,(int)myLocation.y);
 
@@ -77,20 +84,6 @@ public strictfp class RobotPlayer {
                 int xPos = rc.readBroadcast(0);
                 int yPos = rc.readBroadcast(1);
                 MapLocation archonLoc = new MapLocation(xPos,yPos);
-
-                // Water nearby team trees to maintain health and income
-                TreeInfo[] trees = rc.senseNearbyTrees(rc.getType().sensorRadius, rc.getTeam());
-                if (trees.length > 0 && !rc.hasWatered()) {
-                    TreeInfo weakest = trees[0];
-                    for (TreeInfo t : trees) {
-                        if (t.health < weakest.health) {
-                            weakest = t;
-                        }
-                    }
-                    if (rc.canWater(weakest.ID)) {
-                        rc.water(weakest.ID);
-                    }
-                }
 
                 // Centralized spend policy (plant/build/donate)
                 BulletSpending.spendPolicy();

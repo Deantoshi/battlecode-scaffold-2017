@@ -1,4 +1,4 @@
-package hunter_alpha;
+package hunter_alpha_champion_8;
 import battlecode.common.*;
 
 /**

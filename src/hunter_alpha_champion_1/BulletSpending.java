@@ -1,4 +1,4 @@
-package hunter_alpha_v3;
+package hunter_alpha_champion_1;
 import battlecode.common.*;
 
 public class BulletSpending {
@@ -39,18 +39,22 @@ public class BulletSpending {
     }
 
     private static boolean shouldHireGardener(Direction dir) {
-        return rc.canHireGardener(dir) && Math.random() < .01;
+        return rc.canHireGardener(dir) && Math.random() < .06;
     }
 
     private static boolean shouldPlantTree(Direction dir) {
-        return rc.canPlantTree(dir) && Math.random() < .25;
+        return rc.canPlantTree(dir) && Math.random() < .20;
     }
 
     private static boolean shouldBuildSoldier(Direction dir) {
-        return rc.canBuildRobot(RobotType.SOLDIER, dir) && Math.random() < .01;
+        return rc.canBuildRobot(RobotType.SOLDIER, dir) && Math.random() < .05;
     }
 
     private static float getDonateAmount() throws GameActionException {
+        // Begin VP donation only after round 600
+        if (rc.getRoundNum() < 600) {
+            return 0f;
+        }
         float bullets = rc.getTeamBullets();
         float cost = rc.getVictoryPointCost();
         float donateAmount = bullets - BULLET_RESERVE;

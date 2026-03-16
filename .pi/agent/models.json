@@ -1,0 +1,43 @@
+{
+  "providers": {
+    "openrouter": {
+      "baseUrl": "https://openrouter.ai/api/v1",
+      "apiKey": "OPENROUTER_API_KEY",
+      "api": "openai-completions",
+      "models": [
+        {
+          "id": "openrouter/anthropic/claude-3.5-sonnet",
+          "name": "OpenRouter Claude 3.5 Sonnet",
+          "compat": {
+            "openRouterRouting": {
+              "order": ["anthropic"],
+              "fallbacks": ["openai"]
+            }
+          }
+        },
+        {
+          "id": "openrouter/anthropic/claude-4o",
+          "name": "OpenRouter Claude 4o",
+          "compat": {
+            "openRouterRouting": {
+              "order": ["anthropic"],
+              "fallbacks": ["openai"]
+            }
+          }
+        },
+        {
+          "id": "openrouter/hunter-alpha",
+          "name": "Hunter Alpha",
+          "contextWindow": 1048576,
+          "maxTokens": 1048576,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          }
+        }
+      ]
+    }
+  }
+}

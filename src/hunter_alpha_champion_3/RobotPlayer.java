@@ -1,12 +1,10 @@
-package hunter_alpha;
+package hunter_alpha_champion_3;
 import battlecode.common.*;
 
 /**
- * Timber Support Bot (v5 mutation)
- * Phase 1 (Rounds 1-150): Dense tree farm construction at 90% planting rate.
- * Phase 2 (Round 150+): Mixed assault - SOLDIER (55%), LUMBERJACK (20%), SCOUT (25%).
- *   Lumberjacks clear neutral trees for instant bullet income and AOE strikes.
- *   All units converge on nearest enemy. Zero tank production.
+ * Eco Greed Supreme Bot
+ * Phase 1 (Rounds 1-800): Pure economy - gardeners plant trees, all units play defensively
+ * Phase 2 (Round 800+): Pivot to VP rush or tank army based on game state
  */
 public strictfp class RobotPlayer {
     static RobotController rc;
@@ -38,13 +36,13 @@ public strictfp class RobotPlayer {
 	}
 
     static void runArchon() throws GameActionException {
-        System.out.println("I'm an archon! (Swarm Blitz)");
+        System.out.println("I'm an archon! (Eco Greed Supreme)");
 
         while (true) {
             try {
                 BulletSpending.spendPolicy();
 
-                // Flee from enemies - archon survival is critical
+                // Flee from enemies - survival is critical for eco strategy
                 MapLocation myLocation = rc.getLocation();
                 RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
                 if (enemies.length > 0) {
@@ -54,7 +52,7 @@ public strictfp class RobotPlayer {
                     tryMove(randomDirection());
                 }
 
-                // Broadcast archon location for swarm coordination
+                // Broadcast archon location
                 rc.broadcast(0, (int)myLocation.x);
                 rc.broadcast(1, (int)myLocation.y);
 
@@ -68,7 +66,7 @@ public strictfp class RobotPlayer {
     }
 
 	static void runGardener() throws GameActionException {
-        System.out.println("I'm a gardener! (Swarm Blitz)");
+        System.out.println("I'm a gardener! (Eco Greed Supreme)");
 
         while (true) {
             try {
@@ -77,19 +75,20 @@ public strictfp class RobotPlayer {
                 int yPos = rc.readBroadcast(1);
                 MapLocation archonLoc = new MapLocation(xPos, yPos);
 
-                // Centralized spend policy (plant/build)
+                // Centralized spend policy (plant/build/donate)
                 BulletSpending.spendPolicy();
 
-                // Water nearby trees to maintain production
+                // Aggressively water nearby trees to maintain production
                 waterNearbyTrees();
 
-                // Stay near archon for protection, but spread out slightly
+                // Move towards archon if enemies nearby for protection
                 MapLocation myLocation = rc.getLocation();
                 RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
                 if (enemies.length > 0) {
                     Direction toArchon = myLocation.directionTo(archonLoc);
                     tryMove(toArchon);
                 } else {
+                    // Stay near our trees but move slightly to find planting spots
                     tryMove(randomDirection());
                 }
 
@@ -102,10 +101,16 @@ public strictfp class RobotPlayer {
         }
     }
 
+    /**
+     * Aggressively water all nearby team trees to maximize bullet production.
+     * Gardeners can water once per turn.
+     */
     static void waterNearbyTrees() throws GameActionException {
+        // Find all nearby team trees
         TreeInfo[] trees = rc.senseNearbyTrees(-1, rc.getTeam());
         if (trees.length == 0) return;
 
+        // Water the tree with lowest health (most in need of maintenance)
         TreeInfo weakestTree = null;
         float lowestHealth = Float.MAX_VALUE;
 
@@ -121,13 +126,8 @@ public strictfp class RobotPlayer {
         }
     }
 
-    /**
-     * Swarm soldier: aggressively converge on nearest enemy.
-     * Use single shots for bullet efficiency (1 bullet per shot).
-     * Ignore economy - pure combat focus.
-     */
     static void runSoldier() throws GameActionException {
-        System.out.println("I'm a soldier! (Swarm Blitz)");
+        System.out.println("I'm a soldier! (Eco Greed Supreme)");
         Team enemy = rc.getTeam().opponent();
 
         while (true) {
@@ -135,24 +135,22 @@ public strictfp class RobotPlayer {
                 MapLocation myLocation = rc.getLocation();
                 RobotInfo[] robots = rc.senseNearbyRobots(-1, enemy);
 
+                // In eco-greed, soldiers are defensive - protect gardeners
                 if (robots.length > 0) {
-                    // Find closest enemy
-                    RobotInfo target = findClosest(robots, myLocation);
-
-                    // Fire single shots for efficiency (1 bullet per shot)
+                    RobotInfo target = robots[0];
                     if (rc.canFireSingleShot()) {
-                        Direction toTarget = myLocation.directionTo(target.location);
-                        rc.fireSingleShot(toTarget);
+                        rc.fireSingleShot(rc.getLocation().directionTo(target.location));
                     }
-
-                    // Swarm: move towards enemy aggressively
+                    // Move towards threat to defend
                     tryMove(myLocation.directionTo(target.location));
                 } else {
-                    // No enemies nearby: move towards enemy archon spawn
-                    MapLocation[] enemyArchons = rc.getInitialArchonLocations(enemy);
-                    if (enemyArchons.length > 0) {
-                        Direction toEnemy = myLocation.directionTo(enemyArchons[0]);
-                        tryMove(toEnemy);
+                    // Patrol near archon location when no enemies
+                    int xPos = rc.readBroadcast(0);
+                    int yPos = rc.readBroadcast(1);
+                    MapLocation archonLoc = new MapLocation(xPos, yPos);
+                    float distToArchon = myLocation.distanceTo(archonLoc);
+                    if (distToArchon > 10) {
+                        tryMove(myLocation.directionTo(archonLoc));
                     } else {
                         tryMove(randomDirection());
                     }
@@ -168,12 +166,12 @@ public strictfp class RobotPlayer {
     }
 
     static void runLumberjack() throws GameActionException {
-        System.out.println("I'm a lumberjack! (Swarm Blitz)");
+        System.out.println("I'm a lumberjack! (Eco Greed Supreme)");
         Team enemy = rc.getTeam().opponent();
 
         while (true) {
             try {
-                // Strike if enemies within strike radius
+                // Strike if enemies close
                 RobotInfo[] robots = rc.senseNearbyRobots(
                     RobotType.LUMBERJACK.bodyRadius + GameConstants.LUMBERJACK_STRIKE_RADIUS, enemy);
 
@@ -186,7 +184,7 @@ public strictfp class RobotPlayer {
                         Direction toEnemy = myLocation.directionTo(robots[0].getLocation());
                         tryMove(toEnemy);
                     } else {
-                        // Clear neutral trees blocking swarm path
+                        // Chop neutral trees for bullet collection
                         TreeInfo[] neutralTrees = rc.senseNearbyTrees(-1, Team.NEUTRAL);
                         if (neutralTrees.length > 0 && rc.canChop(neutralTrees[0].location)) {
                             rc.chop(neutralTrees[0].location);
@@ -205,12 +203,8 @@ public strictfp class RobotPlayer {
         }
     }
 
-    /**
-     * Swarm scout: fast harassment unit. Converge on enemies, not kite away.
-     * Shake trees for bullets while moving towards enemy.
-     */
     static void runScout() throws GameActionException {
-        System.out.println("I'm a scout! (Swarm Blitz)");
+        System.out.println("I'm a scout! (Eco Greed Supreme)");
         Team enemy = rc.getTeam().opponent();
 
         while (true) {
@@ -218,18 +212,13 @@ public strictfp class RobotPlayer {
                 MapLocation myLocation = rc.getLocation();
                 RobotInfo[] enemies = rc.senseNearbyRobots(-1, enemy);
 
-                // Swarm behavior: move TOWARDS enemies, not away
+                // Scouts patrol and observe - avoid combat, gather intel
                 if (enemies.length > 0) {
-                    RobotInfo closest = findClosest(enemies, myLocation);
-                    Direction toEnemy = myLocation.directionTo(closest.location);
-                    tryMove(toEnemy);
-
-                    // Fire single shot at closest enemy
-                    if (rc.canFireSingleShot()) {
-                        rc.fireSingleShot(toEnemy);
-                    }
+                    // Kite away from enemies
+                    Direction awayFromNearest = enemies[0].getLocation().directionTo(myLocation);
+                    tryMove(awayFromNearest);
                 } else {
-                    // Move towards enemy archon spawn locations
+                    // Patrol towards enemy archon locations
                     MapLocation[] enemyArchons = rc.getInitialArchonLocations(enemy);
                     if (enemyArchons.length > 0) {
                         Direction toEnemy = myLocation.directionTo(enemyArchons[0]);
@@ -239,7 +228,7 @@ public strictfp class RobotPlayer {
                     }
                 }
 
-                // Shake trees for bullets while moving
+                // Shake trees for bullets while scouting
                 TreeInfo[] trees = rc.senseNearbyTrees(-1, Team.NEUTRAL);
                 for (TreeInfo tree : trees) {
                     if (tree.containedBullets > 0 && rc.canShake(tree.location)) {
@@ -258,7 +247,7 @@ public strictfp class RobotPlayer {
     }
 
     static void runTank() throws GameActionException {
-        System.out.println("I'm a tank! (Swarm Blitz - legacy unit)");
+        System.out.println("I'm a tank! (Eco Greed Supreme - Phase 2 Pivot)");
         Team enemy = rc.getTeam().opponent();
 
         while (true) {
@@ -267,16 +256,19 @@ public strictfp class RobotPlayer {
                 RobotInfo[] enemies = rc.senseNearbyRobots(-1, enemy);
 
                 if (enemies.length > 0) {
-                    RobotInfo target = findClosest(enemies, myLocation);
+                    RobotInfo target = enemies[0];
 
+                    // Use triad shot for more damage
                     if (rc.canFireTriadShot()) {
                         rc.fireTriadShot(rc.getLocation().directionTo(target.location));
                     } else if (rc.canFireSingleShot()) {
                         rc.fireSingleShot(rc.getLocation().directionTo(target.location));
                     }
 
+                    // Aggressive advance
                     tryMove(myLocation.directionTo(target.location));
                 } else {
+                    // Move towards enemy archon locations
                     MapLocation[] enemyArchons = rc.getInitialArchonLocations(enemy);
                     if (enemyArchons.length > 0) {
                         Direction toEnemy = myLocation.directionTo(enemyArchons[0]);
@@ -293,19 +285,6 @@ public strictfp class RobotPlayer {
                 e.printStackTrace();
             }
         }
-    }
-
-    static RobotInfo findClosest(RobotInfo[] robots, MapLocation from) {
-        RobotInfo closest = robots[0];
-        float closestDist = from.distanceTo(closest.location);
-        for (int i = 1; i < robots.length; i++) {
-            float dist = from.distanceTo(robots[i].location);
-            if (dist < closestDist) {
-                closestDist = dist;
-                closest = robots[i];
-            }
-        }
-        return closest;
     }
 
     static Direction randomDirection() {

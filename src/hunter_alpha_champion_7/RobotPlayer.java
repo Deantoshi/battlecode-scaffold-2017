@@ -1,12 +1,12 @@
-package hunter_alpha;
+package hunter_alpha_champion_7;
 import battlecode.common.*;
 
 /**
- * Timber Support Bot (v5 mutation)
+ * Rapid Bloom Bot (v8 mutation)
  * Phase 1 (Rounds 1-150): Dense tree farm construction at 90% planting rate.
- * Phase 2 (Round 150+): Mixed assault - SOLDIER (55%), LUMBERJACK (20%), SCOUT (25%).
- *   Lumberjacks clear neutral trees for instant bullet income and AOE strikes.
+ * Phase 2 (Round 150+): Aggressive military production - SOLDIER heavy (75%), SCOUT (25%).
  *   All units converge on nearest enemy. Zero tank production.
+ *   Front-loaded eco enables rapid swarm via massive bullet income.
  */
 public strictfp class RobotPlayer {
     static RobotController rc;

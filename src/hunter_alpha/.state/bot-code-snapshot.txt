@@ -4,64 +4,86 @@
 package hunter_alpha;
 import battlecode.common.*;
 
+/**
+ * Scout Tide - Centralized Bullet Spending (v4 mutation)
+ *
+ * Phase 1 (Rounds 1-150): Dense tree farm construction at 92% plant rate.
+ *   Aggressive gardener hiring (25%) to maximize parallel tree planting.
+ *   More trees = more shake targets for scout economy.
+ * Phase 2 (Round 150+): Minimal tree planting (10%), focus on scout harassment.
+ *   Unit priority: SOLDIER (45%), SCOUT (40%), LUMBERJACK (15%).
+ *   Scouts move through trees at 1.25 stride, shake neutral trees for bullets,
+ *   and disrupt enemy gardeners. No VP donations.
+ */
 public class BulletSpending {
     static RobotController rc;
-    static final float BULLET_RESERVE = 300f;
+    static final float BULLET_RESERVE = 200f;
+
+    // Phase transition - Rapid Bloom: shortened eco to round 150
+    static final int ECO_PHASE_END = 150;
+
+    // Gardener hire rates
+    static final double GARDENER_HIRE_RATE_ECO = 0.25;
+    static final double GARDENER_HIRE_RATE_SWARM = 0.25;
+
+    // Tree planting rates - dense farm during eco, minimal during swarm
+    static final double TREE_PLANT_RATE_ECO = 0.92;
+    static final double TREE_PLANT_RATE_SWARM = 0.10;
+
+    // Scout Tide unit build rates (Phase 2 only) - Scout-heavy harassment
+    static final double SOLDIER_BUILD_RATE = 0.45;
+    static final double LUMBERJACK_BUILD_RATE = 0.15;
+    static final double SCOUT_BUILD_RATE = 0.40;
 
     public static void init(RobotController rc) {
         BulletSpending.rc = rc;
     }
 
     public static void spendPolicy() throws GameActionException {
-        // Centralized spend order: hire gardener -> plant tree -> hire soldier -> donate.
+        int round = rc.getRoundNum();
+        boolean isEcoPhase = round < ECO_PHASE_END;
+
         if (rc.getType() == RobotType.ARCHON) {
             Direction dir = randomDirection();
-            if (shouldHireGardener(dir)) {
+            double hireRate = isEcoPhase ? GARDENER_HIRE_RATE_ECO : GARDENER_HIRE_RATE_SWARM;
+            if (rc.canHireGardener(dir) && Math.random() < hireRate) {
                 rc.hireGardener(dir);
             }
-            float donateAmount = getDonateAmount();
-            if (donateAmount > 0f) {
-                rc.donate(donateAmount);
-            }
+            // No VP donations - all bullets feed the swarm
             return;
         }
+
         if (rc.getType() == RobotType.GARDENER) {
+            // Plant a tree first if possible (for ongoing bullet income)
             Direction dir = randomDirection();
-            if (shouldPlantTree(dir)) {
+            double plantRate = isEcoPhase ? TREE_PLANT_RATE_ECO : TREE_PLANT_RATE_SWARM;
+            if (rc.canPlantTree(dir) && Math.random() < plantRate) {
                 rc.plantTree(dir);
+                return; // Build cooldown after planting
             }
-            dir = randomDirection();
-            if (shouldBuildSoldier(dir)) {
-                rc.buildRobot(RobotType.SOLDIER, dir);
-            }
-            float donateAmount = getDonateAmount();
-            if (donateAmount > 0f) {
-                rc.donate(donateAmount);
+
+            // Phase 2: build soldiers, lumberjacks, and scouts - NO tanks
+            if (!isEcoPhase) {
+                // Priority: soldiers (100 bullets, good combat stats)
+                dir = randomDirection();
+                if (rc.canBuildRobot(RobotType.SOLDIER, dir) && Math.random() < SOLDIER_BUILD_RATE) {
+                    rc.buildRobot(RobotType.SOLDIER, dir);
+                    return;
+                }
+                // Timber support: lumberjacks (100 bullets, AOE strike, tree clearing)
+                dir = randomDirection();
+                if (rc.canBuildRobot(RobotType.LUMBERJACK, dir) && Math.random() < LUMBERJACK_BUILD_RATE) {
+                    rc.buildRobot(RobotType.LUMBERJACK, dir);
+                    return;
+                }
+                // Secondary: scouts (80 bullets, fast, harassment)
+                dir = randomDirection();
+                if (rc.canBuildRobot(RobotType.SCOUT, dir) && Math.random() < SCOUT_BUILD_RATE) {
+                    rc.buildRobot(RobotType.SCOUT, dir);
+                    return;
+                }
             }
         }
-    }
-
-    private static boolean shouldHireGardener(Direction dir) {
-        return rc.canHireGardener(dir) && Math.random() < .01;
-    }
-
-    private static boolean shouldPlantTree(Direction dir) {
-        return rc.canPlantTree(dir) && Math.random() < .25;
-    }
-
-    private static boolean shouldBuildSoldier(Direction dir) {
-        return rc.canBuildRobot(RobotType.SOLDIER, dir) && Math.random() < .01;
-    }
-
-    private static float getDonateAmount() throws GameActionException {
-        float bullets = rc.getTeamBullets();
-        float cost = rc.getVictoryPointCost();
-        float donateAmount = bullets - BULLET_RESERVE;
-        if (donateAmount >= cost) {
-            int pointsToBuy = (int)(donateAmount / cost);
-            return pointsToBuy * cost;
-        }
-        return 0f;
     }
 
     private static Direction randomDirection() {
@@ -73,23 +95,20 @@ public class BulletSpending {
 package hunter_alpha;
 import battlecode.common.*;
 
+/**
+ * Timber Support Bot (v5 mutation)
+ * Phase 1 (Rounds 1-150): Dense tree farm construction at 90% planting rate.
+ * Phase 2 (Round 150+): Mixed assault - SOLDIER (55%), LUMBERJACK (20%), SCOUT (25%).
+ *   Lumberjacks clear neutral trees for instant bullet income and AOE strikes.
+ *   All units converge on nearest enemy. Zero tank production.
+ */
 public strictfp class RobotPlayer {
     static RobotController rc;
 
-    /**
-     * run() is the method that is called when a robot is instantiated in the Battlecode world.
-     * If this method returns, the robot dies!
-    **/
-    @SuppressWarnings("unused")
     public static void run(RobotController rc) throws GameActionException {
-
-        // This is the RobotController object. You use it to perform actions from this robot,
-        // and to get information on its current status.
         RobotPlayer.rc = rc;
         BulletSpending.init(rc);
 
-        // Here, we've separated the controls into a different method for each RobotType.
-        // You can add the missing ones or rewrite this into your own control structure.
         switch (rc.getType()) {
             case ARCHON:
                 runArchon();
@@ -103,30 +122,36 @@ public strictfp class RobotPlayer {
             case LUMBERJACK:
                 runLumberjack();
                 break;
+            case SCOUT:
+                runScout();
+                break;
+            case TANK:
+                runTank();
+                break;
         }
 	}
 
     static void runArchon() throws GameActionException {
-        System.out.println("I'm an archon!");
+        System.out.println("I'm an archon! (Swarm Blitz)");
 
-        // The code you want your robot to perform every round should be in this loop
         while (true) {
-
-            // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
             try {
-
-                // Centralized spend policy (hire/build/donate)
                 BulletSpending.spendPolicy();
 
-                // Move randomly
-                tryMove(randomDirection());
-
-                // Broadcast archon's location for other robots on the team to know
+                // Flee from enemies - archon survival is critical
                 MapLocation myLocation = rc.getLocation();
-                rc.broadcast(0,(int)myLocation.x);
-                rc.broadcast(1,(int)myLocation.y);
+                RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
+                if (enemies.length > 0) {
+                    Direction awayFromEnemy = enemies[0].getLocation().directionTo(myLocation);
+                    tryMove(awayFromEnemy);
+                } else {
+                    tryMove(randomDirection());
+                }
 
-                // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
+                // Broadcast archon location for swarm coordination
+                rc.broadcast(0, (int)myLocation.x);
+                rc.broadcast(1, (int)myLocation.y);
+
                 Clock.yield();
 
             } catch (Exception e) {
@@ -137,26 +162,31 @@ public strictfp class RobotPlayer {
     }
 
 	static void runGardener() throws GameActionException {
-        System.out.println("I'm a gardener!");
+        System.out.println("I'm a gardener! (Swarm Blitz)");
 
-        // The code you want your robot to perform every round should be in this loop
         while (true) {
-
-            // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
             try {
-
-                // Listen for home archon's location
+                // Read archon location
                 int xPos = rc.readBroadcast(0);
                 int yPos = rc.readBroadcast(1);
-                MapLocation archonLoc = new MapLocation(xPos,yPos);
+                MapLocation archonLoc = new MapLocation(xPos, yPos);
 
-                // Centralized spend policy (plant/build/donate)
+                // Centralized spend policy (plant/build)
                 BulletSpending.spendPolicy();
 
-                // Move randomly
-                tryMove(randomDirection());
+                // Water nearby trees to maintain production
+                waterNearbyTrees();
 
-                // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
+                // Stay near archon for protection, but spread out slightly
+                MapLocation myLocation = rc.getLocation();
+                RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
+                if (enemies.length > 0) {
+                    Direction toArchon = myLocation.directionTo(archonLoc);
+                    tryMove(toArchon);
+                } else {
+                    tryMove(randomDirection());
+                }
+
                 Clock.yield();
 
             } catch (Exception e) {
@@ -166,33 +196,62 @@ public strictfp class RobotPlayer {
         }
     }
 
+    static void waterNearbyTrees() throws GameActionException {
+        TreeInfo[] trees = rc.senseNearbyTrees(-1, rc.getTeam());
+        if (trees.length == 0) return;
+
+        TreeInfo weakestTree = null;
+        float lowestHealth = Float.MAX_VALUE;
+
+        for (TreeInfo tree : trees) {
+            if (rc.canWater(tree.location) && tree.health < lowestHealth) {
+                lowestHealth = tree.health;
+                weakestTree = tree;
+            }
+        }
+
+        if (weakestTree != null && rc.canWater(weakestTree.location)) {
+            rc.water(weakestTree.location);
+        }
+    }
+
+    /**
+     * Swarm soldier: aggressively converge on nearest enemy.
+     * Use single shots for bullet efficiency (1 bullet per shot).
+     * Ignore economy - pure combat focus.
+     */
     static void runSoldier() throws GameActionException {
-        System.out.println("I'm an soldier!");
+        System.out.println("I'm a soldier! (Swarm Blitz)");
         Team enemy = rc.getTeam().opponent();
 
-        // The code you want your robot to perform every round should be in this loop
         while (true) {
-
-            // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
             try {
                 MapLocation myLocation = rc.getLocation();
-
-                // See if there are any nearby enemy robots
                 RobotInfo[] robots = rc.senseNearbyRobots(-1, enemy);
 
-                // If there are some...
                 if (robots.length > 0) {
-                    // And we have enough bullets, and haven't attacked yet this turn...
+                    // Find closest enemy
+                    RobotInfo target = findClosest(robots, myLocation);
+
+                    // Fire single shots for efficiency (1 bullet per shot)
                     if (rc.canFireSingleShot()) {
-                        // ...Then fire a bullet in the direction of the enemy.
-                        rc.fireSingleShot(rc.getLocation().directionTo(robots[0].location));
+                        Direction toTarget = myLocation.directionTo(target.location);
+                        rc.fireSingleShot(toTarget);
+                    }
+
+                    // Swarm: move towards enemy aggressively
+                    tryMove(myLocation.directionTo(target.location));
+                } else {
+                    // No enemies nearby: move towards enemy archon spawn
+                    MapLocation[] enemyArchons = rc.getInitialArchonLocations(enemy);
+                    if (enemyArchons.length > 0) {
+                        Direction toEnemy = myLocation.directionTo(enemyArchons[0]);
+                        tryMove(toEnemy);
+                    } else {
+                        tryMove(randomDirection());
                     }
                 }
 
-                // Move randomly
-                tryMove(randomDirection());
-
-                // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();
 
             } catch (Exception e) {
@@ -203,39 +262,34 @@ public strictfp class RobotPlayer {
     }
 
     static void runLumberjack() throws GameActionException {
-        System.out.println("I'm a lumberjack!");
+        System.out.println("I'm a lumberjack! (Swarm Blitz)");
         Team enemy = rc.getTeam().opponent();
 
-        // The code you want your robot to perform every round should be in this loop
         while (true) {
-
-            // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
             try {
+                // Strike if enemies within strike radius
+                RobotInfo[] robots = rc.senseNearbyRobots(
+                    RobotType.LUMBERJACK.bodyRadius + GameConstants.LUMBERJACK_STRIKE_RADIUS, enemy);
 
-                // See if there are any enemy robots within striking range (distance 1 from lumberjack's radius)
-                RobotInfo[] robots = rc.senseNearbyRobots(RobotType.LUMBERJACK.bodyRadius+GameConstants.LUMBERJACK_STRIKE_RADIUS, enemy);
-
-                if(robots.length > 0 && !rc.hasAttacked()) {
-                    // Use strike() to hit all nearby robots!
+                if (robots.length > 0 && !rc.hasAttacked()) {
                     rc.strike();
                 } else {
-                    // No close robots, so search for robots within sight radius
-                    robots = rc.senseNearbyRobots(-1,enemy);
-
-                    // If there is a robot, move towards it
-                    if(robots.length > 0) {
+                    robots = rc.senseNearbyRobots(-1, enemy);
+                    if (robots.length > 0) {
                         MapLocation myLocation = rc.getLocation();
-                        MapLocation enemyLocation = robots[0].getLocation();
-                        Direction toEnemy = myLocation.directionTo(enemyLocation);
-
+                        Direction toEnemy = myLocation.directionTo(robots[0].getLocation());
                         tryMove(toEnemy);
                     } else {
-                        // Move Randomly
-                        tryMove(randomDirection());
+                        // Clear neutral trees blocking swarm path
+                        TreeInfo[] neutralTrees = rc.senseNearbyTrees(-1, Team.NEUTRAL);
+                        if (neutralTrees.length > 0 && rc.canChop(neutralTrees[0].location)) {
+                            rc.chop(neutralTrees[0].location);
+                        } else {
+                            tryMove(randomDirection());
+                        }
                     }
                 }
 
-                // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();
 
             } catch (Exception e) {
@@ -246,94 +300,153 @@ public strictfp class RobotPlayer {
     }
 
     /**
-     * Returns a random Direction
-     * @return a random Direction
+     * Swarm scout: fast harassment unit. Converge on enemies, not kite away.
+     * Shake trees for bullets while moving towards enemy.
      */
+    static void runScout() throws GameActionException {
+        System.out.println("I'm a scout! (Swarm Blitz)");
+        Team enemy = rc.getTeam().opponent();
+
+        while (true) {
+            try {
+                MapLocation myLocation = rc.getLocation();
+                RobotInfo[] enemies = rc.senseNearbyRobots(-1, enemy);
+
+                // Swarm behavior: move TOWARDS enemies, not away
+                if (enemies.length > 0) {
+                    RobotInfo closest = findClosest(enemies, myLocation);
+                    Direction toEnemy = myLocation.directionTo(closest.location);
+                    tryMove(toEnemy);
+
+                    // Fire single shot at closest enemy
+                    if (rc.canFireSingleShot()) {
+                        rc.fireSingleShot(toEnemy);
+                    }
+                } else {
+                    // Move towards enemy archon spawn locations
+                    MapLocation[] enemyArchons = rc.getInitialArchonLocations(enemy);
+                    if (enemyArchons.length > 0) {
+                        Direction toEnemy = myLocation.directionTo(enemyArchons[0]);
+                        tryMove(toEnemy);
+                    } else {
+                        tryMove(randomDirection());
+                    }
+                }
+
+                // Shake trees for bullets while moving
+                TreeInfo[] trees = rc.senseNearbyTrees(-1, Team.NEUTRAL);
+                for (TreeInfo tree : trees) {
+                    if (tree.containedBullets > 0 && rc.canShake(tree.location)) {
+                        rc.shake(tree.location);
+                        break;
+                    }
+                }
+
+                Clock.yield();
+
+            } catch (Exception e) {
+                System.out.println("Scout Exception");
+                e.printStackTrace();
+            }
+        }
+    }
+
+    static void runTank() throws GameActionException {
+        System.out.println("I'm a tank! (Swarm Blitz - legacy unit)");
+        Team enemy = rc.getTeam().opponent();
+
+        while (true) {
+            try {
+                MapLocation myLocation = rc.getLocation();
+                RobotInfo[] enemies = rc.senseNearbyRobots(-1, enemy);
+
+                if (enemies.length > 0) {
+                    RobotInfo target = findClosest(enemies, myLocation);
+
+                    if (rc.canFireTriadShot()) {
+                        rc.fireTriadShot(rc.getLocation().directionTo(target.location));
+                    } else if (rc.canFireSingleShot()) {
+                        rc.fireSingleShot(rc.getLocation().directionTo(target.location));
+                    }
+
+                    tryMove(myLocation.directionTo(target.location));
+                } else {
+                    MapLocation[] enemyArchons = rc.getInitialArchonLocations(enemy);
+                    if (enemyArchons.length > 0) {
+                        Direction toEnemy = myLocation.directionTo(enemyArchons[0]);
+                        tryMove(toEnemy);
+                    } else {
+                        tryMove(randomDirection());
+                    }
+                }
+
+                Clock.yield();
+
+            } catch (Exception e) {
+                System.out.println("Tank Exception");
+                e.printStackTrace();
+            }
+        }
+    }
+
+    static RobotInfo findClosest(RobotInfo[] robots, MapLocation from) {
+        RobotInfo closest = robots[0];
+        float closestDist = from.distanceTo(closest.location);
+        for (int i = 1; i < robots.length; i++) {
+            float dist = from.distanceTo(robots[i].location);
+            if (dist < closestDist) {
+                closestDist = dist;
+                closest = robots[i];
+            }
+        }
+        return closest;
+    }
+
     static Direction randomDirection() {
         return new Direction((float)Math.random() * 2 * (float)Math.PI);
     }
 
-    /**
-     * Attempts to move in a given direction, while avoiding small obstacles directly in the path.
-     *
-     * @param dir The intended direction of movement
-     * @return true if a move was performed
-     * @throws GameActionException
-     */
     static boolean tryMove(Direction dir) throws GameActionException {
-        return tryMove(dir,20,3);
+        return tryMove(dir, 20, 3);
     }
 
-    /**
-     * Attempts to move in a given direction, while avoiding small obstacles direction in the path.
-     *
-     * @param dir The intended direction of movement
-     * @param degreeOffset Spacing between checked directions (degrees)
-     * @param checksPerSide Number of extra directions checked on each side, if intended direction was unavailable
-     * @return true if a move was performed
-     * @throws GameActionException
-     */
     static boolean tryMove(Direction dir, float degreeOffset, int checksPerSide) throws GameActionException {
-
-        // First, try intended direction
         if (rc.canMove(dir)) {
             rc.move(dir);
             return true;
         }
 
-        // Now try a bunch of similar angles
         boolean moved = false;
         int currentCheck = 1;
 
-        while(currentCheck<=checksPerSide) {
-            // Try the offset of the left side
-            if(rc.canMove(dir.rotateLeftDegrees(degreeOffset*currentCheck))) {
-                rc.move(dir.rotateLeftDegrees(degreeOffset*currentCheck));
+        while (currentCheck <= checksPerSide) {
+            if (rc.canMove(dir.rotateLeftDegrees(degreeOffset * currentCheck))) {
+                rc.move(dir.rotateLeftDegrees(degreeOffset * currentCheck));
                 return true;
             }
-            // Try the offset on the right side
-            if(rc.canMove(dir.rotateRightDegrees(degreeOffset*currentCheck))) {
-                rc.move(dir.rotateRightDegrees(degreeOffset*currentCheck));
+            if (rc.canMove(dir.rotateRightDegrees(degreeOffset * currentCheck))) {
+                rc.move(dir.rotateRightDegrees(degreeOffset * currentCheck));
                 return true;
             }
-            // No move performed, try slightly further
             currentCheck++;
         }
 
-        // A move never happened, so return false.
         return false;
     }
 
-    /**
-     * A slightly more complicated example function, this returns true if the given bullet is on a collision
-     * course with the current robot. Doesn't take into account objects between the bullet and this robot.
-     *
-     * @param bullet The bullet in question
-     * @return True if the line of the bullet's path intersects with this robot's current position.
-     */
     static boolean willCollideWithMe(BulletInfo bullet) {
         MapLocation myLocation = rc.getLocation();
-
-        // Get relevant bullet information
         Direction propagationDirection = bullet.dir;
         MapLocation bulletLocation = bullet.location;
-
-        // Calculate bullet relations to this robot
         Direction directionToRobot = bulletLocation.directionTo(myLocation);
         float distToRobot = bulletLocation.distanceTo(myLocation);
         float theta = propagationDirection.radiansBetween(directionToRobot);
 
-        // If theta > 90 degrees, then the bullet is traveling away from us and we can break early
-        if (Math.abs(theta) > Math.PI/2) {
+        if (Math.abs(theta) > Math.PI / 2) {
             return false;
         }
 
-        // distToRobot is our hypotenuse, theta is our angle, and we want to know this length of the opposite leg.
-        // This is the distance of a line that goes from myLocation and intersects perpendicularly with propagationDirection.
-        // This corresponds to the smallest radius circle centered at our location that would intersect with the
-        // line that is the path of the bullet.
-        float perpendicularDist = (float)Math.abs(distToRobot * Math.sin(theta)); // soh cah toa :)
-
+        float perpendicularDist = (float) Math.abs(distToRobot * Math.sin(theta));
         return (perpendicularDist <= rc.getType().bodyRadius);
     }
 }

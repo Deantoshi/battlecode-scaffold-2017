@@ -1,4 +1,4 @@
-package hunter_alpha_v3;
+package hunter_alpha_champion_2;
 import battlecode.common.*;
 
 public strictfp class RobotPlayer {
@@ -31,6 +31,12 @@ public strictfp class RobotPlayer {
             case LUMBERJACK:
                 runLumberjack();
                 break;
+            case SCOUT:
+                runScout();
+                break;
+            case TANK:
+                runTank();
+                break;
         }
 	}
 
@@ -46,11 +52,18 @@ public strictfp class RobotPlayer {
                 // Centralized spend policy (hire/build/donate)
                 BulletSpending.spendPolicy();
 
-                // Move randomly
-                tryMove(randomDirection());
+                // Flee from enemies instead of random movement
+                MapLocation myLocation = rc.getLocation();
+                RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
+                if (enemies.length > 0) {
+                    // Move away from the nearest enemy
+                    Direction awayFromEnemy = enemies[0].getLocation().directionTo(myLocation);
+                    tryMove(awayFromEnemy);
+                } else {
+                    tryMove(randomDirection());
+                }
 
                 // Broadcast archon's location for other robots on the team to know
-                MapLocation myLocation = rc.getLocation();
                 rc.broadcast(0,(int)myLocation.x);
                 rc.broadcast(1,(int)myLocation.y);
 
@@ -78,11 +91,22 @@ public strictfp class RobotPlayer {
                 int yPos = rc.readBroadcast(1);
                 MapLocation archonLoc = new MapLocation(xPos,yPos);
 
+                // Read enemy composition intel for strategic positioning
+                int intelFresh = rc.readBroadcast(BulletSpending.CH_INTEL_FRESH);
+
                 // Centralized spend policy (plant/build/donate)
                 BulletSpending.spendPolicy();
 
-                // Move randomly
-                tryMove(randomDirection());
+                // Move towards archon if enemies nearby, otherwise random
+                MapLocation myLocation = rc.getLocation();
+                RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
+                if (enemies.length > 0) {
+                    // Move back towards archon for protection
+                    Direction toArchon = myLocation.directionTo(archonLoc);
+                    tryMove(toArchon);
+                } else {
+                    tryMove(randomDirection());
+                }
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();
@@ -110,15 +134,25 @@ public strictfp class RobotPlayer {
 
                 // If there are some...
                 if (robots.length > 0) {
+                    // Prioritize shooting scouts (low HP threats for intel denial)
+                    RobotInfo target = robots[0];
+                    for (RobotInfo r : robots) {
+                        if (r.type == RobotType.SCOUT) {
+                            target = r;
+                            break;
+                        }
+                    }
                     // And we have enough bullets, and haven't attacked yet this turn...
                     if (rc.canFireSingleShot()) {
                         // ...Then fire a bullet in the direction of the enemy.
-                        rc.fireSingleShot(rc.getLocation().directionTo(robots[0].location));
+                        rc.fireSingleShot(rc.getLocation().directionTo(target.location));
                     }
+                    // Move towards target
+                    tryMove(myLocation.directionTo(target.location));
+                } else {
+                    // Move randomly
+                    tryMove(randomDirection());
                 }
-
-                // Move randomly
-                tryMove(randomDirection());
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();
@@ -152,8 +186,16 @@ public strictfp class RobotPlayer {
 
                     // If there is a robot, move towards it
                     if(robots.length > 0) {
+                        // Prioritize tanks (lumberjacks counter tanks)
+                        RobotInfo target = robots[0];
+                        for (RobotInfo r : robots) {
+                            if (r.type == RobotType.TANK) {
+                                target = r;
+                                break;
+                            }
+                        }
                         MapLocation myLocation = rc.getLocation();
-                        MapLocation enemyLocation = robots[0].getLocation();
+                        MapLocation enemyLocation = target.getLocation();
                         Direction toEnemy = myLocation.directionTo(enemyLocation);
 
                         tryMove(toEnemy);
@@ -168,6 +210,125 @@ public strictfp class RobotPlayer {
 
             } catch (Exception e) {
                 System.out.println("Lumberjack Exception");
+                e.printStackTrace();
+            }
+        }
+    }
+
+    /**
+     * Scout behavior: patrol and gather enemy composition intel.
+     * Broadcasts enemy counts on channels 10-15 for the gardener to read.
+     */
+    static void runScout() throws GameActionException {
+        System.out.println("I'm a scout!");
+        Team enemy = rc.getTeam().opponent();
+        int reportCounter = 0;
+
+        while (true) {
+            try {
+                MapLocation myLocation = rc.getLocation();
+
+                // Count enemy units by type
+                RobotInfo[] enemies = rc.senseNearbyRobots(-1, enemy);
+                int soldierCount = 0;
+                int tankCount = 0;
+                int lumberjackCount = 0;
+                int scoutCount = 0;
+
+                for (RobotInfo r : enemies) {
+                    switch (r.type) {
+                        case SOLDIER: soldierCount++; break;
+                        case TANK: tankCount++; break;
+                        case LUMBERJACK: lumberjackCount++; break;
+                        case SCOUT: scoutCount++; break;
+                        default: break;
+                    }
+                }
+
+                // Report intel every 5 rounds to avoid excessive broadcasting
+                reportCounter++;
+                if (reportCounter >= 5) {
+                    reportCounter = 0;
+
+                    // Broadcast enemy composition (accumulate with other scouts)
+                    rc.broadcast(BulletSpending.CH_ENEMY_SOLDIER_COUNT, soldierCount);
+                    rc.broadcast(BulletSpending.CH_ENEMY_TANK_COUNT, tankCount);
+                    rc.broadcast(BulletSpending.CH_ENEMY_LUMBERJACK_COUNT, lumberjackCount);
+                    rc.broadcast(BulletSpending.CH_ENEMY_SCOUT_COUNT, scoutCount);
+                    rc.broadcast(BulletSpending.CH_INTEL_FRESH, 1);
+                }
+
+                // Register as alive scout
+                rc.broadcast(BulletSpending.CH_SCOUT_COUNT, 1);
+
+                // If enemies nearby, stay at range and observe
+                if (enemies.length > 0) {
+                    // Kite away from nearest enemy while staying in sensor range
+                    Direction awayFromNearest = enemies[0].getLocation().directionTo(myLocation);
+                    tryMove(awayFromNearest);
+                } else {
+                    // Patrol: move towards enemy archon locations or randomly
+                    MapLocation[] enemyArchons = rc.getInitialArchonLocations(enemy);
+                    if (enemyArchons.length > 0) {
+                        Direction toEnemy = myLocation.directionTo(enemyArchons[0]);
+                        tryMove(toEnemy);
+                    } else {
+                        tryMove(randomDirection());
+                    }
+                }
+
+                // Fire single shot if enemy in range
+                if (enemies.length > 0 && rc.canFireSingleShot()) {
+                    rc.fireSingleShot(rc.getLocation().directionTo(enemies[0].location));
+                }
+
+                Clock.yield();
+
+            } catch (Exception e) {
+                System.out.println("Scout Exception");
+                e.printStackTrace();
+            }
+        }
+    }
+
+    /**
+     * Tank behavior: heavy combat unit, targets enemies aggressively.
+     */
+    static void runTank() throws GameActionException {
+        System.out.println("I'm a tank!");
+        Team enemy = rc.getTeam().opponent();
+
+        while (true) {
+            try {
+                MapLocation myLocation = rc.getLocation();
+                RobotInfo[] enemies = rc.senseNearbyRobots(-1, enemy);
+
+                if (enemies.length > 0) {
+                    // Prioritize shooting at high-value targets
+                    RobotInfo target = enemies[0];
+
+                    // Fire at enemy
+                    if (rc.canFireSingleShot()) {
+                        rc.fireSingleShot(rc.getLocation().directionTo(target.location));
+                    }
+
+                    // Move towards enemy
+                    tryMove(myLocation.directionTo(target.location));
+                } else {
+                    // Move towards enemy archon or random
+                    MapLocation[] enemyArchons = rc.getInitialArchonLocations(enemy);
+                    if (enemyArchons.length > 0) {
+                        Direction toEnemy = myLocation.directionTo(enemyArchons[0]);
+                        tryMove(toEnemy);
+                    } else {
+                        tryMove(randomDirection());
+                    }
+                }
+
+                Clock.yield();
+
+            } catch (Exception e) {
+                System.out.println("Tank Exception");
                 e.printStackTrace();
             }
         }

@@ -60,6 +60,1865 @@
           "philosophy": "Hire gardeners at a much higher rate to establish tree economy and unit production earlier, keeping the random movement and combat model intact."
         }
       ]
+    },
+    {
+      "iteration": 1,
+      "winner": "v4",
+      "winner_score": 4718,
+      "promoted": true,
+      "variants": [
+        {
+          "id": "v4",
+          "score": 4718,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [3 kills]. Strategy ineffective.",
+          "archetype_name": "Rapid Gardener Plus",
+          "type": "mutation",
+          "win_condition": "hybrid",
+          "philosophy": "Hire gardeners at a much higher rate to establish tree economy and unit production earlier. Refined with faster unit building and earlier transition to aggression."
+        },
+        {
+          "id": "v1",
+          "score": 4658,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [3 kills]. Strategy ineffective.",
+          "archetype_name": "Tree Baron Pro",
+          "type": "mutation",
+          "win_condition": "hybrid",
+          "philosophy": "Build a massive tree economy early for bullet income superiority, then convert surplus bullets into units or VP as needed. Refined with smarter gardener placement near trees and earlier aggression timing."
+        },
+        {
+          "id": "v3",
+          "score": 4494,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [2 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "VP Harvester Rush",
+          "type": "mutation",
+          "win_condition": "vp_rush",
+          "philosophy": "Keep minimal military for defense and focus the economy on rapid VP accumulation through aggressive donation. Refined with lower bullet reserve and earlier donation timing to hit 1000 VP faster."
+        },
+        {
+          "id": "original",
+          "score": 4452,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [1 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "Original (baseline)",
+          "type": "baseline"
+        },
+        {
+          "id": "v2",
+          "score": 4214,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [1 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "Soldier Swarm v2",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Dramatically increase soldier production rate to overwhelm opponents with sheer volume of ranged firepower. Refined with triad shots for area denial and coordinated pushes."
+        }
+      ]
+    },
+    {
+      "iteration": 2,
+      "winner": "original",
+      "winner_score": 7279,
+      "promoted": false,
+      "variants": [
+        {
+          "id": "original",
+          "score": 7279,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [5 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "Original (baseline)",
+          "type": "baseline"
+        },
+        {
+          "id": "v1",
+          "score": 7015,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [3 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "VP Blitz",
+          "type": "mutation",
+          "win_condition": "vp_rush",
+          "philosophy": "Cut donation start to round 200 and bullet reserve to 100, converting all surplus bullets into VP as early as possible. Minimal military presence."
+        },
+        {
+          "id": "v3",
+          "score": 6928,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [2 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "Tree Baron Elite",
+          "type": "mutation",
+          "win_condition": "hybrid",
+          "philosophy": "Double down on tree economy by planting aggressively and adding gardener watering logic. Surplus bullets fund both late-game military and VP."
+        },
+        {
+          "id": "v4",
+          "score": 6815,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [2 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "Archon Escort",
+          "type": "mutation",
+          "win_condition": "hybrid",
+          "philosophy": "Keep the archon alive at all costs by having nearby soldiers form an escort. Archon survival ensures continuous gardener hiring throughout the game."
+        },
+        {
+          "id": "v2",
+          "score": 6814,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [2 kills]. Strategy ineffective.",
+          "archetype_name": "Soldier Horde",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Flood the map with soldiers at 4x the current rate to overwhelm through sheer ranged firepower and numbers before the opponent can scale."
+        }
+      ]
+    },
+    {
+      "iteration": 1,
+      "winner": "v16",
+      "winner_score": 23963,
+      "promoted": true,
+      "variants": [
+        {
+          "id": "v16",
+          "score": 23963,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [10 kills]. Good combat but couldn't close.",
+          "archetype_name": "Adaptive Counter",
+          "type": "exploration",
+          "win_condition": "hybrid",
+          "philosophy": "Use scouts to detect enemy composition, then build the counter. Against soldiers build tanks, against tanks build lumberjacks, against lumberjacks build soldiers. Always one step ahead."
+        },
+        {
+          "id": "v6",
+          "score": 14981,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [21 kills]. Good combat but couldn't close.",
+          "archetype_name": "Lumberjack Blitz",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Flood the map with lumberjacks for devastating melee pressure. Their strike ability hits all nearby enemies and they can chop neutral trees for bonus bullets."
+        },
+        {
+          "id": "v15",
+          "score": 14099,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [19 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "Timber Baron",
+          "type": "exploration",
+          "win_condition": "hybrid",
+          "philosophy": "Use lumberjacks to chop neutral trees for instant bullet income while also serving as melee combatants. Dual-purpose units that generate economy and apply pressure."
+        },
+        {
+          "id": "v13",
+          "score": 8987,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [13 kills]. Good combat but couldn't close.",
+          "archetype_name": "Eco Greed",
+          "type": "exploration",
+          "win_condition": "hybrid",
+          "philosophy": "Maximize economic output for the first 600 rounds with zero military, then pivot hard into either VP or army based on game state. High risk, high reward."
+        },
+        {
+          "id": "v14",
+          "score": 7551,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [10 kills]. Good combat but couldn't close.",
+          "archetype_name": "Combined Arms",
+          "type": "exploration",
+          "win_condition": "elimination",
+          "philosophy": "Build a balanced army of all unit types working together. Tanks hold the line, soldiers provide ranged DPS, lumberjacks flank, and scouts provide vision and harassment."
+        },
+        {
+          "id": "v8",
+          "score": 7383,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [7 kills]. Good combat but couldn't close.",
+          "archetype_name": "Early Pressure",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Skip most tree economy and rush soldiers immediately. Aim to have combat units pressuring the enemy before round 200, exploiting opponents still building economy."
+        },
+        {
+          "id": "original",
+          "score": 7279,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [5 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "Original (baseline)",
+          "type": "baseline"
+        },
+        {
+          "id": "v5",
+          "score": 7176,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [2 kills]. Strategy ineffective.",
+          "archetype_name": "Archon Fortress",
+          "type": "mutation",
+          "win_condition": "hybrid",
+          "philosophy": "Keep the archon alive at all costs by building a defensive perimeter of soldiers. Archon survival ensures continuous gardener hiring and late-game dominance."
+        },
+        {
+          "id": "v3",
+          "score": 7167,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [6 kills]. Good combat but couldn't close.",
+          "archetype_name": "Soldier Flood",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Dramatically increase soldier production to overwhelm with ranged firepower. Use triad shots for area denial and focus fire on priority targets."
+        },
+        {
+          "id": "v10",
+          "score": 7165,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [5 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "Scout Harasser",
+          "type": "exploration",
+          "win_condition": "vp_rush",
+          "philosophy": "Build cheap scouts (80 bullets) to harass enemy economy, steal bullets from trees, and provide vision. Scouts move through trees freely and can disrupt gardeners."
+        },
+        {
+          "id": "v7",
+          "score": 7141,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [6 kills]. Good combat but couldn't close.",
+          "archetype_name": "Smart Spender",
+          "type": "mutation",
+          "win_condition": "hybrid",
+          "philosophy": "Dynamically adjust bullet spending based on game state: prioritize soldiers when enemies are near, trees when safe, and VP when ahead. Reactive economy management."
+        },
+        {
+          "id": "v9",
+          "score": 7124,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [4 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "Tank Commander",
+          "type": "exploration",
+          "win_condition": "elimination",
+          "philosophy": "Build tanks as the primary combat unit. Their 200 HP and 5 attack power dominate the battlefield, and they can body-ram through trees to maintain momentum."
+        },
+        {
+          "id": "v4",
+          "score": 7071,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [7 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "Rapid Gardener Elite",
+          "type": "mutation",
+          "win_condition": "hybrid",
+          "philosophy": "Hire gardeners at maximum viable rate to establish parallel tree farms and unit production streams earlier than any opponent can match."
+        },
+        {
+          "id": "v2",
+          "score": 6963,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [4 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "Tree Baron Supreme",
+          "type": "mutation",
+          "win_condition": "hybrid",
+          "philosophy": "Maximize tree planting rate and add gardener watering logic to keep trees healthy longer. Massive bullet income funds both late-game military and VP purchases."
+        },
+        {
+          "id": "v1",
+          "score": 6515,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [3 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "VP Blitz Accelerated",
+          "type": "mutation",
+          "win_condition": "vp_rush",
+          "philosophy": "Cut donation start to round 100 with reserve of 50 bullets. Convert every surplus bullet into VP from the earliest possible moment, treating military as pure defense only."
+        },
+        {
+          "id": "v11",
+          "score": 6166,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [1 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "VP Ultra Rush",
+          "type": "exploration",
+          "win_condition": "vp_rush",
+          "philosophy": "All-in on VP from round 1. Minimal military, maximum donation. Convert starting bullets and all income into victory points as fast as mathematically possible."
+        },
+        {
+          "id": "v12",
+          "score": 6130,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds). Strategy ineffective.",
+          "archetype_name": "Rushdown",
+          "type": "exploration",
+          "win_condition": "elimination",
+          "philosophy": "Maximum aggression from round 1. Build combat units immediately, ignore economy, and overwhelm the opponent before they can scale. Win or die trying by round 1000."
+        }
+      ]
+    },
+    {
+      "iteration": 2,
+      "winner": "v14",
+      "winner_score": 31098,
+      "promoted": true,
+      "variants": [
+        {
+          "id": "v14",
+          "score": 31098,
+          "primary_won": true,
+          "primary_rounds": 2767,
+          "post_mortem": "Won slowly (2767 rounds). Won but too slowly; needs faster execution.",
+          "archetype_name": "Eco Greed Supreme",
+          "type": "exploration",
+          "win_condition": "hybrid",
+          "philosophy": "Maximum greed for the first 800 rounds: build only gardeners and trees, zero military. After round 800, evaluate game state. If ahead in bullets by >500, pivot to VP rush. If behind or threatened, pivot to tank army. High risk, high reward\u2014bet everything on economic supremacy."
+        },
+        {
+          "id": "v2",
+          "score": 27273,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [5 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "Mega Grove",
+          "type": "mutation",
+          "win_condition": "hybrid",
+          "philosophy": "Tree economy scored well historically but converted too slowly. Plant trees at 3x rate with gardener watering, then pivot to military at round 400 instead of waiting until 600. Bullet surplus funds rapid unit production."
+        },
+        {
+          "id": "original",
+          "score": 25676,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [2 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "Original (baseline)",
+          "type": "baseline"
+        },
+        {
+          "id": "v1",
+          "score": 25676,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [2 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "Counter Matrix Prime",
+          "type": "mutation",
+          "win_condition": "hybrid",
+          "philosophy": "Refine the adaptive counter system by switching faster (every 25 rounds instead of 50) and weighting recent intel more heavily. The current bot scored highest at 23963 but couldn't close\u2014add aggression thresholds to push when counter advantage is detected."
+        },
+        {
+          "id": "v5",
+          "score": 25676,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [2 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "Infantry Overwhelm",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Soldier-based strategies scored respectably but lacked closing power. Dramatically increase soldier production rate and add triad shot usage for area denial. Coordinate pushes by having soldiers move toward enemy archon locations as a group."
+        },
+        {
+          "id": "v10",
+          "score": 25676,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [2 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "Timber Wolf Pack",
+          "type": "exploration",
+          "win_condition": "elimination",
+          "philosophy": "Lumberjacks scored highest in raw kill counts (21 kills in history). Their strike hits ALL nearby enemies and they chop neutral trees for bonus bullets. Flood the map with lumberjacks that serve as both economy (tree chopping) and devastating melee combatants."
+        },
+        {
+          "id": "v3",
+          "score": 21399,
+          "primary_won": true,
+          "primary_rounds": 2204,
+          "post_mortem": "Won (2204 rounds) [6 kills]. Solid win; push for faster finish.",
+          "archetype_name": "VP Razor",
+          "type": "mutation",
+          "win_condition": "vp_rush",
+          "philosophy": "VP strategies won but too slowly (all ran to round 2999). Cut donation start to round 150 and bullet reserve to 100. Buy VP in larger batches and keep only minimal scouts for defense and intel."
+        },
+        {
+          "id": "v7",
+          "score": 16866,
+          "primary_won": false,
+          "primary_rounds": 2037,
+          "post_mortem": "Lost (2037 rounds) [6 kills]. Good combat but couldn't close.",
+          "archetype_name": "Dynamic Allocator",
+          "type": "mutation",
+          "win_condition": "hybrid",
+          "philosophy": "Smart Spender showed promise but was too conservative. Dynamically shift bullet allocation based on real-time game state: high enemy pressure = military spending, safe = tree planting, ahead in kills = VP donation. A reactive economy that adapts every 10 rounds."
+        },
+        {
+          "id": "v12",
+          "score": 16736,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [3 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "Scout Swarm",
+          "type": "exploration",
+          "win_condition": "vp_rush",
+          "philosophy": "Build cheap scouts (80 bullets) to harass enemy gardeners, steal bullets from neutral trees via shaking, and provide perfect vision. Scouts move through trees freely. While scouts harass, gardeners focus on VP donation. Deny enemy economy while accelerating our own."
+        },
+        {
+          "id": "v9",
+          "score": 12392,
+          "primary_won": false,
+          "primary_rounds": 824,
+          "post_mortem": "Lost (824 rounds). Strategy ineffective.",
+          "archetype_name": "VP Tsunami",
+          "type": "exploration",
+          "win_condition": "vp_rush",
+          "philosophy": "All-in on VP from round 1. Zero military production until round 500. Every bullet above 50 goes to donation. Gardeners plant trees for income. This is a pure economic gambit\u2014if the opponent can't find and kill us fast, we win by round 1200."
+        },
+        {
+          "id": "v15",
+          "score": 11654,
+          "primary_won": false,
+          "primary_rounds": 1294,
+          "post_mortem": "Lost (1294 rounds). Strategy ineffective.",
+          "archetype_name": "Tank Rush Express",
+          "type": "exploration",
+          "win_condition": "elimination",
+          "philosophy": "Rush to produce tanks as fast as possible. Hire 2 gardeners immediately, have them produce tanks from round 1. Tanks are the strongest unit (200 HP, 5 attack) and can body-ram through trees. Even 2-3 early tanks can overwhelm an opponent building economy."
+        },
+        {
+          "id": "v13",
+          "score": 9292,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [3 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "Combined Arms Doctrine",
+          "type": "exploration",
+          "win_condition": "elimination",
+          "philosophy": "Build a balanced army where each unit type has a role: tanks hold the frontline and body-ram trees, soldiers provide ranged DPS from behind, lumberjacks flank to strike isolated enemies, and scouts provide vision and target calling. Total force multiplication."
+        },
+        {
+          "id": "v6",
+          "score": 9122,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [4 kills]. Strategy ineffective.",
+          "archetype_name": "Iron Column",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Tanks have 200 HP and 5 attack\u2014the strongest combat unit. Build tanks as primary force with minimal supporting scouts. Tanks body-ram through trees for momentum and their firepower dominates in direct engagements."
+        },
+        {
+          "id": "v8",
+          "score": 9061,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [4 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "Archon Citadel",
+          "type": "mutation",
+          "win_condition": "hybrid",
+          "philosophy": "Archon Escort scored well but was too passive. Keep the archon alive by building a defensive perimeter of soldiers within 5 radius, while the archon hires gardeners aggressively. If the archon is safe, economy scales; if threatened, the garrison fights."
+        },
+        {
+          "id": "v4",
+          "score": 8886,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [6 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "Gardener Assembly Line",
+          "type": "mutation",
+          "win_condition": "hybrid",
+          "philosophy": "Rapid Gardener variants consistently produced results. Hire gardeners at maximum viable rate (15%) to establish parallel tree farms and unit production streams. More gardeners = more build queues = faster army assembly."
+        },
+        {
+          "id": "v16",
+          "score": 8486,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds). Strategy ineffective.",
+          "archetype_name": "Shadow Protocol",
+          "type": "exploration",
+          "win_condition": "hybrid",
+          "philosophy": "Avoid direct confrontation and win through economic superiority and attrition. Scouts harass and gather intel, gardeners build a hidden tree economy far from the archon, and lumberjacks chop neutral trees for bonus income. Let the opponent waste bullets fighting scouts while we outscale into VP or late-game army."
+        },
+        {
+          "id": "v11",
+          "score": 8404,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds). Strategy ineffective.",
+          "archetype_name": "Blitzkrieg",
+          "type": "exploration",
+          "win_condition": "elimination",
+          "philosophy": "Maximum aggression from round 1. Build soldiers immediately after hiring 1 gardener. Ignore tree economy entirely\u2014use starting bullets and neutral tree chopping for income. Aim to have 5+ soldiers pressuring the enemy before round 200, exploiting opponents still building economy."
+        }
+      ]
+    },
+    {
+      "iteration": 1,
+      "winner": "v4",
+      "winner_score": 52177,
+      "promoted": true,
+      "variants": [
+        {
+          "id": "v4",
+          "score": 52177,
+          "primary_won": true,
+          "primary_rounds": 1630,
+          "post_mortem": "Won (1630 rounds). Solid win; push for faster finish.",
+          "archetype_name": "Pure Greed Extremist",
+          "type": "mutation",
+          "win_condition": "hybrid",
+          "philosophy": "Extend Phase 1 to round 1000 with maximum tree planting. Zero military production until round 1000. Bet everything on economic supremacy then convert the massive bullet surplus."
+        },
+        {
+          "id": "v5",
+          "score": 42590,
+          "primary_won": true,
+          "primary_rounds": 1810,
+          "post_mortem": "Won (1810 rounds). Solid win; push for faster finish.",
+          "archetype_name": "Lumberjack Economy",
+          "type": "mutation",
+          "win_condition": "hybrid",
+          "philosophy": "Build lumberjacks early to chop neutral trees for instant bullet income while serving as melee defenders. Tree chopping supplements tree farm income for faster scaling."
+        },
+        {
+          "id": "v14",
+          "score": 41363,
+          "primary_won": false,
+          "primary_rounds": 2368,
+          "post_mortem": "Lost (2368 rounds) [1 kills]. Strategy ineffective.",
+          "archetype_name": "Mobility Overwhelm",
+          "type": "exploration",
+          "win_condition": "hybrid",
+          "philosophy": "Focus on fast units (scouts at 1.25 stride, lumberjacks at 0.75 stride) to outmaneuver slower opponents. Control map resources, evade combat when disadvantaged, and strike when opportunity arises."
+        },
+        {
+          "id": "v2",
+          "score": 40881,
+          "primary_won": true,
+          "primary_rounds": 2108,
+          "post_mortem": "Won (2108 rounds). Solid win; push for faster finish.",
+          "archetype_name": "VP Lightning",
+          "type": "mutation",
+          "win_condition": "vp_rush",
+          "philosophy": "Front-load VP purchases starting round 50 with only 100 bullet reserve. Every surplus bullet converts to VP immediately. Minimal scouts for defense only."
+        },
+        {
+          "id": "v1",
+          "score": 40684,
+          "primary_won": true,
+          "primary_rounds": 2255,
+          "post_mortem": "Won (2255 rounds). Solid win; push for faster finish.",
+          "archetype_name": "Turbo Eco Rush",
+          "type": "mutation",
+          "win_condition": "hybrid",
+          "philosophy": "Compress the greed phase from 800 to 400 rounds. Same tree-heavy economy but pivot to aggression or VP donation much earlier, closing games before round 2000."
+        },
+        {
+          "id": "v15",
+          "score": 40630,
+          "primary_won": true,
+          "primary_rounds": 1702,
+          "post_mortem": "Won (1702 rounds). Solid win; push for faster finish.",
+          "archetype_name": "Bullet Farm Empire",
+          "type": "exploration",
+          "win_condition": "hybrid",
+          "philosophy": "Build the maximum possible tree farm empire. Hire gardeners at 25% rate, each planting trees aggressively. Water trees to extend production life. Massive bullet income funds late-game dominance through VP or overwhelming army."
+        },
+        {
+          "id": "original",
+          "score": 40366,
+          "primary_won": true,
+          "primary_rounds": 1808,
+          "post_mortem": "Won (1808 rounds). Solid win; push for faster finish.",
+          "archetype_name": "Original (baseline)",
+          "type": "baseline"
+        },
+        {
+          "id": "v3",
+          "score": 40366,
+          "primary_won": true,
+          "primary_rounds": 1808,
+          "post_mortem": "Won (1808 rounds). Solid win; push for faster finish.",
+          "archetype_name": "Panic Pivot",
+          "type": "mutation",
+          "win_condition": "hybrid",
+          "philosophy": "If enemies are detected within sensor range during Phase 1, immediately abandon greed and switch to tank production. Survive first, economy second."
+        },
+        {
+          "id": "v11",
+          "score": 31669,
+          "primary_won": false,
+          "primary_rounds": 1879,
+          "post_mortem": "Lost (1879 rounds). Strategy ineffective.",
+          "archetype_name": "Scout Swarm Harassment",
+          "type": "exploration",
+          "win_condition": "vp_rush",
+          "philosophy": "Build cheap scouts (80 bullets) to harass enemy gardeners and steal bullets from neutral trees via shaking. Scouts move through trees freely. While scouts deny enemy economy, gardeners focus on VP donation."
+        },
+        {
+          "id": "v6",
+          "score": 30515,
+          "primary_won": false,
+          "primary_rounds": 2020,
+          "post_mortem": "Lost (2020 rounds). Strategy ineffective.",
+          "archetype_name": "Adaptive Scout Matrix",
+          "type": "mutation",
+          "win_condition": "hybrid",
+          "philosophy": "Deploy scouts early to detect enemy unit composition every 50 rounds. Build counter units: soldiers counter lumberjacks, tanks counter soldiers, lumberjacks counter tanks."
+        },
+        {
+          "id": "v7",
+          "score": 30340,
+          "primary_won": false,
+          "primary_rounds": 1685,
+          "post_mortem": "Lost (1685 rounds). Strategy ineffective.",
+          "archetype_name": "Fortified Grove",
+          "type": "mutation",
+          "win_condition": "hybrid",
+          "philosophy": "Maintain tree economy but build a small defensive garrison (2-3 soldiers) during Phase 1 to protect gardeners. Trade some economic speed for survival insurance."
+        },
+        {
+          "id": "v13",
+          "score": 26889,
+          "primary_won": false,
+          "primary_rounds": 1730,
+          "post_mortem": "Lost (1730 rounds) [1 kills]. Strategy ineffective.",
+          "archetype_name": "Combined Arms Doctrine",
+          "type": "exploration",
+          "win_condition": "elimination",
+          "philosophy": "Build a balanced army where each unit type has a specific role: tanks hold frontline, soldiers provide ranged DPS, lumberjacks flank and strike, scouts provide vision. Total force multiplication through coordination."
+        },
+        {
+          "id": "v8",
+          "score": 14397,
+          "primary_won": false,
+          "primary_rounds": 2082,
+          "post_mortem": "Lost (2082 rounds). Strategy ineffective.",
+          "archetype_name": "Tank Doctrine",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Streamline Phase 2 into pure tank production. Tanks are the strongest unit (200 HP, 5 attack) and can body-ram through trees. Overwhelm through raw firepower and durability."
+        },
+        {
+          "id": "v12",
+          "score": 14380,
+          "primary_won": false,
+          "primary_rounds": 1959,
+          "post_mortem": "Lost (1959 rounds). Strategy ineffective.",
+          "archetype_name": "VP Tsunami",
+          "type": "exploration",
+          "win_condition": "vp_rush",
+          "philosophy": "All-in on VP from round 1. Zero military production until round 500. Every bullet above 50 goes to donation. If the opponent cannot find and kill us fast, we win by round 1200."
+        },
+        {
+          "id": "v10",
+          "score": 13514,
+          "primary_won": false,
+          "primary_rounds": 1711,
+          "post_mortem": "Lost (1711 rounds). Strategy ineffective.",
+          "archetype_name": "Tank Blitz",
+          "type": "exploration",
+          "win_condition": "elimination",
+          "philosophy": "Skip economy entirely. Hire 2 gardeners immediately and have them produce tanks from round 1. Even 2-3 early tanks can destroy an opponent still building economy. Win by round 600 or lose."
+        },
+        {
+          "id": "v16",
+          "score": 12908,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [5 kills]. Good combat but couldn't close.",
+          "archetype_name": "Archon Assassination",
+          "type": "exploration",
+          "win_condition": "elimination",
+          "philosophy": "Use scouts to locate the enemy archon, then send all combat units to converge on it. Killing the archon stops gardener hiring and cripples enemy economy. Focus fire on the highest-value target."
+        },
+        {
+          "id": "v9",
+          "score": 12876,
+          "primary_won": false,
+          "primary_rounds": 1832,
+          "post_mortem": "Lost (1832 rounds). Strategy ineffective.",
+          "archetype_name": "Lumberjack Horde",
+          "type": "exploration",
+          "win_condition": "elimination",
+          "philosophy": "Flood the map with lumberjacks from round 1. Their strike hits ALL nearby enemies for devastating AOE, they chop neutral trees for bullet income, and their 0.75 stride is fast. Overwhelm through melee swarm."
+        }
+      ]
+    },
+    {
+      "iteration": 2,
+      "winner": "v15",
+      "winner_score": 115975,
+      "promoted": true,
+      "variants": [
+        {
+          "id": "v15",
+          "score": 115975,
+          "primary_won": true,
+          "primary_rounds": 728,
+          "post_mortem": "Won fast (728 rounds) [8 kills]. Effective fast strategy.",
+          "archetype_name": "Swarm Blitz",
+          "type": "exploration",
+          "win_condition": "elimination",
+          "philosophy": "Replace slow tank production with rapid cheap unit spam. Build only soldiers (100 bullets) and scouts (80 bullets) from round 200. Overwhelm the opponent with sheer unit count before they can build expensive tanks."
+        },
+        {
+          "id": "v14",
+          "score": 59751,
+          "primary_won": true,
+          "primary_rounds": 1708,
+          "post_mortem": "Won (1708 rounds). Solid win; push for faster finish.",
+          "archetype_name": "Bullet Baron",
+          "type": "exploration",
+          "win_condition": "hybrid",
+          "philosophy": "Maximize bullet income through an extreme tree empire: hire gardeners at 30% rate, each planting trees at 90% rate, with watering priority. Massive bullet income funds overwhelming late-game army or rapid VP accumulation."
+        },
+        {
+          "id": "v9",
+          "score": 55395,
+          "primary_won": true,
+          "primary_rounds": 1799,
+          "post_mortem": "Won (1799 rounds). Solid win; push for faster finish.",
+          "archetype_name": "Economy Sprint",
+          "type": "exploration",
+          "win_condition": "vp_rush",
+          "philosophy": "Pure Greed Extremist won fastest at 1630 rounds but still spent 1000 rounds building economy. Sprint the greed phase to 500 rounds, then dump everything into VP donation. Win by round 1000."
+        },
+        {
+          "id": "v2",
+          "score": 50505,
+          "primary_won": false,
+          "primary_rounds": 1802,
+          "post_mortem": "Lost (1802 rounds). Strategy ineffective.",
+          "archetype_name": "VP Lightning",
+          "type": "mutation",
+          "win_condition": "vp_rush",
+          "philosophy": "VP Blitz showed wins but always ran to round 2999. Start donating from round 100 with only 100 bullet reserve. Convert every surplus bullet into VP immediately, buying in large batches."
+        },
+        {
+          "id": "original",
+          "score": 50287,
+          "primary_won": false,
+          "primary_rounds": 1802,
+          "post_mortem": "Lost (1802 rounds). Strategy ineffective.",
+          "archetype_name": "Original (baseline)",
+          "type": "baseline"
+        },
+        {
+          "id": "v11",
+          "score": 50239,
+          "primary_won": true,
+          "primary_rounds": 2504,
+          "post_mortem": "Won slowly (2504 rounds) [8 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "Scout Denial",
+          "type": "exploration",
+          "win_condition": "vp_rush",
+          "philosophy": "Cheap scouts (80 bullets) harass enemy economy while gardeners focus on VP. Scouts move through trees freely, shake neutral trees for bullets, and disrupt enemy gardeners. Deny opponent economy while accelerating ours."
+        },
+        {
+          "id": "v7",
+          "score": 49837,
+          "primary_won": false,
+          "primary_rounds": 1802,
+          "post_mortem": "Lost (1802 rounds). Strategy ineffective.",
+          "archetype_name": "Tank Fortress",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Iron Column showed tanks are underutilized. Build tanks as the primary combat unit from round 400. Their 200 HP and 5 attack dominate engagements, and they body-ram through trees."
+        },
+        {
+          "id": "v10",
+          "score": 49521,
+          "primary_won": false,
+          "primary_rounds": 2284,
+          "post_mortem": "Lost (2284 rounds). Strategy ineffective.",
+          "archetype_name": "Lumberjack Rush",
+          "type": "exploration",
+          "win_condition": "elimination",
+          "philosophy": "Lumberjacks have the highest kill count in history (21 kills) and their strike hits ALL nearby enemies for devastating AOE damage. Flood the map with lumberjacks that chop trees for income and crush enemies in melee."
+        },
+        {
+          "id": "v12",
+          "score": 43753,
+          "primary_won": true,
+          "primary_rounds": 1642,
+          "post_mortem": "Won (1642 rounds). Solid win; push for faster finish.",
+          "archetype_name": "Armored Column",
+          "type": "exploration",
+          "win_condition": "elimination",
+          "philosophy": "Combined Arms showed multi-unit strategies score well but lack coordination. Simplify to tanks + soldiers in a 1:2 ratio. Tanks body-ram trees and tank damage while soldiers provide ranged DPS from behind."
+        },
+        {
+          "id": "v1",
+          "score": 39649,
+          "primary_won": false,
+          "primary_rounds": 2032,
+          "post_mortem": "Lost (2032 rounds). Strategy ineffective.",
+          "archetype_name": "Turbo Greed",
+          "type": "mutation",
+          "win_condition": "hybrid",
+          "philosophy": "Compress Pure Greed Extremist's greed phase from round 1000 to round 600. Same aggressive tree planting but pivot to VP or military 400 rounds earlier to close games before round 1500."
+        },
+        {
+          "id": "v4",
+          "score": 39643,
+          "primary_won": false,
+          "primary_rounds": 2032,
+          "post_mortem": "Lost (2032 rounds). Strategy ineffective.",
+          "archetype_name": "Gardener Machine",
+          "type": "mutation",
+          "win_condition": "hybrid",
+          "philosophy": "Rapid Gardener variants consistently scored well. Hire gardeners at 30% rate to establish 3-4 parallel tree farms and unit production queues. More gardeners = more build slots = faster army assembly."
+        },
+        {
+          "id": "v3",
+          "score": 38169,
+          "primary_won": true,
+          "primary_rounds": 2035,
+          "post_mortem": "Won (2035 rounds). Solid win; push for faster finish.",
+          "archetype_name": "Soldier Overwhelm",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Soldier-based strategies scored respectably (2311-23963 range) but lacked closing power. Dramatically increase soldier production rate from round 200 and coordinate pushes toward enemy archon locations."
+        },
+        {
+          "id": "v8",
+          "score": 35053,
+          "primary_won": false,
+          "primary_rounds": 1807,
+          "post_mortem": "Lost (1807 rounds). Strategy ineffective.",
+          "archetype_name": "Dynamic Pivot",
+          "type": "mutation",
+          "win_condition": "hybrid",
+          "philosophy": "Smart Spender showed promise but was too conservative. Dynamically shift bullet allocation every 20 rounds based on game state: high enemy pressure = military, safe = trees, ahead in kills = VP."
+        },
+        {
+          "id": "v6",
+          "score": 34777,
+          "primary_won": false,
+          "primary_rounds": 1888,
+          "post_mortem": "Lost (1888 rounds). Strategy ineffective.",
+          "archetype_name": "Timber Harvester",
+          "type": "mutation",
+          "win_condition": "hybrid",
+          "philosophy": "Lumberjacks scored highest kills (21 in history) and chop neutral trees for instant bullet income. Build 3-4 lumberjacks early to supplement tree farm income while providing melee defense."
+        },
+        {
+          "id": "v5",
+          "score": 27796,
+          "primary_won": false,
+          "primary_rounds": 1965,
+          "post_mortem": "Lost (1965 rounds). Strategy ineffective.",
+          "archetype_name": "Archon Sentinel",
+          "type": "mutation",
+          "win_condition": "hybrid",
+          "philosophy": "Archon Citadel showed promise but was too passive. Build a soldier garrison within 5 radius of the archon starting round 100. If archon is safe, economy scales; if threatened, the garrison engages."
+        },
+        {
+          "id": "v16",
+          "score": 16737,
+          "primary_won": false,
+          "primary_rounds": 2055,
+          "post_mortem": "Lost (2055 rounds). Strategy ineffective.",
+          "archetype_name": "Archon Hunter",
+          "type": "exploration",
+          "win_condition": "elimination",
+          "philosophy": "Use scouts to locate the enemy archon early, then send all combat units to converge on it. Killing the archon stops gardener hiring and cripples enemy economy permanently. Focus all firepower on the highest-value target."
+        },
+        {
+          "id": "v13",
+          "score": 15545,
+          "primary_won": false,
+          "primary_rounds": 1698,
+          "post_mortem": "Lost (1698 rounds). Strategy ineffective.",
+          "archetype_name": "Grove Guardian",
+          "type": "exploration",
+          "win_condition": "hybrid",
+          "philosophy": "Build a dense, defended tree economy. Gardeners plant trees in a tight cluster near the archon while soldiers form a protective ring. Water trees aggressively for sustained bullet income. Convert surplus to VP when safe or military when threatened."
+        }
+      ]
+    },
+    {
+      "iteration": 3,
+      "winner": "v8",
+      "winner_score": 117570,
+      "promoted": true,
+      "variants": [
+        {
+          "id": "v8",
+          "score": 117570,
+          "primary_won": true,
+          "primary_rounds": 1413,
+          "post_mortem": "Won fast (1413 rounds) [54 kills]. Effective fast strategy.",
+          "archetype_name": "Swarm Gardener",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Hire gardeners at 25% rate even during the swarm phase to maintain parallel build queues. More gardeners mean faster unit production and denser tree farms for sustained bullet income."
+        },
+        {
+          "id": "v3",
+          "score": 117181,
+          "primary_won": true,
+          "primary_rounds": 1247,
+          "post_mortem": "Won fast (1247 rounds) [23 kills]. Effective fast strategy.",
+          "archetype_name": "Swarm Forester",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Build a small lumberjack contingent (2-3 per gardener) alongside the soldier swarm. Lumberjacks clear neutral trees for bonus bullets and provide devastating AOE strikes in mixed engagements."
+        },
+        {
+          "id": "v4",
+          "score": 105997,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [45 kills]. Good combat but couldn't close.",
+          "archetype_name": "Lightning Onset",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Begin soldier production at round 100 instead of 200, hitting the enemy 100 rounds earlier. Shorter eco phase but units arrive while opponents are still building economy."
+        },
+        {
+          "id": "v1",
+          "score": 104026,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [23 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "Triad Storm",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Push Swarm Blitz further by adding triad shot usage to soldiers for area denial and faster kills. Same cheap unit spam but each soldier fires triads instead of singles, dealing 3x damage per volley."
+        },
+        {
+          "id": "v7",
+          "score": 103651,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [21 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "Ranger Swarm",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Soldiers use pentad shots exclusively for maximum damage output. Expensive but devastating - each volley hits a wide area and overwhelms enemy defenses with sheer bullet density."
+        },
+        {
+          "id": "original",
+          "score": 103043,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [16 kills]. Good combat but couldn't close.",
+          "archetype_name": "Original (baseline)",
+          "type": "baseline"
+        },
+        {
+          "id": "v6",
+          "score": 103043,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [16 kills]. Good combat but couldn't close.",
+          "archetype_name": "Shark Swarm",
+          "type": "mutation",
+          "win_condition": "hybrid",
+          "philosophy": "Swarm aggressively but pivot to VP if no elimination by round 1500. If the swarm kills enough enemies, keep pushing. If stalemated, convert surplus bullets to VP for a backup win condition."
+        },
+        {
+          "id": "v14",
+          "score": 101410,
+          "primary_won": false,
+          "primary_rounds": 1793,
+          "post_mortem": "Lost (1793 rounds) [20 kills]. Good combat but couldn't close.",
+          "archetype_name": "Silent Protocol",
+          "type": "exploration",
+          "win_condition": "hybrid",
+          "philosophy": "Avoid direct confrontation and win through economic superiority and attrition. Scouts harass enemy economy, gardeners build a hidden tree economy, and lumberjacks chop neutral trees. Let opponents waste bullets fighting nothing while we outscale."
+        },
+        {
+          "id": "v10",
+          "score": 101289,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [20 kills]. Good combat but couldn't close.",
+          "archetype_name": "Momentum Charge",
+          "type": "exploration",
+          "win_condition": "elimination",
+          "philosophy": "Tanks body-ram through trees to maintain forward momentum while lumberjacks flank and strike. Two unit types working in tandem to create an unstoppable advancing front."
+        },
+        {
+          "id": "v9",
+          "score": 94411,
+          "primary_won": false,
+          "primary_rounds": 2955,
+          "post_mortem": "Lost (2955 rounds) [101 kills]. Good combat but couldn't close.",
+          "archetype_name": "Chainsaw Economy",
+          "type": "exploration",
+          "win_condition": "hybrid",
+          "philosophy": "Flood the map with lumberjacks from round 1. Their strike hits ALL nearby enemies (devastating AOE) and they chop neutral trees for instant bullet income. Dual-purpose units that generate economy while applying melee pressure."
+        },
+        {
+          "id": "v2",
+          "score": 72417,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [45 kills]. Good combat but couldn't close.",
+          "archetype_name": "Dual Swarm",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Split the swarm into two independent waves that approach from different directions. Scouts pathfind around obstacles to flank while soldiers push the main route."
+        },
+        {
+          "id": "v5",
+          "score": 69525,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [11 kills]. Good combat but couldn't close.",
+          "archetype_name": "Steel Swarm",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Add a small tank production stream (15% rate) to the swarm from round 300. Tanks provide frontline durability and tree-ramming capability while soldiers and scouts overwhelm."
+        },
+        {
+          "id": "v13",
+          "score": 69237,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [12 kills]. Good combat but couldn't close.",
+          "archetype_name": "Raptor Strike",
+          "type": "exploration",
+          "win_condition": "elimination",
+          "philosophy": "Use the fastest units (scouts at 1.25 stride, soldiers at 0.8 stride) to outmaneuver opponents. Control map resources, evade when disadvantaged, and converge on isolated enemies for quick kills."
+        },
+        {
+          "id": "v12",
+          "score": 63770,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [17 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "Garden Titan",
+          "type": "exploration",
+          "win_condition": "hybrid",
+          "philosophy": "Build an extreme tree empire with 30% gardener hiring and 90% tree planting. Water every tree aggressively to extend production life. Massive bullet income funds either overwhelming late-game VP or a 500-round army of tanks."
+        },
+        {
+          "id": "v15",
+          "score": 41420,
+          "primary_won": false,
+          "primary_rounds": 1430,
+          "post_mortem": "Lost (1430 rounds) [78 kills]. Good combat but couldn't close.",
+          "archetype_name": "Decapitation Strike",
+          "type": "exploration",
+          "win_condition": "elimination",
+          "philosophy": "Use scouts to locate the enemy archon early, then converge all combat units on it. Killing the archon stops gardener hiring permanently and cripples enemy economy. Focus all firepower on the highest-value target."
+        },
+        {
+          "id": "v11",
+          "score": 21739,
+          "primary_won": false,
+          "primary_rounds": 687,
+          "post_mortem": "Lost (687 rounds). Strategy ineffective.",
+          "archetype_name": "VP Blitzkrieg",
+          "type": "exploration",
+          "win_condition": "vp_rush",
+          "philosophy": "Start VP donations at round 50 with only 50 bullet reserve. Every surplus bullet converts to VP immediately. Minimal military - just scouts for early warning. Win by round 1000 through pure economic focus."
+        },
+        {
+          "id": "v16",
+          "score": 18265,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [13 kills]. Good combat but couldn't close.",
+          "archetype_name": "Palisade Economy",
+          "type": "exploration",
+          "win_condition": "hybrid",
+          "philosophy": "Build a dense, defended tree economy where gardeners plant trees in a tight cluster near the archon while soldiers form a protective ring. Water trees aggressively for sustained bullet income. Convert surplus to VP when safe or military when threatened."
+        }
+      ]
+    },
+    {
+      "iteration": 4,
+      "winner": "v8",
+      "winner_score": 127606,
+      "promoted": true,
+      "variants": [
+        {
+          "id": "v8",
+          "score": 127606,
+          "primary_won": true,
+          "primary_rounds": 1134,
+          "post_mortem": "Won fast (1134 rounds) [21 kills]. Effective fast strategy.",
+          "archetype_name": "Rapid Bloom",
+          "type": "mutation",
+          "win_condition": "hybrid",
+          "philosophy": "Shorten eco phase to round 150 but plant trees at 90% rate during that window. Dense tree farms generate massive bullet income that funds rapid military production from round 150 onward. Front-loaded economy enables faster swarm."
+        },
+        {
+          "id": "v4",
+          "score": 112051,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [50 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "Scout Wave",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Double scout production to 40% alongside soldiers. Scouts move through trees freely at 1.25 stride speed, shake neutral trees for bullets, and harass enemy gardeners while soldiers provide main firepower."
+        },
+        {
+          "id": "original",
+          "score": 109991,
+          "primary_won": false,
+          "primary_rounds": 813,
+          "post_mortem": "Lost (813 rounds) [25 kills]. Good combat but couldn't close.",
+          "archetype_name": "Original (baseline)",
+          "type": "baseline"
+        },
+        {
+          "id": "v5",
+          "score": 109991,
+          "primary_won": false,
+          "primary_rounds": 813,
+          "post_mortem": "Lost (813 rounds) [25 kills]. Good combat but couldn't close.",
+          "archetype_name": "Shark Pivot",
+          "type": "mutation",
+          "win_condition": "hybrid",
+          "philosophy": "Swarm aggressively for elimination but pivot to VP donation if no kill by round 1200. If the swarm destroys enough enemies, keep pushing. If stalemated, convert surplus bullets to VP for a backup win condition."
+        },
+        {
+          "id": "v1",
+          "score": 108055,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [46 kills]. Good combat but couldn't close.",
+          "archetype_name": "Lightning Swarm",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Start soldier production at round 100 instead of 200, compressing the economy phase. Units arrive while opponents are still building infrastructure, exploiting the 20-round inactivity window on their fresh builds."
+        },
+        {
+          "id": "v10",
+          "score": 106567,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [93 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "Timber Horde",
+          "type": "exploration",
+          "win_condition": "elimination",
+          "philosophy": "Flood the map with lumberjacks from round 1. Their strike hits ALL nearby enemies for devastating AOE, they chop neutral trees for instant bullet income, and their 0.75 stride is fast. Overwhelm through melee swarm."
+        },
+        {
+          "id": "v3",
+          "score": 98890,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [40 kills]. Good combat but couldn't close.",
+          "archetype_name": "Swarm Forester",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Add a small lumberjack contingent (15% build rate) alongside the soldier swarm. Lumberjacks clear neutral trees for instant bonus bullets and provide devastating AOE strikes in mixed engagements, supplementing ranged DPS."
+        },
+        {
+          "id": "v6",
+          "score": 96544,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [48 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "Gardener Surge",
+          "type": "mutation",
+          "win_condition": "hybrid",
+          "philosophy": "Hire gardeners at 35% rate during swarm phase for maximum parallel build queues. More gardeners = more simultaneous unit production + denser tree farms for sustained bullet income. Scale overwhelms opponents with fewer gardeners."
+        },
+        {
+          "id": "v2",
+          "score": 86158,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [63 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "Triad Dominator",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Soldiers fire triad shots (4 bullets, 20-degree spread) instead of singles for 3x damage per volley. Area denial and faster kills justify the higher bullet cost when bullet income from trees is sufficient."
+        },
+        {
+          "id": "v13",
+          "score": 64076,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [25 kills]. Good combat but couldn't close.",
+          "archetype_name": "Tank Column",
+          "type": "exploration",
+          "win_condition": "elimination",
+          "philosophy": "Tanks are the strongest unit (200 HP, 5 attack) and can body-ram through trees. Build tanks as primary force from round 300. Their durability and firepower dominate in direct engagements\u2014quality over quantity."
+        },
+        {
+          "id": "v15",
+          "score": 59594,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [48 kills]. Good combat but couldn't close.",
+          "archetype_name": "Arms Doctrine",
+          "type": "exploration",
+          "win_condition": "elimination",
+          "philosophy": "Build a balanced army where each unit type has a specific role: tanks hold frontline and body-ram trees, soldiers provide ranged DPS from behind, lumberjacks flank and strike isolated enemies, scouts provide vision. Total force multiplication."
+        },
+        {
+          "id": "v11",
+          "score": 50343,
+          "primary_won": false,
+          "primary_rounds": 618,
+          "post_mortem": "Lost (618 rounds) [5 kills]. Good combat but couldn't close.",
+          "archetype_name": "Eco Titan",
+          "type": "exploration",
+          "win_condition": "hybrid",
+          "philosophy": "Build maximum tree empire for 600 rounds with zero military. Hire gardeners at 30% rate, plant trees at 90% rate, water aggressively. At round 600, evaluate game state: if ahead in bullets, pivot to VP rush; if threatened, pivot to tank army."
+        },
+        {
+          "id": "v9",
+          "score": 47720,
+          "primary_won": false,
+          "primary_rounds": 873,
+          "post_mortem": "Lost (873 rounds) [3 kills]. Strategy ineffective.",
+          "archetype_name": "VP Blitzkrieg",
+          "type": "exploration",
+          "win_condition": "vp_rush",
+          "philosophy": "All-in VP from round 50. Donate every surplus bullet above 50 reserve. Minimal scouts for early warning only. Win by round 1000 through pure economic focus\u2014faster than any opponent can scale military."
+        },
+        {
+          "id": "v14",
+          "score": 44273,
+          "primary_won": false,
+          "primary_rounds": 741,
+          "post_mortem": "Lost (741 rounds) [14 kills]. Good combat but couldn't close.",
+          "archetype_name": "Scout Harassment Network",
+          "type": "exploration",
+          "win_condition": "vp_rush",
+          "philosophy": "Cheap scouts (80 bullets) harass enemy economy while gardeners focus on VP donation. Scouts move through trees freely, shake neutral trees for bullets, and disrupt enemy gardeners. Deny opponent economy while accelerating our own VP."
+        },
+        {
+          "id": "v12",
+          "score": 40657,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [18 kills]. Good combat but couldn't close.",
+          "archetype_name": "Decapitation Strike",
+          "type": "exploration",
+          "win_condition": "elimination",
+          "philosophy": "Use scouts to locate the enemy archon, then converge all combat units on it. Killing the archon stops gardener hiring permanently and cripples enemy economy. Focus all firepower on the highest-value target."
+        },
+        {
+          "id": "v16",
+          "score": 37210,
+          "primary_won": false,
+          "primary_rounds": 677,
+          "post_mortem": "Lost (677 rounds) [6 kills]. Good combat but couldn't close.",
+          "archetype_name": "Shadow Protocol",
+          "type": "exploration",
+          "win_condition": "hybrid",
+          "philosophy": "Avoid direct confrontation and win through economic superiority and attrition. Scouts harass and gather intel, gardeners build a hidden tree economy far from combat, and lumberjacks chop neutral trees for bonus income. Outscale then overwhelm."
+        },
+        {
+          "id": "v7",
+          "score": 25825,
+          "primary_won": false,
+          "primary_rounds": 1416,
+          "post_mortem": "Lost (1416 rounds) [3 kills]. Strategy ineffective.",
+          "archetype_name": "Reserve Striker",
+          "type": "mutation",
+          "win_condition": "hybrid",
+          "philosophy": "Dynamically lower bullet reserve threshold when enemies are detected nearby, spending aggressively on defense units. When safe, hoard bullets for late-game VP or tank production. Reactive economy that adapts to threat level."
+        }
+      ]
+    },
+    {
+      "iteration": 5,
+      "winner": "v5",
+      "winner_score": 155793,
+      "promoted": true,
+      "variants": [
+        {
+          "id": "v5",
+          "score": 155793,
+          "primary_won": true,
+          "primary_rounds": 2668,
+          "post_mortem": "Won slowly (2668 rounds) [127 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "Timber Support",
+          "type": "mutation",
+          "win_condition": "hybrid",
+          "philosophy": "Add 20% lumberjack production to clear neutral trees for instant bullet income and provide devastating AOE strike in mixed engagements. Lumberjacks supplement the soldier swarm with melee pressure."
+        },
+        {
+          "id": "v10",
+          "score": 135970,
+          "primary_won": false,
+          "primary_rounds": 647,
+          "post_mortem": "Lost (647 rounds) [10 kills]. Good combat but couldn't close.",
+          "archetype_name": "Tank Rush Express",
+          "type": "exploration",
+          "win_condition": "elimination",
+          "philosophy": "Skip economy entirely. Hire 2 gardeners immediately, produce tanks from round 1. Tanks are the strongest unit (200 HP, 5 attack) and can body-ram through trees. Even 2-3 early tanks overwhelm opponents building economy."
+        },
+        {
+          "id": "v15",
+          "score": 135307,
+          "primary_won": true,
+          "primary_rounds": 2873,
+          "post_mortem": "Won slowly (2873 rounds) [139 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "Decapitation Strike",
+          "type": "exploration",
+          "win_condition": "elimination",
+          "philosophy": "Use scouts to locate the enemy archon early, then converge all combat units on it. Killing the archon stops gardener hiring permanently and cripples enemy economy. Focus all firepower on the highest-value target."
+        },
+        {
+          "id": "v8",
+          "score": 131162,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [173 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "VP Reserve",
+          "type": "mutation",
+          "win_condition": "hybrid",
+          "philosophy": "Swarm aggressively for elimination but pivot to VP donation if no kill by round 1200. If the swarm destroys enough enemies, keep pushing. If stalemated, convert surplus bullets to VP for a backup win condition."
+        },
+        {
+          "id": "v11",
+          "score": 129725,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [101 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "Chainsaw Massacre",
+          "type": "exploration",
+          "win_condition": "elimination",
+          "philosophy": "Flood the map with lumberjacks from round 1. Their strike hits ALL nearby enemies for devastating AOE damage, they chop neutral trees for instant bullet income, and their 0.75 stride is fast. Overwhelm through melee swarm."
+        },
+        {
+          "id": "v1",
+          "score": 126897,
+          "primary_won": true,
+          "primary_rounds": 2393,
+          "post_mortem": "Won (2393 rounds) [170 kills]. Solid win; push for faster finish.",
+          "archetype_name": "Lightning Bloom",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Compress the eco phase to 100 rounds with extreme tree density, then pivot to pure soldier production. Arrive 50 rounds earlier than Rapid Bloom to exploit opponents still building economy."
+        },
+        {
+          "id": "v3",
+          "score": 126318,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [112 kills]. Good combat but couldn't close.",
+          "archetype_name": "Steel Vanguard",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Add tank production (20% rate) from round 200 alongside soldiers. Tanks body-ram through trees and tank damage while soldiers provide ranged DPS. Quality + quantity combined."
+        },
+        {
+          "id": "original",
+          "score": 124398,
+          "primary_won": false,
+          "primary_rounds": 2429,
+          "post_mortem": "Lost (2429 rounds) [103 kills]. Good combat but couldn't close.",
+          "archetype_name": "Original (baseline)",
+          "type": "baseline"
+        },
+        {
+          "id": "v2",
+          "score": 121277,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [107 kills]. Good combat but couldn't close.",
+          "archetype_name": "Dense Grove",
+          "type": "mutation",
+          "win_condition": "hybrid",
+          "philosophy": "Extend eco to round 200 with maximum tree planting at 95% rate and 30% gardener hire. Denser tree farms generate massive bullet surplus for overwhelming military production after round 200."
+        },
+        {
+          "id": "v4",
+          "score": 112959,
+          "primary_won": false,
+          "primary_rounds": 1013,
+          "post_mortem": "Lost (1013 rounds) [7 kills]. Good combat but couldn't close.",
+          "archetype_name": "Scout Wave",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Double scout production to 50% for maximum harassment and tree-shaking economy. Scouts move through trees at 1.25 stride, shake neutral trees for bullets, and disrupt enemy gardeners while soldiers mop up."
+        },
+        {
+          "id": "v7",
+          "score": 104372,
+          "primary_won": false,
+          "primary_rounds": 295,
+          "post_mortem": "Lost (295 rounds) [2 kills]. Strategy ineffective.",
+          "archetype_name": "Triad Storm",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Soldiers fire triad shots (4 bullets, 20-degree spread) instead of singles for 3x damage per volley. Area denial and faster kills justify higher bullet cost when tree economy provides sufficient income."
+        },
+        {
+          "id": "v12",
+          "score": 102622,
+          "primary_won": false,
+          "primary_rounds": 1309,
+          "post_mortem": "Lost (1309 rounds) [38 kills]. Good combat but couldn't close.",
+          "archetype_name": "Scout Denial Network",
+          "type": "exploration",
+          "win_condition": "vp_rush",
+          "philosophy": "Cheap scouts (80 bullets) harass enemy economy while gardeners focus on VP donation. Scouts move through trees freely, shake neutral trees for bullets, and disrupt enemy gardeners. Deny opponent economy while accelerating our own VP."
+        },
+        {
+          "id": "v13",
+          "score": 87502,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [126 kills]. Good combat but couldn't close.",
+          "archetype_name": "Armored Column",
+          "type": "exploration",
+          "win_condition": "elimination",
+          "philosophy": "Build tanks and soldiers in a 1:2 ratio. Tanks body-ram trees and absorb damage while soldiers provide ranged DPS from behind. Coordinated pushes where tanks create openings and soldiers exploit them."
+        },
+        {
+          "id": "v16",
+          "score": 58874,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [5 kills]. Good combat but couldn't close.",
+          "archetype_name": "Shadow Protocol",
+          "type": "exploration",
+          "win_condition": "hybrid",
+          "philosophy": "Avoid direct confrontation and win through economic superiority and attrition. Scouts harass and gather intel, gardeners build hidden tree economy far from combat, lumberjacks chop neutral trees for bonus income. Outscale then overwhelm."
+        },
+        {
+          "id": "v14",
+          "score": 54855,
+          "primary_won": false,
+          "primary_rounds": 577,
+          "post_mortem": "Lost (577 rounds) [3 kills]. Strategy ineffective.",
+          "archetype_name": "Eco Titan",
+          "type": "exploration",
+          "win_condition": "hybrid",
+          "philosophy": "Build maximum tree empire for 600 rounds with zero military. Hire gardeners at 30% rate, plant trees at 90% rate, water aggressively. At round 600, evaluate: if ahead in bullets, pivot to VP rush; if threatened, pivot to tank army."
+        },
+        {
+          "id": "v6",
+          "score": 47609,
+          "primary_won": false,
+          "primary_rounds": 549,
+          "post_mortem": "Lost (549 rounds) [2 kills]. Strategy ineffective.",
+          "archetype_name": "Reactive Pivot",
+          "type": "mutation",
+          "win_condition": "hybrid",
+          "philosophy": "Dynamically adjust spending every 20 rounds: if enemies near sensor range, max military; if safe, plant trees; if ahead in kills, donate VP. Reactive economy adapts to game state in real-time."
+        },
+        {
+          "id": "v9",
+          "score": 29035,
+          "primary_won": false,
+          "primary_rounds": 711,
+          "post_mortem": "Lost (711 rounds) [1 kills]. Strategy ineffective.",
+          "archetype_name": "VP Blitzkrieg",
+          "type": "exploration",
+          "win_condition": "vp_rush",
+          "philosophy": "All-in on VP from round 50. Donate every surplus bullet above 30 reserve. Minimal scouts for early warning only. Win by round 900 through pure economic focus before opponent can scale military."
+        }
+      ]
+    },
+    {
+      "iteration": 6,
+      "winner": "original",
+      "winner_score": 162822,
+      "promoted": false,
+      "variants": [
+        {
+          "id": "original",
+          "score": 162822,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [166 kills]. Good combat but couldn't close.",
+          "archetype_name": "Original (baseline)",
+          "type": "baseline"
+        },
+        {
+          "id": "v4",
+          "score": 158449,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [166 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "VP Insurance",
+          "type": "mutation",
+          "win_condition": "hybrid",
+          "philosophy": "Swarm aggressively for elimination but pivot to VP donation if no kill by round 1200. If the swarm destroys enough enemies, keep pushing. If stalemated, convert surplus bullets to VP for a backup win condition."
+        },
+        {
+          "id": "v2",
+          "score": 151801,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [171 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "Triad Doctrine",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Switch soldiers from single shots to triad shots for 3x damage per volley. The area denial and faster kills justify the 4-bullet cost when tree economy provides sufficient income from round 150 onward."
+        },
+        {
+          "id": "v8",
+          "score": 149461,
+          "primary_won": true,
+          "primary_rounds": 2390,
+          "post_mortem": "Won (2390 rounds) [71 kills]. Solid win; push for faster finish.",
+          "archetype_name": "Pentad Barrage",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Soldiers fire pentad shots exclusively for maximum damage output. Expensive but devastating\u2014each volley hits a wide area and overwhelms enemy defenses with sheer bullet density. Higher eco phase to 175 rounds funds the ammo."
+        },
+        {
+          "id": "v7",
+          "score": 147969,
+          "primary_won": false,
+          "primary_rounds": 2528,
+          "post_mortem": "Lost (2528 rounds) [144 kills]. Good combat but couldn't close.",
+          "archetype_name": "Scout Vanguard",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Increase scout production to 40% for maximum harassment and tree-shaking economy. Scouts move through trees at 1.25 stride, shake neutral trees for bullets, and disrupt enemy gardeners while soldiers mop up."
+        },
+        {
+          "id": "v6",
+          "score": 142907,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [208 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "Dense Canopy",
+          "type": "mutation",
+          "win_condition": "hybrid",
+          "philosophy": "Extend eco phase to round 200 with maximum tree planting at 95% rate and 30% gardener hire. Denser tree farms generate massive bullet surplus for overwhelming military production after round 200."
+        },
+        {
+          "id": "v14",
+          "score": 142379,
+          "primary_won": true,
+          "primary_rounds": 646,
+          "post_mortem": "Won fast (646 rounds) [4 kills]. Effective fast strategy.",
+          "archetype_name": "Blitzkrieg",
+          "type": "exploration",
+          "win_condition": "elimination",
+          "philosophy": "Maximum aggression from round 1. Build soldiers immediately after hiring 1 gardener. Ignore tree economy entirely\u2014use starting bullets and neutral tree chopping for income. Aim to have 5+ soldiers pressuring the enemy before round 200."
+        },
+        {
+          "id": "v5",
+          "score": 139583,
+          "primary_won": false,
+          "primary_rounds": 2571,
+          "post_mortem": "Lost (2571 rounds) [105 kills]. Good combat but couldn't close.",
+          "archetype_name": "Lightning Bloom",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Compress the eco phase to 100 rounds with extreme tree density, then pivot to pure soldier production. Arrive 50 rounds earlier than Rapid Bloom to exploit opponents still building economy."
+        },
+        {
+          "id": "v1",
+          "score": 120595,
+          "primary_won": false,
+          "primary_rounds": 1368,
+          "post_mortem": "Lost (1368 rounds) [60 kills]. Good combat but couldn't close.",
+          "archetype_name": "Timber Surge",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Increase lumberjack production to 30% for more tree clearing income and devastating AOE strikes. Current Timber Support scored 155793 with 127 kills\u2014more lumberjacks means faster neutral tree clearing and stronger mixed engagements."
+        },
+        {
+          "id": "v15",
+          "score": 112048,
+          "primary_won": false,
+          "primary_rounds": 859,
+          "post_mortem": "Lost (859 rounds) [40 kills]. Good combat but couldn't close.",
+          "archetype_name": "Combined Arms",
+          "type": "exploration",
+          "win_condition": "elimination",
+          "philosophy": "Build a balanced army where each unit type has a specific role: tanks hold frontline and body-ram trees, soldiers provide ranged DPS from behind, lumberjacks flank and strike isolated enemies, scouts provide vision. Total force multiplication through coordination."
+        },
+        {
+          "id": "v3",
+          "score": 110795,
+          "primary_won": false,
+          "primary_rounds": 2112,
+          "post_mortem": "Lost (2112 rounds) [107 kills]. Good combat but couldn't close.",
+          "archetype_name": "Gardener Engine",
+          "type": "mutation",
+          "win_condition": "hybrid",
+          "philosophy": "Hire gardeners at 35% rate during swarm phase for maximum parallel build queues. More gardeners mean faster unit production and denser tree farms for sustained bullet income throughout the game."
+        },
+        {
+          "id": "v12",
+          "score": 103076,
+          "primary_won": false,
+          "primary_rounds": 1372,
+          "post_mortem": "Lost (1372 rounds) [32 kills]. Good combat but couldn't close.",
+          "archetype_name": "Archon Assassin",
+          "type": "exploration",
+          "win_condition": "elimination",
+          "philosophy": "Use scouts to locate the enemy archon early, then converge all combat units on it. Killing the archon stops gardener hiring permanently and cripples enemy economy. Focus all firepower on the highest-value target."
+        },
+        {
+          "id": "v11",
+          "score": 100051,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [157 kills]. Good combat but couldn't close.",
+          "archetype_name": "Tank Doctrine",
+          "type": "exploration",
+          "win_condition": "elimination",
+          "philosophy": "Tanks are the strongest unit (200 HP, 5 attack) and can body-ram through trees. Build tanks as primary force from round 200 after a strong economy. Their durability and firepower dominate in direct engagements\u2014quality over quantity."
+        },
+        {
+          "id": "v16",
+          "score": 84240,
+          "primary_won": false,
+          "primary_rounds": 578,
+          "post_mortem": "Lost (578 rounds) [2 kills]. Strategy ineffective.",
+          "archetype_name": "Shadow Protocol",
+          "type": "exploration",
+          "win_condition": "hybrid",
+          "philosophy": "Avoid direct confrontation and win through economic superiority and attrition. Scouts harass and gather intel, gardeners build a hidden tree economy far from combat, and lumberjacks chop neutral trees for bonus income. Outscale then overwhelm with late-game army or VP."
+        },
+        {
+          "id": "v10",
+          "score": 66892,
+          "primary_won": false,
+          "primary_rounds": 1356,
+          "post_mortem": "Lost (1356 rounds) [81 kills]. Good combat but couldn't close.",
+          "archetype_name": "Chainsaw Massacre",
+          "type": "exploration",
+          "win_condition": "elimination",
+          "philosophy": "Flood the map with lumberjacks from round 1. Their strike hits ALL nearby enemies for devastating AOE damage, they chop neutral trees for instant bullet income, and their 0.75 stride is fast. Overwhelm through pure melee swarm."
+        },
+        {
+          "id": "v13",
+          "score": 35259,
+          "primary_won": false,
+          "primary_rounds": 553,
+          "post_mortem": "Lost (553 rounds) [5 kills]. Good combat but couldn't close.",
+          "archetype_name": "Economy Sprint",
+          "type": "exploration",
+          "win_condition": "vp_rush",
+          "philosophy": "Pure greed for 500 rounds with maximum tree planting, then dump everything into VP donation. Hire gardeners at 30% rate, plant at 90% rate, water aggressively. After round 500, convert massive bullet surplus into VP purchases at maximum speed."
+        },
+        {
+          "id": "v9",
+          "score": 33874,
+          "primary_won": false,
+          "primary_rounds": 579,
+          "post_mortem": "Lost (579 rounds) [2 kills]. Strategy ineffective.",
+          "archetype_name": "VP Surge",
+          "type": "exploration",
+          "win_condition": "vp_rush",
+          "philosophy": "All-in on VP from round 150. After a brief 150-round eco phase, donate every surplus bullet above 100 reserve. Minimal military\u2014just scouts for early warning. Win by round 1200 through focused economic conversion before opponents can scale military."
+        }
+      ]
+    },
+    {
+      "iteration": 7,
+      "winner": "v4",
+      "winner_score": 168448,
+      "promoted": true,
+      "variants": [
+        {
+          "id": "v4",
+          "score": 168448,
+          "primary_won": true,
+          "primary_rounds": 2090,
+          "post_mortem": "Won (2090 rounds) [130 kills]. Solid win; push for faster finish.",
+          "archetype_name": "Scout Tide",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Push scout production to 40% for maximum harassment and tree-shaking economy. Scouts move through trees at 1.25 stride, shake neutral trees for bullets, and disrupt enemy gardeners while soldiers provide main firepower."
+        },
+        {
+          "id": "v5",
+          "score": 163556,
+          "primary_won": true,
+          "primary_rounds": 2916,
+          "post_mortem": "Won slowly (2916 rounds) [215 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "Steel Tide",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Add a small tank stream (15% rate) from round 200 to the swarm. Tanks body-ram through trees and absorb damage while soldiers and scouts overwhelm. Quality frontline + quantity behind."
+        },
+        {
+          "id": "original",
+          "score": 162822,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [166 kills]. Good combat but couldn't close.",
+          "archetype_name": "Original (baseline)",
+          "type": "baseline"
+        },
+        {
+          "id": "v7",
+          "score": 162822,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [166 kills]. Good combat but couldn't close.",
+          "archetype_name": "Rapid Bloom",
+          "type": "mutation",
+          "win_condition": "hybrid",
+          "philosophy": "Shorten eco phase to 150 but plant trees at 90% rate during that window. Dense tree farms generate massive bullet income that funds rapid military production from round 150 onward, with VP pivot available if stalled by round 1200."
+        },
+        {
+          "id": "v14",
+          "score": 162822,
+          "primary_won": false,
+          "primary_rounds": 2999,
+          "post_mortem": "Lost (2999 rounds) [166 kills]. Good combat but couldn't close.",
+          "archetype_name": "Scout Denial",
+          "type": "exploration",
+          "win_condition": "vp_rush",
+          "philosophy": "Cheap scouts (80 bullets) harass enemy economy\u2014shaking neutral trees for bullets, disrupting gardeners\u2014while the archon focuses on VP donation. Deny opponent economy while accelerating our own VP. Dual-purpose harassment and economy denial."
+        },
+        {
+          "id": "v1",
+          "score": 161560,
+          "primary_won": false,
+          "primary_rounds": 2756,
+          "post_mortem": "Lost (2756 rounds) [125 kills]. Good combat but couldn't close.",
+          "archetype_name": "Sprinter Onset",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Compress the eco phase from 150 to 100 rounds with extreme tree density (95% planting). Earlier military pivot catches opponents still building infrastructure, exploiting the 20-round inactivity window on their fresh builds."
+        },
+        {
+          "id": "v8",
+          "score": 159148,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [157 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "VP Safety Net",
+          "type": "mutation",
+          "win_condition": "hybrid",
+          "philosophy": "Play the proven Timber Support swarm but add a VP fallback. If no elimination by round 1200, shift 30% of surplus bullets to VP donation while maintaining military pressure. Dual win condition prevents stalemate losses."
+        },
+        {
+          "id": "v3",
+          "score": 158435,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [199 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "Lean Strike",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Reduce eco phase to 125 rounds and cut tree planting during swarm to 5%\u2014trees are a long-term investment but the game ends fast. Maximize immediate soldier output by eliminating non-essential spending."
+        },
+        {
+          "id": "v11",
+          "score": 144228,
+          "primary_won": true,
+          "primary_rounds": 2999,
+          "post_mortem": "Won slowly (2999 rounds) [183 kills]. Won but too slowly; needs faster execution.",
+          "archetype_name": "Chainsaw Protocol",
+          "type": "exploration",
+          "win_condition": "elimination",
+          "philosophy": "Flood the map with lumberjacks from round 150. Their strike hits ALL nearby enemies for devastating AOE, they chop neutral trees for instant bullet income, and their 0.75 stride is fast. Overwhelm through pure melee swarm."
+        },
+        {
+          "id": "v2",
+          "score": 139301,
+          "primary_won": false,
+          "primary_rounds": 2739,
+          "post_mortem": "Lost (2739 rounds) [176 kills]. Good combat but couldn't close.",
+          "archetype_name": "Timber Flood",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Double lumberjack production to 40% for maximum neutral tree clearing income and devastating AOE strikes. Lumberjacks scored 127 kills in Timber Support\u2014more lumberjacks means faster clearing and overwhelming melee pressure alongside soldier DPS."
+        },
+        {
+          "id": "v12",
+          "score": 128124,
+          "primary_won": false,
+          "primary_rounds": 858,
+          "post_mortem": "Lost (858 rounds) [28 kills]. Good combat but couldn't close.",
+          "archetype_name": "Combined Arms",
+          "type": "exploration",
+          "win_condition": "elimination",
+          "philosophy": "Build a balanced four-type army where each unit has a specific role: tanks hold frontline and body-ram trees, soldiers provide ranged DPS from behind, lumberjacks flank and strike isolated enemies, scouts provide vision. Total force multiplication through specialization."
+        },
+        {
+          "id": "v6",
+          "score": 122171,
+          "primary_won": false,
+          "primary_rounds": 2389,
+          "post_mortem": "Lost (2389 rounds) [73 kills]. Good combat but couldn't close.",
+          "archetype_name": "Triad Volley",
+          "type": "mutation",
+          "win_condition": "elimination",
+          "philosophy": "Switch soldiers from single shots to triad shots (4 bullets, 20-degree spread) for 3x damage per volley. Area denial and faster kills justify the higher bullet cost when tree economy provides sufficient income from round 150."
+        },
+        {
+          "id": "v13",
+          "score": 122171,
+          "primary_won": false,
+          "primary_rounds": 2389,
+          "post_mortem": "Lost (2389 rounds) [73 kills]. Good combat but couldn't close.",
+          "archetype_name": "Dual Path",
+          "type": "exploration",
+          "win_condition": "hybrid",
+          "philosophy": "Aggressive swarm for elimination through round 1000, then pivot hard to VP if no kill. If the swarm destroys enough enemies, keep pushing. If stalemated, convert 60% of surplus bullets to VP for a rapid backup win condition."
+        },
+        {
+          "id": "v15",
+          "score": 92501,
+          "primary_won": false,
+          "primary_rounds": 664,
+          "post_mortem": "Lost (664 rounds) [13 kills]. Good combat but couldn't close.",
+          "archetype_name": "Decapitation Strike",
+          "type": "exploration",
+          "win_condition": "elimination",
+          "philosophy": "Use scouts to locate the enemy archon early, then converge all combat units on it. Killing the archon stops gardener hiring permanently and cripples enemy economy. Focus all firepower on the highest-value target for a swift knockout."
+        },
+        {
+          "id": "v9",
+          "score": 91321,
+          "primary_won": false,
+          "primary_rounds": 1277,
+          "post_mortem": "Lost (1277 rounds) [40 kills]. Good combat but couldn't close.",
+          "archetype_name": "Tank Doctrine",
+          "type": "exploration",
+          "win_condition": "elimination",
+          "philosophy": "Abandon cheap unit spam for quality over quantity. Tanks are the strongest unit (200 HP, 5 attack, body-ram trees) and dominate direct engagements. Build tanks as primary force from round 200 after strong economy."
+        },
+        {
+          "id": "v16",
+          "score": 68881,
+          "primary_won": false,
+          "primary_rounds": 576,
+          "post_mortem": "Lost (576 rounds) [8 kills]. Good combat but couldn't close.",
+          "archetype_name": "Eco Titan",
+          "type": "exploration",
+          "win_condition": "hybrid",
+          "philosophy": "Build maximum tree empire for 500 rounds with minimal military. Hire gardeners at 30% rate, plant trees at 95% rate, water aggressively. At round 500, evaluate: if ahead in bullets, pivot to VP rush; if threatened, pivot to tank army. Win through overwhelming economic superiority."
+        },
+        {
+          "id": "v10",
+          "score": 40226,
+          "primary_won": false,
+          "primary_rounds": 2269,
+          "post_mortem": "Lost (2269 rounds) [2 kills]. Strategy ineffective.",
+          "archetype_name": "VP Blitzkrieg",
+          "type": "exploration",
+          "win_condition": "vp_rush",
+          "philosophy": "All-in VP from round 50 with minimal military. Donate every surplus bullet above 80 reserve. Scouts for early warning and tree shaking only. Win by round 1000 through pure economic conversion before opponent can scale military."
+        }
+      ]
     }
   ]
 }

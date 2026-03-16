@@ -1,16 +1,15 @@
-package hunter_alpha;
+package hunter_alpha_champion_7;
 import battlecode.common.*;
 
 /**
- * Scout Tide - Centralized Bullet Spending (v4 mutation)
+ * Rapid Bloom - Centralized Bullet Spending (v8 mutation)
  *
- * Phase 1 (Rounds 1-150): Dense tree farm construction at 92% plant rate.
+ * Phase 1 (Rounds 1-150): Dense tree farm construction at 90% plant rate.
  *   Aggressive gardener hiring (25%) to maximize parallel tree planting.
- *   More trees = more shake targets for scout economy.
- * Phase 2 (Round 150+): Minimal tree planting (10%), focus on scout harassment.
- *   Unit priority: SOLDIER (45%), SCOUT (40%), LUMBERJACK (15%).
- *   Scouts move through trees at 1.25 stride, shake neutral trees for bullets,
- *   and disrupt enemy gardeners. No VP donations.
+ *   Front-loaded economy generates massive bullet income for military pivot.
+ * Phase 2 (Round 150+): Minimal tree planting (10%), focus on military output.
+ *   Unit priority: SOLDIER (75%), SCOUT (25%). Zero tank production.
+ *   No VP donations - all bullets feed rapid unit production.
  */
 public class BulletSpending {
     static RobotController rc;
@@ -24,13 +23,12 @@ public class BulletSpending {
     static final double GARDENER_HIRE_RATE_SWARM = 0.25;
 
     // Tree planting rates - dense farm during eco, minimal during swarm
-    static final double TREE_PLANT_RATE_ECO = 0.92;
+    static final double TREE_PLANT_RATE_ECO = 0.90;
     static final double TREE_PLANT_RATE_SWARM = 0.10;
 
-    // Scout Tide unit build rates (Phase 2 only) - Scout-heavy harassment
-    static final double SOLDIER_BUILD_RATE = 0.45;
-    static final double LUMBERJACK_BUILD_RATE = 0.15;
-    static final double SCOUT_BUILD_RATE = 0.40;
+    // Swarm unit build rates (Phase 2 only) - SOLDIER heavy (75%), SCOUT (25%)
+    static final double SOLDIER_BUILD_RATE = 0.75;
+    static final double SCOUT_BUILD_RATE = 0.25;
 
     public static void init(RobotController rc) {
         BulletSpending.rc = rc;
@@ -59,18 +57,12 @@ public class BulletSpending {
                 return; // Build cooldown after planting
             }
 
-            // Phase 2: build soldiers, lumberjacks, and scouts - NO tanks
+            // Phase 2: build soldiers and scouts - NO tanks
             if (!isEcoPhase) {
                 // Priority: soldiers (100 bullets, good combat stats)
                 dir = randomDirection();
                 if (rc.canBuildRobot(RobotType.SOLDIER, dir) && Math.random() < SOLDIER_BUILD_RATE) {
                     rc.buildRobot(RobotType.SOLDIER, dir);
-                    return;
-                }
-                // Timber support: lumberjacks (100 bullets, AOE strike, tree clearing)
-                dir = randomDirection();
-                if (rc.canBuildRobot(RobotType.LUMBERJACK, dir) && Math.random() < LUMBERJACK_BUILD_RATE) {
-                    rc.buildRobot(RobotType.LUMBERJACK, dir);
                     return;
                 }
                 // Secondary: scouts (80 bullets, fast, harassment)

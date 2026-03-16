@@ -1,0 +1,79 @@
+:compileEngineKotlin UP-TO-DATE
+:compileEngineJava UP-TO-DATE
+:copyEngineKotlinClasses UP-TO-DATE
+:compileEngineScala UP-TO-DATE
+:processEngineResources UP-TO-DATE
+:engineClasses UP-TO-DATE
+:compileKotlin UP-TO-DATE
+:compileJava/Users/danieldean/Documents/work_code/battlecode-scaffold-2017/src/pi_gpt_5_1_mini_high_v1/RobotPlayer.java:48: error: cannot find symbol
+        if (Clock.getRoundNum() <= 1) {
+                 ^
+  symbol:   method getRoundNum()
+  location: class Clock
+/Users/danieldean/Documents/work_code/battlecode-scaffold-2017/src/pi_gpt_5_1_mini_high_v1/RobotPlayer.java:231: error: cannot find symbol
+            int currentRound = Clock.getRoundNum();
+                                    ^
+  symbol:   method getRoundNum()
+  location: class Clock
+/Users/danieldean/Documents/work_code/battlecode-scaffold-2017/src/pi_gpt_5_1_mini_high_v1/RobotPlayer.java:254: error: cannot find symbol
+        rc.broadcast(SCOUT_REPORT_CHANNEL_ROUND, Clock.getRoundNum());
+                                                      ^
+  symbol:   method getRoundNum()
+  location: class Clock
+/Users/danieldean/Documents/work_code/battlecode-scaffold-2017/src/pi_gpt_5_1_mini_high_v1/BulletSpending.java:63: error: cannot find symbol
+            && Clock.getRoundNum() < 170
+                    ^
+  symbol:   method getRoundNum()
+  location: class Clock
+/Users/danieldean/Documents/work_code/battlecode-scaffold-2017/src/copy_bot/Scout.java:180: error: method spendPolicy in class BulletSpending cannot be applied to given types;
+        BulletSpending.spendPolicy(RobotType.SCOUT);
+                      ^
+  required: no arguments
+  found: RobotType
+  reason: actual and formal argument lists differ in length
+/Users/danieldean/Documents/work_code/battlecode-scaffold-2017/src/copy_bot/Gardener.java:69: error: method spendPolicy in class BulletSpending cannot be applied to given types;
+        BulletSpending.spendPolicy(RobotType.GARDENER);
+                      ^
+  required: no arguments
+  found: RobotType
+  reason: actual and formal argument lists differ in length
+/Users/danieldean/Documents/work_code/battlecode-scaffold-2017/src/copy_bot/Tank.java:101: error: method spendPolicy in class BulletSpending cannot be applied to given types;
+        BulletSpending.spendPolicy(RobotType.TANK);
+                      ^
+  required: no arguments
+  found: RobotType
+  reason: actual and formal argument lists differ in length
+/Users/danieldean/Documents/work_code/battlecode-scaffold-2017/src/copy_bot/Soldier.java:96: error: method spendPolicy in class BulletSpending cannot be applied to given types;
+        BulletSpending.spendPolicy(RobotType.SOLDIER);
+                      ^
+  required: no arguments
+  found: RobotType
+  reason: actual and formal argument lists differ in length
+/Users/danieldean/Documents/work_code/battlecode-scaffold-2017/src/copy_bot/Lumberjack.java:100: error: method spendPolicy in class BulletSpending cannot be applied to given types;
+        BulletSpending.spendPolicy(RobotType.LUMBERJACK);
+                      ^
+  required: no arguments
+  found: RobotType
+  reason: actual and formal argument lists differ in length
+/Users/danieldean/Documents/work_code/battlecode-scaffold-2017/src/copy_bot/Archon.java:49: error: method spendPolicy in class BulletSpending cannot be applied to given types;
+        BulletSpending.spendPolicy(RobotType.ARCHON);
+                      ^
+  required: no arguments
+  found: RobotType
+  reason: actual and formal argument lists differ in length
+10 errors
+ FAILED
+:copyMainKotlinClasses SKIPPED
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':compileJava'.
+> Compilation failed; see the compiler error output for details.
+
+* Try:
+Run with --stacktrace option to get the stack trace. Run with --info or --debug option to get more log output.
+
+BUILD FAILED
+
+Total time: 1.208 secs
